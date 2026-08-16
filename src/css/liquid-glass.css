@@ -1,0 +1,74 @@
+/* ═══════════════════════════════════════════════════════════════════
+   AUTHENTIC APPLE iOS 18 & macOS FROSTED / LIQUID GLASS DESIGN SYSTEM
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Default Glass Optical Tokens */
+  --glass-blur: 28px;
+  --glass-saturate: 190%;
+  --glass-contrast: 94%;
+  --glass-brightness: 106%;
+  --glass-opacity: 0.70;
+  --glass-border-sheen: 0.45;
+  
+  /* Specular Highlight Sheens */
+  --glass-specular-top: linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.08) 25%, transparent 100%);
+  
+  /* Authentic iOS 18 Multi-Layer Glass Shadow */
+  --glass-shadow: 
+    0 24px 60px rgba(0, 0, 0, 0.35),
+    0 6px 18px rgba(0, 0, 0, 0.16),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.18);
+}
+
+/* ── Authentic Frosted Glass Theme ────────────────────────────── */
+[data-theme="frosted-glass"], [data-theme="liquid-glass"], [data-theme="liquid-tahoe"] {
+  --theme-name: "Frosted Glass";
+  --void: #0b1220;
+  --void-gradient: radial-gradient(120% 100% at 50% 0%, #152037 0%, #0c1424 55%, #050812 100%);
+  --glass: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.22);
+  --frost: rgba(255, 255, 255, 0.26);
+  --ink: #ffffff;
+  --dim: #dbe7f6;
+  --faint: #9cb1d4;
+  --accent: #38bdf8;
+  --accent-glow: rgba(56, 189, 248, 0.45);
+  --card-tint: #16213a;
+  --card-tint-deep: #0b1220;
+  --shader-1: #38bdf8;
+  --shader-2: #818cf8;
+  --shader-3: #22d3ee;
+}
+
+[data-theme="frosted-glass"] .card,
+[data-theme="liquid-glass"] .card,
+[data-theme="liquid-tahoe"] .card {
+  /* --glass-opacity (0.1–0.95) is scaled into the white-frost alpha range */
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, calc(var(--glass-opacity, 0.7) * 0.22)) 0%,
+    rgba(255, 255, 255, calc(var(--glass-opacity, 0.7) * 0.06)) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, calc(var(--glass-border-sheen, 0.45) * 0.75));
+  backdrop-filter: blur(var(--glass-blur, 28px)) saturate(var(--glass-saturate, 190%)) contrast(var(--glass-contrast, 94%)) brightness(var(--glass-brightness, 106%));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 28px)) saturate(var(--glass-saturate, 190%)) contrast(var(--glass-contrast, 94%)) brightness(var(--glass-brightness, 106%));
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.38), inset 0 1px 1px rgba(255, 255, 255, var(--glass-border-sheen, 0.45));
+}
+
+/* Top Specular Rim for Frosted Glass */
+[data-theme="frosted-glass"] .card::before,
+[data-theme="liquid-glass"] .card::before,
+[data-theme="liquid-tahoe"] .card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 1px;
+  background: var(--glass-specular-top);
+  opacity: 0.9;
+  pointer-events: none;
+  border-radius: 2px;
+}

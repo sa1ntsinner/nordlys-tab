@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="aurora-void">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AetherTab</title>
+  
+  <!-- Original Vector Icon -->
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  
+  <!-- Modular Design System & Stylesheets -->
+  <link rel="stylesheet" href="src/css/main.css">
+  <link rel="stylesheet" href="src/css/liquid-glass.css">
+  <link rel="stylesheet" href="src/css/themes.css">
+  <link rel="stylesheet" href="src/css/components.css">
+  <link rel="stylesheet" href="src/css/settings.css">
+</head>
+<body>
+
+  <!-- Dynamic Background Layers -->
+  <div id="bg-container">
+    <canvas id="bg-canvas"></canvas>
+    <img id="bg-media" alt="">
+    <video id="bg-video" muted loop playsinline disablepictureinpicture></video>
+    <div id="bg-dimmer"></div>
+  </div>
+  <div id="veil"></div>
+  <div id="dim"></div>
+
+  <!-- Main Viewport Page Frame -->
+  <main id="page">
+    
+    <!-- Hero Header: Clock · Date · Greeting -->
+    <header id="hero">
+      <time id="clock">
+        <span id="hh">12</span><span class="colon">:</span><span id="mm">00</span><span class="sc colon">:</span><span id="ss">00</span><span id="ampm" class="ampm"></span>
+      </time>
+      <div id="date">SUNDAY, AUG 16</div>
+      <div id="greet">Good day</div>
+    </header>
+
+    <!-- Omni-Search Bar & Suggestions -->
+    <section id="searchwrap">
+      <div id="search">
+        <button id="engine-selector" type="button" aria-label="Change search engine">
+          <svg viewBox="0 0 24 24"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/></svg>
+        </button>
+        <input id="q" type="text" placeholder="Search with Google or enter URL..." autocomplete="off" spellcheck="false">
+        <kbd>/</kbd>
+      </div>
+      <div id="sugg"></div>
+    </section>
+
+    <!-- Speed Dial Bento Board -->
+    <div id="board"></div>
+
+    <!-- Hidden Folders Dock -->
+    <div id="hiddenDock"></div>
+
+  </main>
+
+  <!-- Settings Trigger Gear -->
+  <button id="gear" type="button" title="Customize AetherTab" aria-label="Settings">
+    <svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97s-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 13.5 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1s.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"/></svg>
+  </button>
+
+  <!-- Sliding Resizable Settings Drawer -->
+  <aside id="cfg">
+    <!-- Draggable Left-Edge Resize Handle -->
+    <div id="cfg-resizer" title="Drag left/right to resize drawer width" aria-label="Resize drawer"></div>
+
+    <div class="chead">
+      <b>AetherTab Settings</b>
+      <button id="cfgx" type="button" aria-label="Close settings">✕</button>
+    </div>
+
+    <!-- Horizontally Scrollable Tabs Navigation -->
+    <nav class="ctabs">
+      <button class="ctab active" data-tab="appearance" data-i18n="nav.appearance">Appearance</button>
+      <button class="ctab" data-tab="general" data-i18n="nav.general">General</button>
+      <button class="ctab" data-tab="background" data-i18n="nav.background">Background</button>
+      <button class="ctab" data-tab="bookmarks" data-i18n="nav.bookmarks">Bookmarks</button>
+      <button class="ctab" data-tab="custom-css" data-i18n="nav.customCss">Custom CSS</button>
+      <button class="ctab" data-tab="backup" data-i18n="nav.backup">Backup</button>
+    </nav>
+
+    <!-- Drawer Body -->
+    <div class="cbody">
+      
+      <!-- 1. Appearance Section -->
+      <section id="sec-appearance" class="csec active">
+        <!-- Color Mode Segmented Switch -->
+        <div class="color-mode-segmented" id="color-mode-switcher">
+          <button type="button" class="mode-btn active" data-mode="dark">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+            <span data-i18n="appearance.modeDark">Dark</span>
+          </button>
+          <button type="button" class="mode-btn" data-mode="light">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <span data-i18n="appearance.modeLight">Light</span>
+          </button>
+          <button type="button" class="mode-btn" data-mode="auto">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+            <span data-i18n="appearance.modeAuto">Auto</span>
+          </button>
+        </div>
+
+        <h3 data-i18n="appearance.themePresets">Theme Presets</h3>
+        <!-- Dark Themes Subsection -->
+        <div class="theme-section-header">
+          <span class="theme-section-title">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.85;">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+            <span data-i18n="appearance.darkThemes">Dark Themes</span>
+          </span>
+          <span class="theme-section-badge">9</span>
+        </div>
+        <div class="theme-grid" id="theme-dark-grid"></div>
+
+        <!-- Light Themes Subsection -->
+        <div class="theme-section-header" style="margin-top: 18px;">
+          <span class="theme-section-title">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.85;">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <span data-i18n="appearance.lightThemes">Light Themes</span>
+          </span>
+          <span class="theme-section-badge">3</span>
+        </div>
+        <div class="theme-grid" id="theme-light-grid"></div>
+
+        <!-- Custom Themes Subsection -->
+        <div class="theme-section-header" style="margin-top: 18px;">
+          <span class="theme-section-title">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.85;">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+            <span data-i18n="appearance.customThemes">Custom Themes</span>
+          </span>
+        </div>
+        <div class="theme-grid" id="theme-custom-grid"></div>
+
+        <!-- Dynamic Custom Theme Palette Studio & Color Pickers -->
+        <div id="custom-theme-editor-card" class="custom-theme-tuning-card" style="display: none; margin-top: 14px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <h4 style="margin: 0; color: var(--accent); font-size: 13.5px; font-weight: 650; display: flex; align-items: center; gap: 6px;">
+              <span data-i18n="customTheme.title">✦ Custom Theme Studio</span>
+            </h4>
+            <button id="close-custom-theme-editor" type="button" class="xbtn" style="font-size: 12px; padding: 2px 6px;">✕</button>
+          </div>
+          
+          <div class="custom-theme-box">
+            <div class="theme-color-row">
+              <span class="color-label" data-i18n="customTheme.bg">Background Color</span>
+              <div class="color-picker-wrap">
+                <input type="color" id="thm-bg-color" class="color-well" value="#0a0f1d">
+                <input type="text" id="thm-bg-hex" class="hex-text" value="#0a0f1d" maxlength="7">
+              </div>
+            </div>
+
+            <div class="theme-color-row">
+              <span class="color-label" data-i18n="customTheme.cardTint">Card Glass Tint</span>
+              <div class="color-picker-wrap">
+                <input type="color" id="thm-card-color" class="color-well" value="#111c35">
+                <input type="text" id="thm-card-hex" class="hex-text" value="#111c35" maxlength="7">
+              </div>
+            </div>
+
+            <div class="theme-color-row">
+              <span class="color-label" data-i18n="customTheme.border">Border Stroke</span>
+              <div class="color-picker-wrap">
+                <input type="color" id="thm-border-color" class="color-well" value="#2a3f6d">
+                <input type="text" id="thm-border-hex" class="hex-text" value="#2a3f6d" maxlength="7">
+              </div>
+            </div>
+
+            <div class="theme-color-row">
+              <span class="color-label" data-i18n="customTheme.accent">Primary Accent</span>
+              <div class="color-picker-wrap">
+                <input type="color" id="thm-accent-color" class="color-well" value="#35d6c0">
+                <input type="text" id="thm-accent-hex" class="hex-text" value="#35d6c0" maxlength="7">
+              </div>
+            </div>
+
+            <div class="theme-color-row">
+              <span class="color-label" data-i18n="customTheme.glow">Accent Glow</span>
+              <div class="color-picker-wrap">
+                <input type="color" id="thm-glow-color" class="color-well" value="#5b6cff">
+                <input type="text" id="thm-glow-hex" class="hex-text" value="#5b6cff" maxlength="7">
+              </div>
+            </div>
+
+            <div class="theme-color-row">
+              <span class="color-label" data-i18n="customTheme.text">Text Primary</span>
+              <div class="color-picker-wrap">
+                <input type="color" id="thm-text-color" class="color-well" value="#f1f5f9">
+                <input type="text" id="thm-text-hex" class="hex-text" value="#f1f5f9" maxlength="7">
+              </div>
+            </div>
+
+            <div class="theme-color-row">
+              <span class="color-label" data-i18n="customTheme.subdued">Text Subdued</span>
+              <div class="color-picker-wrap">
+                <input type="color" id="thm-dim-color" class="color-well" value="#8ca0c4">
+                <input type="text" id="thm-dim-hex" class="hex-text" value="#8ca0c4" maxlength="7">
+              </div>
+            </div>
+
+            <div class="row" style="margin-top: 10px;">
+              <span data-i18n="customTheme.font">Font Family</span>
+              <select id="thm-font" class="ipt">
+                <option value="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">System Default</option>
+                <option value="'Inter', -apple-system, sans-serif">Inter</option>
+                <option value="'SF Pro Display', -apple-system, sans-serif">SF Pro Display</option>
+                <option value="'Outfit', sans-serif">Outfit</option>
+                <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+                <option value="'Fira Code', monospace">Fira Code</option>
+              </select>
+            </div>
+
+            <div class="row">
+              <span data-i18n="customTheme.presetName">Preset Name</span>
+              <input id="thm-name-input" type="text" class="ipt" placeholder="My Custom Theme" style="width: 150px;">
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-top: 14px;">
+              <button id="thm-save-btn" class="glass-btn accent" style="flex: 1;" data-i18n="customTheme.saveApply">Save & Apply Theme</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ✦ Bookmark & Card Aesthetics Studio -->
+        <div id="card-customizer-controls" class="card-customizer-card" style="margin-top: 16px;">
+          <h4 style="margin: 0; color: var(--accent); font-size: 13.5px; font-weight: 650; display: flex; align-items: center; gap: 6px;">
+            <span data-i18n="appearance.cardStudioTitle">✦ Card & Bookmark Aesthetics</span>
+          </h4>
+
+          <!-- 1. Surface & Glass Section -->
+          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 4px;" data-i18n="appearance.surfaceGlass">Glass & Surface Material</div>
+          <div class="row">
+            <span><span data-i18n="appearance.glassBlur">Glass Blur Radius</span> (<b id="lbl-blur">28px</b>)</span>
+            <input id="cfg-glass-blur" type="range" class="ipt" min="0" max="60" value="28">
+          </div>
+          <div class="row">
+            <span><span data-i18n="appearance.glassSaturate">Vibrance / Saturation</span> (<b id="lbl-sat">190%</b>)</span>
+            <input id="cfg-glass-saturate" type="range" class="ipt" min="100" max="250" value="190">
+          </div>
+          <div class="row">
+            <span><span data-i18n="appearance.glassTranslucency">Glass Translucency</span> (<b id="lbl-opac">70%</b>)</span>
+            <input id="cfg-glass-opacity" type="range" class="ipt" min="10" max="95" value="70">
+          </div>
+          <div class="row">
+            <span><span data-i18n="appearance.glassSheen">Specular Border Sheen</span> (<b id="lbl-sheen">45%</b>)</span>
+            <input id="cfg-glass-sheen" type="range" class="ipt" min="0" max="100" value="45">
+          </div>
+
+          <!-- 2. Geometry & Spacing Section -->
+          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 6px;" data-i18n="appearance.geometry">Geometry & Sizes</div>
+          <div class="row">
+            <span><span data-i18n="appearance.cardRadius">Card Corner Radius</span> (<b id="lbl-radius">24px</b>)</span>
+            <input id="cfg-card-radius" type="range" class="ipt" min="6" max="36" value="24">
+          </div>
+          <div class="row">
+            <span><span data-i18n="appearance.tileSize">Tile Dimension</span> (<b id="lbl-tile">78px</b>)</span>
+            <input id="cfg-tile-size" type="range" class="ipt" min="50" max="110" value="78">
+          </div>
+          <div class="row">
+            <span><span data-i18n="appearance.cardGap">Bookmark Grid Spacing</span> (<b id="lbl-gap">12px</b>)</span>
+            <input id="cfg-card-gap" type="range" class="ipt" min="6" max="28" value="12">
+          </div>
+          <div class="row">
+            <span data-i18n="appearance.iconShape">Icon Monogram Shape</span>
+            <select id="cfg-icon-shape" class="ipt">
+              <option value="squircle" data-i18n="appearance.shapeSquircle">Modern Squircle</option>
+              <option value="rounded" data-i18n="appearance.shapeRounded">Classic Rounded</option>
+              <option value="circle" data-i18n="appearance.shapeCircle">Geometric Circle</option>
+            </select>
+          </div>
+
+          <!-- 3. Glow & Hover Effects Section -->
+          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 6px;" data-i18n="appearance.cardGlow">Ambient Glow & Shadows</div>
+          <div class="row">
+            <span><span data-i18n="appearance.cardGlow">Ambient Glow & Shadows</span> (<b id="lbl-glow">40%</b>)</span>
+            <input id="cfg-card-glow" type="range" class="ipt" min="0" max="100" value="40">
+          </div>
+          <div class="row">
+            <span data-i18n="appearance.hoverEffect">Hover Animation Style</span>
+            <select id="cfg-hover-effect" class="ipt">
+              <option value="lift" data-i18n="appearance.hoverLift">Smooth Elevation Lift</option>
+              <option value="glow" data-i18n="appearance.hoverGlow">Neon Edge Glow</option>
+              <option value="scale" data-i18n="appearance.hoverScale">Scale Zoom</option>
+              <option value="none" data-i18n="appearance.hoverNone">Subtle / Static</option>
+            </select>
+          </div>
+
+          <!-- Live Interactive Bookmark Card Preview Widget -->
+          <div style="margin-top: 6px;">
+            <span style="font-size: 11.5px; color: var(--dim); display: block; margin-bottom: 6px; font-weight: 500;" data-i18n="appearance.livePreviewCard">Live Interactive Card Preview:</span>
+            <div class="card-live-preview-box">
+              <div id="preview-interactive-card" class="preview-interactive-card">
+                <div id="preview-icon-box" class="preview-icon-box">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                  </svg>
+                </div>
+                <div class="preview-card-info">
+                  <span class="preview-card-title" data-i18n="appearance.previewBookmark">Aether Studio</span>
+                  <span class="preview-card-sub">aethertab.app</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. General Section -->
+      <section id="sec-general" class="csec">
+        <h3 data-i18n="general.timeGreeting">Time & Greeting</h3>
+        <div class="row">
+          <span data-i18n="general.language">Language</span>
+          <select id="cfg-language-select" class="ipt">
+            <option value="en">English (US)</option>
+            <option value="ru">Русский</option>
+            <option value="es">Español</option>
+            <option value="de">Deutsch</option>
+            <option value="fr">Français</option>
+            <option value="ja">日本語</option>
+            <option value="zh">简体中文</option>
+            <option value="tr">Türkçe</option>
+          </select>
+        </div>
+        <div class="row">
+          <span data-i18n="general.userName">Your Name</span>
+          <input id="cfg-user-name" type="text" class="ipt" placeholder="e.g. Alex" style="width: 140px;">
+        </div>
+        <div class="row">
+          <span data-i18n="general.timeFormat">Time Format</span>
+          <select id="cfg-time-format" class="ipt">
+            <option value="24h">24-Hour (14:30)</option>
+            <option value="12h">12-Hour (2:30 PM)</option>
+          </select>
+        </div>
+        <div class="row">
+          <span data-i18n="general.showSeconds">Display Seconds</span>
+          <label class="tg"><input id="cfg-show-seconds" type="checkbox"><i></i></label>
+        </div>
+
+        <h3 data-i18n="general.behavior">Behavior</h3>
+        <div class="row">
+          <span data-i18n="general.openNewTab">Open bookmarks in new tab</span>
+          <label class="tg"><input id="cfg-open-newtab" type="checkbox"><i></i></label>
+        </div>
+        <div class="row">
+          <span>
+            <span data-i18n="general.showSuggestions">Web search suggestions</span>
+            <small style="display: block; font-size: 10.5px; color: var(--dim); font-weight: 400; margin-top: 2px;" data-i18n="general.showSuggestionsHint">Sends typed queries to the suggestion service</small>
+          </span>
+          <label class="tg"><input id="cfg-show-suggestions" type="checkbox"><i></i></label>
+        </div>
+
+        <h3 data-i18n="general.defaultEngine">Default Search Engine</h3>
+        <div class="row">
+          <span data-i18n="general.defaultEngine">Default Search Engine</span>
+          <select id="cfg-default-engine" class="ipt">
+            <option value="google">Google</option>
+            <option value="duckduckgo">DuckDuckGo</option>
+            <option value="bing">Bing</option>
+            <option value="brave">Brave</option>
+            <option value="ecosia">Ecosia</option>
+            <option value="yandex">Yandex</option>
+            <option value="youtube">YouTube</option>
+            <option value="github">GitHub</option>
+            <option value="reddit">Reddit</option>
+            <option value="wikipedia">Wikipedia</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- 4. Background Section -->
+      <section id="sec-background" class="csec">
+        <h3 data-i18n="background.mode">Background Engine</h3>
+        <div class="row">
+          <span data-i18n="background.mode">Background Mode</span>
+          <select id="cfg-bg-mode" class="ipt">
+            <option value="aurora">Dynamic Aurora Borealis (Ribbons & Meteors)</option>
+            <option value="cosmos">Cosmic Starfield & Twinkling</option>
+            <option value="mesh-gradient">Floating Mesh Gradient Orbs</option>
+            <option value="particles">Interactive Bokeh Dust Particles</option>
+            <option value="custom-image">Custom Wallpaper (Image)</option>
+            <option value="custom-video">Custom Wallpaper (Video Loop)</option>
+            <option value="solid">Minimalist Solid Background</option>
+          </select>
+        </div>
+        
+        <div class="row" style="flex-direction: column; align-items: stretch; gap: 8px;">
+          <span data-i18n="background.uploadCustom">Upload Custom Wallpaper</span>
+          <div class="custom-file-wrap">
+            <input id="cfg-custom-media" type="file" class="hidden-file-input" accept="image/*,video/mp4,video/webm">
+            <label for="cfg-custom-media" class="glass-file-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span id="cfg-file-label" data-i18n="background.uploadBtn">Select Image File...</span>
+            </label>
+          </div>
+          <button id="cfg-remove-media" class="glass-btn danger" style="display: none;" data-i18n="background.removeWallpaper">Remove Wallpaper</button>
+        </div>
+
+        <h3 data-i18n="background.wallpaperEffects">Wallpaper Effects</h3>
+        <div class="row">
+          <span><span data-i18n="background.blur">Wallpaper Blur</span> (<b id="lbl-bgblur">0px</b>)</span>
+          <input id="cfg-bg-blur" type="range" class="ipt" min="0" max="40" value="0">
+        </div>
+        <div class="row">
+          <span><span data-i18n="background.dim">Wallpaper Dim Darkness</span> (<b id="lbl-bgdim">0%</b>)</span>
+          <input id="cfg-bg-dim" type="range" class="ipt" min="0" max="80" value="0">
+        </div>
+      </section>
+
+      <!-- 5. Bookmarks Section -->
+      <section id="sec-bookmarks" class="csec">
+        <h3 data-i18n="bookmarks.managerTitle">Bookmarks & Folders</h3>
+        <div id="cfg-groups-editor"></div>
+        <button id="cfg-add-group" class="glass-btn accent" style="width: 100%; margin-top: 14px;" data-i18n="bookmarks.addFolder">+ Add Folder</button>
+      </section>
+
+      <!-- 6. Custom CSS Section -->
+      <section id="sec-custom-css" class="csec">
+        <h3 data-i18n="customCss.title">Live Custom CSS</h3>
+        <p style="font-size: 12px; color: var(--dim); margin-bottom: 8px;" data-i18n="customCss.desc">Write custom CSS rules. Changes apply in real time.</p>
+        
+        <button id="btn-open-css-docs" type="button" class="glass-btn accent" style="margin-bottom: 12px; width: 100%; display: flex; justify-content: center; gap: 8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          <span data-i18n="customCss.guideBtn">📖 CSS Guide & Class Reference</span>
+        </button>
+        
+        <!-- Preset Snippets -->
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+          <button type="button" class="css-preset-btn" data-preset="compact-6col">6-Col Grid</button>
+          <button type="button" class="css-preset-btn" data-preset="tahoe-glass">Ultra-blur Tahoe</button>
+          <button type="button" class="css-preset-btn" data-preset="monochrome">Monochrome</button>
+          <button type="button" class="css-preset-btn" data-preset="square-tiles">Square Sharp</button>
+          <button type="button" class="css-preset-btn" data-preset="hide-clock">Hide Clock</button>
+        </div>
+
+        <textarea id="css-editor" placeholder="/* Custom CSS snippets */&#10;.card { border-radius: 30px; }"></textarea>
+        <div style="display: flex; gap: 8px; margin-top: 10px;">
+          <button id="cfg-inject-css" class="glass-btn accent" style="flex: 1;" data-i18n="customCss.applySave">Apply & Save CSS</button>
+          <button id="cfg-clear-css" class="glass-btn" style="width: 90px;" data-i18n="customCss.clear">Clear</button>
+        </div>
+      </section>
+
+      <!-- 7. Data & Backup Section -->
+      <section id="sec-backup" class="csec">
+        <h3 data-i18n="backup.title">Backup & Migration</h3>
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <button id="cfg-export" class="glass-btn" style="flex: 1;" data-i18n="backup.exportJson">Export JSON Config</button>
+          <button id="cfg-export-html" class="glass-btn" style="flex: 1;" data-i18n="backup.exportHtml">Export HTML Bookmarks</button>
+        </div>
+        
+        <div class="row" style="flex-direction: column; align-items: stretch; gap: 8px; margin-bottom: 14px;">
+          <span data-i18n="backup.importUniversal">Import Backup (JSON / Browser HTML)</span>
+          <div class="custom-file-wrap">
+            <input id="cfg-import-universal" type="file" class="hidden-file-input" accept=".json,.html,.htm,application/json,text/html">
+            <label for="cfg-import-universal" class="glass-file-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span data-i18n="backup.importBtn">Import JSON / HTML file...</span>
+            </label>
+          </div>
+        </div>
+
+        <h3 style="margin-top: 24px;" data-i18n="backup.resetDefaults">Danger Zone</h3>
+        <div class="row">
+          <button id="cfg-reset" class="glass-btn danger" style="width: 100%;" data-i18n="backup.resetDefaults">Reset to Defaults</button>
+        </div>
+      </section>
+
+    </div>
+  </aside>
+
+  <!-- Universal 4-Source Icon Picker Modal -->
+  <div id="icon-modal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <b>Choose Bookmark Icon</b>
+        <button id="modal-x" type="button" class="xbtn">✕</button>
+      </div>
+
+      <!-- 5 Modal Source Tabs -->
+      <div class="icon-modal-tabs">
+        <button class="icon-tab-btn active" data-tab="library" data-i18n="modal.tabLibrary">Built-in Library</button>
+        <button class="icon-tab-btn" data-tab="favicon" data-i18n="modal.tabFavicon">Smart Favicon</button>
+        <button class="icon-tab-btn" data-tab="url" data-i18n="modal.tabUrl">Web Image / URL</button>
+        <button class="icon-tab-btn" data-tab="upload" data-i18n="modal.tabUpload">Local File Upload</button>
+        <button class="icon-tab-btn" data-tab="monogram" data-i18n="modal.tabMonogram">Monogram / Initial</button>
+      </div>
+
+      <div class="modal-body">
+        
+        <!-- Tab 1: Built-in Library -->
+        <div id="modal-pane-library" class="modal-tab-pane active">
+          <div class="icon-search-row">
+            <input id="icon-search" type="text" class="glass-input" placeholder="Search brand & system icons...">
+          </div>
+          <div class="icon-category-chips">
+            <button class="icon-chip active" data-cat="all">All</button>
+            <button class="icon-chip" data-cat="brand">Brands</button>
+            <button class="icon-chip" data-cat="tech">Dev & Tech</button>
+            <button class="icon-chip" data-cat="media">Media</button>
+            <button class="icon-chip" data-cat="productivity">Productivity</button>
+            <button class="icon-chip" data-cat="study">Study</button>
+            <button class="icon-chip" data-cat="tools">Tools</button>
+          </div>
+          <div id="modal-icon-grid" class="icon-grid"></div>
+        </div>
+
+        <!-- Tab 2: Smart Favicon / High-Res Fetcher -->
+        <div id="modal-pane-favicon" class="modal-tab-pane">
+          <label style="display: block; font-size: 12px; color: var(--dim); margin-bottom: 6px;" data-i18n="modal.faviconDesc">Fetch high-resolution favicon automatically from site domain or page URL</label>
+          <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+            <input id="favicon-url-input" type="text" class="glass-input" placeholder="https://github.com or domain.com" style="flex: 1;">
+            <button id="favicon-fetch-btn" type="button" class="glass-btn accent">Fetch</button>
+          </div>
+          
+          <div class="favicon-source-chips" style="display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; scrollbar-width: none;">
+            <button type="button" class="icon-chip active" data-fav-source="google">Google S2 (128px)</button>
+            <button type="button" class="icon-chip" data-fav-source="duckduckgo">DuckDuckGo</button>
+            <button type="button" class="icon-chip" data-fav-source="chrome">Browser Cache</button>
+            <button type="button" class="icon-chip" data-fav-source="direct">Apple / Direct</button>
+          </div>
+
+          <div class="url-preview-box" id="favicon-preview-wrap">
+            <div id="favicon-preview-img-box" class="url-preview-square" title="Click to open in Cropper Studio">
+              <span style="font-size: 11px; color: var(--dim);">No icon</span>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                <b id="favicon-domain-name" style="font-size: 13px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Domain.com</b>
+                <span id="favicon-res-badge" class="theme-section-badge" style="font-size: 10px;">128×128</span>
+              </div>
+              <span id="favicon-status" style="font-size: 11.5px; color: var(--dim); display: block; margin-top: 2px;">High-resolution site icon ready</span>
+              <div id="favicon-actions" style="display: flex; gap: 8px; margin-top: 10px;">
+                <button id="favicon-apply-btn" type="button" class="glass-btn accent" style="flex: 1.2;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span data-i18n="modal.applyFavicon">Apply Favicon</span>
+                </button>
+                <button id="favicon-crop-btn" type="button" class="glass-btn" style="flex: 1;">✂️ Adjust in Cropper</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Web Image / URL -->
+        <div id="modal-pane-url" class="modal-tab-pane">
+          <label style="display: block; font-size: 12px; color: var(--dim); margin-bottom: 6px;">Image Web URL (SVG, PNG, JPG, WebP, GIF)</label>
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <input id="icon-url-input" type="url" class="glass-input" placeholder="https://example.com/icon.png" style="flex: 1;">
+            <button id="icon-url-check-btn" type="button" class="glass-btn accent">Preview</button>
+          </div>
+          <div class="url-preview-box">
+            <div id="icon-url-preview-img-box" class="url-preview-square" title="Click to open Cropper">
+              <span style="font-size: 11px; color: var(--dim);">No image</span>
+            </div>
+            <div style="flex: 1;">
+              <span id="icon-url-status" style="font-size: 12px; color: var(--dim);">Enter an image URL above to test</span>
+              <div id="icon-url-actions" style="display: none; gap: 8px; margin-top: 8px;">
+                <button id="icon-url-crop-btn" type="button" class="glass-btn accent" style="flex: 1.2;">✂️ Crop & Adjust Icon</button>
+                <button id="icon-url-apply-btn" type="button" class="glass-btn" style="flex: 1;">Use Full Image</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Local File Upload -->
+        <div id="modal-pane-upload" class="modal-tab-pane">
+          <input type="file" id="icon-file-input" class="hidden-file-input" accept="image/png, image/jpeg, image/svg+xml, image/webp, image/gif">
+          <label for="icon-file-input" class="file-drop-zone" id="icon-drop-zone">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 8px; color: var(--accent);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <b style="font-size: 13px; color: var(--ink);">Drag & drop or Click to choose file</b>
+            <span style="font-size: 11px; color: var(--dim); margin-top: 4px;">PNG, SVG, JPG, WebP, GIF (Max 5MB)</span>
+          </label>
+          <div id="icon-file-preview-wrap" style="display: none; margin-top: 12px;" class="url-preview-box">
+            <div id="icon-file-preview-img-box" class="url-preview-square" title="Click to open Cropper"></div>
+            <div style="flex: 1;">
+              <b id="icon-file-name" style="font-size: 12px; color: var(--ink);">image.png</b>
+              <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <button id="icon-file-crop-btn" type="button" class="glass-btn accent" style="flex: 1.2;">✂️ Crop & Adjust Icon</button>
+                <button id="icon-file-apply-btn" type="button" class="glass-btn" style="flex: 1;">Use Full Image</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 5: Monogram / Initial -->
+        <div id="modal-pane-monogram" class="modal-tab-pane">
+          <div style="display: flex; gap: 14px; align-items: center;">
+            <div style="flex: 1;">
+              <label style="font-size: 12px; color: var(--dim); display: block; margin-bottom: 4px;">Monogram Text (1-3 chars)</label>
+              <input id="monogram-input" type="text" class="glass-input" maxlength="3" value="A">
+            </div>
+            <div id="monogram-preview-box" class="url-preview-square" style="width: 54px; height: 54px; font-size: 22px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #6366f1, #35d6c0);">A</div>
+          </div>
+          <button id="icon-monogram-apply-btn" type="button" class="glass-btn accent" style="margin-top: 14px; width: 100%;">Use Monogram Icon</button>
+        </div>
+
+        <!-- Dedicated Interactive Icon Cropper Studio Pane -->
+        <div id="modal-pane-cropper" class="modal-tab-pane">
+          <div class="cropper-top-bar">
+            <div class="cropper-title-wrap">
+              <b style="font-size: 13.5px; color: var(--ink); display: flex; align-items: center; gap: 6px;">
+                <span>✂️ Icon Cropper Studio</span>
+              </b>
+              <span style="font-size: 11px; color: var(--dim);">Drag image to frame the icon • Scroll or slider to zoom</span>
+            </div>
+            <button id="cropper-back-btn" type="button" class="glass-btn" style="padding: 4px 10px; font-size: 11.5px;">← Back</button>
+          </div>
+
+          <div class="cropper-workspace">
+            <!-- Left: Interactive Canvas Viewport -->
+            <div class="cropper-viewport-wrap">
+              <canvas id="cropper-canvas" width="260" height="260"></canvas>
+              <!-- Framing Overlay -->
+              <div class="cropper-overlay-guide">
+                <div class="cropper-corner tl"></div>
+                <div class="cropper-corner tr"></div>
+                <div class="cropper-corner bl"></div>
+                <div class="cropper-corner br"></div>
+              </div>
+            </div>
+
+            <!-- Right: Controls & Live Glass Tile Preview -->
+            <div class="cropper-side-controls">
+              <div class="cropper-preview-card">
+                <span class="cropper-label">Tile Live Preview</span>
+                <div class="cropper-tile-mockup">
+                  <div id="cropper-tile-box" class="cropper-tile-box">
+                    <canvas id="cropper-tile-preview-canvas" width="60" height="60"></canvas>
+                  </div>
+                  <span id="cropper-tile-name" class="cropper-tile-lbl">Bookmark</span>
+                </div>
+              </div>
+
+              <div class="cropper-slider-block">
+                <div class="cropper-slider-head">
+                  <span class="cropper-label">Zoom Level</span>
+                  <b id="cropper-zoom-val" style="font-size: 11.5px; color: var(--accent);">100%</b>
+                </div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <button id="cropper-zoom-out" type="button" class="crop-tool-btn" title="Zoom Out">−</button>
+                  <input id="cropper-zoom-slider" type="range" class="ipt" min="0.3" max="5.0" step="0.05" value="1.0" style="flex: 1;">
+                  <button id="cropper-zoom-in" type="button" class="crop-tool-btn" title="Zoom In">+</button>
+                </div>
+              </div>
+
+              <div class="cropper-tools-row">
+                <button id="cropper-tool-fit" type="button" class="crop-pill-btn" title="Fit Entire Image">Fit View</button>
+                <button id="cropper-tool-center" type="button" class="crop-pill-btn" title="Center Image">Center</button>
+                <button id="cropper-tool-rotate" type="button" class="crop-pill-btn" title="Rotate 90 Degrees">Rotate 90°</button>
+                <button id="cropper-tool-reset" type="button" class="crop-pill-btn" title="Reset all transforms">Reset</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="cropper-actions-footer">
+            <button id="cropper-apply-btn" type="button" class="glass-btn accent" style="flex: 1.4; font-weight: 650;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Save & Apply Cropped Icon</span>
+            </button>
+            <button id="cropper-use-original-btn" type="button" class="glass-btn" style="flex: 1;">Use Full Image</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive CSS Documentation Modal -->
+  <div id="css-docs-modal">
+    <div class="modal-box css-docs-box">
+      <div class="modal-head">
+        <b>📖 CSS Guide & Class Reference</b>
+        <button id="css-docs-modal-x" type="button" class="xbtn">✕</button>
+      </div>
+
+      <div class="icon-modal-tabs">
+        <button class="icon-tab-btn active" data-css-tab="selectors">Selectors & Hierarchy</button>
+        <button class="icon-tab-btn" data-css-tab="variables">CSS Variables</button>
+        <button class="icon-tab-btn" data-css-tab="recipes">Recipes</button>
+      </div>
+
+      <div class="modal-body css-docs-body">
+        
+        <!-- Tab 1: Core Selectors & Hierarchy -->
+        <div id="css-pane-selectors" class="modal-tab-pane css-tab-pane active">
+          <h4>Core Selectors & Hierarchy</h4>
+          <p class="css-doc-desc">Target these elements to style the core layout.</p>
+          <ul class="css-docs-list">
+            <li><code>#hero</code>, <code>#clock</code>, <code>#date</code>, <code>#greet</code> — Clock, date & greeting</li>
+            <li><code>#hh</code>, <code>#mm</code>, <code>#ss</code> — Individual clock digits</li>
+            <li><code>#searchwrap</code>, <code>#search</code>, <code>#q</code> — Search bar & input</li>
+            <li><code>#sugg</code>, <code>.sugg-item</code> — Suggestions dropdown rows</li>
+            <li><code>#board</code> — Bento board container</li>
+            <li><code>.card</code> — Folder glass container</li>
+            <li><code>.cat</code>, <code>.cat b</code> — Folder header & title text</li>
+            <li><code>.grid</code> — Tile grid (<code>[data-cols="1..8"]</code>)</li>
+            <li><code>.tile</code> — Bookmark tile (<code>--c</code> holds its accent color)</li>
+            <li><code>.box</code> — Icon glass box, <code>.lbl</code> — bookmark label</li>
+            <li><code>#hiddenDock</code>, <code>.restoreFolder</code> — Hidden folder dock & chips</li>
+            <li><code>#gear</code> — Settings gear button</li>
+            <li><code>#cfg</code>, <code>.ctab</code>, <code>.csec</code> — Settings drawer components</li>
+          </ul>
+        </div>
+
+        <!-- Tab 2: CSS Variables -->
+        <div id="css-pane-variables" class="modal-tab-pane css-tab-pane">
+          <h4>CSS Variables & Theming Tokens</h4>
+          <p class="css-doc-desc">Override these on <code>:root</code> to restyle the whole page.</p>
+          <ul class="css-docs-list">
+            <li><code>--void</code> — page background color</li>
+            <li><code>--void-gradient</code> — page background gradient</li>
+            <li><code>--card-tint</code> — folder card glass tint (opaque color)</li>
+            <li><code>--glass</code> — search bar / gear glass fill</li>
+            <li><code>--glass-border</code> — card border color</li>
+            <li><code>--accent</code> / <code>--accent-glow</code> — accent & its glow</li>
+            <li><code>--ink</code> / <code>--dim</code> / <code>--faint</code> — text colors</li>
+            <li><code>--font-main</code> / <code>--font-display</code> — typography</li>
+            <li><code>--tw</code> — tile size, <code>--tile-radius</code> — tile corners</li>
+            <li><code>--card-radius</code> — card corners</li>
+            <li><code>--glass-blur</code> / <code>--glass-saturate</code> — backdrop filter</li>
+            <li><code>--glass-opacity</code> — card translucency (0–1)</li>
+            <li><code>--glass-border-sheen</code> — specular border strength (0–1)</li>
+            <li><code>--bg-blur</code> / <code>--bg-dim</code> — wallpaper effects</li>
+          </ul>
+        </div>
+
+        <!-- Tab 3: Pre-Made Recipes -->
+        <div id="css-pane-recipes" class="modal-tab-pane css-tab-pane">
+          <h4>Pre-Made Copyable Recipe Snippets</h4>
+          <div class="css-recipe-item">
+            <div class="css-recipe-header">
+              <b>Transparent Minimal Cards</b>
+              <button class="glass-btn btn-copy-recipe" data-recipe=".card { background: transparent !important; box-shadow: none !important; border: none !important; }">📋 Copy Snippet</button>
+            </div>
+            <pre><code>.card { background: transparent !important; box-shadow: none !important; border: none !important; }</code></pre>
+          </div>
+          <div class="css-recipe-item">
+            <div class="css-recipe-header">
+              <b>Cyberpunk Neon Borders</b>
+              <button class="glass-btn btn-copy-recipe" data-recipe=".card { border: 2px solid #ff007f !important; box-shadow: 0 0 10px #00f3ff, inset 0 0 10px #00f3ff !important; }">📋 Copy Snippet</button>
+            </div>
+            <pre><code>.card { border: 2px solid #ff007f !important; box-shadow: 0 0 10px #00f3ff, inset 0 0 10px #00f3ff !important; }</code></pre>
+          </div>
+          <div class="css-recipe-item">
+            <div class="css-recipe-header">
+              <b>Compact Grid & Hover Zoom</b>
+              <button class="glass-btn btn-copy-recipe" data-recipe=".tile { transition: transform 0.2s !important; } .tile:hover { transform: scale(1.1) !important; z-index: 10; }">📋 Copy Snippet</button>
+            </div>
+            <pre><code>.tile { transition: transform 0.2s !important; } .tile:hover { transform: scale(1.1) !important; z-index: 10; }</code></pre>
+          </div>
+          <div class="css-recipe-item">
+            <div class="css-recipe-header">
+              <b>Square Sharp Modernist</b>
+              <button class="glass-btn btn-copy-recipe" data-recipe=":root { --card-radius: 0px !important; --tile-radius: 0px !important; }">📋 Copy Snippet</button>
+            </div>
+            <pre><code>:root { --card-radius: 0px !important; --tile-radius: 0px !important; }</code></pre>
+          </div>
+          <div class="css-recipe-item">
+            <div class="css-recipe-header">
+              <b>Monochrome Matte Black</b>
+              <button class="glass-btn btn-copy-recipe" data-recipe=":root { --card-tint: #111111 !important; --card-tint-deep: #0a0a0a !important; --glass-border: #333 !important; } .tile { filter: grayscale(100%); }">📋 Copy Snippet</button>
+            </div>
+            <pre><code>:root { --card-tint: #111111 !important; --card-tint-deep: #0a0a0a !important; --glass-border: #333 !important; } .tile { filter: grayscale(100%); }</code></pre>
+          </div>
+          <div class="css-recipe-item">
+            <div class="css-recipe-header">
+              <b>Floating Gradient Text Header</b>
+              <button class="glass-btn btn-copy-recipe" data-recipe="#clock { background: linear-gradient(90deg, #ff8a00, #e52e71); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }">📋 Copy Snippet</button>
+            </div>
+            <pre><code>#clock { background: linear-gradient(90deg, #ff8a00, #e52e71); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }</code></pre>
+          </div>
+          <div class="css-recipe-item">
+            <div class="css-recipe-header">
+              <b>Hide Clock & Center Bento</b>
+              <button class="glass-btn btn-copy-recipe" data-recipe="#hero { display: none !important; } #board { margin: auto; }">📋 Copy Snippet</button>
+            </div>
+            <pre><code>#hero { display: none !important; } #board { margin: auto; }</code></pre>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer" style="padding: 16px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; gap: 8px;">
+        <button id="btn-download-docs" class="glass-btn" style="flex: 1;">📥 Download Documentation (.md)</button>
+        <button id="btn-download-css" class="glass-btn" style="flex: 1;">📥 Download Starter CSS (.css)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Frosted Glass Context Menu for Bookmarks -->
+  <div id="tile-ctx-menu" class="glass-context-menu">
+    <div class="ctx-header"><span class="ctx-target-title" data-i18n="ctx.bookmark">Bookmark</span></div>
+    <div class="ctx-item" data-action="quick-edit">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      <span data-i18n="ctx.editBookmark">Edit Bookmark</span>
+    </div>
+    <div class="ctx-item" data-action="change-icon">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+      <span data-i18n="ctx.changeIcon">Change Icon</span>
+    </div>
+    <div class="ctx-item" data-action="open-tab">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      <span data-i18n="ctx.openNewTab">Open in New Tab</span>
+    </div>
+    <div class="ctx-item" data-action="copy-url">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      <span data-i18n="ctx.copyLink">Copy Link Address</span>
+    </div>
+    <div class="ctx-divider"></div>
+    <div class="ctx-item danger" data-action="delete">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      <span data-i18n="ctx.deleteBookmark">Delete Bookmark</span>
+    </div>
+  </div>
+
+  <!-- Instant Quick Edit Bookmark Modal -->
+  <div id="quick-edit-modal" class="quick-modal-backdrop">
+    <div class="quick-modal-card">
+      <div class="quick-modal-head">
+        <b data-i18n="modal.editBookmarkTitle">Edit Bookmark</b>
+        <button id="quick-modal-x" type="button" class="xbtn">✕</button>
+      </div>
+      <div class="quick-modal-body">
+        <div style="display: flex; gap: 14px; align-items: center;">
+          <div id="quick-icon-preview" class="quick-icon-box" title="Click to change icon" data-i18n-title="hint.clickChangeIcon"></div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+            <div>
+              <label class="quick-label" data-i18n="modal.bookmarkName">Bookmark Title</label>
+              <input id="quick-title-input" type="text" class="glass-input" placeholder="Name">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="quick-label" data-i18n="modal.url">Target URL</label>
+          <input id="quick-url-input" type="url" class="glass-input" placeholder="https://...">
+        </div>
+
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <div style="flex: 1;">
+            <label class="quick-label" data-i18n="modal.folder">Folder</label>
+            <select id="quick-folder-select" class="glass-input" style="cursor: pointer;"></select>
+          </div>
+          <div>
+            <label class="quick-label" data-i18n="modal.colorTint">Color Accent</label>
+            <input type="color" id="quick-color-input" class="link-color-ipt" value="#35d6c0">
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 8px;">
+          <button id="quick-change-icon-btn" class="glass-btn" style="flex: 1;" data-i18n="modal.chooseIcon">Choose Icon...</button>
+          <button id="quick-save-btn" class="glass-btn accent" style="flex: 1;" data-i18n="modal.saveChanges">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Frosted Glass Context Menu for Folders -->
+  <div id="folder-ctx-menu" class="glass-context-menu">
+    <div class="ctx-header"><span class="ctx-target-title" data-i18n="ctx.folder">Folder</span></div>
+    <div class="ctx-item" data-action="quick-edit-folder">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      <span data-i18n="ctx.editFolder">Edit Folder</span>
+    </div>
+    <div class="ctx-item" data-action="add-link">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span data-i18n="ctx.addBookmark">Add Bookmark</span>
+    </div>
+    <div class="ctx-item" data-action="hide-folder">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+      <span data-i18n="ctx.hideFolder">Hide / Fold Folder</span>
+    </div>
+    <div class="ctx-divider"></div>
+    <div class="ctx-item danger" data-action="delete-folder">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      <span data-i18n="ctx.deleteFolder">Delete Folder</span>
+    </div>
+  </div>
+
+  <!-- Instant Quick Edit Folder Modal -->
+  <div id="quick-edit-folder-modal" class="quick-modal-backdrop">
+    <div class="quick-modal-card">
+      <div class="quick-modal-head">
+        <b data-i18n="modal.editFolderTitle">Edit Folder</b>
+        <button id="quick-folder-modal-x" type="button" class="xbtn">✕</button>
+      </div>
+      <div class="quick-modal-body">
+        <div>
+          <label class="quick-label" data-i18n="modal.folderName">Folder Name</label>
+          <input id="quick-folder-name-input" type="text" class="glass-input" placeholder="Folder Name">
+        </div>
+
+        <div>
+          <label class="quick-label" data-i18n="modal.folderColumns">Folder Columns (1-8)</label>
+          <select id="quick-folder-cols-select" class="glass-input" style="cursor: pointer;">
+            <option value="1">1 Column (Vertical List)</option>
+            <option value="2">2 Columns</option>
+            <option value="3">3 Columns</option>
+            <option value="4">4 Columns (Standard)</option>
+            <option value="5">5 Columns</option>
+            <option value="6">6 Columns (Wide)</option>
+            <option value="7">7 Columns</option>
+            <option value="8">8 Columns</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 8px;">
+          <button id="quick-folder-save-btn" class="glass-btn accent" style="flex: 1;" data-i18n="modal.saveChanges">Save Changes</button>
+          <button id="quick-folder-delete-btn" class="glass-btn danger" style="padding: 8px 14px;" data-i18n="modal.delete">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Frosted Glass Context Menu for Empty Board Space -->
+  <div id="board-ctx-menu" class="glass-context-menu">
+    <div class="ctx-item" data-action="new-folder">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+      <span data-i18n="ctx.newFolder">New Folder</span>
+    </div>
+    <div class="ctx-item" data-action="new-bookmark">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span data-i18n="ctx.addBookmark">Add Bookmark</span>
+    </div>
+    <div class="ctx-item" data-action="restore-all-folders">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+      <span data-i18n="ctx.restoreFolders">Unhide All Folders</span>
+    </div>
+    <div class="ctx-divider"></div>
+    <div class="ctx-item" data-action="open-settings">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      <span data-i18n="ctx.openSettings">Open Settings</span>
+    </div>
+    <div class="ctx-item" data-action="toggle-themes">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+      <span data-i18n="ctx.themeShaders">Theme & Shaders...</span>
+    </div>
+  </div>
+
+  <!-- Toast Notification Dock -->
+  <div id="toast-dock" aria-live="polite"></div>
+
+  <!-- Glass Confirm Dialog -->
+  <div id="confirm-modal" class="quick-modal-backdrop confirm-backdrop">
+    <div class="quick-modal-card confirm-card" role="alertdialog" aria-modal="true">
+      <div class="confirm-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <b class="confirm-title">Are you sure?</b>
+      <p class="confirm-message"></p>
+      <div class="confirm-actions">
+        <button type="button" class="glass-btn confirm-cancel">Cancel</button>
+        <button type="button" class="glass-btn danger confirm-ok">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modular Scripts Execution -->
+  <script src="src/js/ui-kit.js"></script>
+  <script src="src/js/i18n.js"></script>
+  <script src="src/js/icons-db.js"></script>
+  <script src="src/js/background.js"></script>
+  <script src="src/js/widgets.js"></script>
+  <script src="src/js/grid.js"></script>
+  <script src="src/js/settings.js"></script>
+  <script src="src/js/app.js"></script>
+</body>
+</html>

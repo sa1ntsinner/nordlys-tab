@@ -1,0 +1,6 @@
+node_modules/
+*.zip
+__t-*.html
+__qa-*.html
+test-screenshots/
+test-theme-previews/
