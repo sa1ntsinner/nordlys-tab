@@ -1,10 +1,10 @@
-# AetherTab
+# Nordlys
 
 A new tab page for Chrome that opens instantly and looks like something you'd actually want to stare at all day. Frosted glass, a live aurora painted on canvas, and bookmarks organized the way you organize them, not the way the browser thinks you should.
 
 No frameworks, no build step, no analytics. Plain JavaScript and CSS, everything stored on your machine.
 
-![AetherTab live aurora](docs/assets/aurora-live.gif)
+![Nordlys live aurora](docs/assets/aurora-live.gif)
 
 ## Why this exists
 

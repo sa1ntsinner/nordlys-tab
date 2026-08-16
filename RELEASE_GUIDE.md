@@ -1,6 +1,6 @@
-# 🚀 AetherTab — Complete Release & Publishing Guide
+# 🚀 Nordlys — Complete Release & Publishing Guide
 
-This guide covers the exact manual steps to publish **AetherTab** on **GitHub** and the **Google Chrome Web Store**.
+This guide covers the exact manual steps to publish **Nordlys** on **GitHub** and the **Google Chrome Web Store**.
 
 ---
 
@@ -16,7 +16,7 @@ This guide covers the exact manual steps to publish **AetherTab** on **GitHub** 
 
 ## 🛠️ Step 1: GitHub Repository & Release
 
-The repository lives at `https://github.com/sa1ntsinner/aethertab`. For future updates:
+The repository lives at `https://github.com/sa1ntsinner/nordlys-tab`. For future updates:
 
 ```powershell
 git add .
@@ -39,10 +39,10 @@ Google Chrome Web Store requires a `.zip` archive where `manifest.json` is at th
 
 ### On Windows (PowerShell), from inside the project directory:
 ```powershell
-Compress-Archive -Path manifest.json, newtab.html, PRIVACY.md, README.md, LICENSE, icons, src -DestinationPath aethertab-v2.1.0.zip -Force
+Compress-Archive -Path manifest.json, newtab.html, PRIVACY.md, README.md, LICENSE, icons, src -DestinationPath nordlys-v2.1.0.zip -Force
 ```
 
-This generates `aethertab-v2.1.0.zip` ready for upload.
+This generates `nordlys-v2.1.0.zip` ready for upload.
 
 ---
 
@@ -59,10 +59,10 @@ This generates `aethertab-v2.1.0.zip` ready for upload.
 ## 🏪 Step 4: Fill Store Listing in Developer Dashboard
 
 1. In the [Developer Dashboard](https://chrome.google.com/webstore/devconsole), click **`+ New Item`**.
-2. Upload `aethertab-v2.1.0.zip`.
+2. Upload `nordlys-v2.1.0.zip`.
 
 ### 4.1 Store Listing Details
-- **Title**: `AetherTab — Aesthetic Glass Dashboard` (Max 45 chars)
+- **Title**: `Nordlys — Aesthetic Glass Dashboard` (Max 45 chars)
 - **Summary**: `Fast, beautiful new tab: 21 glass themes, live aurora shaders, smart bookmarks, multi-engine search, and full offline privacy.` (Max 132 chars)
 - **Category**: **Productivity** or **Lifestyle / Personalization**.
 - **Primary Language**: `English (United States)` or `Russian`.
@@ -78,7 +78,7 @@ This generates `aethertab-v2.1.0.zip` ready for upload.
 Fill in the **Privacy** tab in the Developer Console exactly as follows:
 
 1. **Single Purpose Description**:
-   > *"AetherTab provides a customizable, aesthetic New Tab startpage featuring ambient background shaders, local bookmark organization, and quick search."*
+   > *"Nordlys provides a customizable, aesthetic New Tab startpage featuring ambient background shaders, local bookmark organization, and quick search."*
 2. **Permission Justifications**:
    - `storage`: *"Required to save user preferences, bookmark folders, themes, and custom CSS locally on the device."*
    - `unlimitedStorage`: *"Allows users to save custom high-resolution background wallpapers and video loops locally without hitting quota limits."*
@@ -89,7 +89,7 @@ Fill in the **Privacy** tab in the Developer Console exactly as follows:
    - Select: **"I do not collect or use any user data"**.
    - Check all three certification checkboxes.
 4. **Privacy Policy Link**:
-   - `https://github.com/sa1ntsinner/aethertab/blob/main/PRIVACY.md`
+   - `https://github.com/sa1ntsinner/nordlys-tab/blob/main/PRIVACY.md`
 
 ---
 
@@ -97,4 +97,4 @@ Fill in the **Privacy** tab in the Developer Console exactly as follows:
 
 1. Click **Submit for Review**.
 2. **Review Time**: Manifest V3 extensions with local storage typically get approved within **24–48 hours**.
-3. Once approved, AetherTab will be live on the Chrome Web Store with a public store URL!
+3. Once approved, Nordlys will be live on the Chrome Web Store with a public store URL!
