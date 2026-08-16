@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "AetherTab — Aesthetic Glass Dashboard",
   "version": "2.1.0",
-  "description": "Ultra-fast, customizable aesthetic New Tab with Liquid Glass design, 20 themes, smart bookmarks, multi-engine search, and custom CSS.",
+  "description": "Fast, beautiful New Tab: 21 liquid-glass themes, live aurora shaders, smart bookmark folders, multi-engine search and custom CSS.",
   "chrome_url_overrides": {
     "newtab": "newtab.html"
   },
@@ -38,8 +38,14 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["_favicon/*", "icons/*", "src/*"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "_favicon/*",
+        "icons/*",
+        "src/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }
