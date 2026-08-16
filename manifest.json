@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "AetherTab — Aesthetic Glass Dashboard",
+  "version": "2.1.0",
+  "description": "Ultra-fast, customizable aesthetic New Tab with Liquid Glass design, 20 themes, smart bookmarks, multi-engine search, and custom CSS.",
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "permissions": [
+    "storage",
+    "favicon",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "https://suggestqueries.google.com/*",
+    "https://duckduckgo.com/*",
+    "https://api.bing.com/*",
+    "https://search.brave.com/*",
+    "https://ac.ecosia.org/*",
+    "https://suggest.yandex.com/*",
+    "https://en.wikipedia.org/*",
+    "https://images.weserv.nl/*"
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "AetherTab"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["_favicon/*", "icons/*", "src/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

@@ -1,0 +1,193 @@
+/* ═══════════════════════════════════════════════════════════════════
+   AURORA TAB 2.0 - MAIN STYLES & FOUNDATION
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Core Geometry & Scaling */
+  --tw: 78px;               /* Tile box dimension */
+  --grid-gap: 12px 10px;
+  --card-radius: 24px;
+  --tile-radius: 20px;
+  
+  /* Primary Surface Tokens (Overridden by themes.css) */
+  --void: #060a14;
+  --void-gradient: radial-gradient(130% 100% at 50% -10%, #0c1426 0%, #080d1a 45%, var(--void) 100%);
+  --glass: rgba(11, 18, 34, 0.46);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --frost: rgba(148, 178, 255, 0.16);
+  --card-tint: #141c34;
+  --card-tint-deep: #090e1c;
+
+  /* Custom Wallpaper Effects (driven by Background settings) */
+  --bg-blur: 0px;
+  --bg-blur-px: 0;
+  --bg-dim: 0;
+  
+  /* Typography Tokens */
+  --ink: #e9effb;
+  --dim: #8ca0c4;
+  --faint: #7e93b8;
+  --accent: #7c9cff;
+  --accent-glow: rgba(124, 156, 255, 0.4);
+  
+  /* Fonts */
+  --font-main: "Segoe UI Variable Text", "Segoe UI", "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  font-size: 16px;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--void);
+  background-image: var(--void-gradient);
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
+  color: var(--ink);
+  font-family: var(--font-main);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.4s ease, color 0.3s ease;
+}
+
+/* ── Background Rendering Layers ──────────────────────────────── */
+#bg-container {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+#bg-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+
+#bg-media, #bg-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.6s ease, filter 0.25s ease;
+  filter: blur(var(--bg-blur));
+  /* Slight overscale hides the blurred edge bleed */
+  transform: scale(calc(1 + var(--bg-blur-px) / 500));
+}
+#bg-media.active, #bg-video.active {
+  opacity: 1;
+}
+
+/* User-adjustable darkness overlay above custom wallpapers */
+#bg-dimmer {
+  position: absolute;
+  inset: 0;
+  background: #02040a;
+  opacity: var(--bg-dim);
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+/* Vignette + Organic Grain Film */
+#veil {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(120% 92% at 50% 4%, transparent 50%, rgba(2, 4, 10, 0.55) 100%);
+  transition: opacity 0.3s ease;
+}
+
+#veil::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  background-size: 170px 170px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='170' height='170' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+/* ── Main Layout Frame ────────────────────────────────────────── */
+#page {
+  position: relative;
+  z-index: 5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 36px 20px 48px;
+}
+
+/* ── Utility Animations ───────────────────────────────────────── */
+@keyframes bloom {
+  from { opacity: 0; transform: scale(0.965) translateY(10px); filter: blur(12px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); filter: blur(8px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+
+@keyframes tin {
+  from { opacity: 0; transform: translateY(12px) scale(0.95); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@keyframes pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.025); }
+  100% { transform: scale(1); }
+}
+
+@keyframes foldaway {
+  to { opacity: 0; transform: scale(0.82) translateY(20px); filter: blur(8px); }
+}
+
+/* ── Responsive Viewport Adjustments ──────────────────────────── */
+@media (max-height: 940px) {
+  :root { --tw: 70px; }
+  #page { gap: 22px; padding-top: 24px; padding-bottom: 32px; }
+}
+
+@media (max-height: 820px) {
+  :root { --tw: 62px; }
+  #page { gap: 18px; }
+}
+
+@media (max-width: 860px) {
+  .card { flex: 1 1 100%; max-width: 100%; }
+  .grid[data-cols] { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
