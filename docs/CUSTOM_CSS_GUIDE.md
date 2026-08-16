@@ -1,6 +1,6 @@
-# 🎨 AetherTab Custom CSS Styling Guide
+# 🎨 Nordlys Custom CSS Styling Guide
 
-AetherTab provides an embedded, real-time Custom CSS injector that allows you to customize every aspect of the startpage interface.
+Nordlys provides an embedded, real-time Custom CSS injector that allows you to customize every aspect of the startpage interface.
 
 ---
 

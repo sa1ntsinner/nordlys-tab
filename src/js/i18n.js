@@ -94,10 +94,10 @@ const translations = {
     "backup.exportJson": "Export JSON Config",
     "backup.importJson": "Import JSON Config",
     "backup.resetDefaults": "Reset to Defaults",
-    "backup.confirmReset": "Reset all AetherTab settings to factory defaults? This cannot be undone.",
+    "backup.confirmReset": "Reset all Nordlys settings to factory defaults? This cannot be undone.",
     "ctx.bookmark": "Bookmark",
     "ctx.folder": "Folder",
-    "ctx.board": "Aether Board",
+    "ctx.board": "Nordlys Board",
     "ctx.link": "Link",
     "ctx.editBookmark": "Edit Bookmark",
     "ctx.changeIcon": "Change Icon",
@@ -188,7 +188,7 @@ const translations = {
     "appearance.shapeRounded": "Classic Rounded",
     "appearance.shapeCircle": "Geometric Circle",
     "appearance.livePreviewCard": "Live Interactive Card Preview:",
-    "appearance.previewBookmark": "Aether Studio"
+    "appearance.previewBookmark": "Nordlys Studio"
   },
   "ru": {
     "search.placeholder": "Поиск в {engine} или ввод URL...",
@@ -281,7 +281,7 @@ const translations = {
     "backup.exportJson": "Экспорт настроек в JSON",
     "backup.importJson": "Импорт настроек из JSON",
     "backup.resetDefaults": "Сбросить до заводских настроек",
-    "backup.confirmReset": "Сбросить все настройки AetherTab до стандартных? Это действие нельзя отменить.",
+    "backup.confirmReset": "Сбросить все настройки Nordlys до стандартных? Это действие нельзя отменить.",
     "ctx.bookmark": "Закладка",
     "ctx.folder": "Папка",
     "ctx.board": "Доска Aether",
@@ -375,7 +375,7 @@ const translations = {
     "appearance.shapeRounded": "Классический скруглённый",
     "appearance.shapeCircle": "Геометрический круг",
     "appearance.livePreviewCard": "Живое интерактивное превью карточки:",
-    "appearance.previewBookmark": "Aether Studio"
+    "appearance.previewBookmark": "Nordlys Studio"
   },
   "es": {
     "search.placeholder": "Buscar con {engine} o escribir URL...",
@@ -468,10 +468,10 @@ const translations = {
     "backup.exportJson": "Exportar Configuración JSON",
     "backup.importJson": "Importar Configuración JSON",
     "backup.resetDefaults": "Restablecer Valores Predeterminados",
-    "backup.confirmReset": "¿Restablecer todos los ajustes de AetherTab a los valores de fábrica? Esta acción no se puede deshacer.",
+    "backup.confirmReset": "¿Restablecer todos los ajustes de Nordlys a los valores de fábrica? Esta acción no se puede deshacer.",
     "ctx.bookmark": "Marcador",
     "ctx.folder": "Carpeta",
-    "ctx.board": "Tablero Aether",
+    "ctx.board": "Tablero Nordlys",
     "ctx.link": "Enlace",
     "ctx.editBookmark": "Editar Marcador",
     "ctx.changeIcon": "Cambiar Icono",
@@ -562,7 +562,7 @@ const translations = {
     "appearance.shapeRounded": "Redondeado Clásico",
     "appearance.shapeCircle": "Círculo Geométrico",
     "appearance.livePreviewCard": "Vista Previa Interactiva en Vivo:",
-    "appearance.previewBookmark": "Aether Studio"
+    "appearance.previewBookmark": "Nordlys Studio"
   },
   "de": {
     "search.placeholder": "Suche mit {engine} oder URL eingeben...",
@@ -655,10 +655,10 @@ const translations = {
     "backup.exportJson": "JSON-Konfiguration exportieren",
     "backup.importJson": "JSON-Konfiguration importieren",
     "backup.resetDefaults": "Auf Standardwerte zurücksetzen",
-    "backup.confirmReset": "Alle AetherTab-Einstellungen auf Werkseinstellungen zurücksetzen? Dies kann nicht rückgängig gemacht werden.",
+    "backup.confirmReset": "Alle Nordlys-Einstellungen auf Werkseinstellungen zurücksetzen? Dies kann nicht rückgängig gemacht werden.",
     "ctx.bookmark": "Lesezeichen",
     "ctx.folder": "Ordner",
-    "ctx.board": "Aether Board",
+    "ctx.board": "Nordlys Board",
     "ctx.link": "Link",
     "ctx.editBookmark": "Lesezeichen bearbeiten",
     "ctx.changeIcon": "Icon ändern",
@@ -749,7 +749,7 @@ const translations = {
     "appearance.shapeRounded": "Klassisch Abgerundet",
     "appearance.shapeCircle": "Geometrischer Kreis",
     "appearance.livePreviewCard": "Interaktive Live-Vorschau:",
-    "appearance.previewBookmark": "Aether Studio"
+    "appearance.previewBookmark": "Nordlys Studio"
   },
   "fr": {
     "search.placeholder": "Rechercher avec {engine} ou entrer une URL...",
@@ -842,10 +842,10 @@ const translations = {
     "backup.exportJson": "Exporter la configuration JSON",
     "backup.importJson": "Importer la configuration JSON",
     "backup.resetDefaults": "Rétablir les paramètres par défaut",
-    "backup.confirmReset": "Réinitialiser tous les paramètres AetherTab aux valeurs d'usine ? Cette action est irréversible.",
+    "backup.confirmReset": "Réinitialiser tous les paramètres Nordlys aux valeurs d'usine ? Cette action est irréversible.",
     "ctx.bookmark": "Favori",
     "ctx.folder": "Dossier",
-    "ctx.board": "Tableau Aether",
+    "ctx.board": "Tableau Nordlys",
     "ctx.link": "Lien",
     "ctx.editBookmark": "Modifier le favori",
     "ctx.changeIcon": "Changer l'icône",
@@ -936,7 +936,7 @@ const translations = {
     "appearance.shapeRounded": "Arrondi Classique",
     "appearance.shapeCircle": "Cercle Géométrique",
     "appearance.livePreviewCard": "Aperçu Interactif en Direct :",
-    "appearance.previewBookmark": "Aether Studio"
+    "appearance.previewBookmark": "Nordlys Studio"
   },
   "ja": {
     "search.placeholder": "{engine}で検索、またはURLを入力...",
@@ -1029,10 +1029,10 @@ const translations = {
     "backup.exportJson": "JSON設定をエクスポート",
     "backup.importJson": "JSON設定をインポート",
     "backup.resetDefaults": "初期設定にリセット",
-    "backup.confirmReset": "AetherTabのすべての設定を工場出荷時の状態にリセットしますか？この操作は元に戻せません。",
+    "backup.confirmReset": "Nordlysのすべての設定を工場出荷時の状態にリセットしますか？この操作は元に戻せません。",
     "ctx.bookmark": "ブックマーク",
     "ctx.folder": "フォルダ",
-    "ctx.board": "Aether ボード",
+    "ctx.board": "Nordlys ボード",
     "ctx.link": "リンク",
     "ctx.editBookmark": "ブックマークを編集",
     "ctx.changeIcon": "アイコンを変更",
@@ -1123,7 +1123,7 @@ const translations = {
     "appearance.shapeRounded": "クラシック角丸",
     "appearance.shapeCircle": "真円（サークル）",
     "appearance.livePreviewCard": "インタラクティブプレビュー:",
-    "appearance.previewBookmark": "Aether Studio"
+    "appearance.previewBookmark": "Nordlys Studio"
   },
   "zh": {
     "search.placeholder": "在 {engine} 中搜索或输入网址...",
@@ -1216,10 +1216,10 @@ const translations = {
     "backup.exportJson": "导出 JSON 配置文件",
     "backup.importJson": "导入 JSON 配置文件",
     "backup.resetDefaults": "恢复出厂默认设置",
-    "backup.confirmReset": "确定要将所有 AetherTab 设置重置为默认值吗？此操作无法撤销。",
+    "backup.confirmReset": "确定要将所有 Nordlys 设置重置为默认值吗？此操作无法撤销。",
     "ctx.bookmark": "书签",
     "ctx.folder": "文件夹",
-    "ctx.board": "Aether 看板",
+    "ctx.board": "Nordlys 看板",
     "ctx.link": "链接",
     "ctx.editBookmark": "编辑书签",
     "ctx.changeIcon": "更改图标",
@@ -1310,7 +1310,7 @@ const translations = {
     "appearance.shapeRounded": "经典微圆角",
     "appearance.shapeCircle": "几何圆形",
     "appearance.livePreviewCard": "实时交互卡片预览：",
-    "appearance.previewBookmark": "Aether Studio"
+    "appearance.previewBookmark": "Nordlys Studio"
   },
   "tr": {
     "search.placeholder": "{engine} ile ara veya URL yaz...",
@@ -1403,10 +1403,10 @@ const translations = {
     "backup.exportJson": "JSON Yapılandırmasını Dışa Aktar",
     "backup.importJson": "JSON Yapılandırmasını İçe Aktar",
     "backup.resetDefaults": "Varsayılanlara Sıfırla",
-    "backup.confirmReset": "Tüm AetherTab ayarları fabrika varsayılanlarına sıfırlansın mı? Bu işlem geri alınamaz.",
+    "backup.confirmReset": "Tüm Nordlys ayarları fabrika varsayılanlarına sıfırlansın mı? Bu işlem geri alınamaz.",
     "ctx.bookmark": "Yer İşareti",
     "ctx.folder": "Klasör",
-    "ctx.board": "Aether Panosu",
+    "ctx.board": "Nordlys Panosu",
     "ctx.link": "Bağlantı",
     "ctx.editBookmark": "Yer İşaretini Düzenle",
     "ctx.changeIcon": "İkonu Değiştir",
@@ -1497,7 +1497,7 @@ const translations = {
     "appearance.shapeRounded": "Klasik Yuvarlak",
     "appearance.shapeCircle": "Geometrik Daire",
     "appearance.livePreviewCard": "Canlı Etkileşimli Önizleme:",
-    "appearance.previewBookmark": "Aether Studio"
+    "appearance.previewBookmark": "Nordlys Studio"
   }
 };
 

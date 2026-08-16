@@ -1937,12 +1937,12 @@ class SettingsController {
 
     // Download Docs (.md)
     document.getElementById("btn-download-docs")?.addEventListener("click", () => {
-      const mdContent = `# AetherTab Custom CSS Guide\n\n## Core Selectors & Hierarchy\n- \`#hero\`, \`#clock\`, \`#date\`, \`#greet\` — Clock, date & greeting\n- \`#hh\`, \`#mm\`, \`#ss\` — Individual clock digits\n- \`#searchwrap\`, \`#search\`, \`#q\` — Search bar & input\n- \`#sugg\`, \`.sugg-item\` — Suggestions dropdown rows\n- \`#board\` — Bento board container\n- \`.card\` — Folder glass container\n- \`.cat\`, \`.cat b\` — Folder header & title text\n- \`.grid\` — Tile grid (\`[data-cols="1..8"]\`)\n- \`.tile\` — Bookmark tile (\`--c\` holds its accent color)\n- \`.box\` — Icon glass box, \`.lbl\` — bookmark label\n- \`#hiddenDock\`, \`.restoreFolder\` — Hidden folder dock & chips\n- \`#gear\` — Settings gear button\n- \`#cfg\`, \`.ctab\`, \`.csec\` — Settings drawer components\n\n## CSS Variables & Theming Tokens (override on :root)\n- \`--void\` — page background color\n- \`--void-gradient\` — page background gradient\n- \`--card-tint\` / \`--card-tint-deep\` — folder card glass tints\n- \`--glass\` — search bar / gear glass fill\n- \`--glass-border\` — card border color\n- \`--accent\` / \`--accent-glow\`\n- \`--ink\` / \`--dim\` / \`--faint\` — text colors\n- \`--font-main\` / \`--font-display\`\n- \`--tw\` (tile size), \`--tile-radius\`, \`--card-radius\`\n- \`--glass-blur\`, \`--glass-saturate\`, \`--glass-opacity\` (0-1), \`--glass-border-sheen\` (0-1)\n- \`--bg-blur\`, \`--bg-dim\` — custom wallpaper effects\n\n## Recipes\n\n### Transparent Minimal Cards\n\`\`\`css\n.card { background: transparent !important; box-shadow: none !important; border: none !important; }\n\`\`\`\n\n### Cyberpunk Neon Borders\n\`\`\`css\n.card { border: 2px solid #ff007f !important; box-shadow: 0 0 10px #00f3ff, inset 0 0 10px #00f3ff !important; }\n\`\`\`\n\n### Compact Grid & Hover Zoom\n\`\`\`css\n.tile { transition: transform 0.2s !important; } .tile:hover { transform: scale(1.1) !important; z-index: 10; }\n\`\`\`\n\n### Square Sharp Modernist\n\`\`\`css\n:root { --card-radius: 0px !important; --tile-radius: 0px !important; }\n\`\`\`\n\n### Monochrome Matte Black\n\`\`\`css\n:root { --card-tint: #111 !important; --card-tint-deep: #0a0a0a !important; --glass-border: #333 !important; } .tile { filter: grayscale(100%); }\n\`\`\`\n\n### Floating Gradient Text Header\n\`\`\`css\n#clock { background: linear-gradient(90deg, #ff8a00, #e52e71); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }\n\`\`\`\n\n### Hide Clock & Center Bento\n\`\`\`css\n#hero { display: none !important; } #board { margin: auto; }\n\`\`\`\n`;
+      const mdContent = `# Nordlys Custom CSS Guide\n\n## Core Selectors & Hierarchy\n- \`#hero\`, \`#clock\`, \`#date\`, \`#greet\` — Clock, date & greeting\n- \`#hh\`, \`#mm\`, \`#ss\` — Individual clock digits\n- \`#searchwrap\`, \`#search\`, \`#q\` — Search bar & input\n- \`#sugg\`, \`.sugg-item\` — Suggestions dropdown rows\n- \`#board\` — Bento board container\n- \`.card\` — Folder glass container\n- \`.cat\`, \`.cat b\` — Folder header & title text\n- \`.grid\` — Tile grid (\`[data-cols="1..8"]\`)\n- \`.tile\` — Bookmark tile (\`--c\` holds its accent color)\n- \`.box\` — Icon glass box, \`.lbl\` — bookmark label\n- \`#hiddenDock\`, \`.restoreFolder\` — Hidden folder dock & chips\n- \`#gear\` — Settings gear button\n- \`#cfg\`, \`.ctab\`, \`.csec\` — Settings drawer components\n\n## CSS Variables & Theming Tokens (override on :root)\n- \`--void\` — page background color\n- \`--void-gradient\` — page background gradient\n- \`--card-tint\` / \`--card-tint-deep\` — folder card glass tints\n- \`--glass\` — search bar / gear glass fill\n- \`--glass-border\` — card border color\n- \`--accent\` / \`--accent-glow\`\n- \`--ink\` / \`--dim\` / \`--faint\` — text colors\n- \`--font-main\` / \`--font-display\`\n- \`--tw\` (tile size), \`--tile-radius\`, \`--card-radius\`\n- \`--glass-blur\`, \`--glass-saturate\`, \`--glass-opacity\` (0-1), \`--glass-border-sheen\` (0-1)\n- \`--bg-blur\`, \`--bg-dim\` — custom wallpaper effects\n\n## Recipes\n\n### Transparent Minimal Cards\n\`\`\`css\n.card { background: transparent !important; box-shadow: none !important; border: none !important; }\n\`\`\`\n\n### Cyberpunk Neon Borders\n\`\`\`css\n.card { border: 2px solid #ff007f !important; box-shadow: 0 0 10px #00f3ff, inset 0 0 10px #00f3ff !important; }\n\`\`\`\n\n### Compact Grid & Hover Zoom\n\`\`\`css\n.tile { transition: transform 0.2s !important; } .tile:hover { transform: scale(1.1) !important; z-index: 10; }\n\`\`\`\n\n### Square Sharp Modernist\n\`\`\`css\n:root { --card-radius: 0px !important; --tile-radius: 0px !important; }\n\`\`\`\n\n### Monochrome Matte Black\n\`\`\`css\n:root { --card-tint: #111 !important; --card-tint-deep: #0a0a0a !important; --glass-border: #333 !important; } .tile { filter: grayscale(100%); }\n\`\`\`\n\n### Floating Gradient Text Header\n\`\`\`css\n#clock { background: linear-gradient(90deg, #ff8a00, #e52e71); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }\n\`\`\`\n\n### Hide Clock & Center Bento\n\`\`\`css\n#hero { display: none !important; } #board { margin: auto; }\n\`\`\`\n`;
       const blob = new Blob([mdContent], { type: "text/markdown" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "AetherTab-Custom-CSS-Guide.md";
+      a.download = "Nordlys-Custom-CSS-Guide.md";
       a.click();
       URL.revokeObjectURL(url);
     });
@@ -1950,7 +1950,7 @@ class SettingsController {
     // Download Starter CSS (.css)
     document.getElementById("btn-download-css")?.addEventListener("click", () => {
       const cssContent = `/* 
-  AetherTab Custom Styles
+  Nordlys Custom Styles
   Apply these styles in the Settings -> Custom CSS tab.
 */
 
@@ -1976,7 +1976,7 @@ class SettingsController {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "aethertab-custom-styles.css";
+      a.download = "nordlys-custom-styles.css";
       a.click();
       URL.revokeObjectURL(url);
     });
@@ -1990,14 +1990,14 @@ class SettingsController {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `aethertab-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `nordlys-backup-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
     });
 
     // Export Universal Netscape HTML Bookmarks
     document.getElementById("cfg-export-html")?.addEventListener("click", () => {
-      let html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<!-- This is an automatically generated file. DO NOT EDIT! -->\n<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n<TITLE>AetherTab Bookmarks</TITLE>\n<H1>AetherTab Bookmarks</H1>\n<DL><p>\n`;
+      let html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<!-- This is an automatically generated file. DO NOT EDIT! -->\n<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n<TITLE>Nordlys Bookmarks</TITLE>\n<H1>Nordlys Bookmarks</H1>\n<DL><p>\n`;
 
       for (const group of this.app.config.groups || []) {
         html += `    <DT><H3 ADD_DATE="${Math.floor(Date.now()/1000)}">${esc(group.label || 'Folder')}</H3>\n    <DL><p>\n`;
@@ -2012,7 +2012,7 @@ class SettingsController {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `aethertab-bookmarks-${new Date().toISOString().slice(0, 10)}.html`;
+      a.download = `nordlys-bookmarks-${new Date().toISOString().slice(0, 10)}.html`;
       a.click();
       URL.revokeObjectURL(url);
     });

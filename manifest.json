@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "AetherTab — Aesthetic Glass Dashboard",
+  "name": "Nordlys: Aurora Glass New Tab",
   "version": "2.1.0",
   "description": "Fast, beautiful New Tab: 21 liquid-glass themes, live aurora shaders, smart bookmark folders, multi-engine search and custom CSS.",
   "chrome_url_overrides": {
@@ -34,7 +34,7 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "AetherTab"
+    "default_title": "Nordlys"
   },
   "web_accessible_resources": [
     {
