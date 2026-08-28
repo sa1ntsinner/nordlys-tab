@@ -140,7 +140,7 @@ Observed: theme contract/geometry test already passed through semantic compatibi
 
 ### Commit
 
-Pending.
+`525fcb113c45055dd4c96cf1a7f2af6d68898de8`
 
 ### Self-review and concerns
 
@@ -148,3 +148,32 @@ Pending.
 - Theme cards are native buttons with a single `aria-pressed=true` selection and fixed two-column layout.
 - The visible preview uses real `.card`, `.tile`, `.box`, `.nl-icon`, and `.lbl` classes; advanced glass controls remain available in a collapsed native `details`.
 - Full automated contrast math over translucent/composited surfaces remains scheduled for Task 8 manual/Axe-assisted review.
+
+## Task 6 — Bookmark settings editor, icon picker, and undo deletion
+
+### RED
+
+Initial command: `npm run test:ui -- tests/ui/bookmark-settings.spec.cjs tests/ui/icon-picker.spec.cjs`.
+
+Observed RED: missing accordion rows/editors/Undo/picker semantics. After the minimal implementation, focused GREEN exposed three integration defects: toast action sat beneath the drawer resizer, dialog geometry was measured during its 0.94 entrance scale, and a narrow summary-center click landed on an embedded move action. Fixes raised toast stacking, measured steady-state dialog width, and targeted the semantic folder name for expansion.
+
+### GREEN
+
+- Focused suites: 4 passed.
+- Fresh `npm test`: syntax passed for 13 scripts; 3 unit passed; 14 UI passed.
+
+### Production files
+
+`newtab.html`, `src/js/settings-bookmarks.js`, `src/js/icon-picker.js`, `src/js/settings.js`, `src/css/settings.css`.
+
+### Commit
+
+Pending.
+
+### Self-review and concerns
+
+- Folder accordions render compact summaries; editing is disclosed per row.
+- Button and pointer mutations share the same `moveFolder`/`moveBookmark` methods; saves still flow through `AuroraApp`.
+- Undo uses a deep snapshot and exact original folder/index; action is one-shot through the shared primitive.
+- Existing upload/crop/favicon processing remains in `SettingsController`; the new picker owns accessible lifecycle/tabs/shared preview, avoiding a risky all-at-once rewrite.
+- Narrow folder summary actions remain dense but retain 40px hit areas; Task 8 responsive pass will recheck overlap/translation behavior.

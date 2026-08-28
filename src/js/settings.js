@@ -15,6 +15,12 @@ class SettingsController {
       root: this.drawer,
       opener: document.getElementById("gear")
     });
+    this.bookmarkSettings = new NordlysBookmarkSettings({
+      app: this.app,
+      root: document.getElementById("cfg-groups-editor"),
+      openIconPicker: (gIdx, lIdx, opener) => this.openIconModal(gIdx, lIdx, opener)
+    });
+    this.iconPicker = new NordlysIconPicker({ dialogRoot: this.modal });
     document.getElementById("gear")?.addEventListener("click", () => this.open());
     
     this.initDrawerResizer();
@@ -752,6 +758,10 @@ class SettingsController {
   }
 
   renderBookmarksManager() {
+    if (this.bookmarkSettings) {
+      this.bookmarkSettings.render();
+      return;
+    }
     const container = document.getElementById("cfg-groups-editor");
     if (!container) return;
 
@@ -1640,7 +1650,7 @@ class SettingsController {
     }
   }
 
-  openIconModal(gIdx, lIdx) {
+  openIconModal(gIdx, lIdx, opener = document.activeElement) {
     this.activeIconTarget = { gIdx, lIdx };
     const link = this.app.config.groups[gIdx]?.links[lIdx];
     if (!link) return;
@@ -1753,11 +1763,11 @@ class SettingsController {
     document.querySelectorAll(".icon-chip").forEach((c, idx) => c.classList.toggle("active", idx === 0));
     this.filterIconLibrary("", "all", link.icon);
 
-    this.modal?.classList.add("open");
+    this.iconPicker.open(link, opener);
   }
 
   closeIconModal() {
-    this.modal?.classList.remove("open");
+    this.iconPicker.close();
     this.activeIconTarget = null;
 
     if (this.app.grid?.quickEditReturnTarget) {
@@ -1778,7 +1788,9 @@ class SettingsController {
       const matchCat = cat === "all" || item.cat === cat;
 
       if (matchQ && matchCat) {
-        const btn = document.createElement("div");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.setAttribute("aria-label", item.name);
         btn.className = "icon-item";
         if (key === highlightIconKey) {
           btn.classList.add("active");
