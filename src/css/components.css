@@ -1257,3 +1257,36 @@ body.hover-none .tile:hover .box {
   background: color-mix(in srgb, var(--accent) 80%, #ffffff);
   color: #0a0f1e;
 }
+
+/* Nordlys Refined: stable tiles and source-aware artwork. */
+.box {
+  border: 1px solid var(--nl-border);
+  background: color-mix(in srgb, var(--nl-surface-card) 78%, transparent);
+  box-shadow: var(--nl-shadow-1);
+  transition: transform var(--nl-motion-control) var(--nl-ease-emphasized), border-color var(--nl-motion-control) ease, box-shadow var(--nl-motion-control) ease;
+}
+.box::after { display: none; }
+.box .nl-icon { display: grid; place-items: center; transform: scale(var(--icon-optical-scale, 1)); color: var(--icon-accent); }
+.box .nl-icon[data-icon-kind="builtin"] { width: 64%; height: 64%; }
+.box .nl-icon[data-icon-kind="favicon"], .box .nl-icon[data-icon-kind="raster"] { width: 72%; height: 72%; }
+.box .nl-icon[data-icon-kind="monogram"] { width: 68%; height: 68%; }
+.box .nl-icon > svg, .box .nl-icon > img { width: 100%; height: 100%; object-fit: contain; filter: none; transform: none; fill: var(--icon-accent); }
+.box .nl-icon[data-icon-tone="dark"] { --icon-accent: #111827 !important; }
+.box .nl-icon[data-icon-tone="light"] { --icon-accent: #f8fafc !important; }
+.lbl { font-size: clamp(12px, .82vw, 13px); color: var(--nl-text-secondary); }
+.tile:hover .box, .tile:focus-visible .box, body.hover-lift .tile:hover .box, body.hover-scale .tile:hover .box, body.hover-glow .tile:hover .box {
+  transform: translateY(-2px) scale(1.02);
+  background: color-mix(in srgb, var(--nl-surface-card) 84%, transparent);
+  border-color: color-mix(in srgb, var(--nl-accent) 34%, var(--nl-border));
+  box-shadow: var(--nl-shadow-2), 0 0 20px color-mix(in srgb, var(--c) 18%, transparent);
+}
+.tile:hover .box svg, .tile:hover .box img { transform: none; }
+.tile:active .box { transform: translateY(0) scale(.97); }
+
+@media (max-width: 480px) {
+  #page { padding-inline: 10px; align-items: stretch; }
+  #hero, #searchwrap, #board { align-self: center; }
+  #board { width: 100%; gap: 12px; }
+  .card { width: 100%; padding-inline: 12px; }
+  .grid[data-cols] { grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); justify-items: center; }
+}

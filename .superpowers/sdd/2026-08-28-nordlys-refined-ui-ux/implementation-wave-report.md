@@ -53,7 +53,7 @@ Commands and observed failures:
 
 ### Commit
 
-Pending.
+`8c5e14a022d8b93a35bb81697b271f1a24d1e516`
 
 ### Self-review and concerns
 
@@ -61,3 +61,33 @@ Pending.
 - Dialog focus containment restores only a still-connected opener.
 - Semantic tokens retain legacy variables as their source, preserving existing themes/custom CSS.
 - Menu behavior is deliberately minimal here and will be exercised/refined in Task 7.
+
+## Task 3 — Source-aware bookmark icons and responsive canvas polish
+
+### RED
+
+Commands and observed failures:
+
+- Unit command: two tests failed with `ENOENT ... src/js/icon-presentation.js`.
+- UI command: built-in icon ratio was `0.448` instead of `0.62–0.66`; narrow tile was `35.56px` instead of at least `56px`.
+
+### GREEN
+
+- Focused unit: 3 passed.
+- Focused UI: 2 passed after waiting for the initial entrance animation before steady-state geometry measurement.
+- `npm test`: syntax passed for 10 scripts; 3 unit passed; 6 UI passed.
+
+### Production files
+
+`newtab.html`, `src/js/icon-presentation.js`, `src/js/grid.js`, `src/js/app.js`, `src/css/components.css`.
+
+### Commit
+
+Pending.
+
+### Self-review and concerns
+
+- Renderer creates user-visible data through DOM/textContent; user names and URLs are not interpolated into markup.
+- Built-ins use 64%; raster/favicon use 72%; optical scale is bounded to 0.88–1.12.
+- Inline geometry now has a 56px floor; narrow cards reflow their grid.
+- Static `color-mix(in srgb)` remains supported by the Chromium MV3 target; broader fallback consolidation continues in theme work.

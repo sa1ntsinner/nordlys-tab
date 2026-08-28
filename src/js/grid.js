@@ -180,35 +180,19 @@ class GridController {
     // Smart Icon Resolution (Custom image / Monogram / Vector SVG)
     const iconDef = resolveIcon(link.url, link.icon);
 
-    if (link.customImg) {
-      const img = document.createElement("img");
-      img.src = link.customImg;
-      img.alt = link.name || "";
-      img.loading = "lazy";
-      img.draggable = false;
-      img.onerror = () => {
-        img.remove();
-        const initial = (link.name || "A").trim().charAt(0).toUpperCase();
-        const mono = document.createElement("span");
-        mono.className = "mono";
-        mono.textContent = initial;
-        box.appendChild(mono);
-      };
-      box.appendChild(img);
-    } else if (link.monogram) {
-      const mono = document.createElement("span");
-      mono.className = "mono";
-      mono.textContent = link.monogram;
-      box.appendChild(mono);
-    } else if (iconDef) {
-      box.innerHTML = `<svg viewBox="${iconDef.vb || '0 0 24 24'}" style="pointer-events: none;"><path d="${iconDef.p}"/></svg>`;
-    } else {
-      const initial = (link.name || "A").trim().charAt(0).toUpperCase();
-      const mono = document.createElement("span");
-      mono.className = "mono";
-      mono.textContent = initial;
-      box.appendChild(mono);
-    }
+    const presentation = window.NordlysIcons.resolvePresentation({
+      source: link,
+      key: link.icon,
+      metadata: iconDef || {},
+      isLight: this.app.isLightTheme()
+    });
+    const renderedIcon = window.NordlysIcons.renderIcon(presentation);
+    renderedIcon.querySelector("img")?.addEventListener("error", () => {
+      renderedIcon.replaceChildren();
+      const mono = document.createElement("span"); mono.className = "mono";
+      mono.textContent = (link.name || "A").trim().charAt(0).toUpperCase(); renderedIcon.append(mono);
+    }, { once: true });
+    box.appendChild(renderedIcon);
 
     // Label
     const lbl = document.createElement("span");

@@ -386,8 +386,8 @@ class AuroraApp {
     if (cfg.glassOpacity != null) root.setProperty("--glass-opacity", cfg.glassOpacity);
     if (cfg.glassSheen != null) root.setProperty("--glass-border-sheen", cfg.glassSheen);
     if (cfg.cardRadius != null) root.setProperty("--card-radius", `${cfg.cardRadius}px`);
-    // min() keeps tiles responsive on narrow windows even with a custom size
-    if (cfg.tileSize != null) root.setProperty("--tw", `min(${cfg.tileSize}px, 12vw)`);
+    // Preserve a usable 56px floor; narrow layouts reflow instead of collapsing controls.
+    if (cfg.tileSize != null) root.setProperty("--tw", `clamp(56px, 12vw, ${Math.max(56, cfg.tileSize)}px)`);
     if (cfg.cardGap != null) root.setProperty("--grid-gap", `${cfg.cardGap}px`);
     if (cfg.cardGlow != null) root.setProperty("--card-glow-intensity", `${cfg.cardGlow / 100}`);
 
