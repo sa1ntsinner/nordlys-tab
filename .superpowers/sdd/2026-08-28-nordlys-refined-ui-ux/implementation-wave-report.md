@@ -274,7 +274,7 @@ Original-resolution review then found two fixture/product defects:
 
 ### Commit
 
-Pending commit.
+`58bd7be0bcc2f8197fb3ceff7d6605bf95e476b9`
 
 ### Self-review and concerns
 

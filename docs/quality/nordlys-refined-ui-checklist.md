@@ -1,6 +1,6 @@
 # Nordlys Refined UI Quality Gate
 
-Date: 2026-08-28  
+Date: 2026-08-28
 Baseline: `origin/main@62c262073a63fb040e12998164891d4a4c91a1ad`
 
 ## Automated gate
