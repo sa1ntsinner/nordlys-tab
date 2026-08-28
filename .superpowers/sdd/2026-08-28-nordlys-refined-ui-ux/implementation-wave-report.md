@@ -1,7 +1,7 @@
 # Nordlys Refined UI/UX Implementation Wave Report
 
-Baseline: `origin/main@62c262073a63fb040e12998164891d4a4c91a1ad`  
-Branch: `feat/nordlys-refined-ui`  
+Baseline: `origin/main@62c262073a63fb040e12998164891d4a4c91a1ad`
+Branch: `feat/nordlys-refined-ui`
 Worktree: `C:\Users\smile\Sync Docs\Important Stuff\Nordlys-worktrees\nordlys-refined-ui`
 
 ## Task 1 — Reproducible UI test harness and baseline contract
@@ -235,7 +235,7 @@ Two test-fixture corrections were made before production work: the verified hero
 
 ### Commit
 
-Pending commit.
+`c83792d1c49dcdc9b8b49ead29ac6e0f30b58409`
 
 ### Self-review and concerns
 
@@ -245,3 +245,43 @@ Pending commit.
 - The full viewport matrix has no horizontal overflow or clock/search/board intersection; canvas controls and bookmark tiles meet the 40px target contract.
 - Folder actions moved out of the native `summary` to remove nested interactivity while remaining available immediately after expansion.
 - Axe has zero serious/critical findings for the canvas, every settings section, menus, quick edit, and icon picker. Automated contrast coverage remains limited to Axe plus explicit focus visibility; final visual inspection is Task 9.
+
+## Task 9 — Visual regression and final quality gate
+
+### RED
+
+Command: `npm run test:ui -- tests/ui/visual-regression.spec.cjs`.
+
+Observed: 6 tests failed because 12 named baselines did not exist; Playwright wrote actual images for review. The plan’s update command initially failed because the script’s optional `--update-snapshots` value consumed the test path; `package.json` now uses `--update-snapshots=all`.
+
+Original-resolution review then found two fixture/product defects:
+
+- The full-viewport canvas mask covered each snapshot in magenta. The deterministic fixture now hides only the clock text and canvas animation, leaving the CSS theme background and every UI surface visible.
+- The selected YouTube icon picker preview showed a generic `N`. A new `icon-picker.spec.cjs` assertion failed with zero `.nl-icon[data-icon-kind="builtin"]` and one stale `.mono`; the preview now uses the current source-aware icon.
+
+### GREEN
+
+- `npm run test:ui:update -- tests/ui/visual-regression.spec.cjs`: 6 passed; 12 baselines generated.
+- Corrected icon preview focused suite: 2 passed.
+- `npm ci`: passed; 0 vulnerabilities.
+- `npx playwright install chromium`: passed.
+- Fresh `npm test`: syntax passed for 13 scripts; 3 unit passed; 47 UI passed (54.2s).
+- All 12 PNGs opened at original resolution and accepted after correction.
+
+### Production and verification files
+
+`src/js/icon-picker.js`, `tests/ui/icon-picker.spec.cjs`, `tests/ui/visual-regression.spec.cjs`, `tests/ui/visual-regression.spec.cjs-snapshots/`, `package.json`, `docs/quality/nordlys-refined-ui-checklist.md`.
+
+### Commit
+
+Pending commit.
+
+### Self-review and concerns
+
+- Quality rubric: 96/100; no open Critical or Important product defect.
+- Installed Chrome 151.0.7922.175 ignored unpacked-extension command flags in isolated headed and headless profiles, so actual branded-Chrome smoke is explicitly not counted as a pass. Edge and Brave are absent. This is recorded as a release-environment advisory.
+- No runtime package, manifest permission, remote UI asset, version bump, merge, push, or publish was introduced.
+
+### Reviewed snapshots
+
+`canvas-dark-1440-win32.png`, `canvas-light-1024-win32.png`, `canvas-narrow-320-win32.png`, `settings-appearance-1440-win32.png`, `settings-bookmarks-expanded-1440-win32.png`, `dialog-icon-picker-1440-win32.png`, `context-menu-keyboard-1440-win32.png`, `dialog-quick-edit-1440-win32.png`, `tile-focus-ring-1440-win32.png`, `canvas-reduced-motion-1440-win32.png`, `custom-theme-dark-1440-win32.png`, `custom-theme-light-1440-win32.png`.

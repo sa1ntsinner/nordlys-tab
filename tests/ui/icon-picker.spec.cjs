@@ -10,6 +10,8 @@ test('icon picker is a focus-contained source-tab dialog with real tile preview'
   const width = (await dialog.locator('.modal-box').boundingBox()).width; expect(width).toBeGreaterThanOrEqual(640); expect(width).toBeLessThanOrEqual(680);
   await expect(dialog.getByRole('tab')).toHaveCount(5);
   await expect(dialog.locator('#icon-live-preview .tile .box')).toBeVisible();
+  await expect(dialog.locator('#icon-live-preview .nl-icon[data-icon-kind="builtin"]')).toHaveCount(1);
+  await expect(dialog.locator('#icon-live-preview .mono')).toHaveCount(0);
   await page.locator('#icon-search').fill('github');
   const result = dialog.getByRole('button', { name: /GitHub/ }); await expect(result).toHaveCount(1);
   const cell = await result.boundingBox(); expect(cell.width).toBeGreaterThanOrEqual(72); expect(cell.height).toBeGreaterThanOrEqual(72);

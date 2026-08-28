@@ -8,7 +8,7 @@
     "test:syntax": "node tests/helpers/check-js-syntax.cjs",
     "test:unit": "node --test tests/unit/*.test.cjs",
     "test:ui": "playwright test",
-    "test:ui:update": "playwright test --update-snapshots"
+    "test:ui:update": "playwright test --update-snapshots=all"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
