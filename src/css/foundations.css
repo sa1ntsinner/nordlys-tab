@@ -1,0 +1,50 @@
+:root {
+  --nl-canvas: var(--void, #060a14);
+  --nl-canvas-gradient: var(--void-gradient, linear-gradient(#0c1426, #060a14));
+  --nl-surface-card: var(--card-tint, #141c34);
+  --nl-surface-card-deep: var(--card-tint-deep, #090e1c);
+  --nl-surface-elevated: #172038;
+  --nl-overlay: rgba(2, 6, 15, .46);
+  --nl-text-primary: var(--ink, #e9effb);
+  --nl-text-secondary: var(--dim, #a7b5d0);
+  --nl-text-tertiary: var(--faint, #8da0c2);
+  --nl-border: var(--glass-border, rgba(255, 255, 255, .12));
+  --nl-border-strong: rgba(255, 255, 255, .22);
+  --nl-accent: var(--accent, #7c9cff);
+  --nl-focus: #a9c4ff;
+  --nl-focus-outer: rgba(3, 7, 18, .86);
+  --nl-status-success: #34d399;
+  --nl-status-danger: #fb7185;
+  --nl-status-warning: #fbbf24;
+  --nl-space-1: 4px; --nl-space-2: 8px; --nl-space-3: 12px; --nl-space-4: 16px;
+  --nl-space-5: 20px; --nl-space-6: 24px; --nl-space-8: 32px; --nl-space-10: 40px; --nl-space-12: 48px;
+  --nl-radius-sm: 10px; --nl-radius-md: 14px; --nl-radius-lg: 18px; --nl-radius-xl: 24px;
+  --nl-shadow-1: 0 4px 14px rgba(0, 0, 0, .18);
+  --nl-shadow-2: 0 12px 34px rgba(0, 0, 0, .28);
+  --nl-shadow-3: 0 24px 70px rgba(0, 0, 0, .38);
+  --nl-motion-fast: 120ms;
+  --nl-motion-control: 170ms;
+  --nl-motion-panel: 260ms;
+  --nl-motion-enter: 320ms;
+  --nl-ease-emphasized: cubic-bezier(.2, .8, .2, 1);
+  --nl-target-min: 40px;
+}
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--nl-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--nl-focus-outer);
+}
+
+.nl-visually-hidden {
+  position: fixed; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+@supports (color: color-mix(in oklch, white, black)) {
+  :root { --nl-border-strong: color-mix(in oklch, var(--nl-text-primary) 24%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --nl-motion-control: 80ms; --nl-motion-panel: 100ms; --nl-motion-enter: 100ms; }
+}

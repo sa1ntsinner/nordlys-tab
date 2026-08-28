@@ -1248,7 +1248,10 @@ body.hover-none .tile:hover .box {
   border-radius: 4px;
 }
 .tile:focus-visible {
-  outline: none;
+  outline: 2px solid var(--nl-focus, var(--accent));
+  outline-offset: 4px;
+  box-shadow: 0 0 0 6px var(--nl-focus-outer, rgba(3, 7, 18, .86));
+  border-radius: var(--tile-radius);
 }
 ::selection {
   background: color-mix(in srgb, var(--accent) 80%, #ffffff);

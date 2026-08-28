@@ -25,7 +25,13 @@ function hexToRgb(hex) {
 function relativeLuminance(hex) {
   const rgb = hexToRgb(hex);
   if (!rgb) return 0;
-  return (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
+  const linear = (value) => {
+    const channel = value / 255;
+    return channel <= 0.04045
+      ? channel / 12.92
+      : Math.pow((channel + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * linear(rgb.r) + 0.7152 * linear(rgb.g) + 0.0722 * linear(rgb.b);
 }
 
 /* ── Frosted Toast Notifications ─────────────────────────────────── */
