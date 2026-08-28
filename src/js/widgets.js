@@ -205,6 +205,12 @@ class SearchWidget {
   init() {
     if (!this.input) return;
 
+    this.input.setAttribute("role", "combobox");
+    this.input.setAttribute("aria-autocomplete", "list");
+    this.input.setAttribute("aria-controls", "sugg");
+    this.input.setAttribute("aria-expanded", "false");
+    this.sugg?.setAttribute("role", "listbox");
+
     this.updateEngineIcon();
 
     this.engineBtn?.addEventListener("click", () => this.cycleEngine());
@@ -569,7 +575,13 @@ class SearchWidget {
     }
 
     if (itemIndex > 0) {
+      this.sugg.querySelectorAll(".sugg-item").forEach((item, index) => {
+        item.id = `search-option-${index}`;
+        item.setAttribute("role", "option");
+        item.setAttribute("aria-selected", "false");
+      });
       this.sugg.classList.add("on");
+      this.input.setAttribute("aria-expanded", "true");
     } else {
       this.closeSuggestions();
     }
@@ -581,6 +593,8 @@ class SearchWidget {
       this.sugg.replaceChildren();
       this.selIdx = -1;
     }
+    this.input?.setAttribute("aria-expanded", "false");
+    this.input?.removeAttribute("aria-activedescendant");
   }
 
   onKeyDown(e) {
@@ -588,7 +602,7 @@ class SearchWidget {
 
     if (e.key === "Escape") {
       e.preventDefault();
-      this.input.blur();
+      e.stopPropagation();
       document.body.classList.remove("searching");
       this.closeSuggestions();
       return;
@@ -616,12 +630,15 @@ class SearchWidget {
     items.forEach((item, idx) => {
       if (idx === this.selIdx) {
         item.classList.add("sel");
+        item.setAttribute("aria-selected", "true");
+        this.input.setAttribute("aria-activedescendant", item.id);
         const span = item.querySelector("span");
         if (span && !item.classList.contains("sugg-bookmark") && !item.classList.contains("sugg-calc")) {
           this.input.value = span.textContent;
         }
       } else {
         item.classList.remove("sel");
+        item.setAttribute("aria-selected", "false");
       }
     });
   }

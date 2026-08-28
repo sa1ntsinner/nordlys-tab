@@ -168,7 +168,7 @@ Observed RED: missing accordion rows/editors/Undo/picker semantics. After the mi
 
 ### Commit
 
-Pending.
+`2d6ef8e3ed46aa220dc577fb49ea5779e6d7d133`
 
 ### Self-review and concerns
 
@@ -177,3 +177,34 @@ Pending.
 - Undo uses a deep snapshot and exact original folder/index; action is one-shot through the shared primitive.
 - Existing upload/crop/favicon processing remains in `SettingsController`; the new picker owns accessible lifecycle/tabs/shared preview, avoiding a risky all-at-once rewrite.
 - Narrow folder summary actions remain dense but retain 40px hit areas; Task 8 responsive pass will recheck overlap/translation behavior.
+
+## Task 7 — Search, context menu, quick edit, and resize keyboard parity
+
+### RED
+
+Command: `npm run test:ui -- tests/ui/search-combobox.spec.cjs tests/ui/context-menu.spec.cjs tests/ui/keyboard-actions.spec.cjs`.
+
+Observed: 4 failed. The context menu exposed no `menu` semantics; Shift+F10 could not open a keyboard-focused quick editor and Enter followed the bookmark; folder resize had no explicit keyboard controls; search exposed no combobox/listbox relationship or active descendant.
+
+During GREEN, the first context-menu pass also showed that a menu made visible by opacity/visibility transition could be measured before its first item was focusable. The shared controller now performs its final focus after the visibility transition begins, and the regression asserts focus after that boundary.
+
+### GREEN
+
+- Focused command: `npm run test:ui -- tests/ui/search-combobox.spec.cjs tests/ui/context-menu.spec.cjs tests/ui/keyboard-actions.spec.cjs` — 4 passed (5.1s).
+- Fresh `npm test`: syntax passed for 13 scripts; 3 unit passed; 18 UI passed (18.3s).
+
+### Production files
+
+`src/js/widgets.js`, `src/js/grid.js`, `src/js/ui-primitives.js`, `src/css/components.css`.
+
+### Commit
+
+`56df6b06dd018d3895c108aa3f2862654e0938a0`
+
+### Self-review and concerns
+
+- Search now maintains `combobox`/`listbox`/`option` semantics, selection, `aria-activedescendant`, and Escape focus behavior without changing engine submission.
+- Context menus open from Shift+F10/ContextMenu and support Arrow/Home/End/Escape/Enter through the shared menu controller.
+- Quick edit and folder edit use the shared dialog lifecycle, including focus trap and restore; keyboard activation no longer leaks through to bookmark navigation.
+- Folder resize exposes explicit decrement/increment controls, persists through the existing storage path, and announces the resulting size.
+- The menu focus handoff includes a 100ms completion step aligned with the current visibility transition. Task 8 will normalize that transition under the motion-token and reduced-motion contract.

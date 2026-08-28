@@ -1290,3 +1290,13 @@ body.hover-none .tile:hover .box {
   .card { width: 100%; padding-inline: 12px; }
   .grid[data-cols] { grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); justify-items: center; }
 }
+
+.card-resize-controls {
+  position: absolute; right: 10px; bottom: 8px; display: flex; gap: 4px; opacity: 0;
+  transition: opacity var(--nl-motion-fast) ease;
+}
+.card:hover .card-resize-controls, .card:focus-within .card-resize-controls { opacity: 1; }
+.card-resize-controls button {
+  width: 40px; height: 40px; border: 1px solid var(--nl-border); border-radius: var(--nl-radius-sm);
+  background: var(--nl-surface-elevated); color: var(--nl-text-primary); cursor: pointer;
+}
