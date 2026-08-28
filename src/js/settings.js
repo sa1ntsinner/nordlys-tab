@@ -11,6 +11,17 @@ class SettingsController {
     this.activeIconTarget = null; // { gIdx, lIdx }
     this.activeModalTab = "library";
     this.customThemes = this.loadCustomThemes();
+    this.shell = new NordlysSettingsShell({
+      root: this.drawer,
+      opener: document.getElementById("gear")
+    });
+    this.bookmarkSettings = new NordlysBookmarkSettings({
+      app: this.app,
+      root: document.getElementById("cfg-groups-editor"),
+      openIconPicker: (gIdx, lIdx, opener) => this.openIconModal(gIdx, lIdx, opener)
+    });
+    this.iconPicker = new NordlysIconPicker({ dialogRoot: this.modal });
+    document.getElementById("gear")?.addEventListener("click", () => this.open());
     
     this.initDrawerResizer();
     this.initTabs();
@@ -57,38 +68,13 @@ class SettingsController {
       });
     }
 
-    // Drawer Open / Close
-    const gear = document.getElementById("gear");
-    const cfgx = document.getElementById("cfgx");
-    const dim = document.getElementById("dim");
-
-    gear?.addEventListener("click", () => this.open());
-    cfgx?.addEventListener("click", () => this.close());
-    dim?.addEventListener("click", () => this.close());
-
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        const cssDocsModal = document.getElementById("css-docs-modal");
-        // Cascading dismiss: topmost layer first, drawer last
-        if (this.modal?.classList.contains("open")) {
-          this.closeIconModal();
-        } else if (cssDocsModal?.classList.contains("open")) {
-          cssDocsModal.classList.remove("open");
-        } else if (this.drawer?.classList.contains("open")) {
-          this.close();
-        }
-      }
-    });
   }
 
   open(targetTab = null) {
-    this.drawer?.classList.add("open");
-    document.getElementById("dim")?.classList.add("on");
     this.syncFormValues();
     this.renderBookmarksManager();
-    if (targetTab) {
-      this.switchTab(targetTab);
-    }
+    const mapped = targetTab ? this.mapTab(targetTab) : null;
+    this.shell.open(mapped);
   }
 
   openDrawer(targetTab = null) {
@@ -96,25 +82,18 @@ class SettingsController {
   }
 
   close() {
-    this.drawer?.classList.remove("open");
-    document.getElementById("dim")?.classList.remove("on");
+    this.shell.close();
+  }
+
+  mapTab(targetTab) {
+    const tabMap = { "themes":"appearance", "theme":"appearance", "appearance":"appearance", "shaders":"background", "background":"background", "custom-theme":"appearance", "general":"general", "bookmarks":"bookmarks", "custom-css":"custom-css", "backup":"backup" };
+    return tabMap[targetTab] || targetTab;
   }
 
   switchTab(targetTab) {
     if (!targetTab) return;
-    const tabMap = {
-      "themes": "appearance",
-      "theme": "appearance",
-      "appearance": "appearance",
-      "shaders": "background",
-      "background": "background",
-      "custom-theme": "appearance",
-      "general": "general",
-      "bookmarks": "bookmarks",
-      "custom-css": "custom-css",
-      "backup": "backup"
-    };
-    const key = tabMap[targetTab] || targetTab;
+    const key = this.mapTab(targetTab);
+    if (this.shell) { this.shell.select(key); return; }
     const tabs = document.querySelectorAll(".ctab");
     const sections = document.querySelectorAll(".csec");
     const targetBtn = document.querySelector(`.ctab[data-tab="${key}"]`);
@@ -433,10 +412,12 @@ class SettingsController {
     const activeCustomId = this.app.config.customTheme?.id;
 
     const createPresetCard = (t, isLightSection = false) => {
-      const card = document.createElement("div");
+      const card = document.createElement("button");
+      card.type = "button";
       const isActive = (activeTheme === t.key) || (t.key === "frosted-glass" && (activeTheme === "liquid-glass" || activeTheme === "liquid-tahoe"));
       card.className = `theme-card ${isActive ? "active" : ""}`;
       card.dataset.theme = t.key;
+      card.setAttribute("aria-pressed", String(isActive));
       const themeLabel = (window.I18N && t.i18nKey) ? window.I18N.t(t.i18nKey) : t.name;
       card.innerHTML = `
         <div class="theme-preview" style="background: ${t.bg};"></div>
@@ -777,6 +758,10 @@ class SettingsController {
   }
 
   renderBookmarksManager() {
+    if (this.bookmarkSettings) {
+      this.bookmarkSettings.render();
+      return;
+    }
     const container = document.getElementById("cfg-groups-editor");
     if (!container) return;
 
@@ -1665,7 +1650,7 @@ class SettingsController {
     }
   }
 
-  openIconModal(gIdx, lIdx) {
+  openIconModal(gIdx, lIdx, opener = document.activeElement) {
     this.activeIconTarget = { gIdx, lIdx };
     const link = this.app.config.groups[gIdx]?.links[lIdx];
     if (!link) return;
@@ -1778,11 +1763,11 @@ class SettingsController {
     document.querySelectorAll(".icon-chip").forEach((c, idx) => c.classList.toggle("active", idx === 0));
     this.filterIconLibrary("", "all", link.icon);
 
-    this.modal?.classList.add("open");
+    this.iconPicker.open(link, opener);
   }
 
   closeIconModal() {
-    this.modal?.classList.remove("open");
+    this.iconPicker.close();
     this.activeIconTarget = null;
 
     if (this.app.grid?.quickEditReturnTarget) {
@@ -1803,7 +1788,9 @@ class SettingsController {
       const matchCat = cat === "all" || item.cat === cat;
 
       if (matchQ && matchCat) {
-        const btn = document.createElement("div");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.setAttribute("aria-label", item.name);
         btn.className = "icon-item";
         if (key === highlightIconKey) {
           btn.classList.add("active");
@@ -2134,4 +2121,3 @@ class SettingsController {
     });
   }
 }
-

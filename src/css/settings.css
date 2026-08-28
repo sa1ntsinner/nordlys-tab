@@ -1749,3 +1749,86 @@ html[data-theme="warm-ivory"] .css-docs-list code {
     grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   }
 }
+
+/* Nordlys Refined settings shell */
+#cfg {
+  width: clamp(600px, 46vw, 720px);
+  min-width: 600px;
+  max-width: 720px;
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 96%, transparent);
+  border-left-color: var(--nl-border);
+  box-shadow: var(--nl-shadow-3);
+  transition: transform var(--nl-motion-panel) var(--nl-ease-emphasized);
+}
+.settings-layout { min-height: 0; flex: 1; display: grid; grid-template-columns: 168px minmax(0, 1fr); }
+.ctabs {
+  min-width: 0; padding: 16px 10px; display: flex; flex-direction: column; align-items: stretch; gap: 18px;
+  overflow: auto; mask-image: none; border: 0; border-right: 1px solid var(--nl-border); background: transparent;
+}
+.settings-nav-group { display: flex; flex-direction: column; gap: 4px; }
+.settings-nav-label { padding: 0 10px 5px; color: var(--nl-text-tertiary); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.ctab { position: relative; min-height: 42px; padding: 0 12px; border-radius: var(--nl-radius-sm); text-align: left; }
+.ctab.active { color: var(--nl-text-primary); background: color-mix(in srgb, var(--nl-accent) 14%, transparent); box-shadow: none; }
+.ctab.active::before { content: ''; position: absolute; left: 0; inset-block: 9px; width: 3px; border-radius: 4px; background: var(--nl-accent); }
+.cbody { min-width: 0; padding: 20px 24px 32px; overflow-y: auto; }
+.csec[hidden] { display: none !important; }
+.setting-row { min-height: 56px; padding-block: 6px; }
+.setting-row :where(button, select, input:not([type="range"]), label.tg) { min-height: var(--nl-target-min); }
+#dim { background: rgba(3, 7, 18, .32); backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+@media (max-width: 759px) {
+  #cfg { width: 100vw !important; min-width: 0 !important; max-width: 100vw !important; }
+  #cfg-resizer { display: none; }
+  .settings-layout { display: flex; flex-direction: column; }
+  .ctabs { flex: none; flex-direction: row; gap: 8px; padding: 8px 14px 10px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--nl-border); mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 28px), transparent); }
+  .settings-nav-group { flex-direction: row; gap: 6px; }
+  .settings-nav-label { display: none; }
+  .ctab { flex: none; min-width: max-content; text-align: center; padding-inline: 14px; }
+  .ctab.active::before { inset-inline: 12px; top: auto; bottom: 0; width: auto; height: 3px; }
+  .cbody { padding: 16px 14px 28px; }
+}
+
+.theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.theme-card { width: 100%; min-width: 0; min-height: 88px; text-align: left; font-family: inherit; }
+.theme-card[aria-pressed="true"] { border-color: var(--nl-accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--nl-accent) 30%, transparent); }
+.appearance-shared-preview { position: sticky; top: -20px; z-index: 4; padding: 8px 0 12px; background: linear-gradient(var(--nl-surface-card-deep) 72%, transparent); }
+.appearance-preview-card { width: 100%; min-height: 116px; padding: 16px; align-items: center; justify-content: center; }
+.appearance-preview-card .tile { cursor: default; }
+.advanced-settings { border: 1px solid var(--nl-border); border-radius: var(--nl-radius-md); overflow: clip; }
+.advanced-settings > summary { min-height: 44px; display: flex; align-items: center; padding: 0 14px; cursor: pointer; color: var(--nl-text-primary); font-weight: 600; }
+.advanced-settings > .card-customizer-card { margin: 0 !important; border: 0; border-top: 1px solid var(--nl-border); border-radius: 0; }
+
+@media (max-width: 480px) { .theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.bookmark-folder-accordion { border: 1px solid var(--nl-border); border-radius: var(--nl-radius-md); background: color-mix(in srgb, var(--nl-surface-card) 55%, transparent); overflow: clip; }
+.bookmark-folder-summary { min-height: 52px; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 0 10px 0 14px; cursor: pointer; }
+.bookmark-folder-count { min-width: 24px; padding: 2px 7px; border-radius: 999px; text-align: center; background: color-mix(in srgb, var(--nl-accent) 14%, transparent); color: var(--nl-text-secondary); }
+.bookmark-folder-actions { display: flex; gap: 4px; }
+.bookmark-compact-action { min-width: 40px; min-height: 40px; padding: 0 9px; border: 1px solid transparent; border-radius: var(--nl-radius-sm); background: transparent; color: var(--nl-text-secondary); cursor: pointer; }
+.bookmark-compact-action:hover { background: color-mix(in srgb, var(--nl-text-primary) 7%, transparent); color: var(--nl-text-primary); }
+.bookmark-compact-action.danger { color: var(--nl-status-danger); }
+.bookmark-summary-list { padding: 4px 10px 12px; border-top: 1px solid var(--nl-border); }
+.bookmark-summary-row { min-height: 54px; display: grid; grid-template-columns: 36px minmax(0, 1fr) repeat(4, auto); align-items: center; gap: 6px; padding: 6px 0; border-bottom: 1px solid color-mix(in srgb, var(--nl-border) 65%, transparent); }
+.bookmark-summary-icon { width: 32px; height: 32px; display: grid; place-items: center; }
+.bookmark-summary-icon .nl-icon { width: 26px; height: 26px; display: grid; place-items: center; }
+.bookmark-summary-icon :where(svg, img) { width: 100%; height: 100%; object-fit: contain; fill: var(--icon-accent); }
+.bookmark-summary-meta { min-width: 0; display: flex; flex-direction: column; }
+.bookmark-summary-name, .bookmark-summary-host { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bookmark-summary-host { color: var(--nl-text-tertiary); font-size: 11px; }
+.bookmark-editor { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(100px, .7fr) minmax(160px, 1.3fr) auto auto; gap: 8px; padding: 10px; border-radius: var(--nl-radius-sm); background: color-mix(in srgb, var(--nl-surface-elevated) 70%, transparent); }
+.bookmark-editor[hidden] { display: none; }
+.bookmark-editor input { min-height: 40px; min-width: 0; border: 1px solid var(--nl-border); border-radius: var(--nl-radius-sm); padding: 0 10px; color: var(--nl-text-primary); background: var(--nl-surface-card-deep); }
+#icon-modal .modal-box { width: min(660px, calc(100vw - 24px)); max-width: 660px; }
+.icon-live-preview { position: sticky; top: 0; z-index: 2; display: flex; justify-content: center; padding: 8px; background: linear-gradient(var(--nl-surface-elevated), transparent); }
+.icon-live-preview .card { width: 126px; padding: 12px; align-items: center; }
+.icon-item { min-width: 72px; min-height: 72px; }
+#toast-dock { z-index: 500; pointer-events: none; }
+#toast-dock .toast { pointer-events: auto; }
+
+@media (max-width: 560px) {
+  .bookmark-folder-summary { grid-template-columns: minmax(0, 1fr) auto; }
+  .bookmark-folder-actions { grid-column: 1 / -1; }
+  .bookmark-summary-row { grid-template-columns: 32px minmax(0, 1fr) repeat(2, auto); }
+  .bookmark-summary-row > .bookmark-compact-action:nth-of-type(n+3) { grid-row: 2; }
+  .bookmark-editor { grid-template-columns: 1fr; }
+}
