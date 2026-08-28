@@ -9,8 +9,8 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  animation: bloom 0.85s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  transition: opacity 0.35s ease, filter 0.35s ease;
+  animation: bloom var(--nl-motion-enter) var(--nl-ease-emphasized) both;
+  transition: opacity var(--nl-motion-control) ease, transform var(--nl-motion-control) ease;
 }
 
 #clock {
@@ -29,7 +29,7 @@
 }
 
 #clock .colon {
-  animation: pulse 2.4s ease-in-out infinite;
+  opacity: 0.72;
 }
 
 .sc, #ss {
@@ -83,8 +83,8 @@ body.seconds .sc, body.seconds #ss {
   position: relative;
   margin-top: 18px;
   width: min(88vw, 640px);
-  transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-  animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.2s both;
+  transition: width var(--nl-motion-panel) var(--nl-ease-emphasized);
+  animation: rise var(--nl-motion-enter) var(--nl-ease-emphasized) both;
 }
 
 #search {
@@ -117,8 +117,11 @@ body.seconds .sc, body.seconds #ss {
   align-items: center;
   justify-content: center;
   padding: 4px;
+  width: var(--nl-target-min);
+  height: var(--nl-target-min);
+  min-width: var(--nl-target-min);
   border-radius: 8px;
-  transition: all 0.2s;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), opacity var(--nl-motion-control), transform var(--nl-motion-control);
 }
 #engine-selector:hover {
   color: var(--ink);
@@ -266,7 +269,7 @@ body.seconds .sc, body.seconds #ss {
   margin-left: auto;
   cursor: pointer;
   opacity: 0.45;
-  transition: all 0.18s ease;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), opacity var(--nl-motion-control), transform var(--nl-motion-control);
 }
 #sugg .sugg-del-btn:hover {
   opacity: 1;
@@ -288,7 +291,7 @@ body.seconds .sc, body.seconds #ss {
   visibility: hidden;
   backdrop-filter: blur(0px);
   -webkit-backdrop-filter: blur(0px);
-  transition: opacity 0.35s ease, backdrop-filter 0.35s ease, visibility 0s 0.35s;
+  transition: opacity var(--nl-motion-panel) ease, visibility 0s var(--nl-motion-panel);
   pointer-events: none;
 }
 
@@ -297,7 +300,7 @@ body.searching #dim {
   visibility: visible;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  transition: opacity 0.35s ease, backdrop-filter 0.35s ease, visibility 0s;
+  transition: opacity var(--nl-motion-panel) ease, visibility 0s;
   pointer-events: auto;
 }
 
@@ -323,7 +326,7 @@ body.searching #searchwrap {
 }
 
 body.searching #search {
-  animation: pop 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+  animation: pop var(--nl-motion-panel) var(--nl-ease-emphasized);
   border-color: var(--accent);
   background: color-mix(in srgb, var(--card-tint, #141c34) 94%, transparent);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65), 0 0 0 4px var(--accent-glow);
@@ -388,13 +391,12 @@ body.minimal #board {
 
 /* First-paint choreography: cards rise in sequence, then never re-animate */
 #board:not(.board-loaded) .card {
-  animation: cardRise 0.65s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  animation-delay: calc(0.12s + var(--i, 0) * 70ms);
+  animation: cardRise var(--nl-motion-panel) var(--nl-ease-emphasized) both;
 }
 
 @keyframes cardRise {
-  from { opacity: 0; transform: translateY(26px) scale(0.975); filter: blur(10px); }
-  to { opacity: 1; transform: none; filter: blur(0); }
+  from { opacity: 0; transform: translateY(14px) scale(0.99); }
+  to { opacity: 1; transform: none; }
 }
 
 .card:hover {
@@ -403,13 +405,13 @@ body.minimal #board {
 }
 
 .tile.tile-updated {
-  animation: tileGlow 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: tileGlow var(--nl-motion-panel) var(--nl-ease-emphasized) both;
 }
 
 @keyframes tileGlow {
-  0% { transform: scale(0.92); filter: brightness(1.25) drop-shadow(0 0 10px var(--accent-glow)); }
+  0% { transform: scale(0.97); opacity: 0.72; }
   60% { transform: scale(1.03); }
-  100% { transform: scale(1); filter: brightness(1); }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .cat {
@@ -458,14 +460,14 @@ body.minimal #board {
   cursor: pointer;
 }
 .groupGrip {
-  width: 24px;
-  height: 24px;
+  width: var(--nl-target-min);
+  height: var(--nl-target-min);
   border-radius: 7px;
   font-size: 15px;
   line-height: 24px;
   cursor: grab;
   opacity: 0.35;
-  transition: all 0.2s;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), opacity var(--nl-motion-control), transform var(--nl-motion-control);
 }
 .cat:hover .groupGrip, .groupGrip:hover {
   opacity: 1;
@@ -478,13 +480,13 @@ body.minimal #board {
 }
 
 .foldBtn {
-  width: 25px;
-  height: 25px;
+  width: var(--nl-target-min);
+  height: var(--nl-target-min);
   border-radius: 8px;
   font-size: 19px;
   line-height: 21px;
   opacity: 0.45;
-  transition: all 0.2s;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), opacity var(--nl-motion-control), transform var(--nl-motion-control);
 }
 .foldBtn:hover {
   opacity: 1;
@@ -513,7 +515,7 @@ body.minimal #board {
   border-radius: calc(var(--tile-radius) * 0.75);
   background: rgba(255, 255, 255, 0.025);
   border: 1px solid rgba(255, 255, 255, 0.04);
-  transition: all 0.22s ease;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), opacity var(--nl-motion-control), transform var(--nl-motion-control);
 }
 .grid[data-cols="1"] .tile:hover {
   background: rgba(255, 255, 255, 0.07);
@@ -658,8 +660,7 @@ body.minimal #board {
 
 /* Tiles cascade in only on the very first render — later re-renders are instant */
 #board:not(.board-loaded) .tile {
-  animation: tin 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  animation-delay: calc(0.2s + var(--i, 0) * 60ms + var(--j, 0) * 15ms);
+  animation: tin var(--nl-motion-panel) var(--nl-ease-emphasized) both;
 }
 
 .box {
@@ -860,7 +861,7 @@ body.hover-none .tile:hover .box {
   font-size: 12px;
   font-weight: 500;
   letter-spacing: -0.01em;
-  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: color var(--nl-motion-control) var(--nl-ease-emphasized), background-color var(--nl-motion-control) var(--nl-ease-emphasized), border-color var(--nl-motion-control) var(--nl-ease-emphasized), opacity var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
   user-select: none;
 }
 
@@ -1005,7 +1006,7 @@ body.hover-none .tile:hover .box {
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.14s ease;
+  transition: color var(--nl-motion-fast), background-color var(--nl-motion-fast), opacity var(--nl-motion-fast), transform var(--nl-motion-fast);
 }
 
 .ctx-item svg {
@@ -1050,7 +1051,7 @@ body.hover-none .tile:hover .box {
   place-items: center;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.22s ease;
+  transition: opacity var(--nl-motion-panel), transform var(--nl-motion-panel), visibility 0s var(--nl-motion-panel);
   padding: 20px;
 }
 
@@ -1104,7 +1105,7 @@ body.hover-none .tile:hover .box {
   place-items: center;
   cursor: pointer;
   flex-shrink: 0;
-  transition: all 0.18s ease;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), opacity var(--nl-motion-control), transform var(--nl-motion-control);
 }
 .quick-icon-box:hover {
   background: rgba(255, 255, 255, 0.14);
@@ -1123,14 +1124,14 @@ body.hover-none .tile:hover .box {
 /* ── Clock Digit Tick (soft morph on minute/second change) ────── */
 #hh, #mm, body.seconds #ss {
   display: inline-block;
-  transition: filter 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
+  transition: transform var(--nl-motion-fast) ease, opacity var(--nl-motion-fast) ease;
 }
 .digit-tick {
-  animation: digitTick 0.42s cubic-bezier(0.2, 0.7, 0.2, 1);
+  animation: digitTick var(--nl-motion-fast) var(--nl-ease-emphasized);
 }
 @keyframes digitTick {
-  0% { opacity: 0.25; filter: blur(6px); transform: translateY(-6px); }
-  100% { opacity: 1; filter: blur(0); transform: none; }
+  0% { opacity: 0.45; transform: translateY(-3px); }
+  100% { opacity: 1; transform: none; }
 }
 
 /* ── Frosted Toast Notifications ──────────────────────────────── */
@@ -1206,11 +1207,7 @@ body.hover-none .tile:hover .box {
   background: rgba(239, 68, 68, 0.14);
   border: 1px solid rgba(239, 68, 68, 0.3);
   margin-bottom: 8px;
-  animation: confirmPulse 1.8s ease-in-out infinite;
-}
-@keyframes confirmPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.25); }
-  50% { box-shadow: 0 0 0 9px rgba(239, 68, 68, 0); }
+  box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.12);
 }
 .confirm-title {
   font-size: 15.5px;
@@ -1263,7 +1260,7 @@ body.hover-none .tile:hover .box {
   border: 1px solid var(--nl-border);
   background: color-mix(in srgb, var(--nl-surface-card) 78%, transparent);
   box-shadow: var(--nl-shadow-1);
-  transition: transform var(--nl-motion-control) var(--nl-ease-emphasized), border-color var(--nl-motion-control) ease, box-shadow var(--nl-motion-control) ease;
+  transition: transform var(--nl-motion-control) var(--nl-ease-emphasized);
 }
 .box::after { display: none; }
 .box .nl-icon { display: grid; place-items: center; transform: scale(var(--icon-optical-scale, 1)); color: var(--icon-accent); }
@@ -1274,6 +1271,7 @@ body.hover-none .tile:hover .box {
 .box .nl-icon[data-icon-tone="dark"] { --icon-accent: #111827 !important; }
 .box .nl-icon[data-icon-tone="light"] { --icon-accent: #f8fafc !important; }
 .lbl { font-size: clamp(12px, .82vw, 13px); color: var(--nl-text-secondary); }
+.lbl { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tile:hover .box, .tile:focus-visible .box, body.hover-lift .tile:hover .box, body.hover-scale .tile:hover .box, body.hover-glow .tile:hover .box {
   transform: translateY(-2px) scale(1.02);
   background: color-mix(in srgb, var(--nl-surface-card) 84%, transparent);

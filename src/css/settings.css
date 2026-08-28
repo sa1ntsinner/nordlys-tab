@@ -91,7 +91,7 @@ body.resizing-drawer #cfg {
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), opacity var(--nl-motion-control), transform var(--nl-motion-control);
 }
 #cfgx:hover {
   color: #ffffff;
@@ -130,7 +130,7 @@ body.resizing-drawer #cfg {
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: color var(--nl-motion-control) var(--nl-ease-emphasized), background-color var(--nl-motion-control) var(--nl-ease-emphasized), border-color var(--nl-motion-control) var(--nl-ease-emphasized), opacity var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
   user-select: none;
 }
 .ctab:hover {
@@ -168,7 +168,7 @@ body.resizing-drawer #cfg {
 }
 .csec.active {
   display: flex;
-  animation: fadeIn 0.22s ease both;
+  animation: fadeIn var(--nl-motion-control) ease both;
 }
 
 @keyframes fadeIn {
@@ -279,7 +279,7 @@ input[type="range"].ipt:focus-visible {
   background: rgba(255, 255, 255, 0.14);
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 9999px;
-  transition: all 0.25s cubic-bezier(0.3, 0.8, 0.2, 1);
+  transition: background-color var(--nl-motion-control) var(--nl-ease-emphasized), border-color var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
 }
 .tg i::after {
   content: "";
@@ -339,7 +339,7 @@ html[data-theme="warm-ivory"] .color-mode-segmented {
   font-size: 12.5px;
   font-weight: 550;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: color var(--nl-motion-control) var(--nl-ease-emphasized), background-color var(--nl-motion-control) var(--nl-ease-emphasized), border-color var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
 }
 .mode-btn:hover {
   color: #f1f5f9;
@@ -430,7 +430,7 @@ html[data-theme="warm-ivory"] .theme-section-badge {
   flex-direction: column;
   gap: 8px;
   align-items: center;
-  transition: all 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
 }
 .theme-card:hover {
   transform: translateY(-2px);
@@ -630,7 +630,7 @@ html[data-theme="warm-ivory"] .hex-text {
   -webkit-backdrop-filter: blur(var(--glass-blur, 28px)) saturate(var(--glass-saturate, 190%));
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, var(--glass-border-sheen, 0.45));
   color: var(--ink);
-  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
   cursor: pointer;
   user-select: none;
 }
@@ -656,7 +656,7 @@ html[data-theme="warm-ivory"] .preview-interactive-card {
   place-items: center;
   color: #ffffff;
   box-shadow: 0 4px 12px var(--accent-glow);
-  transition: all 0.25s ease;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-motion-control);
 }
 .preview-card-info {
   display: flex;
@@ -693,7 +693,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   border: 1.5px dashed rgba(255, 255, 255, 0.25);
   background: rgba(255, 255, 255, 0.04);
   color: var(--accent);
-  transition: all 0.2s ease;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), opacity var(--nl-motion-control), transform var(--nl-motion-control);
 }
 
 .theme-card.add-custom-theme:hover .add-custom-preview {
@@ -737,7 +737,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   background: rgba(14, 22, 44, 0.75);
   border: 1px solid var(--accent);
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), 0 0 16px var(--accent-glow);
-  animation: popIn 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: popIn var(--nl-motion-control) var(--nl-ease-emphasized) both;
 }
 
 .custom-theme-box {
@@ -837,7 +837,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   padding: 4px 6px;
   outline: none;
   flex: 1;
-  transition: all 0.2s;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control);
 }
 .group-label-input:focus {
   background: rgba(8, 14, 28, 0.8);
@@ -884,7 +884,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   place-items: center;
   cursor: pointer;
   flex-shrink: 0;
-  transition: all 0.18s ease;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), opacity var(--nl-motion-control), transform var(--nl-motion-control);
 }
 .icon-trigger-btn:hover {
   background: rgba(255, 255, 255, 0.15);
@@ -935,7 +935,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color var(--nl-motion-fast), background-color var(--nl-motion-fast), opacity var(--nl-motion-fast), transform var(--nl-motion-fast);
 }
 .move-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.15);
@@ -973,7 +973,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   font-weight: 500;
   cursor: pointer;
   backdrop-filter: blur(12px);
-  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
 }
 .glass-btn:hover {
   background: rgba(255, 255, 255, 0.12);
@@ -1025,7 +1025,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), transform var(--nl-motion-control);
 }
 .glass-file-btn:hover {
   background: rgba(255, 255, 255, 0.1);
@@ -1065,7 +1065,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   place-items: center;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.25s ease;
+  transition: opacity var(--nl-motion-panel), transform var(--nl-motion-panel), visibility 0s var(--nl-motion-panel);
   padding: 20px;
 }
 #icon-modal.open {
@@ -1088,7 +1088,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
 /* Pop plays on every open, not just once at page load */
 #icon-modal.open .modal-box,
 #css-docs-modal.open .modal-box {
-  animation: modalPop 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: modalPop var(--nl-motion-panel) var(--nl-ease-emphasized) both;
 }
 
 @keyframes modalPop {
@@ -1134,7 +1134,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), transform var(--nl-motion-control);
 }
 .icon-tab-btn:hover {
   color: var(--ink);
@@ -1190,7 +1190,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   color: var(--dim);
   font-size: 11.5px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: color var(--nl-motion-fast), background-color var(--nl-motion-fast), border-color var(--nl-motion-fast), transform var(--nl-motion-fast);
 }
 .icon-chip:hover {
   background: rgba(255, 255, 255, 0.1);
@@ -1221,7 +1221,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   background: rgba(14, 22, 44, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.08);
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), transform var(--nl-motion-control);
 }
 .icon-item:hover {
   background: rgba(124, 156, 255, 0.2);
@@ -1274,7 +1274,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   background: rgba(8, 14, 30, 0.5);
   border: 2px dashed rgba(255, 255, 255, 0.18);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), transform var(--nl-motion-control);
 }
 .file-drop-zone:hover {
   background: rgba(14, 24, 52, 0.6);
@@ -1296,7 +1296,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), transform var(--nl-motion-control);
 }
 .css-preset-btn:hover {
   background: rgba(124, 156, 255, 0.2);
@@ -1472,7 +1472,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   cursor: pointer;
   display: grid;
   place-items: center;
-  transition: all 0.15s ease;
+  transition: color var(--nl-motion-fast), background-color var(--nl-motion-fast), border-color var(--nl-motion-fast), transform var(--nl-motion-fast);
 }
 .crop-tool-btn:hover {
   background: rgba(255, 255, 255, 0.18);
@@ -1494,7 +1494,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   font-size: 10.5px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color var(--nl-motion-fast), background-color var(--nl-motion-fast), border-color var(--nl-motion-fast), transform var(--nl-motion-fast);
   white-space: nowrap;
 }
 .crop-pill-btn:hover {
@@ -1523,7 +1523,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   place-items: center;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.25s ease;
+  transition: opacity var(--nl-motion-panel), transform var(--nl-motion-panel), visibility 0s var(--nl-motion-panel);
   padding: 20px;
 }
 #css-docs-modal.open {
@@ -1542,7 +1542,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
 }
 .css-tab-pane.active {
   display: block;
-  animation: fadeIn 0.22s ease both;
+  animation: fadeIn var(--nl-motion-control) ease both;
 }
 .css-tab-pane h4 {
   font-size: 15px;
@@ -1801,9 +1801,9 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 @media (max-width: 480px) { .theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 .bookmark-folder-accordion { border: 1px solid var(--nl-border); border-radius: var(--nl-radius-md); background: color-mix(in srgb, var(--nl-surface-card) 55%, transparent); overflow: clip; }
-.bookmark-folder-summary { min-height: 52px; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 0 10px 0 14px; cursor: pointer; }
+.bookmark-folder-summary { min-height: 52px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 0 6px 0 14px; cursor: pointer; }
 .bookmark-folder-count { min-width: 24px; padding: 2px 7px; border-radius: 999px; text-align: center; background: color-mix(in srgb, var(--nl-accent) 14%, transparent); color: var(--nl-text-secondary); }
-.bookmark-folder-actions { display: flex; gap: 4px; }
+.bookmark-folder-actions { display: flex; justify-content: flex-end; gap: 4px; padding: 0 10px 8px; }
 .bookmark-compact-action { min-width: 40px; min-height: 40px; padding: 0 9px; border: 1px solid transparent; border-radius: var(--nl-radius-sm); background: transparent; color: var(--nl-text-secondary); cursor: pointer; }
 .bookmark-compact-action:hover { background: color-mix(in srgb, var(--nl-text-primary) 7%, transparent); color: var(--nl-text-primary); }
 .bookmark-compact-action.danger { color: var(--nl-status-danger); }
@@ -1826,8 +1826,7 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 #toast-dock .toast { pointer-events: auto; }
 
 @media (max-width: 560px) {
-  .bookmark-folder-summary { grid-template-columns: minmax(0, 1fr) auto; }
-  .bookmark-folder-actions { grid-column: 1 / -1; }
+  .bookmark-folder-summary { grid-template-columns: minmax(0, 1fr) auto; padding-inline: 6px; }
   .bookmark-summary-row { grid-template-columns: 32px minmax(0, 1fr) repeat(2, auto); }
   .bookmark-summary-row > .bookmark-compact-action:nth-of-type(n+3) { grid-row: 2; }
   .bookmark-editor { grid-template-columns: 1fr; }

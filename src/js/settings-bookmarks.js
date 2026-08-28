@@ -39,7 +39,7 @@
           action(`Move ${group.label} down`, '↓', () => this.moveFolder(groupIndex, 1), groupIndex === this.app.config.groups.length - 1),
           action(`More actions for ${group.label}`, '•••', () => {})
         );
-        summary.append(name, count, actions); details.append(summary);
+        summary.append(name, count); details.append(summary, actions);
         const list = document.createElement('div'); list.className = 'bookmark-summary-list';
         (group.links || []).forEach((link, bookmarkIndex) => {
           const row = document.createElement('article'); row.className = 'bookmark-summary-row';

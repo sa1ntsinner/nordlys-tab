@@ -199,7 +199,7 @@ During GREEN, the first context-menu pass also showed that a menu made visible b
 
 ### Commit
 
-`56df6b06dd018d3895c108aa3f2862654e0938a0`
+`2c3fbb2c7e848ef1e5f09e638e6def1c0d62e6d8`
 
 ### Self-review and concerns
 
@@ -208,3 +208,40 @@ During GREEN, the first context-menu pass also showed that a menu made visible b
 - Quick edit and folder edit use the shared dialog lifecycle, including focus trap and restore; keyboard activation no longer leaks through to bookmark navigation.
 - Folder resize exposes explicit decrement/increment controls, persists through the existing storage path, and announces the resulting size.
 - The menu focus handoff includes a 100ms completion step aligned with the current visibility transition. Task 8 will normalize that transition under the motion-token and reduced-motion contract.
+
+## Task 8 — Motion, responsive behavior, target sizing, and accessibility
+
+### RED
+
+Commands were split by file after the initial matrix run to keep evidence readable:
+
+- `npm run test:ui -- tests/ui/motion.spec.cjs` — 2 failed. Initial animation keyframes included `filter`, durations of 500–850ms, a 2400ms clock pulse, and staggered totals near 900ms. Reduced Motion retained filter keyframes/delays and pointer parallax.
+- `npm run test:ui -- tests/ui/responsive.spec.cjs` — 7 failed, 1 passed. At 320–3840px the engine selector measured about 27px, folder drag/fold controls about 24–25px, and resize controls about 39.9px while entrance scaling was active. The 200% zoom equivalent passed.
+- `npm run test:ui -- tests/ui/accessibility.spec.cjs` — Axe reported serious `aria-prohibited-attr` on `#cfg-resizer`. Subsequent GREEN probing found serious nested interactive controls in folder summaries and three critical unlabeled General toggles.
+
+Two test-fixture corrections were made before production work: the verified hero selector is `#hero` (not `#clock-wrap`), and language selection first opens the hidden General panel. The icon picker’s verified root is `#icon-modal`.
+
+### GREEN
+
+- Motion: 2 passed.
+- Responsive matrix: 8 passed.
+- Accessibility/locales: 13 passed.
+- Focused compatibility (`bookmark-settings`, `icon-picker`, accessibility): 17 passed.
+- Fresh `npm test`: syntax passed for 13 scripts; 3 unit passed; 41 UI passed (42.4s).
+
+### Production files
+
+`src/css/main.css`, `src/css/components.css`, `src/css/settings.css`, `src/js/background.js`, `src/js/settings-shell.js`, `src/js/settings-bookmarks.js`.
+
+### Commit
+
+Pending commit.
+
+### Self-review and concerns
+
+- Initial choreography now stays within 320ms and uses transform/opacity; drawer/dialog motion stays within the 280ms panel budget.
+- Remaining backdrop blur is static surface separation. Animated filter/backdrop-filter and every `transition: all` declaration were removed.
+- Reduced Motion disables CSS animations, clears delays, caps transitions at 80ms, stops the canvas loop, and ignores pointer parallax while preserving visibility pause and the 1.5 DPR cap.
+- The full viewport matrix has no horizontal overflow or clock/search/board intersection; canvas controls and bookmark tiles meet the 40px target contract.
+- Folder actions moved out of the native `summary` to remove nested interactivity while remaining available immediately after expansion.
+- Axe has zero serious/critical findings for the canvas, every settings section, menus, quick edit, and icon picker. Automated contrast coverage remains limited to Axe plus explicit focus visibility; final visual inspection is Task 9.
