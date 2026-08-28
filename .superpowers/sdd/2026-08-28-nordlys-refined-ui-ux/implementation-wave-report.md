@@ -111,7 +111,7 @@ Observed: 2 failed. Desktop `#cfg` had no dialog role; narrow width was 520px (2
 
 ### Commit
 
-Pending.
+`b9b4d29fda012bb956f4593c7f9622abaa13d5f4`
 
 ### Self-review and concerns
 
@@ -119,3 +119,32 @@ Pending.
 - Desktop width is 600–720px with 168px grouped rail; under 760px it becomes a viewport-width sheet.
 - Existing section IDs and controls are preserved. Existing top-level rows receive SettingRow geometry and accessible names without changing stored values.
 - Resizer code remains for compatibility but CSS constrains the normal shell; a later refinement may clamp persisted widths explicitly.
+
+## Task 5 — Appearance controls, theme contract, and shared live preview
+
+### RED
+
+Command: `npm run test:ui -- tests/ui/appearance.spec.cjs`.
+
+Observed: theme contract/geometry test already passed through semantic compatibility aliases; Appearance test failed because no selected card exposed `aria-pressed`, no collapsed advanced container existed, and no production-class preview existed.
+
+### GREEN
+
+- Focused Appearance: 2 passed.
+- First full regression exposed the intentional extra preview `.card`; baseline characterization was correctly narrowed to `#board > .card`/`#board .tile`.
+- Fresh `npm test`: 3 unit passed; 10 UI passed.
+
+### Production files
+
+`newtab.html`, `src/js/settings.js`, `src/css/settings.css`.
+
+### Commit
+
+Pending.
+
+### Self-review and concerns
+
+- All 21 IDs resolve semantic canvas/surface/text/border/focus colors and retain identical tile geometry.
+- Theme cards are native buttons with a single `aria-pressed=true` selection and fixed two-column layout.
+- The visible preview uses real `.card`, `.tile`, `.box`, `.nl-icon`, and `.lbl` classes; advanced glass controls remain available in a collapsed native `details`.
+- Full automated contrast math over translucent/composited surfaces remains scheduled for Task 8 manual/Axe-assisted review.

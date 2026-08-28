@@ -406,10 +406,12 @@ class SettingsController {
     const activeCustomId = this.app.config.customTheme?.id;
 
     const createPresetCard = (t, isLightSection = false) => {
-      const card = document.createElement("div");
+      const card = document.createElement("button");
+      card.type = "button";
       const isActive = (activeTheme === t.key) || (t.key === "frosted-glass" && (activeTheme === "liquid-glass" || activeTheme === "liquid-tahoe"));
       card.className = `theme-card ${isActive ? "active" : ""}`;
       card.dataset.theme = t.key;
+      card.setAttribute("aria-pressed", String(isActive));
       const themeLabel = (window.I18N && t.i18nKey) ? window.I18N.t(t.i18nKey) : t.name;
       card.innerHTML = `
         <div class="theme-preview" style="background: ${t.bg};"></div>
