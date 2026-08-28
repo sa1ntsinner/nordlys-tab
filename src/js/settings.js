@@ -11,6 +11,11 @@ class SettingsController {
     this.activeIconTarget = null; // { gIdx, lIdx }
     this.activeModalTab = "library";
     this.customThemes = this.loadCustomThemes();
+    this.shell = new NordlysSettingsShell({
+      root: this.drawer,
+      opener: document.getElementById("gear")
+    });
+    document.getElementById("gear")?.addEventListener("click", () => this.open());
     
     this.initDrawerResizer();
     this.initTabs();
@@ -57,38 +62,13 @@ class SettingsController {
       });
     }
 
-    // Drawer Open / Close
-    const gear = document.getElementById("gear");
-    const cfgx = document.getElementById("cfgx");
-    const dim = document.getElementById("dim");
-
-    gear?.addEventListener("click", () => this.open());
-    cfgx?.addEventListener("click", () => this.close());
-    dim?.addEventListener("click", () => this.close());
-
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        const cssDocsModal = document.getElementById("css-docs-modal");
-        // Cascading dismiss: topmost layer first, drawer last
-        if (this.modal?.classList.contains("open")) {
-          this.closeIconModal();
-        } else if (cssDocsModal?.classList.contains("open")) {
-          cssDocsModal.classList.remove("open");
-        } else if (this.drawer?.classList.contains("open")) {
-          this.close();
-        }
-      }
-    });
   }
 
   open(targetTab = null) {
-    this.drawer?.classList.add("open");
-    document.getElementById("dim")?.classList.add("on");
     this.syncFormValues();
     this.renderBookmarksManager();
-    if (targetTab) {
-      this.switchTab(targetTab);
-    }
+    const mapped = targetTab ? this.mapTab(targetTab) : null;
+    this.shell.open(mapped);
   }
 
   openDrawer(targetTab = null) {
@@ -96,25 +76,18 @@ class SettingsController {
   }
 
   close() {
-    this.drawer?.classList.remove("open");
-    document.getElementById("dim")?.classList.remove("on");
+    this.shell.close();
+  }
+
+  mapTab(targetTab) {
+    const tabMap = { "themes":"appearance", "theme":"appearance", "appearance":"appearance", "shaders":"background", "background":"background", "custom-theme":"appearance", "general":"general", "bookmarks":"bookmarks", "custom-css":"custom-css", "backup":"backup" };
+    return tabMap[targetTab] || targetTab;
   }
 
   switchTab(targetTab) {
     if (!targetTab) return;
-    const tabMap = {
-      "themes": "appearance",
-      "theme": "appearance",
-      "appearance": "appearance",
-      "shaders": "background",
-      "background": "background",
-      "custom-theme": "appearance",
-      "general": "general",
-      "bookmarks": "bookmarks",
-      "custom-css": "custom-css",
-      "backup": "backup"
-    };
-    const key = tabMap[targetTab] || targetTab;
+    const key = this.mapTab(targetTab);
+    if (this.shell) { this.shell.select(key); return; }
     const tabs = document.querySelectorAll(".ctab");
     const sections = document.querySelectorAll(".csec");
     const targetBtn = document.querySelector(`.ctab[data-tab="${key}"]`);
@@ -2134,4 +2107,3 @@ class SettingsController {
     });
   }
 }
-

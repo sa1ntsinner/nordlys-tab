@@ -83,7 +83,7 @@ Commands and observed failures:
 
 ### Commit
 
-Pending.
+`77ed4834833dcf353b6f63267e214d220beba4a6`
 
 ### Self-review and concerns
 
@@ -91,3 +91,31 @@ Pending.
 - Built-ins use 64%; raster/favicon use 72%; optical scale is bounded to 0.88–1.12.
 - Inline geometry now has a 56px floor; narrow cards reflow their grid.
 - Static `color-mix(in srgb)` remains supported by the Chromium MV3 target; broader fallback consolidation continues in theme work.
+
+## Task 4 — Responsive settings shell and vertical navigation
+
+### RED
+
+Command: `npm run test:ui -- tests/ui/settings-shell.spec.cjs`.
+
+Observed: 2 failed. Desktop `#cfg` had no dialog role; narrow width was 520px (200px short of viewport), and navigation lacked tab semantics/orientation.
+
+### GREEN
+
+- Focused syntax + UI: 11 scripts syntax-clean; 2 UI passed.
+- `npm test`: 3 unit passed; 8 UI passed.
+
+### Production files
+
+`newtab.html`, `src/js/settings-shell.js`, `src/js/settings.js`, `src/css/settings.css`.
+
+### Commit
+
+Pending.
+
+### Self-review and concerns
+
+- `SettingsController` remains the public state/config orchestrator; shell owns only DOM lifecycle/navigation/focus.
+- Desktop width is 600–720px with 168px grouped rail; under 760px it becomes a viewport-width sheet.
+- Existing section IDs and controls are preserved. Existing top-level rows receive SettingRow geometry and accessible names without changing stored values.
+- Resizer code remains for compatibility but CSS constrains the normal shell; a later refinement may clamp persisted widths explicitly.
