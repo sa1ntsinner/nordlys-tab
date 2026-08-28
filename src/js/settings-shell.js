@@ -11,6 +11,8 @@
       this.nav = root.querySelector('.ctabs'); this.body = root.querySelector('.cbody'); this.closeButton = root.querySelector('#cfgx');
       const title = root.querySelector('.chead b'); if (title) title.id = 'settings-title';
       root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-labelledby', 'settings-title'); root.setAttribute('aria-hidden', 'true');
+      const resizer = root.querySelector('#cfg-resizer');
+      if (resizer) { resizer.setAttribute('role', 'separator'); resizer.setAttribute('aria-orientation', 'vertical'); }
       this.buildLayout(); this.preparePanels(); this.roving = new NordlysUI.RovingTabs(this.nav, { orientation: this.orientation(), onSelect: id => this.select(id) });
       this.dialog = new NordlysUI.DialogController(root, { closeOnBackdrop: false, onClose: () => this.afterClose() });
       this.closeButton?.addEventListener('click', () => this.close());
@@ -42,7 +44,7 @@
       this.root.querySelectorAll('.csec > .row').forEach((row, index) => {
         row.classList.add('setting-row');
         const control = row.querySelector('input, select, textarea, button'); const text = row.querySelector('span');
-        if (control && text && !control.getAttribute('aria-label') && !control.labels?.length) control.setAttribute('aria-label', text.textContent.replace(/\s+/g, ' ').trim() || `Setting ${index + 1}`);
+        if (control && text && !control.getAttribute('aria-label')) control.setAttribute('aria-label', text.textContent.replace(/\s+/g, ' ').trim() || `Setting ${index + 1}`);
       });
     }
     select(sectionId, { focus = true } = {}) {

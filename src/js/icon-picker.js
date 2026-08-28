@@ -16,7 +16,17 @@
       this.root.querySelector('.modal-body')?.prepend(preview);
     }
     select(id) { this.root.querySelectorAll('.icon-tab-btn').forEach(tab => { const active = tab.dataset.tab === id; tab.classList.toggle('active', active); tab.setAttribute('aria-selected', String(active)); }); this.root.querySelectorAll('.modal-tab-pane').forEach(pane => pane.classList.toggle('active', pane.id === `modal-pane-${id}`)); }
-    open(currentIcon, opener) { const label = this.root.querySelector('#icon-live-preview .lbl'); if (label) label.textContent = currentIcon?.name || 'Bookmark'; this.dialog.open(opener); }
+    open(currentIcon, opener) {
+      const preview = this.root.querySelector('#icon-live-preview'); const label = preview?.querySelector('.lbl'); const box = preview?.querySelector('.box');
+      if (label) label.textContent = currentIcon?.name || 'Bookmark';
+      if (box && currentIcon) {
+        const metadata = resolveIcon(currentIcon.url, currentIcon.icon) || {};
+        const presentation = NordlysIcons.resolvePresentation({ source: currentIcon, metadata, isLight: document.documentElement.classList.contains('light-ui') });
+        box.replaceChildren(NordlysIcons.renderIcon(presentation));
+        box.style.setProperty('--c', currentIcon.color || 'var(--nl-accent)');
+      }
+      this.dialog.open(opener);
+    }
     close() { this.dialog.close(); }
   }
   window.NordlysIconPicker = NordlysIconPicker;

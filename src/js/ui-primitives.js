@@ -97,12 +97,15 @@
 
   class MenuController {
     constructor(root, { onAction = null } = {}) { this.root = root; this.onAction = onAction; this.opener = null; }
-    items() { return [...this.root.querySelectorAll('[role="menuitem"], .ctx-item')].filter(item => !item.hidden); }
+    items() { return [...this.root.querySelectorAll('[role="menuitem"], .ctx-item')].filter(item => !item.hidden && !item.hasAttribute('disabled')); }
     open(opener, point) {
       this.opener = opener; this.root.setAttribute('role', 'menu'); this.root.classList.add('open');
-      this.items().forEach(item => { item.setAttribute('role', 'menuitem'); item.tabIndex = -1; });
+      const items = this.items();
+      items.forEach(item => { item.setAttribute('role', 'menuitem'); item.tabIndex = -1; });
       if (point) { this.root.style.left = `${point.x}px`; this.root.style.top = `${point.y}px`; }
-      pushLayer(this); this.items()[0]?.focus(); this.root.addEventListener('keydown', this._key = event => this.onKey(event));
+      pushLayer(this); items[0]?.focus(); requestAnimationFrame(() => items[0]?.focus());
+      setTimeout(() => { if (this.root.classList.contains('open')) items[0]?.focus(); }, 100);
+      this.root.addEventListener('keydown', this._key = event => this.onKey(event));
     }
     onKey(event) {
       const items = this.items(); let index = items.indexOf(document.activeElement);

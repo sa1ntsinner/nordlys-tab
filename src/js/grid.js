@@ -15,6 +15,13 @@ class GridController {
 
     this.quickModal = document.getElementById("quick-edit-modal");
     this.quickFolderModal = document.getElementById("quick-edit-folder-modal");
+    this.menuControllers = new Map([
+      [this.tileCtxMenu, new NordlysUI.MenuController(this.tileCtxMenu)],
+      [this.folderCtxMenu, new NordlysUI.MenuController(this.folderCtxMenu)],
+      [this.boardCtxMenu, new NordlysUI.MenuController(this.boardCtxMenu)]
+    ]);
+    this.quickDialog = new NordlysUI.DialogController(this.quickModal, { closeOnBackdrop: true });
+    this.quickFolderDialog = new NordlysUI.DialogController(this.quickFolderModal, { closeOnBackdrop: true });
 
     this.activeTileTarget = null;   // { gIdx, lIdx }
     this.activeFolderTarget = null; // gIdx
@@ -156,6 +163,27 @@ class GridController {
     this.attachCardResize(card, grid, resizeHandle, group, gIdx);
     card.appendChild(resizeHandle);
 
+    const resizeControls = document.createElement("div");
+    resizeControls.className = "card-resize-controls";
+    const resizeStep = (delta, label, text) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = text;
+      button.setAttribute("aria-label", `${label} for ${group.label || 'folder'}`);
+      button.addEventListener("click", () => {
+        const next = Math.max(1, Math.min(8, (group.cols || 4) + delta));
+        if (next === group.cols) return;
+        group.cols = next;
+        grid.dataset.cols = next;
+        this.app.saveConfig();
+        this.app.settings?.renderBookmarksManager();
+        NordlysUI.announce(`${group.label || 'Folder'} resized to ${next} columns`);
+      });
+      return button;
+    };
+    resizeControls.append(resizeStep(-1, "Decrease columns", "−"), resizeStep(1, "Increase columns", "+"));
+    card.appendChild(resizeControls);
+
     return card;
   }
 
@@ -210,6 +238,14 @@ class GridController {
       e.preventDefault();
       e.stopPropagation();
       this.openTileContextMenu(e, gIdx, lIdx);
+    });
+    a.addEventListener("keydown", (e) => {
+      if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) {
+        e.preventDefault();
+        e.stopPropagation();
+        const rect = a.getBoundingClientRect();
+        setTimeout(() => this.openTileContextMenu({ clientX: rect.left + 12, clientY: rect.bottom - 8, currentTarget: a }, gIdx, lIdx), 0);
+      }
     });
 
     return a;
@@ -578,7 +614,7 @@ class GridController {
       titleEl.textContent = `${bmkWord} • ${link?.name || linkWord}`;
     }
 
-    this.positionMenu(this.tileCtxMenu, e.clientX, e.clientY);
+    this.positionMenu(this.tileCtxMenu, e.clientX, e.clientY, e.currentTarget || document.activeElement);
   }
 
   openFolderContextMenu(e, gIdx) {
@@ -593,24 +629,20 @@ class GridController {
       titleEl.textContent = `${folderWord} • ${group?.label || `${folderWord} ${gIdx + 1}`}`;
     }
 
-    this.positionMenu(this.folderCtxMenu, e.clientX, e.clientY);
+    this.positionMenu(this.folderCtxMenu, e.clientX, e.clientY, e.currentTarget || document.activeElement);
   }
 
   openBoardContextMenu(e) {
     this.closeContextMenus();
     if (!this.boardCtxMenu) return;
 
-    this.positionMenu(this.boardCtxMenu, e.clientX, e.clientY);
+    this.positionMenu(this.boardCtxMenu, e.clientX, e.clientY, e.currentTarget || document.activeElement);
   }
 
-  positionMenu(menuEl, mouseX, mouseY) {
-    // Measure the real rendered size (menus differ in height) while invisible
-    menuEl.style.visibility = "hidden";
-    menuEl.classList.add("open");
+  positionMenu(menuEl, mouseX, mouseY, opener = document.activeElement) {
+    // Hidden menus retain layout, so measure without toggling their visibility.
     const menuW = menuEl.offsetWidth || 220;
     const menuH = menuEl.offsetHeight || 220;
-    menuEl.classList.remove("open");
-    menuEl.style.visibility = "";
 
     let posX = mouseX;
     let posY = mouseY;
@@ -624,13 +656,11 @@ class GridController {
     // Menu unfolds from the cursor corner it was invoked at
     menuEl.style.setProperty("--origin", `${flipY ? "bottom" : "top"} ${flipX ? "right" : "left"}`);
 
-    requestAnimationFrame(() => menuEl.classList.add("open"));
+    this.menuControllers.get(menuEl)?.open(opener);
   }
 
   closeContextMenus() {
-    this.tileCtxMenu?.classList.remove("open");
-    this.folderCtxMenu?.classList.remove("open");
-    this.boardCtxMenu?.classList.remove("open");
+    this.menuControllers.forEach((controller) => controller.close());
   }
 
   openQuickEditModal(gIdx, lIdx) {
@@ -668,12 +698,12 @@ class GridController {
       }
     }
 
-    this.quickModal.classList.add("open");
+    this.quickDialog.open(document.querySelector(`.tile[data-group-idx="${gIdx}"][data-link-idx="${lIdx}"]`) || document.activeElement);
     setTimeout(() => { titleInput?.focus(); titleInput?.select(); }, 50);
   }
 
   closeQuickEditModal() {
-    this.quickModal?.classList.remove("open");
+    this.quickDialog.close();
   }
 
   openQuickFolderModal(gIdx) {
@@ -687,12 +717,12 @@ class GridController {
     if (nameInput) nameInput.value = group.label || "";
     if (colsSelect) colsSelect.value = String(group.cols || 4);
 
-    this.quickFolderModal.classList.add("open");
+    this.quickFolderDialog.open(document.querySelector(`.card[data-group-idx="${gIdx}"] .cat`) || document.activeElement);
     setTimeout(() => { nameInput?.focus(); nameInput?.select(); }, 50);
   }
 
   closeQuickFolderModal() {
-    this.quickFolderModal?.classList.remove("open");
+    this.quickFolderDialog.close();
   }
 
   /* ── SOTA Fluid Folder & Tile Drag and Drop ─────────────────── */

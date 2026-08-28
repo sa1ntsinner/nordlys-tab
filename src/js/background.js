@@ -20,6 +20,7 @@ class AuroraBackgroundEngine {
     this.isMousePending = false;
     this.mouseX = 50;
     this.mouseY = 50;
+    this.motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     // Per-theme shader palette (filled from CSS --shader-1..3 tokens)
     this.palette = ["#35d6c0", "#5b6cff", "#9d4edd"];
@@ -77,6 +78,7 @@ class AuroraBackgroundEngine {
 
     // Throttled High-Frequency Mouse Tracking (rAF-synced CSS vars + particle field)
     window.addEventListener("pointermove", (e) => {
+      if (this.motionQuery.matches) return;
       this.mouseX = (e.clientX / window.innerWidth) * 100;
       this.mouseY = (e.clientY / window.innerHeight) * 100;
 
@@ -89,6 +91,16 @@ class AuroraBackgroundEngine {
         });
       }
     }, { passive: true });
+
+    this.motionQuery.addEventListener?.("change", (event) => {
+      if (event.matches) {
+        this.stop();
+        document.documentElement.style.removeProperty("--mouse-x");
+        document.documentElement.style.removeProperty("--mouse-y");
+      } else if (["aurora", "cosmos", "mesh-gradient", "particles"].includes(this.mode)) {
+        this.start();
+      }
+    });
 
     // Page Visibility API - zero CPU/GPU waste when tab is in background
     document.addEventListener("visibilitychange", () => {
@@ -188,7 +200,7 @@ class AuroraBackgroundEngine {
   }
 
   start() {
-    if (this.running || document.hidden) return;
+    if (this.running || document.hidden || this.motionQuery.matches) return;
     this.running = true;
     this.lastFrame = performance.now();
     const loop = (now) => {

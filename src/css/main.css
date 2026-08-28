@@ -59,7 +59,7 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background 0.4s ease, color 0.3s ease;
+  transition: background-color var(--nl-motion-panel) ease, color var(--nl-motion-control) ease;
 }
 
 /* ── Background Rendering Layers ──────────────────────────────── */
@@ -86,7 +86,7 @@ body {
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.6s ease, filter 0.25s ease;
+  transition: opacity var(--nl-motion-panel) ease;
   filter: blur(var(--bg-blur));
   /* Slight overscale hides the blurred edge bleed */
   transform: scale(calc(1 + var(--bg-blur-px) / 500));
@@ -139,13 +139,13 @@ body {
 
 /* ── Utility Animations ───────────────────────────────────────── */
 @keyframes bloom {
-  from { opacity: 0; transform: scale(0.965) translateY(10px); filter: blur(12px); }
-  to { opacity: 1; transform: none; filter: blur(0); }
+  from { opacity: 0; transform: scale(0.98) translateY(8px); }
+  to { opacity: 1; transform: none; }
 }
 
 @keyframes rise {
-  from { opacity: 0; transform: translateY(24px) scale(0.98); filter: blur(8px); }
-  to { opacity: 1; transform: none; filter: blur(0); }
+  from { opacity: 0; transform: translateY(16px) scale(0.99); }
+  to { opacity: 1; transform: none; }
 }
 
 @keyframes tin {
@@ -165,7 +165,7 @@ body {
 }
 
 @keyframes foldaway {
-  to { opacity: 0; transform: scale(0.82) translateY(20px); filter: blur(8px); }
+  to { opacity: 0; transform: scale(0.96) translateY(12px); }
 }
 
 /* ── Responsive Viewport Adjustments ──────────────────────────── */
@@ -186,8 +186,10 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation: none !important;
+    animation-delay: 0s !important;
+    transition-duration: 80ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
   }
 }
