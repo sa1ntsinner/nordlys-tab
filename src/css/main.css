@@ -54,7 +54,7 @@ body {
   background-attachment: fixed;
   background-size: cover;
   background-position: center;
-  color: var(--ink);
+  color: var(--nl-text-primary, var(--ink));
   font-family: var(--font-main);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
