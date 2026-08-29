@@ -13,3 +13,11 @@ test('current and legacy storage survive reload and storage.clear resets both', 
   await page.evaluate(() => chrome.storage.local.clear());
   await expect.poll(() => Object.keys(storageState)).toEqual([]);
 });
+
+test('stored 50-55px tile sizes migrate once to the supported 56px floor', async ({ nordlysPage }) => {
+  const { page, storageState } = nordlysPage;
+  await page.evaluate(() => chrome.storage.local.set({ aether_tab_config: { ...Aurora.defaultConfig, tileSize: 52 } }));
+  await page.reload(); await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  await expect.poll(() => storageState.aether_tab_config?.tileSize).toBe(56);
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--tw').trim())).toContain('56px');
+});

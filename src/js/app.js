@@ -124,14 +124,23 @@ class AuroraApp {
     this.init();
   }
 
+  normalizeStoredConfig(config) {
+    let changed = false;
+    if (THEME_MIGRATIONS[config.theme]) { config.theme = THEME_MIGRATIONS[config.theme]; changed = true; }
+    if (Number(config.tileSize) >= 50 && Number(config.tileSize) < 56) { config.tileSize = 56; changed = true; }
+    return changed;
+  }
+
   loadConfig() {
     try {
       const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         const cfg = Object.assign({}, DEFAULT_CONFIG, parsed);
-        // Migrate theme keys saved by earlier releases
-        if (THEME_MIGRATIONS[cfg.theme]) cfg.theme = THEME_MIGRATIONS[cfg.theme];
+        if (this.normalizeStoredConfig(cfg)) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+          if (typeof chrome !== "undefined") chrome.storage?.local?.set?.({ [STORAGE_KEY]: cfg });
+        }
         return cfg;
       }
     } catch (e) {}
@@ -156,8 +165,9 @@ class AuroraApp {
         const saved = data && (data[STORAGE_KEY] || data[LEGACY_STORAGE_KEY]);
         if (saved && saved.groups && !localStorage.getItem(STORAGE_KEY)) {
           this.config = Object.assign({}, DEFAULT_CONFIG, saved);
-          if (THEME_MIGRATIONS[this.config.theme]) this.config.theme = THEME_MIGRATIONS[this.config.theme];
+          const migrated = this.normalizeStoredConfig(this.config);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(this.config));
+          if (migrated) chrome.storage.local.set({ [STORAGE_KEY]: this.config });
           this.applyThemeTokens();
           this.applyGeometryTokens();
           this.injectCustomCSS(this.config.customCss || "");
