@@ -6,6 +6,8 @@ const translations = {
   "en": {
     "search.placeholder": "Search with {engine} or enter URL...",
     "search.engineTitle": "Search with {engine} (Click to switch)",
+    "search.historyRemoved": "Removed {query} from history",
+    "search.suggestionsClosed": "Search suggestions closed",
     "greeting.morning": "Good morning",
     "greeting.afternoon": "Good afternoon",
     "greeting.evening": "Good evening",
@@ -193,6 +195,8 @@ const translations = {
   "ru": {
     "search.placeholder": "Поиск в {engine} или ввод URL...",
     "search.engineTitle": "Искать через {engine} (клик для смены)",
+    "search.historyRemoved": "Запрос {query} удалён из истории",
+    "search.suggestionsClosed": "Подсказки поиска закрыты",
     "greeting.morning": "Доброе утро",
     "greeting.afternoon": "Добрый день",
     "greeting.evening": "Добрый вечер",
@@ -380,6 +384,8 @@ const translations = {
   "es": {
     "search.placeholder": "Buscar con {engine} o escribir URL...",
     "search.engineTitle": "Buscar con {engine} (Clic para cambiar)",
+    "search.historyRemoved": "{query} se eliminó del historial",
+    "search.suggestionsClosed": "Sugerencias de búsqueda cerradas",
     "greeting.morning": "Buenos días",
     "greeting.afternoon": "Buenas tardes",
     "greeting.evening": "Buenas noches",
@@ -567,6 +573,8 @@ const translations = {
   "de": {
     "search.placeholder": "Suche mit {engine} oder URL eingeben...",
     "search.engineTitle": "Mit {engine} suchen (Klicken zum Wechseln)",
+    "search.historyRemoved": "{query} aus dem Verlauf entfernt",
+    "search.suggestionsClosed": "Suchvorschläge geschlossen",
     "greeting.morning": "Guten Morgen",
     "greeting.afternoon": "Guten Tag",
     "greeting.evening": "Guten Abend",
@@ -754,6 +762,8 @@ const translations = {
   "fr": {
     "search.placeholder": "Rechercher avec {engine} ou entrer une URL...",
     "search.engineTitle": "Rechercher avec {engine} (Cliquer pour changer)",
+    "search.historyRemoved": "{query} supprimé de l’historique",
+    "search.suggestionsClosed": "Suggestions de recherche fermées",
     "greeting.morning": "Bonjour",
     "greeting.afternoon": "Bon après-midi",
     "greeting.evening": "Bonsoir",
@@ -941,6 +951,8 @@ const translations = {
   "ja": {
     "search.placeholder": "{engine}で検索、またはURLを入力...",
     "search.engineTitle": "{engine}で検索（クリックして切り替え）",
+    "search.historyRemoved": "{query}を履歴から削除しました",
+    "search.suggestionsClosed": "検索候補を閉じました",
     "greeting.morning": "おはようございます",
     "greeting.afternoon": "こんにちは",
     "greeting.evening": "こんばんは",
@@ -1128,6 +1140,8 @@ const translations = {
   "zh": {
     "search.placeholder": "在 {engine} 中搜索或输入网址...",
     "search.engineTitle": "使用 {engine} 搜索（点击切换）",
+    "search.historyRemoved": "已从历史记录中删除 {query}",
+    "search.suggestionsClosed": "搜索建议已关闭",
     "greeting.morning": "早上好",
     "greeting.afternoon": "下午好",
     "greeting.evening": "晚上好",
@@ -1315,6 +1329,8 @@ const translations = {
   "tr": {
     "search.placeholder": "{engine} ile ara veya URL yaz...",
     "search.engineTitle": "{engine} ile ara (Değiştirmek için tıkla)",
+    "search.historyRemoved": "{query} geçmişten kaldırıldı",
+    "search.suggestionsClosed": "Arama önerileri kapatıldı",
     "greeting.morning": "Günaydın",
     "greeting.afternoon": "Tünaydın",
     "greeting.evening": "İyi akşamlar",

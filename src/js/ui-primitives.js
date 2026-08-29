@@ -125,17 +125,26 @@
 
   class MenuController {
     constructor(root, { onAction = null } = {}) {
-      this.root = root; this.onAction = onAction; this.opener = null;
+      this.root = root; this.onAction = onAction; this.opener = null; this.isOpen = false;
       root.hidden = true; root.inert = true; root.setAttribute('aria-hidden', 'true');
     }
     items() { return [...this.root.querySelectorAll('[role="menuitem"], .ctx-item')].filter(item => !item.hidden && !item.hasAttribute('disabled')); }
     open(opener, point) {
-      this.opener = opener; this.root.hidden = false; this.root.inert = false; this.root.setAttribute('aria-hidden', 'false'); this.root.setAttribute('role', 'menu'); this.root.classList.add('open');
+      this.position(point);
+      if (this.isOpen) return;
+      this.isOpen = true; this.opener = opener; this.root.hidden = false; this.root.inert = false; this.root.style.visibility = 'visible'; this.root.setAttribute('aria-hidden', 'false'); this.root.setAttribute('role', 'menu'); this.root.classList.add('open');
       const items = this.items();
       items.forEach(item => { item.setAttribute('role', 'menuitem'); item.tabIndex = -1; });
-      if (point) { this.root.style.left = `${point.x}px`; this.root.style.top = `${point.y}px`; }
-      pushLayer(this); requestAnimationFrame(() => items[0]?.focus({ preventScroll: true }));
+      this.position(point); pushLayer(this); items[0]?.focus({ preventScroll: true });
       this.root.addEventListener('keydown', this._key = event => this.onKey(event));
+    }
+    position(point) {
+      if (!point) return;
+      const wasHidden = this.root.hidden; if (wasHidden) { this.root.hidden = false; this.root.style.visibility = 'hidden'; }
+      const width = this.root.offsetWidth || 220, height = this.root.offsetHeight || 220;
+      this.root.style.left = `${Math.max(10, Math.min(point.x, innerWidth - width - 10))}px`;
+      this.root.style.top = `${Math.max(10, Math.min(point.y, innerHeight - height - 10))}px`;
+      if (wasHidden) { this.root.hidden = true; this.root.style.removeProperty('visibility'); }
     }
     onKey(event) {
       const items = this.items(); let index = items.indexOf(document.activeElement);
@@ -145,7 +154,7 @@
       else if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); document.activeElement?.click(); return; }
       else return; event.preventDefault(); items[index]?.focus();
     }
-    close() { this.root.classList.remove('open'); this.root.setAttribute('aria-hidden', 'true'); this.root.removeEventListener('keydown', this._key); removeLayer(this); this.root.hidden = true; if (this.opener?.isConnected) this.opener.focus(); }
+    close() { if (!this.isOpen) return; this.isOpen = false; this.root.classList.remove('open'); this.root.setAttribute('aria-hidden', 'true'); this.root.inert = true; this.root.style.removeProperty('visibility'); this.root.removeEventListener('keydown', this._key); removeLayer(this); this.root.hidden = true; if (this.opener?.isConnected) this.opener.focus(); }
   }
 
   function liveRegion() {

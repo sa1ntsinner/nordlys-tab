@@ -640,23 +640,7 @@ class GridController {
   }
 
   positionMenu(menuEl, mouseX, mouseY, opener = document.activeElement) {
-    // Hidden menus retain layout, so measure without toggling their visibility.
-    const menuW = menuEl.offsetWidth || 220;
-    const menuH = menuEl.offsetHeight || 220;
-
-    let posX = mouseX;
-    let posY = mouseY;
-    const flipX = posX + menuW > window.innerWidth - 12;
-    const flipY = posY + menuH > window.innerHeight - 12;
-    if (flipX) posX = Math.max(10, mouseX - menuW);
-    if (flipY) posY = Math.max(10, mouseY - menuH);
-
-    menuEl.style.left = `${Math.max(10, posX)}px`;
-    menuEl.style.top = `${Math.max(10, posY)}px`;
-    // Menu unfolds from the cursor corner it was invoked at
-    menuEl.style.setProperty("--origin", `${flipY ? "bottom" : "top"} ${flipX ? "right" : "left"}`);
-
-    this.menuControllers.get(menuEl)?.open(opener);
+    this.menuControllers.get(menuEl)?.open(opener, { x: mouseX, y: mouseY });
   }
 
   closeContextMenus() {
