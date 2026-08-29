@@ -323,6 +323,10 @@ class AuroraApp {
 
     // The canvas engine repaints its aurora / orbs / dust in theme colors
     this.bgEngine?.refreshPalette();
+
+    // Icon plates are chosen against the theme they were measured on, so a new
+    // palette invalidates every one of them.
+    window.NordlysIcons?.refreshPlates();
   }
 
   initColorModeListener() {

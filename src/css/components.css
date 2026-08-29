@@ -1302,3 +1302,23 @@ body.hover-none .tile:hover .box {
   width: 40px; height: 40px; border: 1px solid var(--nl-border); border-radius: var(--nl-radius-sm);
   background: var(--nl-surface-elevated); color: var(--nl-text-primary); cursor: pointer;
 }
+
+/* Contrast plates: the plate moves so the icon never has to be repainted.
+   Both tones are mixed from the active theme, so they stay on-palette.
+
+   These are marked important on purpose. Themes paint decorative gradients over
+   .box through higher-specificity selectors (html[data-theme="…"] .tile:hover .box),
+   and a decorative layer must never be able to hide an icon. Escalating
+   specificity instead would mean re-matching every future theme rule. */
+.box[data-icon-plate="contrast"],
+.bookmark-summary-icon[data-icon-plate="contrast"] {
+  background: color-mix(in srgb, var(--ink) 60%, var(--card-tint)) !important;
+  border-color: color-mix(in srgb, var(--ink) 28%, transparent) !important;
+}
+.box[data-icon-plate="neutral"],
+.bookmark-summary-icon[data-icon-plate="neutral"] {
+  background: color-mix(in srgb, var(--ink) 46%, var(--card-tint)) !important;
+  border-color: color-mix(in srgb, var(--ink) 28%, transparent) !important;
+}
+/* The settings row carries no plate of its own until one is needed. */
+.bookmark-summary-icon[data-icon-plate] { border-radius: var(--nl-radius-sm); }

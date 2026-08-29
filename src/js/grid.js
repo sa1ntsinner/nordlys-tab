@@ -219,8 +219,10 @@ class GridController {
       renderedIcon.replaceChildren();
       const mono = document.createElement("span"); mono.className = "mono";
       mono.textContent = (link.name || "A").trim().charAt(0).toUpperCase(); renderedIcon.append(mono);
+      window.NordlysIcons.applyPlateContrast(box, renderedIcon);
     }, { once: true });
     box.appendChild(renderedIcon);
+    window.NordlysIcons.applyPlateContrast(box, renderedIcon);
 
     // Label
     const lbl = document.createElement("span");
@@ -674,8 +676,7 @@ class GridController {
       }
     }
 
-    this.quickDialog.open(document.querySelector(`.tile[data-group-idx="${gIdx}"][data-link-idx="${lIdx}"]`) || document.activeElement);
-    setTimeout(() => { titleInput?.focus(); titleInput?.select(); }, 50);
+    this.quickDialog.open(document.querySelector(`.tile[data-group-idx="${gIdx}"][data-link-idx="${lIdx}"]`) || document.activeElement, titleInput);
   }
 
   closeQuickEditModal() {
@@ -693,8 +694,7 @@ class GridController {
     if (nameInput) nameInput.value = group.label || "";
     if (colsSelect) colsSelect.value = String(group.cols || 4);
 
-    this.quickFolderDialog.open(document.querySelector(`.card[data-group-idx="${gIdx}"] .cat`) || document.activeElement);
-    setTimeout(() => { nameInput?.focus(); nameInput?.select(); }, 50);
+    this.quickFolderDialog.open(document.querySelector(`.card[data-group-idx="${gIdx}"] .cat`) || document.activeElement, nameInput);
   }
 
   closeQuickFolderModal() {
