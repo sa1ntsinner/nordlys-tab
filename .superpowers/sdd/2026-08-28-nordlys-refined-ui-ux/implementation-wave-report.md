@@ -285,3 +285,34 @@ Original-resolution review then found two fixture/product defects:
 ### Reviewed snapshots
 
 `canvas-dark-1440-win32.png`, `canvas-light-1024-win32.png`, `canvas-narrow-320-win32.png`, `settings-appearance-1440-win32.png`, `settings-bookmarks-expanded-1440-win32.png`, `dialog-icon-picker-1440-win32.png`, `context-menu-keyboard-1440-win32.png`, `dialog-quick-edit-1440-win32.png`, `tile-focus-ring-1440-win32.png`, `canvas-reduced-motion-1440-win32.png`, `custom-theme-dark-1440-win32.png`, `custom-theme-light-1440-win32.png`.
+
+## Mandatory review fix wave — 2026-08-29
+
+The first implementation was not accepted as final. A second RED/GREEN fix wave closed the review findings rather than reclassifying them as advisories.
+
+### Delivered corrections
+
+- Shared top-layer focus containment now covers every settings section plus nested icon, crop, confirmation, quick-edit, and CSS-guide dialogs. Closed layers are `hidden`, inert, and `aria-hidden`; Escape closes exactly one layer and restores the exact opener.
+- Bookmark undo follows stable folder identity after reorder. The collapsed manager keeps working visibility, folder movement, rename, columns, add, delete, link movement/transfer/edit/delete, and one-shot Undo controls available without empty handlers.
+- MV3 CSP is explicit, inline handlers are gone, and Playwright launches the real unpacked extension in a persistent Chromium context. The test derives the extension ID from the actual `chrome-extension://` URL.
+- Reduced Motion computes `none` for transform, filter, and backdrop-filter across interactive states. The settings scrim has no blur. Every visible settings/dialog/menu target, including range hit areas, is at least 40×40.
+- Resize pointer and keyboard controls share bounded mutations, no longer overlay tile labels, and geometry tests cover 320/768/1440. The 320px gear is moved to a collision-free top corner.
+- Icon metadata/presentation is source-aware; all library/favicon/URL/upload/crop/monogram paths retain a real live preview. Picker artwork is 34px, ARIA relationships are valid, and preview tone/shadows are shared.
+- All 21 built-in themes retain semantic colors and identical component geometry. Automated WCAG math now enforces 4.5:1 primary text contrast. Custom themes dynamically choose readable on-accent text and expose a localized live contrast warning.
+- Search history supports keyboard deletion and exact Escape value restoration with announcements. Menus support Menu/Shift+F10, arrows, Home/End, Space/Enter, collision clamping, deterministic focus, and shared top-layer behavior.
+- New strings exist in all eight locales; key completeness and 320/720 layout checks run for English, Russian, Spanish, German, French, Japanese, Chinese, and Turkish.
+- Storage tests cover `clear`, current and legacy seeds, 50–55px tile-size migration to the supported 56px floor, reload, custom CSS, JSON export/import, and reset of current/legacy/auxiliary data.
+- Duplicate settings-tab, icon-tab, and Escape controllers were removed. Roving-tab and settings-shell listeners now have explicit teardown.
+
+### Verification evidence
+
+- Focused RED tests reproduced the mobile gear collision, preview contrast failure, absent contrast warning, and ungrouped bookmark row actions before their fixes.
+- Fresh `npm test`: 13 syntax checks passed, 3 unit tests passed, 76 UI tests passed in 1.1 minutes.
+- The 76 UI tests include Axe, all-locale layout/content, focus layering, bookmark identity/manager behavior, menu/search keyboard paths, computed Reduced Motion, target sizing, responsive geometry, persistence/import/export/reset, the real unpacked-extension smoke, and 12 visual snapshots.
+- All 12 final PNG baselines were opened at original resolution after regeneration.
+
+### Review-wave commits
+
+`ea207ae`, `241e763`, `e854700`, `f43ab2e`, `0b11392`, `a9f7a20`, `47224a9`, `6e13c88`, `5c4439e`, `f267d79`, `53595a9`.
+
+No Critical or Important product issue remains open. The branch was not merged, pushed, or published.
