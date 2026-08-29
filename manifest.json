@@ -3,6 +3,9 @@
   "name": "Nordlys: Aurora Glass New Tab",
   "version": "2.1.0",
   "description": "Fast, beautiful New Tab: 21 liquid-glass themes, live aurora shaders, smart bookmark folders, multi-engine search and custom CSS.",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
   "chrome_url_overrides": {
     "newtab": "newtab.html"
   },

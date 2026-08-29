@@ -535,6 +535,7 @@ class SearchWidget {
       historyMatches.forEach((histItem) => {
         const histRow = document.createElement("div");
         histRow.className = "sugg-item sugg-history";
+        histRow.dataset.historyItem = histItem;
         histRow.style.setProperty("--si", itemIndex++);
         histRow.innerHTML = `
           <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
@@ -603,17 +604,31 @@ class SearchWidget {
     if (e.key === "Escape") {
       e.preventDefault();
       e.stopPropagation();
+      if (this.navigationValue !== undefined) this.input.value = this.navigationValue;
+      this.navigationValue = undefined;
       document.body.classList.remove("searching");
       this.closeSuggestions();
+      NordlysUI.announce(window.I18N ? window.I18N.t("search.suggestionsClosed") : "Search suggestions closed");
+      return;
+    }
+
+    if (e.key === "Delete" && this.selIdx >= 0 && items[this.selIdx]?.classList.contains("sugg-history")) {
+      e.preventDefault(); e.stopPropagation();
+      const item = items[this.selIdx].dataset.historyItem;
+      if (this.navigationValue !== undefined) this.input.value = this.navigationValue;
+      this.navigationValue = undefined; this.deleteHistoryItem(item);
+      NordlysUI.announce(window.I18N ? window.I18N.t("search.historyRemoved", { query: item }) : `Removed ${item} from history`);
       return;
     }
 
     if (e.key === "ArrowDown" && items.length > 0) {
       e.preventDefault();
+      if (this.selIdx < 0) this.navigationValue = this.input.value;
       this.selIdx = (this.selIdx + 1) % items.length;
       this.highlightItem(items);
     } else if (e.key === "ArrowUp" && items.length > 0) {
       e.preventDefault();
+      if (this.selIdx < 0) this.navigationValue = this.input.value;
       this.selIdx = (this.selIdx - 1 + items.length) % items.length;
       this.highlightItem(items);
     } else if (e.key === "Enter") {

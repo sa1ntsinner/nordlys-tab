@@ -90,10 +90,21 @@ function toast(message, kind = "info", duration) {
 /* ── Glass Confirm Dialog (Promise-based confirm() replacement) ──── */
 const AuroraConfirm = {
   active: null,
+  controller: null,
+
+  finish(result, { controllerAlreadyClosed = false } = {}) {
+    const active = this.active; if (!active) return;
+    this.active = null;
+    active.okBtn.removeEventListener("click", active.onOk);
+    active.cancelBtn.removeEventListener("click", active.onCancel);
+    active.backdrop.removeEventListener("keydown", active.onKey);
+    if (!controllerAlreadyClosed) this.controller?.close();
+    active.resolve(result);
+  },
 
   open({ title, message, confirmText, cancelText, danger = true }) {
     // Only one dialog at a time; auto-cancel the previous one
-    if (this.active) this.active.resolve(false);
+    if (this.active) this.finish(false);
 
     const backdrop = document.getElementById("confirm-modal");
     if (!backdrop) return Promise.resolve(window.confirm(message || title));
@@ -107,32 +118,24 @@ const AuroraConfirm = {
     cancelBtn.textContent = cancelText || t("confirm.cancel", "Cancel");
     okBtn.classList.toggle("danger", danger);
 
-    backdrop.classList.add("open");
+    if (!this.controller) this.controller = new NordlysUI.DialogController(backdrop, {
+      closeOnBackdrop: true,
+      onClose: () => this.finish(false, { controllerAlreadyClosed: true })
+    });
 
     return new Promise((resolve) => {
-      const done = (result) => {
-        backdrop.classList.remove("open");
-        okBtn.removeEventListener("click", onOk);
-        cancelBtn.removeEventListener("click", onCancel);
-        backdrop.removeEventListener("click", onBackdrop);
-        window.removeEventListener("keydown", onKey, true);
-        this.active = null;
-        resolve(result);
-      };
-      const onOk = () => done(true);
-      const onCancel = () => done(false);
-      const onBackdrop = (e) => { if (e.target === backdrop) done(false); };
+      const onOk = () => this.finish(true);
+      const onCancel = () => this.finish(false);
       const onKey = (e) => {
-        if (e.key === "Escape") { e.stopPropagation(); done(false); }
-        if (e.key === "Enter") { e.stopPropagation(); done(true); }
+        if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); this.finish(true); }
       };
 
-      this.active = { resolve: done };
+      this.active = { resolve, backdrop, okBtn, cancelBtn, onOk, onCancel, onKey };
       okBtn.addEventListener("click", onOk);
       cancelBtn.addEventListener("click", onCancel);
-      backdrop.addEventListener("click", onBackdrop);
-      window.addEventListener("keydown", onKey, true);
-      setTimeout(() => okBtn.focus(), 60);
+      backdrop.addEventListener("keydown", onKey);
+      this.controller.open(document.activeElement);
+      okBtn.focus({ preventScroll: true });
     });
   }
 };

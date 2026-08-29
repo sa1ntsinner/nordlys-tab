@@ -160,9 +160,12 @@ class AuroraApp {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(this.config));
           this.applyThemeTokens();
           this.applyGeometryTokens();
+          this.injectCustomCSS(this.config.customCss || "");
           this.updateBackgroundMode();
           this.grid?.render();
           this.widgets?.updateClock();
+          const cssEditor = document.getElementById("css-editor");
+          if (cssEditor) cssEditor.value = this.config.customCss || "";
           if (typeof toast === "function") {
             toast(window.I18N ? window.I18N.t("toast.restored") : "Settings restored from browser storage", "success");
           }

@@ -52,3 +52,14 @@ test('reduced motion removes scale, blur, parallax, and long animation', async (
   await page.mouse.move(10, 10);
   expect(await page.evaluate(() => document.documentElement.style.getPropertyValue('--mouse-x'))).toBe(reduced.mouseX);
 });
+
+test('reduced motion computes no transform, filter, or backdrop blur in interactive states', async ({ nordlysPage }) => {
+  const { page } = nordlysPage; await page.emulateMedia({ reducedMotion: 'reduce' }); await page.reload(); await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  const tile = page.locator('#board .tile').first(); await tile.hover(); await tile.focus(); await page.locator('#gear').hover();
+  await page.locator('#gear').click(); await page.locator('#settings-tab-bookmarks').click();
+  const folder = page.locator('.bookmark-folder-accordion').first(); await folder.locator('summary').click(); await folder.getByRole('button', { name: /Edit YouTube/ }).click(); await folder.getByRole('button', { name: /Choose icon/ }).click();
+  const offenders = await page.evaluate(() => [...document.querySelectorAll('body *')].filter(element => element.getClientRects().length && !element.closest('[hidden],[inert],[aria-hidden="true"]')).map(element => {
+    const style = getComputedStyle(element); return { selector: `${element.tagName.toLowerCase()}#${element.id}.${element.className}`, transform: style.transform, filter: style.filter, backdrop: style.backdropFilter };
+  }).filter(item => item.transform !== 'none' || item.filter !== 'none' || item.backdrop !== 'none'));
+  expect(offenders).toEqual([]);
+});
