@@ -3,7 +3,9 @@
   --nl-canvas-gradient: var(--void-gradient, linear-gradient(#0c1426, #060a14));
   --nl-surface-card: var(--card-tint, #141c34);
   --nl-surface-card-deep: var(--card-tint-deep, #090e1c);
-  --nl-surface-elevated: #172038;
+  /* Tracks the active theme like its sibling surfaces. A fixed literal here renders
+     dark-on-dark in every light theme, where --ink is dark. */
+  --nl-surface-elevated: var(--card-tint, #141c34);
   --nl-overlay: rgba(2, 6, 15, .46);
   --nl-text-primary: var(--ink, #e9effb);
   --nl-text-secondary: var(--dim, #a7b5d0);
@@ -46,7 +48,12 @@
 }
 
 @supports (color: color-mix(in oklch, white, black)) {
-  :root { --nl-border-strong: color-mix(in oklch, var(--nl-text-primary) 24%, transparent); }
+  :root {
+    --nl-border-strong: color-mix(in oklch, var(--nl-text-primary) 24%, transparent);
+    /* Lift the card tint toward the text colour: lighter than the card on dark themes,
+       darker than it on light ones, so it separates in both directions. */
+    --nl-surface-elevated: color-mix(in srgb, var(--card-tint, #141c34) 88%, var(--ink, #e9effb) 12%);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -69,3 +69,39 @@ test('every visible settings, dialog, and menu target has a 40px hit area', asyn
     expect.soft(small, section).toEqual([]);
   }
 });
+
+/* Axe only runs the default dark theme, so a surface token that fails to follow a
+   light theme stays invisible to it. Measure the rendered contrast in both modes. */
+async function stepperContrast(page) {
+  return page.evaluate(() => {
+    // Rasterise through a canvas: computed values may arrive as rgb(), color(srgb ...)
+    // or any other CSS colour form, and only the painted pixel is format-proof.
+    const context = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+    const pixel = color => { context.clearRect(0, 0, 1, 1); context.fillStyle = color; context.fillRect(0, 0, 1, 1); return [...context.getImageData(0, 0, 1, 1).data]; };
+    const channel = value => (value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4));
+    const luminance = color => { const [r, g, b] = pixel(color); return 0.2126 * channel(r / 255) + 0.7152 * channel(g / 255) + 0.0722 * channel(b / 255); };
+    const opaqueBackground = node => {
+      for (let current = node; current; current = current.parentElement) {
+        const background = getComputedStyle(current).backgroundColor;
+        if (pixel(background)[3] > 229) return background;
+      }
+      return getComputedStyle(document.body).backgroundColor;
+    };
+    return [...document.querySelectorAll('.card-resize-controls button')].map(button => {
+      const style = getComputedStyle(button);
+      const [text, surface] = [luminance(style.color), luminance(opaqueBackground(button))];
+      return { label: button.getAttribute('aria-label'), ratio: Number(((Math.max(text, surface) + 0.05) / (Math.min(text, surface) + 0.05)).toFixed(2)) };
+    });
+  });
+}
+
+test('folder resize controls keep readable contrast in light and dark themes', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  for (const mode of ['light', 'dark']) {
+    await page.locator('#gear').click(); await page.locator(`[data-mode="${mode}"]`).click(); await page.locator('#cfgx').click();
+    await expect(page.locator('#board .card').first()).toBeVisible();
+    const measured = await stepperContrast(page);
+    expect(measured.length).toBeGreaterThan(0);
+    for (const control of measured) expect.soft(control.ratio, `${mode}: ${control.label} at ${control.ratio}:1`).toBeGreaterThanOrEqual(4.5);
+  }
+});
