@@ -8,8 +8,15 @@
 
   function visibleFocusable(root) {
     return [...root.querySelectorAll(focusableSelector)].filter(node => {
-      const style = getComputedStyle(node);
-      return !node.hidden && style.display !== 'none' && style.visibility !== 'hidden';
+      if (node.closest('[hidden], [aria-hidden="true"], [inert]')) return false;
+      if (node.closest('details:not([open]) > :not(summary)')) return false;
+      if (!node.getClientRects().length) return false;
+      for (let current = node; current && current !== root.parentElement; current = current.parentElement) {
+        const style = getComputedStyle(current);
+        if (style.display === 'none' || style.visibility === 'hidden' || style.contentVisibility === 'hidden') return false;
+        if (current === root) break;
+      }
+      return true;
     });
   }
 
@@ -21,13 +28,16 @@
     activate(opener = document.activeElement) {
       if (this.active) return;
       this.active = true; this.opener = opener;
-      this.root.addEventListener('keydown', this.onKeyDown);
+      document.addEventListener('keydown', this.onKeyDown, true);
+      this.focusInitial();
+    }
+    focusInitial() {
       const target = this.root.querySelector('[autofocus]') || visibleFocusable(this.root)[0] || this.root;
       if (!this.root.hasAttribute('tabindex') && target === this.root) this.root.tabIndex = -1;
       target.focus({ preventScroll: true });
     }
     onKeyDown(event) {
-      if (event.key !== 'Tab') return;
+      if (event.key !== 'Tab' || layers[layers.length - 1]?.scope !== this) return;
       const nodes = visibleFocusable(this.root);
       if (!nodes.length) { event.preventDefault(); this.root.focus(); return; }
       const first = nodes[0], last = nodes[nodes.length - 1];
@@ -36,34 +46,52 @@
     }
     deactivate({ restore = true } = {}) {
       if (!this.active) return;
-      this.active = false; this.root.removeEventListener('keydown', this.onKeyDown);
+      this.active = false; document.removeEventListener('keydown', this.onKeyDown, true);
       if (restore && this.opener?.isConnected) this.opener.focus({ preventScroll: true });
     }
   }
 
-  function pushLayer(layer) { layers.push(layer); }
-  function removeLayer(layer) { const index = layers.lastIndexOf(layer); if (index >= 0) layers.splice(index, 1); }
+  function setLayerInteractive(layer, interactive) {
+    if (!layer?.root) return;
+    layer.root.inert = !interactive;
+  }
+  function pushLayer(layer) {
+    const previous = layers[layers.length - 1]; setLayerInteractive(previous, false);
+    layers.push(layer); setLayerInteractive(layer, true);
+  }
+  function removeLayer(layer) {
+    const index = layers.lastIndexOf(layer); if (index >= 0) layers.splice(index, 1);
+    setLayerInteractive(layer, false); setLayerInteractive(layers[layers.length - 1], true);
+  }
   document.addEventListener('keydown', event => {
     if (event.key !== 'Escape' || !layers.length) return;
     event.preventDefault(); event.stopPropagation(); layers[layers.length - 1].close();
+  }, true);
+  document.addEventListener('focusin', event => {
+    const top = layers[layers.length - 1];
+    if (!top?.root || top.root.contains(event.target)) return;
+    const target = visibleFocusable(top.root)[0] || top.root;
+    target.focus({ preventScroll: true });
   }, true);
 
   class DialogController {
     constructor(root, options = {}) {
       this.root = root; this.options = options; this.scope = new FocusScope(root); this.isOpen = false;
       root.setAttribute('role', root.getAttribute('role') || 'dialog'); root.setAttribute('aria-modal', 'true');
+      root.hidden = !root.classList.contains('open'); root.inert = root.hidden; root.setAttribute('aria-hidden', String(root.hidden));
       this.onBackdrop = event => { if (event.target === root && options.closeOnBackdrop !== false) this.close(); };
     }
     open(opener = document.activeElement) {
       if (this.isOpen) return;
-      this.isOpen = true; this.root.hidden = false; this.root.classList.add('open');
-      this.root.setAttribute('aria-hidden', 'false'); this.root.addEventListener('pointerdown', this.onBackdrop);
+      this.isOpen = true; this.root.hidden = false; this.root.inert = false; this.root.style.visibility = 'visible'; this.root.setAttribute('aria-hidden', 'false');
+      this.root.classList.add('open'); this.root.addEventListener('pointerdown', this.onBackdrop);
       pushLayer(this); this.scope.activate(opener); this.options.onOpen?.();
     }
     close() {
       if (!this.isOpen) return;
-      this.isOpen = false; this.root.classList.remove('open'); this.root.setAttribute('aria-hidden', 'true');
+      this.isOpen = false; this.root.classList.remove('open'); this.root.setAttribute('aria-hidden', 'true'); this.root.inert = true; this.root.style.removeProperty('visibility');
       this.root.removeEventListener('pointerdown', this.onBackdrop); removeLayer(this); this.scope.deactivate(); this.options.onClose?.();
+      this.root.hidden = true;
     }
   }
 
@@ -96,15 +124,17 @@
   }
 
   class MenuController {
-    constructor(root, { onAction = null } = {}) { this.root = root; this.onAction = onAction; this.opener = null; }
+    constructor(root, { onAction = null } = {}) {
+      this.root = root; this.onAction = onAction; this.opener = null;
+      root.hidden = true; root.inert = true; root.setAttribute('aria-hidden', 'true');
+    }
     items() { return [...this.root.querySelectorAll('[role="menuitem"], .ctx-item')].filter(item => !item.hidden && !item.hasAttribute('disabled')); }
     open(opener, point) {
-      this.opener = opener; this.root.setAttribute('role', 'menu'); this.root.classList.add('open');
+      this.opener = opener; this.root.hidden = false; this.root.inert = false; this.root.setAttribute('aria-hidden', 'false'); this.root.setAttribute('role', 'menu'); this.root.classList.add('open');
       const items = this.items();
       items.forEach(item => { item.setAttribute('role', 'menuitem'); item.tabIndex = -1; });
       if (point) { this.root.style.left = `${point.x}px`; this.root.style.top = `${point.y}px`; }
-      pushLayer(this); items[0]?.focus(); requestAnimationFrame(() => items[0]?.focus());
-      setTimeout(() => { if (this.root.classList.contains('open')) items[0]?.focus(); }, 100);
+      pushLayer(this); requestAnimationFrame(() => items[0]?.focus({ preventScroll: true }));
       this.root.addEventListener('keydown', this._key = event => this.onKey(event));
     }
     onKey(event) {
@@ -115,7 +145,7 @@
       else if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); document.activeElement?.click(); return; }
       else return; event.preventDefault(); items[index]?.focus();
     }
-    close() { this.root.classList.remove('open'); this.root.removeEventListener('keydown', this._key); removeLayer(this); if (this.opener?.isConnected) this.opener.focus(); }
+    close() { this.root.classList.remove('open'); this.root.setAttribute('aria-hidden', 'true'); this.root.removeEventListener('keydown', this._key); removeLayer(this); this.root.hidden = true; if (this.opener?.isConnected) this.opener.focus(); }
   }
 
   function liveRegion() {
@@ -134,5 +164,5 @@
     const timer = setTimeout(() => finish(false), duration); return { dismiss: () => finish(false) };
   }
 
-  window.NordlysUI = { FocusScope, DialogController, RovingTabs, MenuController, announce, showUndoToast, layers };
+  window.NordlysUI = { FocusScope, DialogController, RovingTabs, MenuController, announce, showUndoToast, visibleFocusable, layers };
 })();

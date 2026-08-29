@@ -36,6 +36,9 @@
   box-shadow: 0 0 0 4px var(--nl-focus-outer);
 }
 
+/* Author display rules must never override the platform's closed-layer state. */
+[hidden] { display: none !important; }
+
 .nl-visually-hidden {
   position: fixed; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;

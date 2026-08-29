@@ -1204,7 +1204,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
 
 .icon-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(73px, 1fr));
   gap: 8px;
   max-height: 260px;
   overflow-y: auto;
@@ -1228,9 +1228,11 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   border-color: var(--accent);
   transform: translateY(-2px);
 }
-.icon-item svg {
-  width: 22px;
-  height: 22px;
+.icon-item svg,
+.icon-item img,
+.icon-item .mono {
+  width: 34px;
+  height: 34px;
   fill: currentColor;
   color: var(--ink);
 }
