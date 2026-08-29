@@ -6,7 +6,9 @@ playwright-report/
 __t-*.html
 __t-*.png
 __t-*.cjs
+__t-shots/
 __qa-*.html
 test-screenshots/
 test-theme-previews/
 .superpowers/
+.references/
