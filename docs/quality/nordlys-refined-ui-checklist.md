@@ -7,7 +7,7 @@ Baseline: `origin/main@62c262073a63fb040e12998164891d4a4c91a1ad`
 
 - `npm ci`: passed; 5 packages installed, 0 vulnerabilities. All dependencies are development-only.
 - `npx playwright install chromium`: passed.
-- `npm test`: passed; 17 runtime scripts syntax-clean, 6 unit tests passed, 109 UI tests passed. Verified by reading the process exit code directly rather than a piped summary.
+- `npm test`: passed; 14 runtime scripts syntax-clean, 6 unit tests passed, 115 UI tests passed. Verified by reading the process exit code directly rather than a piped summary.
 - Axe: zero serious or critical violations across the canvas, all settings sections, context menu, quick edit, and icon picker.
 - Viewports: 320, 768, 1024, 1440, 1920, 2560, and 3840 widths passed without horizontal overflow or primary-region intersection; the 200% zoom equivalent passed.
 - Locales: English, Russian, Spanish, German, French, Japanese, Chinese, and Turkish have complete message-key coverage and passed at 720px and 320px.
