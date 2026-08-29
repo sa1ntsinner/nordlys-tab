@@ -7,7 +7,7 @@ Baseline: `origin/main@62c262073a63fb040e12998164891d4a4c91a1ad`
 
 - `npm ci`: passed; 5 packages installed, 0 vulnerabilities. All dependencies are development-only.
 - `npx playwright install chromium`: passed.
-- `npm test`: passed; 13 runtime scripts syntax-clean, 3 unit tests passed, 76 UI tests passed in 1.1 minutes.
+- `npm test`: passed; 13 runtime scripts syntax-clean, 3 unit tests passed, 78 UI tests passed in 1.2 minutes. Verified over two consecutive clean runs, reading the process exit code directly rather than a piped summary.
 - Axe: zero serious or critical violations across the canvas, all settings sections, context menu, quick edit, and icon picker.
 - Viewports: 320, 768, 1024, 1440, 1920, 2560, and 3840 widths passed without horizontal overflow or primary-region intersection; the 200% zoom equivalent passed.
 - Locales: English, Russian, Spanish, German, French, Japanese, Chinese, and Turkish have complete message-key coverage and passed at 720px and 320px.
@@ -55,7 +55,25 @@ The pinned Playwright Chromium gate uses the actual unpacked MV3 extension, not 
 | Accessibility | 15/15 | Axe gate, exact focus trap/restore, roving navigation, announcements, 40px targets, WCAG theme checks, and all eight locales. |
 | Responsive | 10/10 | Seven-width matrix plus 200% zoom equivalent; no horizontal overflow or structural overlap. |
 | Performance and maintainability | 10/10 | No runtime dependency/framework, explicit CSP, no inline handlers, single interaction owners with teardown, real extension smoke, and syntax/unit/UI gates. |
-| **Total** | **100/100** | No open Critical or Important product defect. |
+| **Total** | **100/100** | Scores describe the tree after the post-review fixes below. The first pass at this rubric was recorded before those two defects were found. |
+
+## Post-review findings
+
+An independent acceptance pass after the rubric above was first filled in found two
+defects that every automated gate had missed. Both are fixed, and each is now covered
+by a test that fails without its fix.
+
+| Defect | Why the gate missed it | Fix |
+| --- | --- | --- |
+| Both quick editors focused their text field on a 50 ms timer after `FocusScope` had already set initial focus. Any key pressed inside that window was overridden, and the focus-trap test failed roughly one run in three. | The suite was previously judged by a piped summary, so a non-zero exit was never observed; the flake read as noise. | `FocusScope` takes the preferred target as an argument and sets focus exactly once (`ui-primitives.js`); both editors pass their input instead of racing a timer (`grid.js`). |
+| `--nl-surface-elevated` was a hardcoded dark literal while every sibling token derives from the theme, so folder resize steppers rendered at a 1.1:1 contrast ratio in all ten light themes — effectively invisible. | Axe only ran the default dark theme, and the light-theme visual baseline was generated with the defect already present, which enshrined it. | The token now derives from `--card-tint`/`--ink` (`foundations.css`), separating in both directions. A test measures rendered contrast in light *and* dark by rasterising the computed colour, so `color()`/`color-mix()` output cannot be misparsed. |
+
+Both fixes shifted eleven visual baselines. Each was pixel-diffed against its
+predecessor and the deltas reconciled against the stepper footprint and the icon
+picker's elevated gradient before the baselines were accepted.
+
+**Known gap:** the Axe sweep still runs only the default dark theme. Light-theme
+contrast is covered by the targeted test above, not by a general sweep.
 
 ## Final regression checklist
 

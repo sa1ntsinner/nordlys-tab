@@ -27,8 +27,20 @@ You can test Nordlys in any Chromium browser (Google Chrome, Brave, Microsoft Ed
 To upload to the Chrome Web Store Developer Dashboard, you need a single `.zip` file containing the extension files.
 
 ### Create ZIP using PowerShell:
+
+Run this from the repository root. List the shipped paths explicitly — a wildcard
+(`-Path .\*`) would sweep in `node_modules/`, `tests/`, and the internal docs,
+producing a ~40 MB upload instead of ~600 KB.
+
 ```powershell
-Compress-Archive -Path "C:\Users\smile\Sync Docs\Important Stuff\aurora-tab\*" -DestinationPath "C:\Users\smile\Sync Docs\Important Stuff\nordlys-v2.1.0.zip" -Force
+Compress-Archive -Path manifest.json, newtab.html, PRIVACY.md, README.md, LICENSE, icons, src -DestinationPath nordlys-v2.1.0.zip -Force
+```
+
+Verify before uploading — `manifest.json` must sit at the zip root and nothing
+else should be present:
+
+```powershell
+Expand-Archive nordlys-v2.1.0.zip -DestinationPath .\zip-check -Force; Get-ChildItem .\zip-check
 ```
 
 ---
