@@ -25,3 +25,11 @@ test('narrow settings becomes a full-width sheet with horizontal roving navigati
   await expect(drawer.getByRole('tab').nth(1)).toBeFocused();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
 });
+
+test('settings rail uses local decorative SVG icons with consistent geometry', async ({ nordlysPage }) => {
+  const { page } = nordlysPage; await page.locator('#gear').click(); const tabs = page.locator('#cfg [role="tab"]');
+  for (const tab of await tabs.all()) {
+    const icon = tab.locator('svg.settings-tab-icon'); await expect(icon).toHaveCount(1); await expect(icon).toHaveAttribute('aria-hidden', 'true');
+    const box = await icon.boundingBox(); expect(box.width).toBeGreaterThanOrEqual(16); expect(box.width).toBeLessThanOrEqual(18); expect(box.height).toBe(box.width);
+  }
+});

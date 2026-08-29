@@ -1768,7 +1768,8 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 }
 .settings-nav-group { display: flex; flex-direction: column; gap: 4px; }
 .settings-nav-label { padding: 0 10px 5px; color: var(--nl-text-tertiary); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-.ctab { position: relative; min-height: 42px; padding: 0 12px; border-radius: var(--nl-radius-sm); text-align: left; }
+.ctab { position: relative; min-height: 42px; padding: 0 12px; border-radius: var(--nl-radius-sm); text-align: left; display: flex; align-items: center; gap: 10px; }
+.settings-tab-icon { width: 17px; height: 17px; flex: 0 0 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; opacity: .82; }
 .ctab.active { color: var(--nl-text-primary); background: color-mix(in srgb, var(--nl-accent) 14%, transparent); box-shadow: none; }
 .ctab.active::before { content: ''; position: absolute; left: 0; inset-block: 9px; width: 3px; border-radius: 4px; background: var(--nl-accent); }
 .cbody { min-width: 0; padding: 20px 24px 32px; overflow-y: auto; }
