@@ -11,6 +11,7 @@
   --nl-border: var(--glass-border, rgba(255, 255, 255, .12));
   --nl-border-strong: rgba(255, 255, 255, .22);
   --nl-accent: var(--accent, #7c9cff);
+  --nl-on-accent: #071018;
   --nl-focus: #a9c4ff;
   --nl-focus-outer: rgba(3, 7, 18, .86);
   --nl-status-success: #34d399;

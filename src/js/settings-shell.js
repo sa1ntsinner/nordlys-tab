@@ -23,9 +23,10 @@
       if (resizer) { resizer.setAttribute('role', 'separator'); resizer.setAttribute('aria-orientation', 'vertical'); }
       this.buildLayout(); this.preparePanels(); this.roving = new NordlysUI.RovingTabs(this.nav, { orientation: this.orientation(), onSelect: id => this.select(id) });
       this.dialog = new NordlysUI.DialogController(root, { closeOnBackdrop: false, onClose: () => this.afterClose() });
-      this.closeButton?.addEventListener('click', () => this.close());
-      document.getElementById('dim')?.addEventListener('click', () => this.close());
-      window.addEventListener('resize', () => this.syncOrientation(), { passive: true });
+      this.dim = document.getElementById('dim'); this.onCloseClick = () => this.close(); this.onResize = () => this.syncOrientation();
+      this.closeButton?.addEventListener('click', this.onCloseClick);
+      this.dim?.addEventListener('click', this.onCloseClick);
+      window.addEventListener('resize', this.onResize, { passive: true });
       this.enhanceRows(); this.select('appearance', { focus: false }); this.syncOrientation();
     }
     orientation() { return matchMedia('(max-width: 759px)').matches ? 'horizontal' : 'vertical'; }
@@ -66,7 +67,7 @@
     open(sectionId = null) { if (sectionId) this.select(sectionId, { focus: false }); document.getElementById('dim')?.classList.add('on'); document.body.classList.add('cfgopen'); this.dialog.open(this.opener); }
     close() { this.dialog.close(); }
     afterClose() { document.getElementById('dim')?.classList.remove('on'); document.body.classList.remove('cfgopen'); }
-    destroy() { this.close(); }
+    destroy() { this.close(); this.closeButton?.removeEventListener('click', this.onCloseClick); this.dim?.removeEventListener('click', this.onCloseClick); window.removeEventListener('resize', this.onResize); this.roving?.destroy(); }
   }
   window.NordlysSettingsShell = NordlysSettingsShell;
 })();

@@ -24,7 +24,6 @@ class SettingsController {
     document.getElementById("gear")?.addEventListener("click", () => this.open());
     
     this.initDrawerResizer();
-    this.initTabs();
     this.initAppearance();
     this.initCustomThemeBuilder();
     this.initGeneral();
@@ -214,30 +213,6 @@ class SettingsController {
         iconBox.style.borderRadius = "10px";
       }
     }
-  }
-
-  /* ── 2. Horizontally Scrollable Tab Navigation ───────────────── */
-  initTabs() {
-    const tabs = document.querySelectorAll(".ctab");
-    const sections = document.querySelectorAll(".csec");
-    const tabsNav = document.querySelector(".ctabs");
-
-    tabs.forEach((tab) => {
-      tab.addEventListener("click", () => {
-        const target = tab.dataset.tab;
-        tabs.forEach((t) => t.classList.toggle("active", t === tab));
-        sections.forEach((s) => s.classList.toggle("active", s.id === `sec-${target}`));
-
-        tab.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-      });
-    });
-
-    tabsNav?.addEventListener("wheel", (e) => {
-      if (e.deltaY !== 0) {
-        e.preventDefault();
-        tabsNav.scrollLeft += e.deltaY;
-      }
-    }, { passive: false });
   }
 
   /* ── 3. Appearance & Authentic Frosted Glass ────── */
@@ -539,7 +514,18 @@ class SettingsController {
 
     /* Live preview: every edit re-derives the full token set (real tokens,
        not the legacy names — so background, cards and borders update live) */
-    const livePreview = () => this.app.applyCustomTokens(readStudioTheme());
+    const livePreview = () => {
+      const theme = readStudioTheme();
+      this.app.applyCustomTokens(theme);
+      const warning = document.getElementById("custom-theme-contrast-warning");
+      if (warning) {
+        const ratio = (a, b) => {
+          const [light, dark] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
+          return (light + 0.05) / (dark + 0.05);
+        };
+        warning.hidden = Math.min(ratio(theme.text, theme.bg), ratio(theme.text, theme.card), ratio(theme.dim, theme.bg), ratio(theme.dim, theme.card)) >= 4.5;
+      }
+    };
 
     const bindColorPair = (wellId, hexId) => {
       const well = document.getElementById(wellId);
@@ -984,19 +970,8 @@ class SettingsController {
   /* ── 8. Universal 5-Source Icon Picker Modal ─────────────────── */
   initIconPickerModal() {
     const modalX = document.getElementById("modal-x");
-    const modalTabs = document.querySelectorAll(".icon-tab-btn");
-    const modalPanes = document.querySelectorAll(".modal-tab-pane");
 
     modalX?.addEventListener("click", () => this.closeIconModal());
-
-    modalTabs.forEach((tab) => {
-      tab.addEventListener("click", () => {
-        const target = tab.dataset.tab;
-        this.activeModalTab = target;
-        modalTabs.forEach((t) => t.classList.toggle("active", t === tab));
-        modalPanes.forEach((p) => p.classList.toggle("active", p.id === `modal-pane-${target}`));
-      });
-    });
 
     // Tab 1: Library Search & Categories
     const iconSearch = document.getElementById("icon-search");
@@ -1753,8 +1728,7 @@ class SettingsController {
       defaultTab = "monogram";
     }
 
-    modalTabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === defaultTab));
-    modalPanes.forEach((p) => p.classList.toggle("active", p.id === `modal-pane-${defaultTab}`));
+    this.iconPicker.select(defaultTab);
     this.activeModalTab = defaultTab;
 
     // 8. Reset Search Filter and Render Library

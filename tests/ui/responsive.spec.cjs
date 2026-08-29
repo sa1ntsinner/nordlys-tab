@@ -65,7 +65,10 @@ for (const width of [320, 768, 1440]) {
       const intersects = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
       const blockers = [...document.querySelectorAll('#gear, .card-resize-controls')];
       const content = [...document.querySelectorAll('#board .box, #board .lbl')];
-      return blockers.flatMap(blocker => content.filter(item => intersects(blocker.getBoundingClientRect(), item.getBoundingClientRect())).map(item => `${blocker.id || blocker.className} -> ${item.className}`));
+      const controls = [...document.querySelectorAll('.card-resize-controls button')];
+      return blockers.flatMap(blocker => [...content, ...controls]
+        .filter(item => !blocker.contains(item) && intersects(blocker.getBoundingClientRect(), item.getBoundingClientRect()))
+        .map(item => `${blocker.id || blocker.className} -> ${item.getAttribute('aria-label') || item.className}`));
     });
     expect(collisions).toEqual([]);
   });

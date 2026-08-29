@@ -748,6 +748,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   flex-direction: column;
   gap: 10px;
 }
+.custom-theme-warning { margin: 2px 0 0; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--nl-status-warning) 65%, transparent); border-radius: var(--nl-radius-sm); background: color-mix(in srgb, var(--nl-status-warning) 16%, var(--nl-surface-card-deep)); color: var(--nl-text-primary); font-size: 13px; line-height: 1.4; }
 .theme-color-row {
   display: flex;
   align-items: center;
@@ -982,7 +983,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
 .glass-btn.accent {
   background: var(--accent);
   border-color: var(--accent);
-  color: #000000;
+  color: var(--nl-on-accent);
   font-weight: 600;
   box-shadow: 0 4px 14px var(--accent-glow);
 }
@@ -1800,6 +1801,7 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 .appearance-shared-preview { position: sticky; top: -20px; z-index: 4; padding: 8px 0 12px; background: linear-gradient(var(--nl-surface-card-deep) 72%, transparent); }
 .appearance-preview-card { width: 100%; min-height: 116px; padding: 16px; align-items: center; justify-content: center; }
 .appearance-preview-card .tile { cursor: default; }
+.appearance-shared-preview .nl-icon { --icon-accent: var(--nl-text-primary); }
 .advanced-settings { border: 1px solid var(--nl-border); border-radius: var(--nl-radius-md); overflow: clip; }
 .advanced-settings > summary { min-height: 44px; display: flex; align-items: center; padding: 0 14px; cursor: pointer; color: var(--nl-text-primary); font-weight: 600; }
 .advanced-settings > .card-customizer-card { margin: 0 !important; border: 0; border-top: 1px solid var(--nl-border); border-radius: 0; }
@@ -1810,7 +1812,8 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 .bookmark-folder-summary { min-height: 52px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 0 6px 0 14px; cursor: pointer; }
 .bookmark-folder-count { min-width: 24px; padding: 2px 7px; border-radius: 999px; text-align: center; background: color-mix(in srgb, var(--nl-accent) 14%, transparent); color: var(--nl-text-secondary); }
 .bookmark-folder-actions { display: flex; justify-content: flex-end; gap: 4px; padding: 0 10px 8px; }
-.bookmark-folder-actions select { min-width: var(--nl-target-min); }
+.bookmark-folder-actions select,
+.bookmark-summary-row select { min-width: var(--nl-target-min); color: var(--nl-text-primary); background: var(--nl-surface-card-deep); border: 1px solid var(--nl-border); border-radius: var(--nl-radius-sm); }
 .bookmark-compact-action { min-width: 40px; min-height: 40px; padding: 0 9px; border: 1px solid transparent; border-radius: var(--nl-radius-sm); background: transparent; color: var(--nl-text-primary); cursor: pointer; }
 .bookmark-compact-action:hover { background: color-mix(in srgb, var(--nl-text-primary) 7%, transparent); color: var(--nl-text-primary); }
 .bookmark-compact-action.danger { color: var(--nl-status-danger); }

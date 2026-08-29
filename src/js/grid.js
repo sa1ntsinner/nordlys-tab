@@ -333,14 +333,6 @@ class GridController {
       this.openBoardContextMenu(e);
     });
 
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        this.closeContextMenus();
-        this.closeQuickEditModal();
-        this.closeQuickFolderModal();
-      }
-    });
-
     // 1. Bookmark Context Menu Actions
     this.tileCtxMenu?.querySelectorAll(".ctx-item").forEach((item) => {
       item.addEventListener("click", (e) => {

@@ -91,7 +91,7 @@ const DEFAULT_CONFIG = {
 const THEME_INLINE_TOKENS = [
   "--void", "--void-gradient", "--glass", "--glass-border", "--frost",
   "--card-tint", "--card-tint-deep",
-  "--accent", "--accent-glow", "--ink", "--dim", "--faint",
+  "--accent", "--accent-glow", "--nl-on-accent", "--ink", "--dim", "--faint",
   "--font-main", "--font-display",
   "--shader-1", "--shader-2", "--shader-3",
   // Legacy aliases kept for older user Custom CSS
@@ -369,6 +369,10 @@ class AuroraApp {
     set("--card-tint-deep", shade(ct.card, 0.55));
     set("--accent", ct.accent);
     set("--accent-glow", rgba(ct.glow || ct.accent, 0.4));
+    const accentLuminance = relativeLuminance(ct.accent);
+    const blackContrast = (accentLuminance + 0.05) / 0.05;
+    const whiteContrast = 1.05 / (accentLuminance + 0.05);
+    set("--nl-on-accent", blackContrast >= whiteContrast ? "#000000" : "#ffffff");
     set("--ink", ct.text);
     set("--dim", ct.dim);
     set("--faint", ct.dim);
