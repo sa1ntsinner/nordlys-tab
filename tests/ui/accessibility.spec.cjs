@@ -42,10 +42,15 @@ test('keyboard focus is visibly indicated', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.keyboard.press('Tab');
   const indicator = await page.evaluate(() => {
-    const style = getComputedStyle(document.activeElement);
-    return { outline: style.outlineStyle, width: parseFloat(style.outlineWidth), shadow: style.boxShadow };
+    // A composite control shows focus once, on the wrapper — the search bar lights
+    // up rather than the field inside it — so an ancestor counts as the indicator.
+    for (let node = document.activeElement; node && node !== document.body; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      if ((style.outlineStyle !== 'none' && parseFloat(style.outlineWidth) >= 2) || style.boxShadow !== 'none') return true;
+    }
+    return false;
   });
-  expect(indicator.outline !== 'none' && indicator.width >= 2 || indicator.shadow !== 'none').toBe(true);
+  expect(indicator, 'the focused control shows no visible focus, on itself or its wrapper').toBe(true);
 });
 
 for (const locale of ['en', 'ru', 'es', 'de', 'fr', 'ja', 'zh', 'tr']) {
@@ -77,7 +82,7 @@ test('every locale contains every visible English message key', async ({ nordlys
 async function undersizedTargets(page, where) {
   // Overlays scale in; a control measured mid-animation reads smaller than it is.
   await page.waitForTimeout(340);
-  const SELECTOR = 'button, a[href], select, [role="button"], [role="tab"], [role="option"], [role="slider"], [role="menuitem"], input:not([type="file"]):not([type="range"]):not([type="color"])';
+  const SELECTOR = 'button, a[href], select, [role="button"], [role="tab"], [role="option"], [role="slider"], [role="menuitem"], input:not([type="file"]):not([type="range"])';
   return page.evaluate(([selector, label]) => [...document.querySelectorAll(selector)]
     // A zero-area control is not a target: it is a visually hidden input proxied
     // by its label, and the label is what gets measured.

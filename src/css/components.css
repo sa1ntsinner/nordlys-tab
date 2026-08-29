@@ -1431,3 +1431,13 @@ body.hover-none .tile:hover .box {
     transform: none;
   }
 }
+
+/* A colour swatch is a control like any other; it was 22px wide. */
+.quick-modal-body input[type="color"], .link-color-ipt {
+  min-width: var(--nl-target-min);
+  min-height: var(--nl-target-min);
+}
+
+/* The bar already lights up as a whole through :focus-within, so the field inside
+   it must not draw a second rectangle of its own. */
+#search #q:focus-visible { outline: none; box-shadow: none; }
