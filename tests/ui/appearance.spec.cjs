@@ -1,5 +1,10 @@
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
 
+function contrastRatio(foreground, background) {
+  const luminance = value => { const channels = value.match(/[\d.]+/g).slice(0, 3).map(Number).map(channel => { const c = channel / 255; return c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; }); return .2126 * channels[0] + .7152 * channels[1] + .0722 * channels[2]; };
+  const [light, dark] = [luminance(foreground), luminance(background)].sort((a, b) => b - a); return (light + .05) / (dark + .05);
+}
+
 test('Appearance uses selectable two-column theme cards and a shared live tile preview', async ({ nordlysPage }) => {
   const { page } = nordlysPage; await page.locator('#gear').click();
   const cards = page.locator('.theme-card[data-theme]'); await expect(cards).toHaveCount(21);
@@ -23,7 +28,10 @@ test('all built-in themes retain semantic colors and identical component geometr
     }); probe.remove(); return output;
   }, ids);
   expect(results).toHaveLength(21);
-  for (const result of results) expect(result.colors.every(value => value && value !== 'rgba(0, 0, 0, 0)')).toBe(true);
+  for (const result of results) {
+    expect(result.colors.every(value => value && value !== 'rgba(0, 0, 0, 0)')).toBe(true);
+    expect.soft(contrastRatio(result.colors[0], result.colors[1]), `${result.id} primary text contrast`).toBeGreaterThanOrEqual(4.5);
+  }
   expect(new Set(results.map(result => result.geometry.slice(0, 2).join('x'))).size).toBe(1);
 });
 
