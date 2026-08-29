@@ -82,6 +82,10 @@ class GridController {
       boardFragment.appendChild(card);
     });
 
+      // Deleting the last folder otherwise left a page with nothing on it and no
+      // way forward but a settings tab the user had no reason to open.
+      if (!groups.length) boardFragment.appendChild(this.createEmptyState());
+
     this.board.replaceChildren(boardFragment);
     if (this.dock) {
       this.dock.replaceChildren(dockFragment);
@@ -97,6 +101,28 @@ class GridController {
         this.board?.classList.add("board-loaded");
       }, entryMs);
     }
+  }
+
+  createEmptyState() {
+    const t = (key, fallback) => (window.I18N ? window.I18N.t(key) : fallback);
+    const empty = document.createElement("div");
+    empty.className = "board-empty";
+    const line = document.createElement("p");
+    line.className = "board-empty-text";
+    line.textContent = t("board.empty", "No folders yet.");
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "glass-btn accent";
+    add.textContent = t("bookmarks.addFolder", "+ Add Folder");
+    add.addEventListener("click", () => {
+      (this.app.config.groups ||= []).push({ label: t("bookmarks.newFolder", "New Folder"), cols: 4, hidden: false, links: [] });
+      this.app.saveConfig();
+      this.render();
+      this.app.settings?.renderBookmarksManager();
+      NordlysUI.announce("Folder added");
+    });
+    empty.append(line, add);
+    return empty;
   }
 
   createGroupCard(group, gIdx, visibleIdx = gIdx) {
@@ -530,6 +556,10 @@ class GridController {
       link.name = newTitle;
       link.url = newUrl;
       link.color = newColor;
+      // "auto" is the absence of a choice, so it is stored as nothing rather than
+      // as a value the rest of the code would have to keep special-casing.
+      const chosenTone = document.getElementById("quick-tone-select")?.value;
+      if (chosenTone && chosenTone !== "auto") link.tone = chosenTone; else delete link.tone;
 
       if (!isNaN(targetFolderIdx) && targetFolderIdx !== gIdx && this.app.config.groups[targetFolderIdx]) {
         oldGroup.links.splice(lIdx, 1);
@@ -657,12 +687,18 @@ class GridController {
     if (titleInput) titleInput.value = link.name || "";
     if (urlInput) urlInput.value = link.url || "";
     if (colorInput) colorInput.value = link.color || "#35d6c0";
+    const toneSelect = document.getElementById("quick-tone-select");
+    if (toneSelect) toneSelect.value = link.tone || "auto";
 
     if (folderSelect) {
       folderSelect.innerHTML = (this.app.config.groups || [])
         .map((g, idx) => `<option value="${idx}" ${idx === gIdx ? "selected" : ""}>${esc(g.label || `Folder ${idx + 1}`)}</option>`)
         .join("");
       folderSelect.value = String(gIdx);
+      // The options are rebuilt on every open, so the themed control has to be
+      // told — otherwise it keeps showing the value it read the first time, or
+      // nothing at all.
+      window.NordlysUI?.refreshSelects(this.quickModal);
     }
 
     if (iconPreview) {

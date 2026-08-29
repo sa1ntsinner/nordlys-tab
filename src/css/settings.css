@@ -21,7 +21,7 @@
   -webkit-backdrop-filter: blur(32px) saturate(1.8);
   box-shadow: -30px 0 90px rgba(0, 0, 0, 0.7);
   transform: translateX(calc(100% + 40px));
-  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform var(--nl-motion-panel) var(--nl-ease-emphasized);
 }
 
 #cfg.open, body.cfgopen #cfg {
@@ -55,7 +55,7 @@ body.resizing-drawer #cfg {
   height: 48px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.2);
-  transition: height 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition: height var(--nl-motion-control) ease, background var(--nl-motion-control) ease, box-shadow var(--nl-motion-control) ease;
 }
 #cfg-resizer:hover::after, #cfg-resizer.dragging::after {
   height: 80px;
@@ -222,7 +222,7 @@ body.resizing-drawer #cfg {
   font-family: inherit;
   font-size: 13px;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  transition: border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), background var(--nl-motion-control);
 }
 .ipt:focus {
   border-color: var(--accent);
@@ -290,7 +290,7 @@ input[type="range"].ipt:focus-visible {
   border-radius: 50%;
   background: #ffffff;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease;
+  transition: transform var(--nl-motion-control) var(--nl-ease-pop), background-color var(--nl-motion-control) ease;
 }
 .tg input:focus-visible + i {
   box-shadow: 0 0 0 3px var(--accent-glow);
@@ -717,7 +717,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   text-align: center;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity var(--nl-motion-fast) ease, transform var(--nl-motion-fast) ease;
   z-index: 5;
 }
 
@@ -808,7 +808,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: opacity 0.25s ease, border-color 0.25s ease;
+  transition: opacity var(--nl-motion-control) ease, border-color var(--nl-motion-control) ease;
 }
 .group-editor-card.is-hidden-folder {
   opacity: 0.6;
@@ -868,7 +868,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   border-radius: 10px;
   background: rgba(8, 14, 28, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: background 0.15s;
+  transition: background var(--nl-motion-fast);
 }
 .link-editor-row:hover {
   background: rgba(14, 22, 42, 0.75);
@@ -1811,7 +1811,8 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 .bookmark-folder-accordion { border: 1px solid var(--nl-border); border-radius: var(--nl-radius-md); background: color-mix(in srgb, var(--nl-surface-card) 55%, transparent); overflow: clip; }
 .bookmark-folder-summary { min-height: 52px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 0 6px 0 14px; cursor: pointer; }
 .bookmark-folder-count { min-width: 24px; padding: 2px 7px; border-radius: 999px; text-align: center; background: color-mix(in srgb, var(--nl-accent) 14%, transparent); color: var(--nl-text-secondary); }
-.bookmark-folder-actions { display: flex; justify-content: flex-end; gap: 4px; padding: 0 10px 8px; }
+/* Wraps rather than running off both edges of a phone-width sheet. */
+.bookmark-folder-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; padding: 0 10px 8px; }
 .bookmark-folder-actions select,
 .bookmark-summary-row select { min-width: var(--nl-target-min); color: var(--nl-text-primary); background: var(--nl-surface-card-deep); border: 1px solid var(--nl-border); border-radius: var(--nl-radius-sm); }
 .bookmark-compact-action { min-width: 40px; min-height: 40px; padding: 0 9px; border: 1px solid transparent; border-radius: var(--nl-radius-sm); background: transparent; color: var(--nl-text-primary); cursor: pointer; }
@@ -1901,3 +1902,23 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 }
 .scene-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scene-block { display: grid; gap: 10px; margin-bottom: 6px; }
+
+/* Hit areas — see the matching block in components.css. */
+.icon-tab-btn { min-height: var(--nl-target-min); }
+.icon-chip { min-height: var(--nl-target-min); }
+#icon-modal .xbtn { min-width: var(--nl-target-min); min-height: var(--nl-target-min); }
+#icon-modal .glass-input, .modal-box .glass-input { min-height: var(--nl-target-min); }
+.nl-select { min-height: var(--nl-target-min); }
+/* The switch keeps its 44x24 look; the label around it carries the hit area. */
+.tg { display: inline-flex; align-items: center; height: var(--nl-target-min); }
+.tg i { position: relative; inset: auto; width: 44px; height: 24px; }
+/* A single digit was being clipped by its own ellipsis in the narrow folder rows. */
+.nl-select { min-width: 0; }
+.bookmark-folder-actions .nl-select { min-width: 64px; }
+.nl-select-value { min-width: 1ch; }
+.icon-chip { min-width: var(--nl-target-min); justify-content: center; }
+
+/* While cropping, the picker's own preview showed the icon being replaced and the
+   cropper's showed the one being made — two unlabelled previews contradicting
+   each other. The cropper carries its own, so the shared one steps aside. */
+#icon-modal:has(#modal-pane-cropper.active) .icon-live-preview { display: none; }

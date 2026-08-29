@@ -63,3 +63,39 @@ test('reduced motion computes no transform, filter, or backdrop blur in interact
   }).filter(item => item.transform !== 'none' || item.filter !== 'none' || item.backdrop !== 'none'));
   expect(offenders).toEqual([]);
 });
+
+/* A control that does not answer a press reads as a dead surface — the click
+   registers only once the work behind it finishes. */
+test('controls answer a press immediately', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.locator('#gear').click();
+  await page.locator('#settings-tab-backup').click();
+  const button = page.locator('#cfg-export');
+  await expect(button).toBeVisible();
+
+  const box = await button.boundingBox();
+  const resting = await button.evaluate(node => getComputedStyle(node).transform);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  const pressed = await button.evaluate(node => getComputedStyle(node).transform);
+  await page.mouse.up();
+
+  expect(pressed, 'a pressed control must visibly give').not.toBe(resting);
+  expect(pressed).not.toBe('none');
+});
+
+test('reduced motion keeps the press silent', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  await page.locator('#gear').click();
+  await page.locator('#settings-tab-backup').click();
+  const button = page.locator('#cfg-export');
+  const box = await button.boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  const pressed = await button.evaluate(node => getComputedStyle(node).transform);
+  await page.mouse.up();
+  expect(pressed, 'reduced motion must not scale on press').toBe('none');
+});

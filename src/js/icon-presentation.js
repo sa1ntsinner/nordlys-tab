@@ -19,9 +19,14 @@
   }
   function renderIcon(presentation) {
     const wrapper = document.createElement('span'); wrapper.className = 'nl-icon';
-    wrapper.dataset.iconKind = presentation.kind; wrapper.dataset.iconTone = presentation.tone;
+    wrapper.dataset.iconKind = presentation.kind;
+    if (presentation.source.tone) wrapper.dataset.iconToneChoice = presentation.source.tone;
     wrapper.style.setProperty('--icon-optical-scale', presentation.opticalScale);
     wrapper.style.setProperty('--icon-accent', presentation.accent);
+    // Remember what the art is, not what it currently renders as: once a tone is
+    // applied the computed fill is our own output, and measuring that makes the
+    // decision oscillate on every re-evaluation.
+    wrapper.dataset.iconSource = presentation.accent;
     if (presentation.kind === 'builtin' && presentation.def) {
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('viewBox', presentation.def.vb || '0 0 24 24'); svg.setAttribute('aria-hidden', 'true');
@@ -101,13 +106,17 @@
           const context = surface.getContext('2d', { willReadFrequently: true });
           context.clearRect(0, 0, 16, 16); context.drawImage(probe, 0, 0, 16, 16);
           const { data } = context.getImageData(0, 0, 16, 16);
-          let total = 0, weight = 0;
+          let total = 0, weight = 0, colourful = 0;
           for (let at = 0; at < data.length; at += 4) {
             const alpha = data[at + 3] / 255;
             if (alpha < .1) continue;
-            total += luminanceOf(data[at], data[at + 1], data[at + 2]) * alpha; weight += alpha;
+            const [r, g, b] = [data[at], data[at + 1], data[at + 2]];
+            total += luminanceOf(r, g, b) * alpha; weight += alpha;
+            // Distance between the channels is what makes a mark "coloured".
+            // A grey, black or white logo has almost none.
+            if (Math.max(r, g, b) - Math.min(r, g, b) > 28) colourful += alpha;
           }
-          resolve(weight ? total / weight : null);
+          resolve(weight ? { luminance: total / weight, colourRatio: colourful / weight } : null);
         } catch { resolve(null); }
       };
       probe.onerror = () => resolve(null);
@@ -117,42 +126,64 @@
     return pending;
   }
 
-  function iconLuminance(wrapper) {
+  /* Reports what the icon actually renders as: how light it is, and whether it
+     carries colour of its own. A single-colour mark may be re-toned — that is
+     what its own brand guidance does across light and dark backgrounds — while
+     a coloured logo never may, because the colour is the mark. */
+  function iconAppearance(wrapper) {
     const image = wrapper.querySelector('img');
     if (image) return sampleImage(image.currentSrc || image.src);
     const vector = wrapper.querySelector('svg path, svg circle, svg rect');
-    const painted = vector ? getComputedStyle(vector).fill : getComputedStyle(wrapper).color;
-    return Promise.resolve(painted && painted !== 'none' ? colourLuminance(painted) : null);
+    const declared = wrapper.dataset.iconSource;
+    const painted = declared && declared !== 'var(--nl-text-primary)'
+      ? declared
+      : (vector ? getComputedStyle(vector).fill : getComputedStyle(wrapper).color);
+    if (!painted || painted === 'none') return Promise.resolve(null);
+    const [r, g, b] = paint(painted, '#000');
+    return Promise.resolve({
+      luminance: luminanceOf(r, g, b),
+      colourRatio: Math.max(r, g, b) - Math.min(r, g, b) > 28 ? 1 : 0
+    });
   }
 
-  /* Keep every plate identical and give the icon its own separation instead.
-     One background cannot rescue a board holding both black and white logos —
-     any tone that saves one drowns the other — so the tile surface stays uniform
-     and an icon that would vanish gains a rim traced from its own shape. The
-     logo's colour is never touched. */
-  function wearHalo(wrapper, tone) {
-    if (tone) wrapper.dataset.iconHalo = tone; else delete wrapper.dataset.iconHalo;
+  /* Plates stay identical on every tile. What changes, and only when it must, is
+     the icon's own tone — and only for marks that carry no colour of their own.
+     A black GitHub glyph on a black theme becomes light, exactly as GitHub's own
+     guidance does it; YouTube's red is never touched, because the red is the mark.
+
+     `tone` on the bookmark overrides the decision entirely: 'original' leaves the
+     art alone, 'light'/'dark' force a direction, anything else re-decides. */
+  const COLOURFUL_ENOUGH = 0.25;
+
+  function wearTone(wrapper, tone) {
+    if (tone) wrapper.dataset.iconTone = tone; else delete wrapper.dataset.iconTone;
   }
 
   async function applyIconContrast(plate, wrapper = plate?.querySelector('.nl-icon')) {
     if (!plate || !wrapper) return;
+    const forced = wrapper.dataset.iconToneChoice;
+    if (forced === 'original') { wearTone(wrapper, null); return; }
+    if (forced === 'light' || forced === 'dark') { wearTone(wrapper, forced); return; }
+
     // Always measure on a settled frame. Callers build tiles detached and attach
     // them afterwards — getComputedStyle reports nothing for a detached element —
     // and a theme swap runs through a view transition, so the palette is not in
     // place the instant setTheme returns.
     await new Promise(resolve => requestAnimationFrame(resolve));
     if (!plate.isConnected) return;
-    const icon = await iconLuminance(wrapper);
+    const icon = await iconAppearance(wrapper);
     if (!plate.isConnected) return;
+    if (!icon) { wearTone(wrapper, null); return; }
+
     const surface = plateLuminance(plate);
-    // The rim always opposes the plate: that guarantees it reads against the
-    // surface, and the icon only needs one when it does not.
-    const tone = surface > 0.5 ? 'dark' : 'light';
-    if (icon == null) { wearHalo(wrapper, tone); return; }
-    wearHalo(wrapper, contrast(icon, surface) >= MIN_ICON_CONTRAST ? null : tone);
+    if (contrast(icon.luminance, surface) >= MIN_ICON_CONTRAST) { wearTone(wrapper, null); return; }
+    // It is hard to see — but re-toning a coloured logo would destroy it, so that
+    // case is left to the per-bookmark control rather than guessed at.
+    if (icon.colourRatio > COLOURFUL_ENOUGH) { wearTone(wrapper, null); return; }
+    wearTone(wrapper, surface > 0.5 ? 'dark' : 'light');
   }
 
-  /* A halo is only correct for the surface it was measured against, so every
+  /* A tone is only correct for the surface it was measured against, so every
      theme change re-decides all of them. */
   function refreshIconContrast(root = document) {
     root.querySelectorAll('.nl-icon').forEach(wrapper => {
