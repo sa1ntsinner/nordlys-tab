@@ -6,11 +6,16 @@ dashboard in step; when one changes, change the other.
 ## Title
 
 ```
-Nordlys: Aurora Glass New Tab
+Nordlys
 ```
 
-Matches `manifest.json`. Renaming a published item costs recognition, so leave
-it alone unless there is a reason beyond taste.
+There is nothing to paste. The dashboard shows the title read-only and takes it
+from `name` in `manifest.json`, so the way to change it is to change the
+manifest and upload a new package.
+
+The name carries no keyword, which is the deliberate trade: someone browsing for
+"new tab" will not match on the title, and has to match on the summary and
+description instead. Both say it in their first line.
 
 ## Summary (132 characters maximum)
 
