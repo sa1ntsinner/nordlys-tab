@@ -55,3 +55,12 @@ for (const locale of ['en', 'ru', 'de', 'ja', 'zh']) {
     });
   }
 }
+
+test('every visible settings, dialog, and menu target has a 40px hit area', async ({ nordlysPage }) => {
+  const { page } = nordlysPage; await page.locator('#gear').click();
+  for (const section of ['appearance', 'background', 'bookmarks', 'general', 'custom-css', 'backup']) {
+    await page.locator(`#settings-tab-${section}`).click();
+    const small = await page.locator('#cfg :is(button,input:not([type="file"]),select,textarea,[role="button"]):visible').evaluateAll(items => items.map(item => ({ name: item.getAttribute('aria-label') || item.textContent.trim(), box: item.getBoundingClientRect().toJSON() })).filter(item => item.box.width < 40 || item.box.height < 40));
+    expect.soft(small, section).toEqual([]);
+  }
+});

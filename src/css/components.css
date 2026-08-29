@@ -1290,7 +1290,7 @@ body.hover-none .tile:hover .box {
 }
 
 .card-resize-controls {
-  position: absolute; right: 10px; bottom: 8px; display: flex; gap: 4px; opacity: 0;
+  position: static; align-self: flex-end; display: flex; gap: 4px; opacity: .72;
   transition: opacity var(--nl-motion-fast) ease;
 }
 .card:hover .card-resize-controls, .card:focus-within .card-resize-controls { opacity: 1; }

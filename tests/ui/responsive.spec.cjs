@@ -57,3 +57,16 @@ test('1024 layout remains usable at a 200 percent zoom equivalent', async ({ nor
   await expect(page.locator('#searchwrap')).toBeVisible();
   await expect(page.locator('#board > .card').first()).toBeVisible();
 });
+
+for (const width of [320, 768, 1440]) {
+  test(`resize controls and the settings gear do not cover content at ${width}px`, async ({ nordlysPage }) => {
+    const { page } = nordlysPage; await page.setViewportSize({ width, height: width === 320 ? 568 : 900 }); await page.waitForTimeout(350);
+    const collisions = await page.evaluate(() => {
+      const intersects = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+      const blockers = [...document.querySelectorAll('#gear, .card-resize-controls')];
+      const content = [...document.querySelectorAll('#board .box, #board .lbl')];
+      return blockers.flatMap(blocker => content.filter(item => intersects(blocker.getBoundingClientRect(), item.getBoundingClientRect())).map(item => `${blocker.id || blocker.className} -> ${item.className}`));
+    });
+    expect(collisions).toEqual([]);
+  });
+}
