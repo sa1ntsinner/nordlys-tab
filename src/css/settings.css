@@ -1893,12 +1893,31 @@ html[data-theme="warm-ivory"] .css-docs-list code {
     var(--nl-canvas);
 }
 .scene-preview[data-scene="solid"] { background: var(--nl-canvas); }
+/* These two slots have nothing to preview until the user supplies a file. The
+   placeholder stripes that stood here read as a broken texture and looked the
+   same for both; a picture and a play mark say what each slot takes. */
 .scene-preview[data-scene="custom-image"],
 .scene-preview[data-scene="custom-video"] {
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--nl-text-primary) 16%, transparent) 25%, transparent 25%) -8px 0/16px 16px,
-    linear-gradient(225deg, color-mix(in srgb, var(--nl-text-primary) 16%, transparent) 25%, transparent 25%) -8px 0/16px 16px,
-    var(--nl-canvas);
+  position: relative;
+  background: var(--nl-canvas);
+  color: color-mix(in srgb, var(--nl-text-primary) 30%, transparent);
+}
+.scene-preview[data-scene="custom-image"]::before {
+  content: "";
+  position: absolute; left: 26%; top: 24%; width: 11%; aspect-ratio: 1;
+  border-radius: 50%; background: currentColor;
+}
+.scene-preview[data-scene="custom-image"]::after {
+  content: "";
+  position: absolute; inset: 44% 22% 28%;
+  background: currentColor;
+  clip-path: polygon(0 100%, 32% 18%, 57% 100%, 44% 100%, 71% 40%, 100% 100%);
+}
+.scene-preview[data-scene="custom-video"]::after {
+  content: "";
+  position: absolute; left: 43%; top: 34%; width: 16%; aspect-ratio: 1;
+  background: currentColor;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
 .scene-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scene-block { display: grid; gap: 10px; margin-bottom: 6px; }

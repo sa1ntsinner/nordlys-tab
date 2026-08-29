@@ -20,14 +20,16 @@ I wanted a start page as fast as Tabliss and as customizable as nightTab, and ne
 | :---: | :---: | :---: |
 | ![Gruvbox](docs/assets/theme-gruvbox-dark.png) | ![OLED](docs/assets/theme-oled.png) | ![Mint](docs/assets/theme-mint.png) |
 
-There's a Dark / Light / Auto switch (Auto follows your OS and flips live), and a theme studio where you pick seven colors and a font and save the result as your own preset. If none of that is enough, a live CSS editor with a class reference is built in.
+There's a Dark / Light / Auto switch (Auto follows your OS and flips live), and a theme studio where you pick seven colors and save the result as your own preset. If none of that is enough, a live CSS editor with a class reference is built in.
 
 ## What else it does
 
 - **Bookmarks as folders.** Drag tiles between folders, drag whole folders around, resize a folder's column count by pulling its corner, fold folders into a small dock at the bottom. Right click anything to edit it in place.
 - **Icons your way.** A built-in vector library with auto-detection by domain, site favicons, any image URL, a local file, or a monogram. There's a small cropper studio with pan, zoom, and rotate for when a logo comes with junk around it.
 - **Search that does math.** Type `45 * 12 + sqrt(144)` and the answer appears above the suggestions, one click to copy. Ten engines to pick from (Google, DuckDuckGo, Bing, Brave, Ecosia, Yandex, YouTube, GitHub, Reddit, Wikipedia), bang shortcuts like `!gh` and `!w`, plus your own bookmarks and recent searches in the same dropdown.
-- **Backgrounds.** Four canvas modes (aurora, starfield, mesh orbs, pointer-following dust), or your own image / looping video stored locally in IndexedDB, with blur and dim sliders.
+- **Backgrounds.** Four canvas scenes (Aurora, Cosmos, Mesh, Particles), picked from cards rather than a list of engine names. Motion and Atmosphere sliders apply to all of them, so the same scene can be a slow shimmer or almost nothing. Your own image or looping video works too, stored locally in IndexedDB, with blur and dim sliders.
+- **Type.** Three slots: the clock and headings, the interface, and monospace. Bundled faces, or the fonts already installed on your machine.
+- **Icons that stay visible.** Each icon is measured against the plate behind it, and only the ones that would vanish get re-toned, so a coloured logo keeps its colour and a black mark on a black theme doesn't disappear. Overridable per bookmark.
 - **Glass tuning.** Blur radius, saturation, translucency, border sheen, corner radius, tile size, grid spacing, icon shape, glow, hover animation. Every slider updates the page while you drag it.
 - **8 languages.** English, Russian, Spanish, German, French, Japanese, Chinese, Turkish.
 - **Import and export.** Netscape HTML bookmarks from any browser in, JSON or HTML back out.
