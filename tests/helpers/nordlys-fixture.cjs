@@ -12,11 +12,15 @@ const test = base.extend({
     page.on('pageerror', error => runtimeErrors.push(`pageerror: ${error.message}`));
     page.on('console', message => { if (message.type() === 'error') runtimeErrors.push(`console: ${message.text()}`); });
     await page.addInitScript(state => {
+      const saved = localStorage.getItem('__nordlys_test_storage');
+      if (saved) Object.assign(state, JSON.parse(saved));
+      const persist = () => localStorage.setItem('__nordlys_test_storage', JSON.stringify(state));
       const pick = keys => keys == null ? { ...state } : typeof keys === 'string' ? { [keys]: state[keys] } : Array.isArray(keys) ? Object.fromEntries(keys.map(key => [key, state[key]])) : Object.fromEntries(Object.entries(keys).map(([key, fallback]) => [key, state[key] ?? fallback]));
       window.chrome = { storage: { local: {
         get(keys, callback) { callback(pick(keys)); },
-        set(values, callback) { Object.assign(state, values); window.__nordlysStorageSet(values); callback?.(); },
-        remove(keys, callback) { for (const key of Array.isArray(keys) ? keys : [keys]) delete state[key]; window.__nordlysStorageRemove(keys); callback?.(); }
+        set(values, callback) { Object.assign(state, values); persist(); window.__nordlysStorageSet(values); callback?.(); },
+        remove(keys, callback) { for (const key of Array.isArray(keys) ? keys : [keys]) delete state[key]; persist(); window.__nordlysStorageRemove(keys); callback?.(); },
+        clear(callback) { const keys = Object.keys(state); for (const key of keys) delete state[key]; persist(); window.__nordlysStorageRemove(keys); callback?.(); }
       } }, runtime: { getURL: path => `${location.origin}/${String(path).replace(/^\//, '')}` } };
     }, storageState);
     await page.goto(`${server.origin}/newtab.html`);

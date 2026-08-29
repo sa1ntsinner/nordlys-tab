@@ -12,7 +12,12 @@
     ensurePreview() {
       if (this.root.querySelector('#icon-live-preview')) return;
       const preview = document.createElement('div'); preview.id = 'icon-live-preview'; preview.className = 'icon-live-preview'; preview.setAttribute('aria-label', 'Live tile preview');
-      preview.innerHTML = '<section class="card"><a class="tile" href="#" onclick="return false"><div class="box"><span class="mono">N</span></div><span class="lbl">Bookmark</span></a></section>';
+      const card = document.createElement('section'); card.className = 'card';
+      const tile = document.createElement('div'); tile.className = 'tile';
+      const box = document.createElement('div'); box.className = 'box';
+      const mono = document.createElement('span'); mono.className = 'mono'; mono.textContent = 'N'; box.append(mono);
+      const label = document.createElement('span'); label.className = 'lbl'; label.textContent = 'Bookmark';
+      tile.append(box, label); card.append(tile); preview.append(card);
       this.root.querySelector('.modal-body')?.prepend(preview);
     }
     select(id) { this.root.querySelectorAll('.icon-tab-btn').forEach(tab => { const active = tab.dataset.tab === id; tab.classList.toggle('active', active); tab.setAttribute('aria-selected', String(active)); }); this.root.querySelectorAll('.modal-tab-pane').forEach(pane => pane.classList.toggle('active', pane.id === `modal-pane-${id}`)); }
