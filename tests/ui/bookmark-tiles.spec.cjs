@@ -21,7 +21,7 @@ test('keeps tiles usable and canvas free of horizontal overflow at 320px', async
   const { page } = nordlysPage; await page.setViewportSize({ width: 320, height: 568 });
   await page.locator('#board').waitFor();
   await page.waitForTimeout(1200);
-  const sizes = await page.locator('.tile .box').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().width));
+  const sizes = await page.locator('#board .tile .box').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().width));
   expect(Math.min(...sizes)).toBeGreaterThanOrEqual(56);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(0);

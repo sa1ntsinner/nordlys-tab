@@ -949,6 +949,10 @@ body.hover-none .tile:hover .box {
   transform: rotate(75deg);
 }
 
+@media (max-width: 480px) {
+  #gear { top: 12px; right: 12px; bottom: auto; }
+}
+
 /* ── Frosted Glass Bookmark Context Menu ──────────────────────── */
 .glass-context-menu {
   position: fixed;

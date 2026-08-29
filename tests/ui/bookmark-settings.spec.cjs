@@ -48,3 +48,14 @@ test('collapsed folder exposes only working management controls', async ({ nordl
   await folder.getByRole('button', { name: /Add bookmark/ }).click();
   await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[0]?.links?.at(-1)?.name).toBe('New Bookmark');
 });
+
+test('expanded bookmark actions stay grouped within their row', async ({ nordlysPage }) => {
+  const { page } = nordlysPage; await page.locator('#gear').click(); await page.getByRole('tab', { name: 'Bookmarks' }).click();
+  await page.locator('.bookmark-folder-summary').first().click();
+  await expect(page.locator('.bookmark-summary-row').first().locator('.bookmark-row-actions > *')).toHaveCount(5);
+  const overflow = await page.locator('.bookmark-summary-row').first().evaluate(row => {
+    const bounds = row.getBoundingClientRect();
+    return [...row.querySelectorAll('.bookmark-row-actions > *')].filter(control => { const box = control.getBoundingClientRect(); return box.left < bounds.left || box.right > bounds.right || box.top < bounds.top || box.bottom > bounds.bottom; }).map(control => control.getAttribute('aria-label'));
+  });
+  expect(overflow).toEqual([]);
+});

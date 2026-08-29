@@ -91,7 +91,7 @@ const DEFAULT_CONFIG = {
 const THEME_INLINE_TOKENS = [
   "--void", "--void-gradient", "--glass", "--glass-border", "--frost",
   "--card-tint", "--card-tint-deep",
-  "--accent", "--accent-glow", "--ink", "--dim", "--faint",
+  "--accent", "--accent-glow", "--nl-on-accent", "--ink", "--dim", "--faint",
   "--font-main", "--font-display",
   "--shader-1", "--shader-2", "--shader-3",
   // Legacy aliases kept for older user Custom CSS
@@ -124,14 +124,23 @@ class AuroraApp {
     this.init();
   }
 
+  normalizeStoredConfig(config) {
+    let changed = false;
+    if (THEME_MIGRATIONS[config.theme]) { config.theme = THEME_MIGRATIONS[config.theme]; changed = true; }
+    if (Number(config.tileSize) >= 50 && Number(config.tileSize) < 56) { config.tileSize = 56; changed = true; }
+    return changed;
+  }
+
   loadConfig() {
     try {
       const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         const cfg = Object.assign({}, DEFAULT_CONFIG, parsed);
-        // Migrate theme keys saved by earlier releases
-        if (THEME_MIGRATIONS[cfg.theme]) cfg.theme = THEME_MIGRATIONS[cfg.theme];
+        if (this.normalizeStoredConfig(cfg)) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+          if (typeof chrome !== "undefined") chrome.storage?.local?.set?.({ [STORAGE_KEY]: cfg });
+        }
         return cfg;
       }
     } catch (e) {}
@@ -156,8 +165,9 @@ class AuroraApp {
         const saved = data && (data[STORAGE_KEY] || data[LEGACY_STORAGE_KEY]);
         if (saved && saved.groups && !localStorage.getItem(STORAGE_KEY)) {
           this.config = Object.assign({}, DEFAULT_CONFIG, saved);
-          if (THEME_MIGRATIONS[this.config.theme]) this.config.theme = THEME_MIGRATIONS[this.config.theme];
+          const migrated = this.normalizeStoredConfig(this.config);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(this.config));
+          if (migrated) chrome.storage.local.set({ [STORAGE_KEY]: this.config });
           this.applyThemeTokens();
           this.applyGeometryTokens();
           this.injectCustomCSS(this.config.customCss || "");
@@ -359,6 +369,10 @@ class AuroraApp {
     set("--card-tint-deep", shade(ct.card, 0.55));
     set("--accent", ct.accent);
     set("--accent-glow", rgba(ct.glow || ct.accent, 0.4));
+    const accentLuminance = relativeLuminance(ct.accent);
+    const blackContrast = (accentLuminance + 0.05) / 0.05;
+    const whiteContrast = 1.05 / (accentLuminance + 0.05);
+    set("--nl-on-accent", blackContrast >= whiteContrast ? "#000000" : "#ffffff");
     set("--ink", ct.text);
     set("--dim", ct.dim);
     set("--faint", ct.dim);

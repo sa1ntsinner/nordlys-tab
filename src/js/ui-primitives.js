@@ -100,10 +100,11 @@
       this.root = root; this.orientation = orientation; this.onSelect = onSelect;
       root.setAttribute('role', 'tablist'); root.setAttribute('aria-orientation', orientation);
       this.tabs = [...root.querySelectorAll('[role="tab"], [data-tab]')];
+      this.handlers = new Map();
       this.tabs.forEach((tab, index) => {
         tab.setAttribute('role', 'tab'); tab.tabIndex = tab.getAttribute('aria-selected') === 'true' || (!index && !this.tabs.some(item => item.getAttribute('aria-selected') === 'true')) ? 0 : -1;
-        tab.addEventListener('click', () => this.select(tab));
-        tab.addEventListener('keydown', event => this.onKey(event, tab));
+        const click = () => this.select(tab), keydown = event => this.onKey(event, tab);
+        this.handlers.set(tab, { click, keydown }); tab.addEventListener('click', click); tab.addEventListener('keydown', keydown);
       });
     }
     select(tab) {
@@ -121,6 +122,7 @@
       else return;
       event.preventDefault(); this.select(this.tabs[index]);
     }
+    destroy() { this.handlers.forEach(({ click, keydown }, tab) => { tab.removeEventListener('click', click); tab.removeEventListener('keydown', keydown); }); this.handlers.clear(); }
   }
 
   class MenuController {

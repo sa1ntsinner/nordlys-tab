@@ -82,7 +82,8 @@
           this.app.config.groups.forEach((candidate, index) => { if (candidate === group) return; const option = document.createElement('option'); option.value = String(index); option.textContent = candidate.label; transfer.append(option); });
           transfer.addEventListener('change', () => this.transferBookmark(group, link, this.app.config.groups[Number(transfer.value)]));
           const remove = action(`Delete ${link.name}`, 'Delete', () => this.removeWithUndo({ group, link })); remove.classList.add('danger');
-          row.append(icon, meta, edit, up, down, transfer, remove, editor); list.append(row);
+          const rowActions = document.createElement('span'); rowActions.className = 'bookmark-row-actions'; rowActions.append(edit, up, down, transfer, remove);
+          row.append(icon, meta, rowActions, editor); list.append(row);
         });
         details.append(list); this.root.append(details);
       });

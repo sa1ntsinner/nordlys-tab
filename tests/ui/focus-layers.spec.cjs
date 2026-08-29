@@ -44,3 +44,11 @@ test('quick edit and nested confirmation close one top layer at a time', async (
   await page.keyboard.press('Escape'); await expect(confirm).toBeHidden(); await expect(quick).toBeVisible(); await expect(quick).not.toHaveAttribute('inert', '');
   await page.keyboard.press('Escape'); await expect(quick).toBeHidden(); await expect(tile).toBeFocused();
 });
+
+test('CSS guide is a contained nested settings dialog and restores its opener', async ({ nordlysPage }) => {
+  const { page } = nordlysPage; await page.locator('#gear').click(); await page.locator('#settings-tab-custom-css').click();
+  const opener = page.locator('#btn-open-css-docs'); await opener.click(); const guide = page.locator('#css-docs-modal');
+  await expect(guide).toBeVisible(); await expect(guide).toHaveAttribute('aria-labelledby', 'css-docs-title'); await expect(page.locator('#cfg')).toHaveAttribute('inert', ''); await expectCycles(page, guide);
+  await page.keyboard.press('Escape'); await expect(guide).toBeHidden(); await expect(opener).toBeFocused(); await expect(page.locator('#cfg')).not.toHaveAttribute('inert', '');
+  await page.keyboard.press('Escape'); await expect(page.locator('#gear')).toBeFocused();
+});

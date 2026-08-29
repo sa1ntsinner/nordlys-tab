@@ -1245,7 +1245,7 @@ html[data-theme="sage-light"] .glass-btn.accent,
 html[data-theme="warm-ivory"] .glass-btn.accent {
   background: var(--accent);
   border-color: var(--accent);
-  color: #ffffff;
+  color: var(--nl-on-accent);
 }
 
 .light-ui .theme-card,

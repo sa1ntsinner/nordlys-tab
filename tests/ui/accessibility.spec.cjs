@@ -38,7 +38,7 @@ test('keyboard focus is visibly indicated', async ({ nordlysPage }) => {
   expect(indicator.outline !== 'none' && indicator.width >= 2 || indicator.shadow !== 'none').toBe(true);
 });
 
-for (const locale of ['en', 'ru', 'de', 'ja', 'zh']) {
+for (const locale of ['en', 'ru', 'es', 'de', 'fr', 'ja', 'zh', 'tr']) {
   for (const width of [720, 320]) {
     test(`${locale} settings navigation fits at ${width}px`, async ({ nordlysPage }) => {
       const { page } = nordlysPage;
@@ -55,6 +55,11 @@ for (const locale of ['en', 'ru', 'de', 'ja', 'zh']) {
     });
   }
 }
+
+test('every locale contains every visible English message key', async ({ nordlysPage }) => {
+  const missing = await nordlysPage.page.evaluate(() => Object.fromEntries(Object.entries(I18N.translations).map(([locale, messages]) => [locale, Object.keys(I18N.translations.en).filter(key => typeof messages[key] !== 'string' || !messages[key].trim())]).filter(([, keys]) => keys.length)));
+  expect(missing).toEqual({});
+});
 
 test('every visible settings, dialog, and menu target has a 40px hit area', async ({ nordlysPage }) => {
   const { page } = nordlysPage; await page.locator('#gear').click();

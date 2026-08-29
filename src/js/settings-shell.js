@@ -5,6 +5,14 @@
     { label: 'App', ids: ['general'] },
     { label: 'Advanced', ids: ['custom-css', 'backup'] }
   ];
+  const iconPaths = {
+    appearance: 'M12 3a9 9 0 1 0 0 18h1.2a1.8 1.8 0 0 0 0-3.6h-1a1.4 1.4 0 0 1 0-2.8H15a6 6 0 0 0-3-11.6ZM7.5 10h.01M10 7h.01M14 7.5h.01',
+    background: 'M3 5h18v14H3zM3 15l5-5 4 4 2-2 7 7M16 9h.01',
+    bookmarks: 'M6 3h12v18l-6-4-6 4z',
+    general: 'M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5ZM19 12l2-1-2-4-2 .5-1.5-1L15 4h-6l-.5 2.5-1.5 1L5 7l-2 4 2 1v2l-2 1 2 4 2-.5 1.5 1L9 22h6l.5-2.5 1.5-1 2 .5 2-4-2-1z',
+    'custom-css': 'M8 7 3 12l5 5M16 7l5 5-5 5M14 4l-4 16',
+    backup: 'M12 3v12M7 10l5 5 5-5M4 19h16'
+  };
   class NordlysSettingsShell {
     constructor({ root, opener, onSectionChange = null }) {
       this.root = root; this.opener = opener; this.onSectionChange = onSectionChange;
@@ -15,9 +23,10 @@
       if (resizer) { resizer.setAttribute('role', 'separator'); resizer.setAttribute('aria-orientation', 'vertical'); }
       this.buildLayout(); this.preparePanels(); this.roving = new NordlysUI.RovingTabs(this.nav, { orientation: this.orientation(), onSelect: id => this.select(id) });
       this.dialog = new NordlysUI.DialogController(root, { closeOnBackdrop: false, onClose: () => this.afterClose() });
-      this.closeButton?.addEventListener('click', () => this.close());
-      document.getElementById('dim')?.addEventListener('click', () => this.close());
-      window.addEventListener('resize', () => this.syncOrientation(), { passive: true });
+      this.dim = document.getElementById('dim'); this.onCloseClick = () => this.close(); this.onResize = () => this.syncOrientation();
+      this.closeButton?.addEventListener('click', this.onCloseClick);
+      this.dim?.addEventListener('click', this.onCloseClick);
+      window.addEventListener('resize', this.onResize, { passive: true });
       this.enhanceRows(); this.select('appearance', { focus: false }); this.syncOrientation();
     }
     orientation() { return matchMedia('(max-width: 759px)').matches ? 'horizontal' : 'vertical'; }
@@ -33,6 +42,8 @@
       });
       tabs.forEach(tab => {
         tab.id = `settings-tab-${tab.dataset.tab}`; tab.setAttribute('aria-controls', `sec-${tab.dataset.tab}`); tab.setAttribute('aria-selected', String(tab.classList.contains('active')));
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.classList.add('settings-tab-icon'); svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('aria-hidden', 'true'); svg.setAttribute('focusable', 'false');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path'); path.setAttribute('d', iconPaths[tab.dataset.tab]); svg.append(path); tab.prepend(svg);
       });
     }
     preparePanels() {
@@ -56,7 +67,7 @@
     open(sectionId = null) { if (sectionId) this.select(sectionId, { focus: false }); document.getElementById('dim')?.classList.add('on'); document.body.classList.add('cfgopen'); this.dialog.open(this.opener); }
     close() { this.dialog.close(); }
     afterClose() { document.getElementById('dim')?.classList.remove('on'); document.body.classList.remove('cfgopen'); }
-    destroy() { this.close(); }
+    destroy() { this.close(); this.closeButton?.removeEventListener('click', this.onCloseClick); this.dim?.removeEventListener('click', this.onCloseClick); window.removeEventListener('resize', this.onResize); this.roving?.destroy(); }
   }
   window.NordlysSettingsShell = NordlysSettingsShell;
 })();
