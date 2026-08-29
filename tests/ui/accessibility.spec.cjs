@@ -1,4 +1,14 @@
 const { AxeBuilder } = require('@axe-core/playwright');
+
+/* Native dropdowns no longer render — they stay only as the value source behind
+   the themed control. Drive them the way that control does when it commits. */
+async function chooseOption(page, locator, value) {
+  await locator.evaluate((select, chosen) => {
+    select.value = chosen;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  }, value);
+}
+
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
 
 async function expectNoHighImpactViolations(page, context) {
@@ -45,7 +55,7 @@ for (const locale of ['en', 'ru', 'es', 'de', 'fr', 'ja', 'zh', 'tr']) {
       await page.setViewportSize({ width, height: 720 });
       await page.locator('#gear').click();
       await page.locator('#settings-tab-general').click();
-      await page.locator('#cfg-language-select').selectOption(locale);
+      await chooseOption(page, page.locator('#cfg-language-select'), locale);
       await page.waitForTimeout(100);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
       const tabs = page.locator('#cfg [role="tab"]');
@@ -71,8 +81,10 @@ test('every visible settings, dialog, and menu target has a 40px hit area', asyn
 });
 
 /* Axe only runs the default dark theme, so a surface token that fails to follow a
-   light theme stays invisible to it. Measure the rendered contrast in both modes. */
-async function stepperContrast(page) {
+   light theme stays invisible to it. Measure the rendered contrast in both modes.
+   The themed dropdown is the control that reads --nl-surface-elevated today; the
+   folder steppers this originally caught have since been replaced by the handle. */
+async function elevatedSurfaceContrast(page) {
   return page.evaluate(() => {
     // Rasterise through a canvas: computed values may arrive as rgb(), color(srgb ...)
     // or any other CSS colour form, and only the painted pixel is format-proof.
@@ -87,7 +99,7 @@ async function stepperContrast(page) {
       }
       return getComputedStyle(document.body).backgroundColor;
     };
-    return [...document.querySelectorAll('.card-resize-controls button')].map(button => {
+    return [...document.querySelectorAll('.nl-select')].map(button => {
       const style = getComputedStyle(button);
       const [text, surface] = [luminance(style.color), luminance(opaqueBackground(button))];
       return { label: button.getAttribute('aria-label'), ratio: Number(((Math.max(text, surface) + 0.05) / (Math.min(text, surface) + 0.05)).toFixed(2)) };
@@ -95,12 +107,15 @@ async function stepperContrast(page) {
   });
 }
 
-test('folder resize controls keep readable contrast in light and dark themes', async ({ nordlysPage }) => {
+test('elevated surfaces keep readable contrast in light and dark themes', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
+  await page.locator('#gear').click();
   for (const mode of ['light', 'dark']) {
-    await page.locator('#gear').click(); await page.locator(`[data-mode="${mode}"]`).click(); await page.locator('#cfgx').click();
-    await expect(page.locator('#board .card').first()).toBeVisible();
-    const measured = await stepperContrast(page);
+    await page.locator('#settings-tab-appearance').click();
+    await page.locator(`[data-mode="${mode}"]`).click();
+    await page.locator('#settings-tab-general').click();
+    await expect(page.locator('#sec-general')).toBeVisible();
+    const measured = await elevatedSurfaceContrast(page);
     expect(measured.length).toBeGreaterThan(0);
     for (const control of measured) expect.soft(control.ratio, `${mode}: ${control.label} at ${control.ratio}:1`).toBeGreaterThanOrEqual(4.5);
   }

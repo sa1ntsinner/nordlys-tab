@@ -2,6 +2,23 @@
    AURORA TAB 2.0 - MAIN STYLES & FOUNDATION
    ═══════════════════════════════════════════════════════════════════ */
 
+/* Bundled faces. Both are OFL and ship inside the extension — an MV3 page may not
+   fetch fonts from a CDN. They cover Latin; Cyrillic, CJK and other scripts fall
+   through to the system stacks below, per glyph, which is why every stack still
+   names a real system face rather than ending at a generic family. */
+@font-face {
+  font-family: "Outfit";
+  src: url("../fonts/outfit.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("../fonts/instrument-sans.woff2") format("woff2");
+  font-weight: 400 700;
+  font-display: swap;
+}
+
 :root {
   /* Core Geometry & Scaling */
   --tw: 78px;               /* Tile box dimension */
@@ -31,8 +48,8 @@
   --accent-glow: rgba(124, 156, 255, 0.4);
   
   /* Fonts */
-  --font-main: "Segoe UI Variable Text", "Segoe UI", "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-display: "Segoe UI Variable Display", "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-main: "Instrument Sans", "Segoe UI Variable Text", "Segoe UI", "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-display: "Outfit", "Segoe UI Variable Display", "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
 }
 
@@ -195,5 +212,16 @@ body {
     filter: none !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Legibility is not motion. The blanket reset above clears every filter, which
+     would also strip the rim that keeps a dark logo visible on a dark plate —
+     turning a motion preference into a visibility regression. */
+  .nl-icon[data-icon-halo] > svg,
+  .nl-icon[data-icon-halo] > img,
+  .nl-icon[data-icon-halo] > .mono {
+    filter: var(--icon-halo) !important;
   }
 }

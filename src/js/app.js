@@ -201,6 +201,9 @@ class AuroraApp {
       this.settings?.renderThemeCards();
     });
 
+    // Typography left the theme; carry any font a custom theme still stores.
+    if (window.NordlysType?.migrate(this.config)) this.saveConfig();
+
     // 1. Apply Active Theme, Geometry & Custom CSS
     this.applyThemeTokens();
     this.applyGeometryTokens();
@@ -324,9 +327,12 @@ class AuroraApp {
     // The canvas engine repaints its aurora / orbs / dust in theme colors
     this.bgEngine?.refreshPalette();
 
+    // Fonts ride the same path as the palette so one call settles the whole look.
+    window.NordlysType?.apply(this.config, root);
+
     // Icon plates are chosen against the theme they were measured on, so a new
     // palette invalidates every one of them.
-    window.NordlysIcons?.refreshPlates();
+    window.NordlysIcons?.refreshIconContrast();
   }
 
   initColorModeListener() {

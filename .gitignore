@@ -4,6 +4,8 @@ playwright-report/
 .playwright-artifacts/
 *.zip
 __t-*.html
+__t-*.png
+__t-*.cjs
 __qa-*.html
 test-screenshots/
 test-theme-previews/

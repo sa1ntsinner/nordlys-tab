@@ -2,6 +2,16 @@
    AURORA TAB 2.0 - SETTINGS CONTROLLER & CUSTOMIZATION ENGINE
    ═══════════════════════════════════════════════════════════════════ */
 
+const SCENE_NAMES = {
+  "aurora": "Aurora",
+  "cosmos": "Cosmos",
+  "mesh-gradient": "Mesh",
+  "particles": "Particles",
+  "custom-image": "Wallpaper",
+  "custom-video": "Video",
+  "solid": "Solid"
+};
+
 class SettingsController {
   constructor(app) {
     this.app = app;
@@ -32,6 +42,142 @@ class SettingsController {
     this.initIconPickerModal();
     this.initCustomCSSEditor();
     this.initBackupManager();
+    this.initScenePicker();
+    this.initTypography();
+    // Every native dropdown gets a themed control drawn over it; the element
+    // stays as the value source but stops painting platform chrome.
+    window.NordlysUI?.enhanceSelects(document);
+  }
+
+  /* ── 0a. Background scenes ────────────────────────────────────── */
+  /* The old control was a dropdown of engine names, which told the user nothing
+     about what they would get — and the procedural scenes looked so alike that
+     switching read as no change. Now the choice is shown, and two sliders that
+     apply to every scene make the difference something you can actually dial. */
+  initScenePicker() {
+    const select = document.getElementById("cfg-bg-mode");
+    const grid = document.getElementById("bg-scene-grid");
+    if (!select || !grid) return;
+
+    const paint = () => {
+      grid.replaceChildren();
+      for (const option of select.options) {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "scene-card";
+        card.dataset.scene = option.value;
+        card.setAttribute("role", "radio");
+        card.setAttribute("aria-checked", String(option.value === select.value));
+        const preview = document.createElement("span");
+        preview.className = "scene-preview";
+        preview.dataset.scene = option.value;
+        preview.setAttribute("aria-hidden", "true");
+        const name = document.createElement("span");
+        name.className = "scene-name";
+        // The stored labels are engine descriptions ("Dynamic Aurora Borealis
+        // (Ribbons & Meteors)"). A card is a picture with a name under it.
+        name.textContent = SCENE_NAMES[option.value] || option.textContent.replace(/\s*\(.*\)\s*$/, "").trim();
+        card.append(preview, name);
+        card.addEventListener("click", () => {
+          select.value = option.value;
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+          paint();
+        });
+        grid.append(card);
+      }
+    };
+
+    select.addEventListener("change", () => {
+      grid.querySelectorAll(".scene-card").forEach((card) => {
+        card.setAttribute("aria-checked", String(card.dataset.scene === select.value));
+      });
+    });
+
+    const applyAtmosphere = () => {
+      const motion = Number(document.getElementById("cfg-bg-motion")?.value ?? 100) / 100;
+      const intensity = Number(document.getElementById("cfg-bg-intensity")?.value ?? 100) / 100;
+      this.app.config.bgMotion = motion;
+      this.app.config.bgIntensity = intensity;
+      this.app.bgEngine?.setAtmosphere({ motion, intensity });
+      const motionLabel = document.getElementById("lbl-bg-motion");
+      const intensityLabel = document.getElementById("lbl-bg-intensity");
+      if (motionLabel) motionLabel.textContent = `${Math.round(motion * 100)}%`;
+      if (intensityLabel) intensityLabel.textContent = `${Math.round(intensity * 100)}%`;
+    };
+
+    for (const id of ["cfg-bg-motion", "cfg-bg-intensity"]) {
+      const slider = document.getElementById(id);
+      if (!slider) continue;
+      slider.value = String(Math.round((id === "cfg-bg-motion"
+        ? this.app.config.bgMotion ?? 1
+        : this.app.config.bgIntensity ?? 1) * 100));
+      slider.addEventListener("input", applyAtmosphere);
+      slider.addEventListener("change", () => { applyAtmosphere(); this.app.saveConfig(); });
+    }
+    applyAtmosphere();
+    paint();
+  }
+
+  /* ── 0. Typography slots ──────────────────────────────────────── */
+  initTypography() {
+    const DEVICE = "__device__";
+    const SLOTS = [["display", "cfg-font-display"], ["interface", "cfg-font-interface"], ["mono", "cfg-font-mono"]];
+    const note = document.getElementById("cfg-font-note");
+    let device = [];
+
+    const fill = () => {
+      for (const [key, id] of SLOTS) {
+        const select = document.getElementById(id);
+        if (!select) continue;
+        const current = this.app.config.fonts?.[key] || NordlysType.DEFAULT;
+        select.replaceChildren();
+        let groupName = null, holder = select;
+        for (const row of NordlysType.optionsFor(key, device)) {
+          if (row.group !== groupName) {
+            groupName = row.group;
+            holder = document.createElement("optgroup");
+            holder.label = row.group;
+            select.append(holder);
+          }
+          const option = document.createElement("option");
+          option.value = row.value;
+          option.textContent = row.label;
+          // Lets the themed list render each option in the face it offers.
+          if (row.value !== NordlysType.DEFAULT) option.dataset.fontPreview = row.value;
+          holder.append(option);
+        }
+        const more = document.createElement("option");
+        more.value = DEVICE;
+        more.textContent = device.length ? "Refresh device fonts…" : "All fonts on this device…";
+        select.append(more);
+        select.value = current;
+        if (!select.value) select.value = NordlysType.DEFAULT;
+      }
+      window.NordlysUI?.refreshSelects();
+    };
+
+    for (const [key, id] of SLOTS) {
+      document.getElementById(id)?.addEventListener("change", async (event) => {
+        const select = event.target;
+        if (select.value === DEVICE) {
+          // Chrome only reveals the inventory from a user gesture, and this
+          // handler still runs inside the click that chose the option.
+          const found = await NordlysType.listLocalFonts();
+          device = found.families;
+          if (note) {
+            note.textContent = found.granted
+              ? `${device.length} fonts found on this device.`
+              : "Device fonts are unavailable — permission was not granted.";
+          }
+          fill();
+          return;
+        }
+        this.app.config.fonts = Object.assign({}, this.app.config.fonts, { [key]: select.value });
+        this.app.saveConfig();
+        this.app.applyThemeTokens();
+      });
+    }
+    fill();
   }
 
   /* ── 1. Resizable Drawer & Width Presets ──────────────────────── */
@@ -161,6 +307,8 @@ class SettingsController {
     this.updateSliderLabels();
     this.updateMiniPreview();
     this.syncBackgroundControls?.();
+    // syncFormValues writes select.value directly, which fires no event.
+    window.NordlysUI?.refreshSelects();
   }
 
   updateSliderLabels() {
@@ -508,8 +656,7 @@ class SettingsController {
       accent: document.getElementById("thm-accent-hex")?.value || "#35d6c0",
       glow: document.getElementById("thm-glow-hex")?.value || "#5b6cff",
       text: document.getElementById("thm-text-hex")?.value || "#f1f5f9",
-      dim: document.getElementById("thm-dim-hex")?.value || "#8ca0c4",
-      font: document.getElementById("thm-font")?.value || "system-ui, sans-serif"
+      dim: document.getElementById("thm-dim-hex")?.value || "#8ca0c4"
     });
 
     /* Live preview: every edit re-derives the full token set (real tokens,
@@ -552,9 +699,6 @@ class SettingsController {
     bindColorPair("thm-glow-color", "thm-glow-hex");
     bindColorPair("thm-text-color", "thm-text-hex");
     bindColorPair("thm-dim-color", "thm-dim-hex");
-
-    const fontSelect = document.getElementById("thm-font");
-    fontSelect?.addEventListener("change", livePreview);
 
     document.getElementById("thm-save-btn")?.addEventListener("click", () => {
       const name = document.getElementById("thm-name-input")?.value.trim() || `Custom ${this.customThemes.length + 1}`;

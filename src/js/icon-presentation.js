@@ -46,7 +46,7 @@
      (Spotify green reads 2.6:1 on white, Steam blue 1.9:1), turning the board
      patchy to fix something that was never hard to see. This threshold catches
      the failure that actually hurts: an icon that vanishes into its plate. */
-  const MIN_PLATE_CONTRAST = 1.8;
+  const MIN_ICON_CONTRAST = 1.8;
   const sampledLuminance = new Map();
   let scratch = null;
   function canvas2d() {
@@ -125,45 +125,40 @@
     return Promise.resolve(painted && painted !== 'none' ? colourLuminance(painted) : null);
   }
 
-  /* Give the plate under `wrapper` enough contrast to make the icon readable.
-     Applied after render, so resolvePresentation stays synchronous. */
-  const PLATES = [null, 'contrast', 'neutral'];
-  function wearPlate(plate, name) { if (name) plate.dataset.iconPlate = name; else delete plate.dataset.iconPlate; }
+  /* Keep every plate identical and give the icon its own separation instead.
+     One background cannot rescue a board holding both black and white logos —
+     any tone that saves one drowns the other — so the tile surface stays uniform
+     and an icon that would vanish gains a rim traced from its own shape. The
+     logo's colour is never touched. */
+  function wearHalo(wrapper, tone) {
+    if (tone) wrapper.dataset.iconHalo = tone; else delete wrapper.dataset.iconHalo;
+  }
 
-  async function applyPlateContrast(plate, wrapper = plate?.querySelector('.nl-icon')) {
+  async function applyIconContrast(plate, wrapper = plate?.querySelector('.nl-icon')) {
     if (!plate || !wrapper) return;
-    // The existing plate stays until a new one is decided — clearing it up front
-    // makes every icon flash through the unplated look on each theme change.
     // Always measure on a settled frame. Callers build tiles detached and attach
-    // them afterwards — getComputedStyle reports nothing for a detached element,
-    // which would read every icon as unmeasurable and drop the whole board onto
-    // the fallback plate — and a theme swap runs through a view transition, so
-    // the palette is not in place the instant setTheme returns.
+    // them afterwards — getComputedStyle reports nothing for a detached element —
+    // and a theme swap runs through a view transition, so the palette is not in
+    // place the instant setTheme returns.
     await new Promise(resolve => requestAnimationFrame(resolve));
     if (!plate.isConnected) return;
     const icon = await iconLuminance(wrapper);
     if (!plate.isConnected) return;
-    if (icon == null) { wearPlate(plate, 'neutral'); return; }
-    // Try the untouched plate first and keep it the moment it clears the bar, so
-    // only icons that genuinely disappear change the look of the board. Each
-    // candidate is measured as rendered, never assumed to be an improvement.
-    let best = null;
-    for (const candidate of PLATES) {
-      wearPlate(plate, candidate);
-      const ratio = contrast(icon, plateLuminance(plate));
-      if (ratio >= MIN_PLATE_CONTRAST) return;
-      if (!best || ratio > best.ratio) best = { candidate, ratio };
-    }
-    wearPlate(plate, best.candidate);
+    const surface = plateLuminance(plate);
+    // The rim always opposes the plate: that guarantees it reads against the
+    // surface, and the icon only needs one when it does not.
+    const tone = surface > 0.5 ? 'dark' : 'light';
+    if (icon == null) { wearHalo(wrapper, tone); return; }
+    wearHalo(wrapper, contrast(icon, surface) >= MIN_ICON_CONTRAST ? null : tone);
   }
 
-  /* A plate is only correct for the theme it was measured against, so every
+  /* A halo is only correct for the surface it was measured against, so every
      theme change re-decides all of them. */
-  function refreshPlates(root = document) {
+  function refreshIconContrast(root = document) {
     root.querySelectorAll('.nl-icon').forEach(wrapper => {
-      if (wrapper.parentElement) applyPlateContrast(wrapper.parentElement, wrapper);
+      if (wrapper.parentElement) applyIconContrast(wrapper.parentElement, wrapper);
     });
   }
 
-  window.NordlysIcons = { classifyIcon, resolvePresentation, renderIcon, applyPlateContrast, refreshPlates, MIN_PLATE_CONTRAST };
+  window.NordlysIcons = { classifyIcon, resolvePresentation, renderIcon, applyIconContrast, refreshIconContrast, MIN_ICON_CONTRAST };
 })();
