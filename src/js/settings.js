@@ -1878,19 +1878,15 @@ class SettingsController {
     const cssDocsBtn = document.getElementById("btn-open-css-docs");
     const cssDocsModal = document.getElementById("css-docs-modal");
     const cssDocsModalX = document.getElementById("css-docs-modal-x");
+    this.cssDocsDialog = cssDocsModal ? new NordlysUI.DialogController(cssDocsModal, { closeOnBackdrop: true }) : null;
 
     cssDocsBtn?.addEventListener("click", () => {
-      cssDocsModal?.classList.add("open");
+      this.cssDocsDialog?.open(cssDocsBtn);
     });
 
     cssDocsModalX?.addEventListener("click", () => {
-      cssDocsModal?.classList.remove("open");
+      this.cssDocsDialog?.close();
     });
-
-    cssDocsModal?.addEventListener("click", (e) => {
-      if (e.target === cssDocsModal) cssDocsModal.classList.remove("open");
-    });
-    // (Escape handling is centralized in initDrawerResizer's cascade)
 
     // Modal Tabs
     const cssTabs = cssDocsModal?.querySelectorAll(".icon-tab-btn");
