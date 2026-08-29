@@ -25,16 +25,23 @@
       this.root = root; this.opener = null; this.active = false;
       this.onKeyDown = this.onKeyDown.bind(this);
     }
-    activate(opener = document.activeElement) {
+    activate(opener = document.activeElement, initialFocus = null) {
       if (this.active) return;
       this.active = true; this.opener = opener;
       document.addEventListener('keydown', this.onKeyDown, true);
-      this.focusInitial();
+      this.focusInitial(initialFocus);
     }
-    focusInitial() {
-      const target = this.root.querySelector('[autofocus]') || visibleFocusable(this.root)[0] || this.root;
+    /* Initial focus is set once, here. Callers name their preferred target instead of
+       focusing it later on a timer — a deferred focus overrides whatever the user
+       already did in the meantime. */
+    focusInitial(preferred = null) {
+      const requested = typeof preferred === 'string' ? this.root.querySelector(preferred) : preferred;
+      const target = (requested?.isConnected && requested) || this.root.querySelector('[autofocus]') || visibleFocusable(this.root)[0] || this.root;
       if (!this.root.hasAttribute('tabindex') && target === this.root) this.root.tabIndex = -1;
       target.focus({ preventScroll: true });
+      const selectable = target instanceof HTMLTextAreaElement
+        || (target instanceof HTMLInputElement && /^(text|search|url|tel|email|password)$/.test(target.type));
+      if (selectable && target.value) target.select();
     }
     onKeyDown(event) {
       if (event.key !== 'Tab' || layers[layers.length - 1]?.scope !== this) return;
@@ -81,11 +88,11 @@
       root.hidden = !root.classList.contains('open'); root.inert = root.hidden; root.setAttribute('aria-hidden', String(root.hidden));
       this.onBackdrop = event => { if (event.target === root && options.closeOnBackdrop !== false) this.close(); };
     }
-    open(opener = document.activeElement) {
+    open(opener = document.activeElement, initialFocus = null) {
       if (this.isOpen) return;
       this.isOpen = true; this.root.hidden = false; this.root.inert = false; this.root.style.visibility = 'visible'; this.root.setAttribute('aria-hidden', 'false');
       this.root.classList.add('open'); this.root.addEventListener('pointerdown', this.onBackdrop);
-      pushLayer(this); this.scope.activate(opener); this.options.onOpen?.();
+      pushLayer(this); this.scope.activate(opener, initialFocus ?? this.options.initialFocus ?? null); this.options.onOpen?.();
     }
     close() {
       if (!this.isOpen) return;
