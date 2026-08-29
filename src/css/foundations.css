@@ -30,6 +30,8 @@
   --nl-motion-panel: 260ms;
   --nl-motion-enter: 320ms;
   --nl-ease-emphasized: cubic-bezier(.2, .8, .2, 1);
+  /* One deliberate overshoot for moments that should feel like they landed. */
+  --nl-ease-pop: cubic-bezier(.2, .9, .3, 1.25);
   --nl-target-min: 40px;
 }
 

@@ -122,25 +122,48 @@ test('every tile plate renders identically', async ({ nordlysPage }) => {
   }
 });
 
-test('a halo appears only where the icon would otherwise vanish', async ({ nordlysPage }) => {
+test('a colourless mark is re-toned; a coloured one never is', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await seedHostileBoard(page);
   await page.evaluate(() => window.Aurora.setTheme('oled-obsidian'));
-  await page.waitForTimeout(200);
-  const haloed = await page.evaluate(() => Object.fromEntries(
+  await page.waitForTimeout(250);
+  const toned = await page.evaluate(() => Object.fromEntries(
     [...document.querySelectorAll('#board .tile')].map(tile => [
       tile.querySelector('.lbl').textContent,
-      tile.querySelector('.nl-icon')?.dataset.iconHalo || 'none'
+      tile.querySelector('.nl-icon')?.dataset.iconTone || 'none'
     ])
   ));
-  // Dark art on a dark plate needs the rim; light and brand-coloured art does not.
-  expect(haloed['Black raster']).toBe('light');
-  expect(haloed['Black vector']).toBe('light');
-  expect(haloed['White raster'], 'white art already separates from a dark plate').toBe('none');
-  expect(haloed['Brand vector'], 'a legible brand colour must be left alone').toBe('none');
+  // A black glyph on a black plate is exactly the case a mark's own guidance
+  // covers: it flips. White art already reads, and colour is never touched.
+  expect(toned['Black raster']).toBe('light');
+  expect(toned['Black vector']).toBe('light');
+  expect(toned['White raster'], 'white art already separates from a dark plate').toBe('none');
+  expect(toned['Brand vector'], 'a coloured logo must keep its colour').toBe('none');
 });
 
-test('adding a halo never repaints a brand icon', async ({ nordlysPage }) => {
+test('the per-bookmark choice overrides the automatic decision', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => {
+    window.Aurora.config.groups = [{ label: 'TONE', cols: 3, hidden: false, links: [
+      { name: 'Auto', url: 'https://a.test/', icon: 'github', color: '#000000' },
+      { name: 'Left alone', url: 'https://b.test/', icon: 'github', color: '#000000', tone: 'original' },
+      { name: 'Forced dark', url: 'https://c.test/', icon: 'github', color: '#ffffff', tone: 'dark' }
+    ] }];
+    window.Aurora.saveConfig(); window.Aurora.grid.render();
+  });
+  await page.waitForTimeout(250);
+  const toned = await page.evaluate(() => Object.fromEntries(
+    [...document.querySelectorAll('#board .tile')].map(tile => [
+      tile.querySelector('.lbl').textContent,
+      tile.querySelector('.nl-icon')?.dataset.iconTone || 'none'
+    ])
+  ));
+  expect(toned['Auto'], 'left to itself the black mark flips').toBe('light');
+  expect(toned['Left alone'], 'an explicit "original" must be obeyed even when unreadable').toBe('none');
+  expect(toned['Forced dark'], 'an explicit direction wins over the measurement').toBe('dark');
+});
+
+test('re-toning never touches a coloured brand icon', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await seedHostileBoard(page);
   await page.evaluate(() => window.Aurora.setTheme('oled-obsidian'));
@@ -150,4 +173,26 @@ test('adding a halo never repaints a brand icon', async ({ nordlysPage }) => {
     return getComputedStyle(target).fill || '';
   });
   expect(painted, 'brand icon must keep its own colour').toContain('255, 0, 0');
+});
+
+/* The automatic decision is deliberately conservative — it will not re-tone a
+   coloured logo — so the manual override has to be reachable and has to stick. */
+test('the icon tone can be set from the bookmark editor and survives a reload', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const tile = page.locator('#board .tile').first();
+  await tile.focus(); await page.keyboard.press('Shift+F10');
+  await expect(page.locator('#tile-ctx-menu').getByRole('menuitem').first()).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#quick-edit-modal')).toBeVisible();
+
+  await page.locator('#quick-tone-select').evaluate(select => {
+    select.value = 'dark'; select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await page.locator('#quick-save-btn').click();
+  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[0]?.links?.[0]?.tone).toBe('dark');
+  await expect(page.locator('#board .tile').first().locator('.nl-icon')).toHaveAttribute('data-icon-tone', 'dark');
+
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  await expect(page.locator('#board .tile').first().locator('.nl-icon')).toHaveAttribute('data-icon-tone', 'dark');
 });

@@ -99,7 +99,7 @@ body.seconds .sc, body.seconds #ss {
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  transition: border-color 0.22s, box-shadow 0.25s, background 0.22s;
+  transition: border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), background var(--nl-motion-control);
 }
 
 #search:focus-within {
@@ -156,7 +156,7 @@ body.seconds .sc, body.seconds #ss {
   border-radius: 6px;
   padding: 4px 7px;
   opacity: 0.8;
-  transition: opacity 0.2s;
+  transition: opacity var(--nl-motion-control);
 }
 #search:focus-within kbd {
   opacity: 0;
@@ -189,8 +189,8 @@ body.seconds .sc, body.seconds #ss {
   font-size: 14px;
   color: #c9d6f0;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  animation: suggIn 0.24s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  transition: background var(--nl-motion-fast), color var(--nl-motion-fast);
+  animation: suggIn var(--nl-motion-control) var(--nl-ease-emphasized) both;
   animation-delay: calc(var(--si, 0) * 24ms);
 }
 
@@ -355,7 +355,7 @@ body.searching #hiddenDock {
   gap: 16px;
   width: min(96vw, 1480px);
   contain: layout style;
-  transition: opacity 0.25s ease;
+  transition: opacity var(--nl-motion-control) ease;
 }
 
 body.minimal #board {
@@ -385,7 +385,7 @@ body.minimal #board {
     inset 0 1px 0 rgba(255, 255, 255, calc(0.02 + var(--glass-border-sheen, 0.45) * 0.16));
   contain: layout style;
   transform: translate3d(0, 0, 0);
-  transition: transform 0.22s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+  transition: transform var(--nl-motion-control) var(--nl-ease-emphasized), box-shadow var(--nl-motion-control) ease, border-color var(--nl-motion-control) ease;
   position: relative;
 }
 
@@ -422,7 +422,7 @@ body.minimal #board {
   user-select: none;
   border-radius: 8px;
   padding: 2px 4px;
-  transition: background 0.2s ease;
+  transition: background var(--nl-motion-control) ease;
 }
 .cat:hover {
   background: rgba(255, 255, 255, 0.03);
@@ -441,7 +441,7 @@ body.minimal #board {
   letter-spacing: 0.24em;
   color: var(--dim);
   text-transform: uppercase;
-  transition: color 0.2s ease;
+  transition: color var(--nl-motion-control) ease;
   cursor: pointer;
 }
 .cat:hover b {
@@ -500,7 +500,7 @@ body.minimal #board {
   gap: var(--grid-gap);
   flex: 1;
   align-content: center;
-  transition: grid-template-columns 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: grid-template-columns var(--nl-motion-panel) var(--nl-ease-emphasized);
 }
 .grid[data-cols="1"] {
   grid-template-columns: minmax(180px, 1fr);
@@ -551,7 +551,7 @@ body.minimal #board {
   cursor: nwse-resize;
   z-index: 10;
   opacity: 0;
-  transition: opacity 0.2s ease, background 0.2s ease;
+  transition: opacity var(--nl-motion-control) ease, background var(--nl-motion-control) ease;
   border-bottom-right-radius: var(--card-radius);
 }
 
@@ -565,7 +565,7 @@ body.minimal #board {
   border-right: 2.5px solid var(--dim);
   border-bottom: 2.5px solid var(--dim);
   border-bottom-right-radius: 2px;
-  transition: border-color 0.2s;
+  transition: border-color var(--nl-motion-control);
 }
 
 .card:hover .card-resize-handle,
@@ -596,7 +596,7 @@ body.minimal #board {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s 0.2s, border-color 0.2s, box-shadow 0.2s;
+  transition: opacity var(--nl-motion-control) ease, transform var(--nl-motion-control) ease, visibility 0s var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control);
   white-space: nowrap;
   z-index: 50;
 }
@@ -607,7 +607,7 @@ body.minimal #board {
   border-color: var(--accent);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 12px var(--accent-glow);
   transform: translateX(-50%) translateY(0);
-  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1), visibility 0s, border-color 0.25s, box-shadow 0.25s;
+  transition: opacity var(--nl-motion-control) ease, transform var(--nl-motion-control) var(--nl-ease-emphasized), visibility 0s, border-color var(--nl-motion-control), box-shadow var(--nl-motion-control);
 }
 
 .card.is-resizing {
@@ -635,7 +635,7 @@ body.minimal #board {
   -webkit-backdrop-filter: blur(16px) saturate(1.4);
   pointer-events: none;
   z-index: 60;
-  animation: pillIn 0.18s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+  animation: pillIn var(--nl-motion-fast) var(--nl-ease-pop) both;
 }
 
 @keyframes pillIn {
@@ -676,7 +676,7 @@ body.minimal #board {
     radial-gradient(120% 120% at 30% 18%, color-mix(in srgb, var(--c, var(--dim)) 12%, transparent), transparent 62%),
     linear-gradient(150deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 6px 18px rgba(0, 0, 0, 0.25);
-  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), border-color 0.3s, background 0.3s;
+  transition: transform var(--nl-motion-panel) var(--nl-ease-emphasized), box-shadow var(--nl-motion-panel) var(--nl-ease-emphasized), border-color var(--nl-motion-panel), background var(--nl-motion-panel);
 }
 
 .box::after {
@@ -685,7 +685,7 @@ body.minimal #board {
   inset: 0;
   background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, 0.18) 48%, transparent 62%);
   transform: translateX(-170%);
-  transition: transform 0.75s ease;
+  transition: transform var(--nl-motion-panel) ease;
 }
 
 .box svg, .box img {
@@ -694,7 +694,7 @@ body.minimal #board {
   fill: var(--c, var(--dim));
   color: var(--c, var(--dim));
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 10px color-mix(in srgb, var(--c, var(--dim)) 40%, transparent));
-  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: transform var(--nl-motion-panel) var(--nl-ease-emphasized);
   object-fit: contain;
   pointer-events: none;
   user-select: none;
@@ -718,7 +718,7 @@ body.minimal #board {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: color 0.25s;
+  transition: color var(--nl-motion-control);
   user-select: none;
   pointer-events: none;
 }
@@ -831,8 +831,8 @@ body.hover-none .tile:hover .box {
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   opacity: 0.7;
-  transition: opacity 0.25s ease, transform 0.25s ease, background 0.25s ease, border-color 0.25s ease;
-  animation: fadeIn 0.3s ease both;
+  transition: opacity var(--nl-motion-control) ease, transform var(--nl-motion-control) ease, background var(--nl-motion-control) ease, border-color var(--nl-motion-control) ease;
+  animation: fadeIn var(--nl-motion-panel) ease both;
   z-index: 4;
 }
 
@@ -882,7 +882,7 @@ body.hover-none .tile:hover .box {
   height: 14px;
   color: var(--accent);
   flex-shrink: 0;
-  transition: transform 0.2s ease;
+  transition: transform var(--nl-motion-control) ease;
 }
 
 .restoreFolder:hover .dockFolderIcon {
@@ -905,7 +905,7 @@ body.hover-none .tile:hover .box {
   padding: 1px 6px;
   border-radius: 9999px;
   margin-left: 2px;
-  transition: color 0.2s, background 0.2s;
+  transition: color var(--nl-motion-control), background var(--nl-motion-control);
 }
 
 .restoreFolder:hover .dockFolderCount {
@@ -930,13 +930,13 @@ body.hover-none .tile:hover .box {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   opacity: 0.55;
-  transition: opacity 0.25s, border-color 0.25s, transform 0.25s, background 0.25s;
+  transition: opacity var(--nl-motion-control), border-color var(--nl-motion-control), transform var(--nl-motion-control), background var(--nl-motion-control);
 }
 #gear svg {
   width: 21px;
   height: 21px;
   fill: var(--dim);
-  transition: fill 0.25s, transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: fill var(--nl-motion-control), transform var(--nl-motion-panel) var(--nl-ease-emphasized);
 }
 #gear:hover {
   opacity: 1;
@@ -973,7 +973,7 @@ body.hover-none .tile:hover .box {
   /* --origin is set from JS so the menu grows out of the cursor */
   transform-origin: var(--origin, top left);
   transform: scale(0.92);
-  transition: opacity 0.15s ease, transform 0.18s cubic-bezier(0.25, 1.3, 0.4, 1), visibility 0s 0.15s;
+  transition: opacity var(--nl-motion-fast) ease, transform var(--nl-motion-fast) var(--nl-ease-pop), visibility 0s var(--nl-motion-fast);
   user-select: none;
 }
 
@@ -981,7 +981,7 @@ body.hover-none .tile:hover .box {
   opacity: 1;
   visibility: visible;
   transform: none;
-  transition: opacity 0.15s ease, transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s;
+  transition: opacity var(--nl-motion-fast) ease, transform var(--nl-motion-fast) var(--nl-ease-emphasized), visibility 0s;
 }
 
 .ctx-header {
@@ -1015,7 +1015,7 @@ body.hover-none .tile:hover .box {
 
 .ctx-item svg {
   color: var(--dim);
-  transition: color 0.14s ease;
+  transition: color var(--nl-motion-fast) ease;
 }
 
 .ctx-item:hover {
@@ -1077,7 +1077,7 @@ body.hover-none .tile:hover .box {
 
 /* Pop plays on every open, not just once at page load */
 .quick-modal-backdrop.open .quick-modal-card {
-  animation: modalPop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: modalPop var(--nl-motion-control) var(--nl-ease-emphasized) both;
 }
 
 .quick-modal-head {
@@ -1170,7 +1170,7 @@ body.hover-none .tile:hover .box {
   letter-spacing: -0.01em;
   opacity: 0;
   transform: translateY(14px) scale(0.96);
-  transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  transition: opacity var(--nl-motion-panel) ease, transform var(--nl-motion-panel) var(--nl-ease-pop);
 }
 .toast.on {
   opacity: 1;
@@ -1272,8 +1272,6 @@ body.hover-none .tile:hover .box {
 .box .nl-icon[data-icon-kind="favicon"], .box .nl-icon[data-icon-kind="raster"] { width: 72%; height: 72%; }
 .box .nl-icon[data-icon-kind="monogram"] { width: 68%; height: 68%; }
 .box .nl-icon > svg, .box .nl-icon > img { width: 100%; height: 100%; object-fit: contain; filter: none; transform: none; fill: var(--icon-accent); }
-.box .nl-icon[data-icon-tone="dark"] { --icon-accent: #111827 !important; }
-.box .nl-icon[data-icon-tone="light"] { --icon-accent: #f8fafc !important; }
 .lbl { font-size: clamp(12px, .82vw, 13px); color: var(--nl-text-secondary); }
 .lbl { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tile:hover .box, .tile:focus-visible .box, body.hover-lift .tile:hover .box, body.hover-scale .tile:hover .box, body.hover-glow .tile:hover .box {
@@ -1295,24 +1293,22 @@ body.hover-none .tile:hover .box {
 
 
 
-/* Contrast halo. Plates stay identical on every tile — a board mixing black and
-   white logos cannot be solved by one background, since any tone that saves one
-   drowns the other. So the icon carries its own separation: a rim traced from its
-   own silhouette, applied only when it would otherwise disappear. The logo keeps
-   its colour and the grid keeps one uniform surface. */
-.nl-icon[data-icon-halo="light"] {
-  --icon-halo: drop-shadow(0 0 1px rgba(255, 255, 255, .95)) drop-shadow(0 0 4px rgba(255, 255, 255, .4));
-}
-.nl-icon[data-icon-halo="dark"] {
-  --icon-halo: drop-shadow(0 0 1px rgba(0, 0, 0, .95)) drop-shadow(0 0 4px rgba(0, 0, 0, .45));
-}
-.nl-icon[data-icon-halo] > svg,
-.nl-icon[data-icon-halo] > img,
-.nl-icon[data-icon-halo] > .mono {
-  /* Important on purpose: light themes paint a decorative drop-shadow on icons
-     through a higher-specificity selector, and a decoration must never be able
-     to win over the rim that makes an icon visible at all. */
-  filter: var(--icon-halo) !important;
+/* Contrast tone. Plates stay identical on every tile; what moves is the icon,
+   and only for marks that carry no colour of their own — a single-colour glyph
+   is meant to flip with its background, which is what its own brand guidance
+   says. Coloured logos are never re-toned, so the red stays YouTube's red.
+   Marked important because the renderer sets --icon-accent inline. */
+.box .nl-icon[data-icon-tone="light"],
+.nl-icon[data-icon-tone="light"] { --icon-accent: #f5f7fb !important; }
+.box .nl-icon[data-icon-tone="dark"],
+.nl-icon[data-icon-tone="dark"] { --icon-accent: #10151f !important; }
+/* Raster art has no fill to set; for a single-colour image an inversion is the
+   same operation. */
+.nl-icon[data-icon-tone] > img {
+  /* Important for the same reason the plates were: light themes paint a
+     decorative drop-shadow on icons through a higher-specificity selector, and
+     decoration must not win over being visible at all. */
+  filter: invert(1) !important;
 }
 
 /* ── Themed select ──────────────────────────────────────────────────
@@ -1413,3 +1409,25 @@ body.hover-none .tile:hover .box {
    folder leaves in the dock, and the button an empty board offers. */
 #hiddenDock > * { min-height: var(--nl-target-min); }
 .glass-btn { min-height: var(--nl-target-min); }
+
+/* ── Press response ─────────────────────────────────────────────────
+   Every control answers a press the same way. Without it a click on a button
+   registered only after the work finished, which reads as a dead interface;
+   with it the surface acknowledges the finger immediately. Transform only, and
+   short enough that it never delays the action itself. */
+:where(.glass-btn, .ctx-item, .nl-select, .icon-chip, .icon-tab-btn, .scene-card,
+       .bookmark-compact-action, .theme-card, .mode-btn, .xbtn, #gear):active {
+  transform: scale(.97);
+}
+:where(.glass-btn, .ctx-item, .nl-select, .icon-chip, .icon-tab-btn, .scene-card,
+       .bookmark-compact-action, .theme-card, .mode-btn, .xbtn, #gear) {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: var(--nl-motion-control);
+  transition-timing-function: var(--nl-ease-emphasized);
+}
+@media (prefers-reduced-motion: reduce) {
+  :where(.glass-btn, .ctx-item, .nl-select, .icon-chip, .icon-tab-btn, .scene-card,
+         .bookmark-compact-action, .theme-card, .mode-btn, .xbtn, #gear):active {
+    transform: none;
+  }
+}

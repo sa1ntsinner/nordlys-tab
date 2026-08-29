@@ -21,7 +21,7 @@
   -webkit-backdrop-filter: blur(32px) saturate(1.8);
   box-shadow: -30px 0 90px rgba(0, 0, 0, 0.7);
   transform: translateX(calc(100% + 40px));
-  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform var(--nl-motion-panel) var(--nl-ease-emphasized);
 }
 
 #cfg.open, body.cfgopen #cfg {
@@ -55,7 +55,7 @@ body.resizing-drawer #cfg {
   height: 48px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.2);
-  transition: height 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition: height var(--nl-motion-control) ease, background var(--nl-motion-control) ease, box-shadow var(--nl-motion-control) ease;
 }
 #cfg-resizer:hover::after, #cfg-resizer.dragging::after {
   height: 80px;
@@ -222,7 +222,7 @@ body.resizing-drawer #cfg {
   font-family: inherit;
   font-size: 13px;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  transition: border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), background var(--nl-motion-control);
 }
 .ipt:focus {
   border-color: var(--accent);
@@ -290,7 +290,7 @@ input[type="range"].ipt:focus-visible {
   border-radius: 50%;
   background: #ffffff;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease;
+  transition: transform var(--nl-motion-control) var(--nl-ease-pop), background-color var(--nl-motion-control) ease;
 }
 .tg input:focus-visible + i {
   box-shadow: 0 0 0 3px var(--accent-glow);
@@ -717,7 +717,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   text-align: center;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity var(--nl-motion-fast) ease, transform var(--nl-motion-fast) ease;
   z-index: 5;
 }
 
@@ -808,7 +808,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: opacity 0.25s ease, border-color 0.25s ease;
+  transition: opacity var(--nl-motion-control) ease, border-color var(--nl-motion-control) ease;
 }
 .group-editor-card.is-hidden-folder {
   opacity: 0.6;
@@ -868,7 +868,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   border-radius: 10px;
   background: rgba(8, 14, 28, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: background 0.15s;
+  transition: background var(--nl-motion-fast);
 }
 .link-editor-row:hover {
   background: rgba(14, 22, 42, 0.75);

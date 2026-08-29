@@ -556,6 +556,10 @@ class GridController {
       link.name = newTitle;
       link.url = newUrl;
       link.color = newColor;
+      // "auto" is the absence of a choice, so it is stored as nothing rather than
+      // as a value the rest of the code would have to keep special-casing.
+      const chosenTone = document.getElementById("quick-tone-select")?.value;
+      if (chosenTone && chosenTone !== "auto") link.tone = chosenTone; else delete link.tone;
 
       if (!isNaN(targetFolderIdx) && targetFolderIdx !== gIdx && this.app.config.groups[targetFolderIdx]) {
         oldGroup.links.splice(lIdx, 1);
@@ -683,6 +687,8 @@ class GridController {
     if (titleInput) titleInput.value = link.name || "";
     if (urlInput) urlInput.value = link.url || "";
     if (colorInput) colorInput.value = link.color || "#35d6c0";
+    const toneSelect = document.getElementById("quick-tone-select");
+    if (toneSelect) toneSelect.value = link.tone || "auto";
 
     if (folderSelect) {
       folderSelect.innerHTML = (this.app.config.groups || [])

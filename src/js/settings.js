@@ -1445,24 +1445,26 @@ class SettingsController {
     const applyBtn = document.getElementById("cropper-apply-btn");
     const useOrigBtn = document.getElementById("cropper-use-original-btn");
 
-    // Zoom Slider & Buttons
+    // Zoom Slider & Buttons. The bounds come from the image, not from constants:
+    // a fixed 0.3 floor meant a 1024px logo could never be zoomed out far enough
+    // to see, and Fit View hit the same floor.
     const setZoom = (val) => {
-      this.cropperZoom = Math.max(0.3, Math.min(5.0, val));
+      this.cropperZoom = Math.max(this.cropperMinZoom ?? 0.05, Math.min(this.cropperMaxZoom ?? 5, val));
       if (zoomSlider) zoomSlider.value = this.cropperZoom;
       if (zoomValLabel) zoomValLabel.textContent = `${Math.round(this.cropperZoom * 100)}%`;
       this.drawCropper();
     };
 
     zoomSlider?.addEventListener("input", (e) => setZoom(parseFloat(e.target.value)));
-    zoomInBtn?.addEventListener("click", () => setZoom(this.cropperZoom + 0.2));
-    zoomOutBtn?.addEventListener("click", () => setZoom(this.cropperZoom - 0.2));
+    const zoomStep = () => Math.max(0.02, (this.cropperFitZoom ?? 1) * 0.2);
+    zoomInBtn?.addEventListener("click", () => setZoom(this.cropperZoom + zoomStep()));
+    zoomOutBtn?.addEventListener("click", () => setZoom(this.cropperZoom - zoomStep()));
 
     toolFitBtn?.addEventListener("click", () => {
       if (!this.cropperImage) return;
-      const baseScale = Math.min(260 / this.cropperImage.width, 260 / this.cropperImage.height);
       this.cropperPanX = 0;
       this.cropperPanY = 0;
-      setZoom(baseScale);
+      setZoom(this.cropperFitZoom ?? 1);
     });
 
     toolCenterBtn?.addEventListener("click", () => {
@@ -1697,16 +1699,26 @@ class SettingsController {
       const imgW = img.naturalWidth || img.width || 260;
       const imgH = img.naturalHeight || img.height || 260;
 
-      // Auto-fit initial zoom so the full height/width fits pleasantly
-      const baseScale = Math.min(260 / imgW, 260 / imgH);
-      this.cropperZoom = Math.max(0.4, Number((baseScale * 1.15).toFixed(2)));
+      // Open showing the whole image, and let the range reach well past that in
+      // both directions so any source can be framed.
+      const canvas = document.getElementById("cropper-canvas");
+      const frame = Math.min(canvas?.width || 260, canvas?.height || 260);
+      this.cropperFitZoom = Math.min(frame / imgW, frame / imgH);
+      this.cropperMinZoom = Math.min(0.05, this.cropperFitZoom * 0.5);
+      this.cropperMaxZoom = Math.max(5, this.cropperFitZoom * 12);
+      this.cropperZoom = this.cropperFitZoom;
       this.cropperPanX = 0;
       this.cropperPanY = 0;
       this.cropperRotation = 0;
 
       const zoomSlider = document.getElementById("cropper-zoom-slider");
       const zoomValLabel = document.getElementById("cropper-zoom-val");
-      if (zoomSlider) zoomSlider.value = this.cropperZoom;
+      if (zoomSlider) {
+        zoomSlider.min = String(this.cropperMinZoom);
+        zoomSlider.max = String(this.cropperMaxZoom);
+        zoomSlider.step = String(Math.max(0.005, this.cropperFitZoom / 40));
+        zoomSlider.value = this.cropperZoom;
+      }
       if (zoomValLabel) zoomValLabel.textContent = `${Math.round(this.cropperZoom * 100)}%`;
 
       this.drawCropper();
