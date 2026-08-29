@@ -2,6 +2,9 @@
    AURORA TAB 2.0 - GRID, TILES, FOLDER DRAG & DROP & CONTEXT MENUS
    ═══════════════════════════════════════════════════════════════════ */
 
+const MIN_COLUMNS = 1;
+const MAX_COLUMNS = 8;
+
 class GridController {
   constructor(app) {
     this.app = app;
@@ -157,32 +160,31 @@ class GridController {
     card.appendChild(grid);
 
     // Mouse Drag-to-Resize for Folders
+    // One control, both input methods. The corner is draggable and is also a
+    // slider, so removing the +/- buttons does not take column resizing away
+    // from the keyboard.
     const resizeHandle = document.createElement("div");
     resizeHandle.className = "card-resize-handle";
     resizeHandle.title = window.I18N ? window.I18N.t('hint.dragResizeFolder') : "Drag to resize folder columns";
+    resizeHandle.setAttribute("role", "slider");
+    resizeHandle.tabIndex = 0;
+    resizeHandle.setAttribute("aria-label", `Columns for ${group.label || 'folder'}`);
+    resizeHandle.setAttribute("aria-valuemin", String(MIN_COLUMNS));
+    resizeHandle.setAttribute("aria-valuemax", String(MAX_COLUMNS));
+    resizeHandle.setAttribute("aria-valuenow", String(group.cols || 4));
+    resizeHandle.addEventListener("keydown", (event) => {
+      const step = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 };
+      let next = null;
+      if (event.key in step) next = (group.cols || 4) + step[event.key];
+      else if (event.key === "Home") next = MIN_COLUMNS;
+      else if (event.key === "End") next = MAX_COLUMNS;
+      else return;
+      event.preventDefault();
+      this.setFolderColumns(group, grid, resizeHandle, next);
+    });
     this.attachCardResize(card, grid, resizeHandle, group, gIdx);
     card.appendChild(resizeHandle);
 
-    const resizeControls = document.createElement("div");
-    resizeControls.className = "card-resize-controls";
-    const resizeStep = (delta, label, text) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = text;
-      button.setAttribute("aria-label", `${label} for ${group.label || 'folder'}`);
-      button.addEventListener("click", () => {
-        const next = Math.max(1, Math.min(8, (group.cols || 4) + delta));
-        if (next === group.cols) return;
-        group.cols = next;
-        grid.dataset.cols = next;
-        this.app.saveConfig();
-        this.app.settings?.renderBookmarksManager();
-        NordlysUI.announce(`${group.label || 'Folder'} resized to ${next} columns`);
-      });
-      return button;
-    };
-    resizeControls.append(resizeStep(-1, "Decrease columns", "−"), resizeStep(1, "Increase columns", "+"));
-    card.appendChild(resizeControls);
 
     return card;
   }
@@ -824,6 +826,20 @@ class GridController {
   }
 
   /* ── Interactive Card & Folder Resizing ──────────────────────── */
+  /* Single owner of a column change, so pointer and keyboard cannot drift apart. */
+  setFolderColumns(group, gridEl, handleEl, requested) {
+    const next = Math.max(MIN_COLUMNS, Math.min(MAX_COLUMNS, Number(requested) || MIN_COLUMNS));
+    if (next === group.cols) return;
+    NordlysUI.animateReflow(gridEl, () => {
+      group.cols = next;
+      gridEl.dataset.cols = next;
+    });
+    handleEl?.setAttribute("aria-valuenow", String(next));
+    this.app.saveConfig();
+    this.app.settings?.renderBookmarksManager();
+    NordlysUI.announce(`${group.label || 'Folder'} resized to ${next} columns`);
+  }
+
   attachCardResize(cardEl, gridEl, handleEl, group, gIdx) {
     let startX = 0;
     let startCols = group.cols || 4;
@@ -865,6 +881,9 @@ class GridController {
         currentCols = targetCols;
         gridEl.dataset.cols = currentCols;
         group.cols = currentCols;
+        // The same handle reports the value to assistive tech, so dragging must
+        // keep it truthful rather than let the two paths drift.
+        handleEl.setAttribute("aria-valuenow", String(currentCols));
         if (pillEl) {
           pillEl.textContent = currentCols === 1
             ? (window.I18N ? window.I18N.t('hint.columnSingle') : `✦ 1 Column (List)`)

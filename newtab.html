@@ -426,9 +426,9 @@
       <!-- 4. Background Section -->
       <section id="sec-background" class="csec">
         <h3 data-i18n="background.mode">Background Engine</h3>
-        <div class="row">
-          <span data-i18n="background.mode">Background Mode</span>
-          <select id="cfg-bg-mode" class="ipt">
+        <div class="scene-block">
+          <span class="settings-block-label" data-i18n="background.scene">Scene</span>
+          <select id="cfg-bg-mode" class="ipt" hidden data-native aria-hidden="true" tabindex="-1">
             <option value="aurora">Dynamic Aurora Borealis (Ribbons & Meteors)</option>
             <option value="cosmos">Cosmic Starfield & Twinkling</option>
             <option value="mesh-gradient">Floating Mesh Gradient Orbs</option>
@@ -437,6 +437,15 @@
             <option value="custom-video">Custom Wallpaper (Video Loop)</option>
             <option value="solid">Minimalist Solid Background</option>
           </select>
+          <div class="scene-grid" id="bg-scene-grid" role="radiogroup" aria-label="Background scene"></div>
+        </div>
+        <div class="row setting-row">
+          <span><span data-i18n="background.motion">Motion</span> (<b id="lbl-bg-motion">100%</b>)</span>
+          <input id="cfg-bg-motion" type="range" class="ipt" min="0" max="150" value="100">
+        </div>
+        <div class="row setting-row">
+          <span><span data-i18n="background.atmosphere">Atmosphere</span> (<b id="lbl-bg-intensity">100%</b>)</span>
+          <input id="cfg-bg-intensity" type="range" class="ipt" min="15" max="150" value="100">
         </div>
         
         <div class="row" style="flex-direction: column; align-items: stretch; gap: 8px;">

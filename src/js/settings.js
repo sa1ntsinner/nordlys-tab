@@ -2,6 +2,16 @@
    AURORA TAB 2.0 - SETTINGS CONTROLLER & CUSTOMIZATION ENGINE
    ═══════════════════════════════════════════════════════════════════ */
 
+const SCENE_NAMES = {
+  "aurora": "Aurora",
+  "cosmos": "Cosmos",
+  "mesh-gradient": "Mesh",
+  "particles": "Particles",
+  "custom-image": "Wallpaper",
+  "custom-video": "Video",
+  "solid": "Solid"
+};
+
 class SettingsController {
   constructor(app) {
     this.app = app;
@@ -32,10 +42,80 @@ class SettingsController {
     this.initIconPickerModal();
     this.initCustomCSSEditor();
     this.initBackupManager();
+    this.initScenePicker();
     this.initTypography();
     // Every native dropdown gets a themed control drawn over it; the element
     // stays as the value source but stops painting platform chrome.
     window.NordlysUI?.enhanceSelects(document);
+  }
+
+  /* ── 0a. Background scenes ────────────────────────────────────── */
+  /* The old control was a dropdown of engine names, which told the user nothing
+     about what they would get — and the procedural scenes looked so alike that
+     switching read as no change. Now the choice is shown, and two sliders that
+     apply to every scene make the difference something you can actually dial. */
+  initScenePicker() {
+    const select = document.getElementById("cfg-bg-mode");
+    const grid = document.getElementById("bg-scene-grid");
+    if (!select || !grid) return;
+
+    const paint = () => {
+      grid.replaceChildren();
+      for (const option of select.options) {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "scene-card";
+        card.dataset.scene = option.value;
+        card.setAttribute("role", "radio");
+        card.setAttribute("aria-checked", String(option.value === select.value));
+        const preview = document.createElement("span");
+        preview.className = "scene-preview";
+        preview.dataset.scene = option.value;
+        preview.setAttribute("aria-hidden", "true");
+        const name = document.createElement("span");
+        name.className = "scene-name";
+        // The stored labels are engine descriptions ("Dynamic Aurora Borealis
+        // (Ribbons & Meteors)"). A card is a picture with a name under it.
+        name.textContent = SCENE_NAMES[option.value] || option.textContent.replace(/\s*\(.*\)\s*$/, "").trim();
+        card.append(preview, name);
+        card.addEventListener("click", () => {
+          select.value = option.value;
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+          paint();
+        });
+        grid.append(card);
+      }
+    };
+
+    select.addEventListener("change", () => {
+      grid.querySelectorAll(".scene-card").forEach((card) => {
+        card.setAttribute("aria-checked", String(card.dataset.scene === select.value));
+      });
+    });
+
+    const applyAtmosphere = () => {
+      const motion = Number(document.getElementById("cfg-bg-motion")?.value ?? 100) / 100;
+      const intensity = Number(document.getElementById("cfg-bg-intensity")?.value ?? 100) / 100;
+      this.app.config.bgMotion = motion;
+      this.app.config.bgIntensity = intensity;
+      this.app.bgEngine?.setAtmosphere({ motion, intensity });
+      const motionLabel = document.getElementById("lbl-bg-motion");
+      const intensityLabel = document.getElementById("lbl-bg-intensity");
+      if (motionLabel) motionLabel.textContent = `${Math.round(motion * 100)}%`;
+      if (intensityLabel) intensityLabel.textContent = `${Math.round(intensity * 100)}%`;
+    };
+
+    for (const id of ["cfg-bg-motion", "cfg-bg-intensity"]) {
+      const slider = document.getElementById(id);
+      if (!slider) continue;
+      slider.value = String(Math.round((id === "cfg-bg-motion"
+        ? this.app.config.bgMotion ?? 1
+        : this.app.config.bgIntensity ?? 1) * 100));
+      slider.addEventListener("input", applyAtmosphere);
+      slider.addEventListener("change", () => { applyAtmosphere(); this.app.saveConfig(); });
+    }
+    applyAtmosphere();
+    paint();
   }
 
   /* ── 0. Typography slots ──────────────────────────────────────── */

@@ -1293,15 +1293,7 @@ body.hover-none .tile:hover .box {
   .grid[data-cols] { grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); justify-items: center; }
 }
 
-.card-resize-controls {
-  position: static; align-self: flex-end; display: flex; gap: 4px; opacity: .72;
-  transition: opacity var(--nl-motion-fast) ease;
-}
-.card:hover .card-resize-controls, .card:focus-within .card-resize-controls { opacity: 1; }
-.card-resize-controls button {
-  width: 40px; height: 40px; border: 1px solid var(--nl-border); border-radius: var(--nl-radius-sm);
-  background: var(--nl-surface-elevated); color: var(--nl-text-primary); cursor: pointer;
-}
+
 
 /* Contrast halo. Plates stay identical on every tile — a board mixing black and
    white logos cannot be solved by one background, since any tone that saves one

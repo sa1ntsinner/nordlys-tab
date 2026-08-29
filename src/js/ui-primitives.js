@@ -374,6 +374,26 @@
     root.querySelectorAll('select').forEach(select => enhanced.get(select)?.sync());
   }
 
+  /* FLIP: read where things are, let the caller change the layout, then play each
+     item back from where it was. Reflow becomes a movement you can follow instead
+     of a jump, and it rides transform alone so it stays on the compositor. */
+  function animateReflow(container, mutate, { duration = 240 } = {}) {
+    if (!container) { mutate(); return; }
+    const items = [...container.children];
+    const before = items.map(item => item.getBoundingClientRect());
+    mutate();
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    items.forEach((item, index) => {
+      const after = item.getBoundingClientRect();
+      const dx = before[index].left - after.left, dy = before[index].top - after.top;
+      if (!dx && !dy) return;
+      item.animate(
+        [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }],
+        { duration, easing: 'cubic-bezier(.2, .8, .2, 1)' }
+      );
+    });
+  }
+
   function liveRegion() {
     let region = document.getElementById('nl-live-region');
     if (!region) { region = document.createElement('div'); region.id = 'nl-live-region'; region.className = 'nl-visually-hidden'; region.setAttribute('aria-live', 'polite'); region.setAttribute('aria-atomic', 'true'); document.body.append(region); }
@@ -390,5 +410,5 @@
     const timer = setTimeout(() => finish(false), duration); return { dismiss: () => finish(false) };
   }
 
-  window.NordlysUI = { FocusScope, DialogController, RovingTabs, MenuController, SelectMenu, enhanceSelect, enhanceSelects, refreshSelects, announce, showUndoToast, visibleFocusable, layers };
+  window.NordlysUI = { FocusScope, DialogController, RovingTabs, MenuController, SelectMenu, enhanceSelect, enhanceSelects, refreshSelects, announce, showUndoToast, animateReflow, visibleFocusable, layers };
 })();

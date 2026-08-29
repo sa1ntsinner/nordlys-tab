@@ -1843,3 +1843,61 @@ html[data-theme="warm-ivory"] .css-docs-list code {
   .bookmark-row-actions { grid-column: 1 / -1; }
   .bookmark-editor { grid-template-columns: 1fr; }
 }
+
+/* ── Background scenes ──────────────────────────────────────────────
+   A shown choice instead of a list of engine names. Each preview is drawn from
+   the active theme's shader colours, so the cards belong to the palette. */
+.scene-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+.scene-card {
+  display: grid; gap: 7px; padding: 7px; border-radius: var(--nl-radius-md);
+  border: 1px solid var(--nl-border); background: transparent; cursor: pointer;
+  color: var(--nl-text-secondary); font: inherit; font-size: 11.5px; text-align: center;
+  transition: border-color var(--nl-motion-control), color var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
+}
+.scene-card:hover { border-color: var(--nl-border-strong); color: var(--nl-text-primary); transform: translateY(-1px); }
+.scene-card[aria-checked="true"] { border-color: var(--nl-accent); color: var(--nl-text-primary); }
+.scene-preview {
+  display: block; aspect-ratio: 16 / 10; border-radius: var(--nl-radius-sm); overflow: hidden;
+  background: var(--nl-canvas-gradient);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--nl-text-primary) 8%, transparent);
+}
+.scene-preview[data-scene="aurora"] {
+  background:
+    radial-gradient(80% 60% at 30% 110%, color-mix(in srgb, var(--shader-1, #35d6c0) 70%, transparent), transparent 70%),
+    radial-gradient(70% 50% at 75% 100%, color-mix(in srgb, var(--shader-2, #5b6cff) 60%, transparent), transparent 68%),
+    var(--nl-canvas);
+}
+.scene-preview[data-scene="cosmos"] {
+  background:
+    radial-gradient(1.5px 1.5px at 22% 34%, var(--nl-text-primary), transparent),
+    radial-gradient(1.5px 1.5px at 68% 22%, var(--nl-text-primary), transparent),
+    radial-gradient(1.5px 1.5px at 44% 72%, var(--nl-text-primary), transparent),
+    radial-gradient(1.5px 1.5px at 82% 62%, var(--nl-text-primary), transparent),
+    radial-gradient(90% 70% at 50% 20%, color-mix(in srgb, var(--shader-3, #9d4edd) 45%, transparent), transparent 75%),
+    var(--nl-canvas);
+}
+.scene-preview[data-scene="mesh-gradient"] {
+  background:
+    radial-gradient(50% 50% at 25% 30%, color-mix(in srgb, var(--shader-1, #35d6c0) 85%, transparent), transparent 70%),
+    radial-gradient(50% 50% at 75% 40%, color-mix(in srgb, var(--shader-2, #5b6cff) 85%, transparent), transparent 70%),
+    radial-gradient(50% 50% at 50% 80%, color-mix(in srgb, var(--shader-3, #9d4edd) 85%, transparent), transparent 70%),
+    var(--nl-canvas);
+}
+.scene-preview[data-scene="particles"] {
+  background:
+    radial-gradient(3px 3px at 30% 40%, color-mix(in srgb, var(--shader-1, #35d6c0) 80%, transparent), transparent),
+    radial-gradient(4px 4px at 62% 30%, color-mix(in srgb, var(--shader-2, #5b6cff) 70%, transparent), transparent),
+    radial-gradient(2.5px 2.5px at 48% 70%, color-mix(in srgb, var(--shader-3, #9d4edd) 80%, transparent), transparent),
+    radial-gradient(3.5px 3.5px at 78% 66%, color-mix(in srgb, var(--shader-1, #35d6c0) 60%, transparent), transparent),
+    var(--nl-canvas);
+}
+.scene-preview[data-scene="solid"] { background: var(--nl-canvas); }
+.scene-preview[data-scene="custom-image"],
+.scene-preview[data-scene="custom-video"] {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--nl-text-primary) 16%, transparent) 25%, transparent 25%) -8px 0/16px 16px,
+    linear-gradient(225deg, color-mix(in srgb, var(--nl-text-primary) 16%, transparent) 25%, transparent 25%) -8px 0/16px 16px,
+    var(--nl-canvas);
+}
+.scene-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scene-block { display: grid; gap: 10px; margin-bottom: 6px; }

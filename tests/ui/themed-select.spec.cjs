@@ -22,13 +22,17 @@ test('no native dropdown can render or be reached', async ({ nordlysPage }) => {
     hidden: select.hidden,
     ariaHidden: select.getAttribute('aria-hidden'),
     tabIndex: select.tabIndex,
+    // data-native marks a select driven by a purpose-built control instead of the
+    // generic list — the scene picker owns the background one.
+    drivenElsewhere: select.hasAttribute('data-native'),
     hasTrigger: select.nextElementSibling?.classList.contains('nl-select') === true,
     paints: select.getClientRects().length > 0
   })));
   expect(exposed.length, 'the panel still has dropdowns to replace').toBeGreaterThan(5);
   expect(exposed.filter(item => !item.hidden || item.ariaHidden !== 'true' || item.tabIndex !== -1), 'native selects must be inert').toEqual([]);
   expect(exposed.filter(item => item.paints), 'no native select may paint').toEqual([]);
-  expect(exposed.filter(item => !item.hasTrigger), 'every select needs a themed trigger').toEqual([]);
+  expect(exposed.filter(item => !item.hasTrigger && !item.drivenElsewhere), 'every select needs a themed control').toEqual([]);
+  expect(exposed.filter(item => item.drivenElsewhere && item.hasTrigger), 'a purpose-built control must not double up with the generic list').toEqual([]);
 });
 
 test('the themed list commits with the keyboard and returns focus to its trigger', async ({ nordlysPage }) => {

@@ -17,6 +17,8 @@ class AuroraBackgroundEngine {
     this.lastFrame = 0;
     this.running = false;
     this.mode = "aurora"; // 'aurora', 'cosmos', 'mesh-gradient', 'particles', 'custom-image', 'custom-video', 'solid'
+    this.motion = 1;
+    this.intensity = 1;
     this.isMousePending = false;
     this.mouseX = 50;
     this.mouseY = 50;
@@ -232,10 +234,23 @@ class AuroraBackgroundEngine {
     }
   }
 
+  /* Two knobs the settings expose, applied once for every scene rather than per
+     effect: how fast the world advances, and how present it is. Before this the
+     modes differed only in which particles they drew, so switching between them
+     read as no change at all. */
+  setAtmosphere({ motion, intensity } = {}) {
+    if (Number.isFinite(motion)) this.motion = Math.max(0, Math.min(1.5, motion));
+    if (Number.isFinite(intensity)) this.intensity = Math.max(0.15, Math.min(1.5, intensity));
+  }
+
   render(dt = 1) {
     if (!this.ctx) return;
-    this.t += 0.005 * dt;
+    this.t += 0.005 * dt * (this.motion ?? 1);
     this.ctx.clearRect(0, 0, this.w, this.h);
+    // Scenes paint with their own alphas; scaling the whole canvas keeps their
+    // internal balance while still letting the user dial the atmosphere down.
+    const presence = this.intensity ?? 1;
+    if (presence < 1) this.ctx.globalAlpha = presence;
 
     switch (this.mode) {
       case "aurora": {
@@ -264,6 +279,7 @@ class AuroraBackgroundEngine {
         this.renderParticles(dt);
         break;
     }
+    this.ctx.globalAlpha = 1;
   }
 
   renderNebulae(baseAlpha) {
