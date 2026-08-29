@@ -125,6 +125,19 @@ test('every target in the product has a 40px hit area', async ({ nordlysPage }) 
   await folder.getByRole('button', { name: /Choose icon/ }).click();
   small.push(...await undersizedTargets(page, 'icon picker'));
 
+  await page.keyboard.press('Escape'); await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
+
+  // States the default board never shows: a folded folder's dock chip, and the
+  // prompt an empty board offers.
+  await page.locator('#board > .card').first().locator('.foldBtn').click();
+  await page.waitForTimeout(360);
+  small.push(...await undersizedTargets(page, 'dock'));
+  await page.evaluate(() => {
+    window.Aurora.config.groups = [];
+    window.Aurora.saveConfig(); window.Aurora.grid.render();
+  });
+  small.push(...await undersizedTargets(page, 'empty board'));
+
   expect(small, 'controls smaller than the 40px contract').toEqual([]);
 });
 

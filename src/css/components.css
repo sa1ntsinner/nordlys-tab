@@ -1408,3 +1408,8 @@ body.hover-none .tile:hover .box {
   white-space: nowrap;
 }
 .cat i { flex: 1 1 0; min-width: 0; }
+
+/* Reachable sizes for the two places the sweep found short: the chip a folded
+   folder leaves in the dock, and the button an empty board offers. */
+#hiddenDock > * { min-height: var(--nl-target-min); }
+.glass-btn { min-height: var(--nl-target-min); }
