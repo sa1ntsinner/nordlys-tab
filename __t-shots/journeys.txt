@@ -1,0 +1,2 @@
+search escape: console: Access to fetch at 'https://suggestqueries.google.com/complete/search?client=chrome&q=you' from origin 'http://127.0.0.1:58994' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+search escape: console: Failed to load resource: net::ERR_FAILED
