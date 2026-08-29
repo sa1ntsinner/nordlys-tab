@@ -1370,3 +1370,26 @@ body.hover-none .tile:hover .box {
   color: var(--nl-text-primary); font-weight: 600;
   background: color-mix(in srgb, var(--nl-accent) 16%, transparent);
 }
+
+/* ── Hit areas ──────────────────────────────────────────────────────
+   The 40px contract, applied where an audit of every state found it broken.
+   Visuals are unchanged; only the reachable area grows. */
+.card-resize-handle { width: var(--nl-target-min); height: var(--nl-target-min); }
+.ctx-item { min-height: var(--nl-target-min); }
+.quick-modal-card .xbtn { min-width: var(--nl-target-min); min-height: var(--nl-target-min); }
+.quick-modal-body :where(input, select, .nl-select, .glass-input) { min-height: var(--nl-target-min); }
+.quick-modal-body .glass-btn, .quick-modal-foot .glass-btn { min-height: var(--nl-target-min); }
+.confirm-backdrop .glass-btn { min-height: var(--nl-target-min); }
+/* The search field filled a 19px strip inside a 54px bar, so most of the bar
+   looked clickable and was not. */
+#search #q { align-self: stretch; }
+
+.board-empty {
+  display: grid; justify-items: center; gap: 14px;
+  padding: 42px 28px; margin: 0 auto;
+  border-radius: var(--nl-radius-xl);
+  border: 1px dashed var(--nl-border-strong);
+  background: color-mix(in srgb, var(--nl-surface-card) 34%, transparent);
+  animation: rise var(--nl-motion-enter) var(--nl-ease-emphasized) both;
+}
+.board-empty-text { color: var(--nl-text-secondary); font-size: 13.5px; }

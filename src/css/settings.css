@@ -1901,3 +1901,18 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 }
 .scene-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scene-block { display: grid; gap: 10px; margin-bottom: 6px; }
+
+/* Hit areas — see the matching block in components.css. */
+.icon-tab-btn { min-height: var(--nl-target-min); }
+.icon-chip { min-height: var(--nl-target-min); }
+#icon-modal .xbtn { min-width: var(--nl-target-min); min-height: var(--nl-target-min); }
+#icon-modal .glass-input, .modal-box .glass-input { min-height: var(--nl-target-min); }
+.nl-select { min-height: var(--nl-target-min); }
+/* The switch keeps its 44x24 look; the label around it carries the hit area. */
+.tg { display: inline-flex; align-items: center; height: var(--nl-target-min); }
+.tg i { position: relative; inset: auto; width: 44px; height: 24px; }
+/* A single digit was being clipped by its own ellipsis in the narrow folder rows. */
+.nl-select { min-width: 0; }
+.bookmark-folder-actions .nl-select { min-width: 64px; }
+.nl-select-value { min-width: 1ch; }
+.icon-chip { min-width: var(--nl-target-min); justify-content: center; }

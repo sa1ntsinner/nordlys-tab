@@ -71,13 +71,61 @@ test('every locale contains every visible English message key', async ({ nordlys
   expect(missing).toEqual({});
 });
 
-test('every visible settings, dialog, and menu target has a 40px hit area', async ({ nordlysPage }) => {
-  const { page } = nordlysPage; await page.locator('#gear').click();
+/* Named for the whole product, so it has to look at the whole product: the
+   canvas, every settings section, the menus and the dialogs. It previously
+   queried only #cfg, which is why undersized controls survived elsewhere. */
+async function undersizedTargets(page, where) {
+  // Overlays scale in; a control measured mid-animation reads smaller than it is.
+  await page.waitForTimeout(340);
+  const SELECTOR = 'button, a[href], select, [role="button"], [role="tab"], [role="option"], [role="slider"], [role="menuitem"], input:not([type="file"]):not([type="range"]):not([type="color"])';
+  return page.evaluate(([selector, label]) => [...document.querySelectorAll(selector)]
+    // A zero-area control is not a target: it is a visually hidden input proxied
+    // by its label, and the label is what gets measured.
+    .filter(node => node.getClientRects().length && !node.closest('[hidden],[inert],[aria-hidden="true"]'))
+    .filter(node => { const box = node.getBoundingClientRect(); return box.width > 0 && box.height > 0; })
+    .map(node => {
+      const box = node.getBoundingClientRect();
+      return { where: label, name: (node.getAttribute('aria-label') || node.textContent || node.id || node.className).trim().slice(0, 32), size: `${Math.round(box.width)}x${Math.round(box.height)}` };
+    })
+    .filter(item => {
+      const [width, height] = item.size.split('x').map(Number);
+      return width < 40 || height < 40;
+    }), [SELECTOR, where]);
+}
+
+test('every target in the product has a 40px hit area', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const small = [];
+
+  small.push(...await undersizedTargets(page, 'canvas'));
+
+  const tile = page.locator('#board .tile').first();
+  await tile.focus(); await page.keyboard.press('Shift+F10');
+  // Wait for the menu to own focus: pressing Enter early activates the tile
+  // underneath and navigates away.
+  await expect(page.locator('#tile-ctx-menu').getByRole('menuitem').first()).toBeFocused();
+  small.push(...await undersizedTargets(page, 'tile menu'));
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#quick-edit-modal')).toBeVisible();
+  small.push(...await undersizedTargets(page, 'quick edit'));
+  await page.keyboard.press('Escape');
+
+  await page.locator('#gear').click();
   for (const section of ['appearance', 'background', 'bookmarks', 'general', 'custom-css', 'backup']) {
     await page.locator(`#settings-tab-${section}`).click();
-    const small = await page.locator('#cfg :is(button,input:not([type="file"]),select,textarea,[role="button"]):visible').evaluateAll(items => items.map(item => ({ name: item.getAttribute('aria-label') || item.textContent.trim(), box: item.getBoundingClientRect().toJSON() })).filter(item => item.box.width < 40 || item.box.height < 40));
-    expect.soft(small, section).toEqual([]);
+    await expect(page.locator(`#sec-${section}`)).toBeVisible();
+    small.push(...await undersizedTargets(page, section));
   }
+
+  const folder = page.locator('.bookmark-folder-accordion').first();
+  await page.locator('#settings-tab-bookmarks').click();
+  await folder.locator('summary').click();
+  small.push(...await undersizedTargets(page, 'bookmarks expanded'));
+  await folder.locator('.bookmark-summary-row').first().getByRole('button', { name: /Edit/ }).first().click();
+  await folder.getByRole('button', { name: /Choose icon/ }).click();
+  small.push(...await undersizedTargets(page, 'icon picker'));
+
+  expect(small, 'controls smaller than the 40px contract').toEqual([]);
 });
 
 /* Axe only runs the default dark theme, so a surface token that fails to follow a
