@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   AURORA TAB 2.1 - MULTI-SHADER BACKGROUND & VISUAL ENGINE
+   NORDLYS - BACKGROUND SCENES & VISUAL ENGINE
    Time-based (refresh-rate independent), light/dark aware, zero idle cost.
    ═══════════════════════════════════════════════════════════════════ */
 

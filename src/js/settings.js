@@ -1,7 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════
-   AURORA TAB 2.0 - SETTINGS CONTROLLER & CUSTOMIZATION ENGINE
+   NORDLYS - SETTINGS CONTROLLER & CUSTOMIZATION
    ═══════════════════════════════════════════════════════════════════ */
 
+/* Fallback names, and the keys that translate them. Marking the card with
+   data-i18n lets a language switch retranslate it without a listener here. */
 const SCENE_NAMES = {
   "aurora": "Aurora",
   "cosmos": "Cosmos",
@@ -10,6 +12,15 @@ const SCENE_NAMES = {
   "custom-image": "Wallpaper",
   "custom-video": "Video",
   "solid": "Solid"
+};
+const SCENE_KEYS = {
+  "aurora": "scene.aurora",
+  "cosmos": "scene.cosmos",
+  "mesh-gradient": "scene.mesh",
+  "particles": "scene.particles",
+  "custom-image": "scene.wallpaper",
+  "custom-video": "scene.video",
+  "solid": "scene.solid"
 };
 
 class SettingsController {
@@ -76,7 +87,11 @@ class SettingsController {
         name.className = "scene-name";
         // The stored labels are engine descriptions ("Dynamic Aurora Borealis
         // (Ribbons & Meteors)"). A card is a picture with a name under it.
-        name.textContent = SCENE_NAMES[option.value] || option.textContent.replace(/\s*\(.*\)\s*$/, "").trim();
+        const sceneKey = SCENE_KEYS[option.value];
+        if (sceneKey) name.dataset.i18n = sceneKey;
+        name.textContent = (sceneKey && window.I18N?.t(sceneKey))
+          || SCENE_NAMES[option.value]
+          || option.textContent.replace(/\s*\(.*\)\s*$/, "").trim();
         card.append(preview, name);
         card.addEventListener("click", () => {
           select.value = option.value;
@@ -2223,7 +2238,7 @@ class SettingsController {
       const t = (k, fb) => (window.I18N ? window.I18N.t(k) : fb);
       confirmDialog({
         title: t("confirm.resetTitle", "Reset everything?"),
-        message: t("backup.confirmReset", "Reset all Aurora Tab settings to factory defaults? This cannot be undone."),
+        message: t("backup.confirmReset", "Reset all Nordlys settings to factory defaults? This cannot be undone."),
         confirmText: t("confirm.reset", "Reset"),
         cancelText: t("confirm.cancel", "Cancel")
       }).then(async (ok) => {

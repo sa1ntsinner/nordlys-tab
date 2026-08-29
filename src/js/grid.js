@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   AURORA TAB 2.0 - GRID, TILES, FOLDER DRAG & DROP & CONTEXT MENUS
+   NORDLYS - GRID, TILES, FOLDER DRAG & DROP & CONTEXT MENUS
    ═══════════════════════════════════════════════════════════════════ */
 
 const MIN_COLUMNS = 1;

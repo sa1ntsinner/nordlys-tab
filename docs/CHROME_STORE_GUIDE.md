@@ -1,10 +1,10 @@
-# 🌐 Chrome Web Store & Developer Publication Guide
+# Chrome Web Store publication guide
 
 This document guides you through testing Nordlys locally and publishing it to the Chrome Web Store.
 
 ---
 
-## 🛠️ Step 1: Load Locally in Developer Mode
+## Step 1: load locally in developer mode
 
 You can test Nordlys in any Chromium browser (Google Chrome, Brave, Microsoft Edge, Arc, Opera, Vivaldi):
 
@@ -16,13 +16,13 @@ You can test Nordlys in any Chromium browser (Google Chrome, Brave, Microsoft Ed
 3. Click the **Load unpacked** button (top left).
 4. Select the project folder:
    ```
-   C:\Users\smile\Sync Docs\Important Stuff\aurora-tab
+   C:\Users\smile\Sync Docs\Important Stuff\Nordlys
    ```
 5. Open a new tab (`Ctrl + T`) to see Nordlys in action!
 
 ---
 
-## 📦 Step 2: Packaging for Chrome Web Store
+## Step 2: package for the Chrome Web Store
 
 To upload to the Chrome Web Store Developer Dashboard, you need a single `.zip` file containing the extension files.
 
@@ -33,26 +33,24 @@ Run this from the repository root. List the shipped paths explicitly — a wildc
 producing a ~40 MB upload instead of ~600 KB.
 
 ```powershell
-Compress-Archive -Path manifest.json, newtab.html, PRIVACY.md, README.md, LICENSE, icons, src -DestinationPath nordlys-v2.1.0.zip -Force
+Compress-Archive -Path manifest.json, newtab.html, PRIVACY.md, README.md, LICENSE, icons, src -DestinationPath nordlys-v2.2.0.zip -Force
 ```
 
 Verify before uploading — `manifest.json` must sit at the zip root and nothing
 else should be present:
 
 ```powershell
-Expand-Archive nordlys-v2.1.0.zip -DestinationPath .\zip-check -Force; Get-ChildItem .\zip-check
+Expand-Archive nordlys-v2.2.0.zip -DestinationPath .\zip-check -Force; Get-ChildItem .\zip-check
 ```
 
 ---
 
-## 🚀 Step 3: Chrome Web Store Developer Dashboard
+## Step 3: the developer dashboard
 
 1. Visit the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole).
 2. Sign in with your Google account (one-time $5 developer registration fee if new).
-3. Click **Add new item** and upload `nordlys-v2.1.0.zip`.
-4. Fill in Store Listing Details:
-   - **Title**: `Nordlys - Aesthetic Glass Startpage`
-   - **Summary**: `Aesthetic, ultra-fast New Tab startpage featuring dynamic Aurora Borealis shaders, Liquid Glass themes, and smart bookmarking.`
-   - **Category**: `Productivity` / `Fun`
-   - **Privacy Policy**: Mention that 0 data is collected externally and all bookmarks/settings remain 100% local on user device.
+3. Click **Add new item** and upload `nordlys-v2.2.0.zip`.
+4. Fill in the listing from [store-listing.md](store-listing.md), which holds the
+   title, summary, description, artwork inventory and the privacy answers as
+   text to paste. Do not retype them here; one copy is enough.
 5. Click **Submit for Review**.
