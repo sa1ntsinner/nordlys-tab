@@ -66,10 +66,13 @@ Privacy policy URL: the raw `PRIVACY.md` on GitHub.
 
 ## Artwork
 
-Everything in `docs/store-assets/` is generated from the running extension by
-`tests/ui/__t-store-shots.spec.cjs` and `tests/ui/__t-promo.spec.cjs`, so it
-cannot drift from what the product renders. Both are throwaway specs the gate
-ignores; run them with the sweeps config.
+Run `npm run artwork`. Everything in `docs/store-assets/` and `docs/assets/` is
+generated from the running extension by `tools/artwork/`, so a picture cannot
+claim a feature the code no longer has. It takes a few minutes, most of it
+deliberate canvas warm-up: the aurora needs roughly fourteen seconds before it
+draws ribbons worth showing. The README animations also need `ffmpeg` on PATH.
+
+The generators are not part of `npm test`, since they assert nothing.
 
 | File | Size | Shows |
 | --- | --- | --- |

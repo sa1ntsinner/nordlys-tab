@@ -2,13 +2,16 @@
   "name": "nordlys-refined-ui",
   "version": "0.0.0-private",
   "private": true,
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "test": "npm run test:syntax && npm run test:unit && npm run test:ui",
     "test:syntax": "node tests/helpers/check-js-syntax.cjs",
     "test:unit": "node --test tests/unit/*.test.cjs",
     "test:ui": "playwright test",
-    "test:ui:update": "playwright test --update-snapshots=all"
+    "test:ui:update": "playwright test --update-snapshots=all",
+    "artwork": "playwright test --config=tools/artwork/playwright.config.cjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
