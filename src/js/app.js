@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   AURORA TAB 2.1 - MAIN ORCHESTRATOR & APPLICATION BOOTSTRAP
+   NORDLYS - MAIN ORCHESTRATOR & APPLICATION BOOTSTRAP
    ═══════════════════════════════════════════════════════════════════ */
 
 const DEFAULT_CONFIG = {

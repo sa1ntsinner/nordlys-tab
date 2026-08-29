@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   AURORA TAB 2.1 - WIDGETS (CLOCK, DATE, GREETING, OMNI-SEARCH & CALCULATOR)
+   NORDLYS - WIDGETS (CLOCK, DATE, GREETING, OMNI-SEARCH & CALCULATOR)
    ═══════════════════════════════════════════════════════════════════ */
 
 const SEARCH_ENGINES = {

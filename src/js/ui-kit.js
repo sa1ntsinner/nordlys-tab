@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   AURORA TAB 2.1 - SHARED UI KIT (ESCAPING, TOASTS, GLASS CONFIRM)
+   NORDLYS - SHARED UI KIT (ESCAPING, TOASTS, GLASS CONFIRM)
    Loaded first so every other module can rely on these primitives.
    ═══════════════════════════════════════════════════════════════════ */
 
