@@ -1393,3 +1393,18 @@ body.hover-none .tile:hover .box {
   animation: rise var(--nl-motion-enter) var(--nl-ease-emphasized) both;
 }
 .board-empty-text { color: var(--nl-text-secondary); font-size: 13.5px; }
+
+/* A folder title may widen its card — that is how "GAMING & SIM" fits above two
+   columns — but only so far. Without a ceiling a 90-character name stretched the
+   card across the whole window and left its tiles adrift in it. */
+.card { min-width: 0; }
+.cat { min-width: 0; }
+.cat b {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 20ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cat i { flex: 1 1 0; min-width: 0; }
