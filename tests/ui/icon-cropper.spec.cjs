@@ -80,3 +80,15 @@ test('the cropper opens showing the whole image', async ({ nordlysPage }) => {
   const opened = await cropperState(page);
   expect(fits(opened), `it opened at ${Math.round(opened.zoom * 100)}%, overflowing the frame`).toBe(true);
 });
+
+/* Two live previews showing different icons, neither labelled as before or after,
+   just reads as a contradiction. */
+test('the picker preview steps aside while the cropper has its own', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await openCropperWith(page, BIG);
+  await expect(page.locator('#icon-modal .icon-live-preview')).toBeHidden();
+  await expect(page.locator('#cropper-tile-preview-canvas')).toBeVisible();
+
+  await page.locator('#cropper-back-btn').click();
+  await expect(page.locator('#icon-modal .icon-live-preview')).toBeVisible();
+});

@@ -1917,3 +1917,8 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 .bookmark-folder-actions .nl-select { min-width: 64px; }
 .nl-select-value { min-width: 1ch; }
 .icon-chip { min-width: var(--nl-target-min); justify-content: center; }
+
+/* While cropping, the picker's own preview showed the icon being replaced and the
+   cropper's showed the one being made — two unlabelled previews contradicting
+   each other. The cropper carries its own, so the shared one steps aside. */
+#icon-modal:has(#modal-pane-cropper.active) .icon-live-preview { display: none; }
