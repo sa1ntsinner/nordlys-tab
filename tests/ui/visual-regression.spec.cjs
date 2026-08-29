@@ -1,7 +1,10 @@
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
 
+/* The clock, the date and the greeting all change on their own schedule. Baking
+   any of them into a baseline makes the suite fail at midnight, or at whatever
+   hour the greeting turns over, for no reason to do with the code. */
 async function stabilize(page) {
-  await page.addStyleTag({ content: '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}#bg-canvas,#clock{visibility:hidden!important}' });
+  await page.addStyleTag({ content: '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}#bg-canvas,#clock,#date,#greet{visibility:hidden!important}' });
   await page.waitForTimeout(100);
 }
 

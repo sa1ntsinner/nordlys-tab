@@ -499,7 +499,10 @@ body.minimal #board {
   display: grid;
   gap: var(--grid-gap);
   flex: 1;
-  align-content: center;
+  /* Cards in a row stretch to match the tallest. Centring the rows inside that
+     stretch left a gap between a short folder's title and its first icon, which
+     read as a rendering fault; starting them lines every folder's first row up. */
+  align-content: start;
   transition: grid-template-columns var(--nl-motion-panel) var(--nl-ease-emphasized);
 }
 .grid[data-cols="1"] {
