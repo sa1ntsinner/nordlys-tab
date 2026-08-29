@@ -860,35 +860,35 @@
   </div>
 
   <!-- Instant Quick Edit Bookmark Modal -->
-  <div id="quick-edit-modal" class="quick-modal-backdrop">
+  <div id="quick-edit-modal" class="quick-modal-backdrop" aria-labelledby="quick-edit-title">
     <div class="quick-modal-card">
       <div class="quick-modal-head">
-        <b data-i18n="modal.editBookmarkTitle">Edit Bookmark</b>
-        <button id="quick-modal-x" type="button" class="xbtn">✕</button>
+        <b id="quick-edit-title" data-i18n="modal.editBookmarkTitle">Edit Bookmark</b>
+        <button id="quick-modal-x" type="button" class="xbtn" aria-label="Close bookmark editor">✕</button>
       </div>
       <div class="quick-modal-body">
         <div style="display: flex; gap: 14px; align-items: center;">
-          <div id="quick-icon-preview" class="quick-icon-box" title="Click to change icon" data-i18n-title="hint.clickChangeIcon"></div>
+          <button type="button" id="quick-icon-preview" class="quick-icon-box" title="Click to change icon" aria-label="Choose bookmark icon" data-i18n-title="hint.clickChangeIcon"></button>
           <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
             <div>
-              <label class="quick-label" data-i18n="modal.bookmarkName">Bookmark Title</label>
+              <label class="quick-label" for="quick-title-input" data-i18n="modal.bookmarkName">Bookmark Title</label>
               <input id="quick-title-input" type="text" class="glass-input" placeholder="Name">
             </div>
           </div>
         </div>
 
         <div>
-          <label class="quick-label" data-i18n="modal.url">Target URL</label>
+          <label class="quick-label" for="quick-url-input" data-i18n="modal.url">Target URL</label>
           <input id="quick-url-input" type="url" class="glass-input" placeholder="https://...">
         </div>
 
         <div style="display: flex; gap: 12px; align-items: center;">
           <div style="flex: 1;">
-            <label class="quick-label" data-i18n="modal.folder">Folder</label>
+            <label class="quick-label" for="quick-folder-select" data-i18n="modal.folder">Folder</label>
             <select id="quick-folder-select" class="glass-input" style="cursor: pointer;"></select>
           </div>
           <div>
-            <label class="quick-label" data-i18n="modal.colorTint">Color Accent</label>
+            <label class="quick-label" for="quick-color-input" data-i18n="modal.colorTint">Color Accent</label>
             <input type="color" id="quick-color-input" class="link-color-ipt" value="#35d6c0">
           </div>
         </div>
@@ -924,20 +924,20 @@
   </div>
 
   <!-- Instant Quick Edit Folder Modal -->
-  <div id="quick-edit-folder-modal" class="quick-modal-backdrop">
+  <div id="quick-edit-folder-modal" class="quick-modal-backdrop" aria-labelledby="quick-folder-title">
     <div class="quick-modal-card">
       <div class="quick-modal-head">
-        <b data-i18n="modal.editFolderTitle">Edit Folder</b>
-        <button id="quick-folder-modal-x" type="button" class="xbtn">✕</button>
+        <b id="quick-folder-title" data-i18n="modal.editFolderTitle">Edit Folder</b>
+        <button id="quick-folder-modal-x" type="button" class="xbtn" aria-label="Close folder editor">✕</button>
       </div>
       <div class="quick-modal-body">
         <div>
-          <label class="quick-label" data-i18n="modal.folderName">Folder Name</label>
+          <label class="quick-label" for="quick-folder-name-input" data-i18n="modal.folderName">Folder Name</label>
           <input id="quick-folder-name-input" type="text" class="glass-input" placeholder="Folder Name">
         </div>
 
         <div>
-          <label class="quick-label" data-i18n="modal.folderColumns">Folder Columns (1-8)</label>
+          <label class="quick-label" for="quick-folder-cols-select" data-i18n="modal.folderColumns">Folder Columns (1-8)</label>
           <select id="quick-folder-cols-select" class="glass-input" style="cursor: pointer;">
             <option value="1">1 Column (Vertical List)</option>
             <option value="2">2 Columns</option>

@@ -23,3 +23,28 @@ test('deletion offers a one-shot Undo that restores the exact location', async (
   await expect(folder.locator('.bookmark-summary-name').first()).toHaveText('YouTube');
   await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[0]?.links?.[0]?.name).toBe('YouTube');
 });
+
+test('Undo follows the deleted bookmark folder identity after folders are reordered', async ({ nordlysPage }) => {
+  const { page } = nordlysPage; await page.locator('#gear').click(); await page.getByRole('tab', { name: 'Bookmarks' }).click();
+  const first = page.locator('.bookmark-folder-accordion').first(); await first.locator('summary').click();
+  await first.getByRole('button', { name: /Delete YouTube/ }).click();
+  await first.getByRole('button', { name: /Move .* down/ }).first().click();
+  await page.getByRole('button', { name: 'Undo' }).click();
+  const movedFolder = page.locator('.bookmark-folder-accordion').nth(1);
+  await expect(movedFolder.locator('.bookmark-summary-name').first()).toHaveText('YouTube');
+  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[1]?.links?.[0]?.name).toBe('YouTube');
+});
+
+test('collapsed folder exposes only working management controls', async ({ nordlysPage }) => {
+  const { page } = nordlysPage; await page.locator('#gear').click(); await page.getByRole('tab', { name: 'Bookmarks' }).click();
+  const folder = page.locator('.bookmark-folder-accordion').first();
+  await expect(folder.locator('.bookmark-summary-list')).toBeHidden();
+  await expect(folder.getByRole('button', { name: /More actions/ })).toHaveCount(0);
+  await folder.getByRole('button', { name: /Rename/ }).click();
+  const name = folder.getByRole('textbox', { name: /Folder name/ }); await name.fill('Daily'); await name.press('Enter');
+  await expect(folder.locator('summary strong')).toHaveText('Daily');
+  await folder.getByRole('combobox', { name: /Columns/ }).selectOption('6');
+  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[0]?.cols).toBe(6);
+  await folder.getByRole('button', { name: /Add bookmark/ }).click();
+  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[0]?.links?.at(-1)?.name).toBe('New Bookmark');
+});
