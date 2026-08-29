@@ -65,7 +65,7 @@
         (group.links || []).forEach((link, bookmarkIndex) => {
           const row = document.createElement('article'); row.className = 'bookmark-summary-row';
           const icon = document.createElement('span'); icon.className = 'bookmark-summary-icon'; icon.append(this.iconFor(link));
-          NordlysIcons.applyPlateContrast(icon);
+          NordlysIcons.applyIconContrast(icon);
           const meta = document.createElement('span'); meta.className = 'bookmark-summary-meta';
           const title = document.createElement('strong'); title.className = 'bookmark-summary-name'; title.textContent = link.name || 'Bookmark';
           const host = document.createElement('span'); host.className = 'bookmark-summary-host'; try { host.textContent = new URL(link.url).hostname; } catch { host.textContent = link.url || ''; } meta.append(title, host);

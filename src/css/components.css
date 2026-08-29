@@ -1303,22 +1303,78 @@ body.hover-none .tile:hover .box {
   background: var(--nl-surface-elevated); color: var(--nl-text-primary); cursor: pointer;
 }
 
-/* Contrast plates: the plate moves so the icon never has to be repainted.
-   Both tones are mixed from the active theme, so they stay on-palette.
+/* Contrast halo. Plates stay identical on every tile — a board mixing black and
+   white logos cannot be solved by one background, since any tone that saves one
+   drowns the other. So the icon carries its own separation: a rim traced from its
+   own silhouette, applied only when it would otherwise disappear. The logo keeps
+   its colour and the grid keeps one uniform surface. */
+.nl-icon[data-icon-halo="light"] {
+  --icon-halo: drop-shadow(0 0 1px rgba(255, 255, 255, .95)) drop-shadow(0 0 4px rgba(255, 255, 255, .4));
+}
+.nl-icon[data-icon-halo="dark"] {
+  --icon-halo: drop-shadow(0 0 1px rgba(0, 0, 0, .95)) drop-shadow(0 0 4px rgba(0, 0, 0, .45));
+}
+.nl-icon[data-icon-halo] > svg,
+.nl-icon[data-icon-halo] > img,
+.nl-icon[data-icon-halo] > .mono {
+  /* Important on purpose: light themes paint a decorative drop-shadow on icons
+     through a higher-specificity selector, and a decoration must never be able
+     to win over the rim that makes an icon visible at all. */
+  filter: var(--icon-halo) !important;
+}
 
-   These are marked important on purpose. Themes paint decorative gradients over
-   .box through higher-specificity selectors (html[data-theme="…"] .tile:hover .box),
-   and a decorative layer must never be able to hide an icon. Escalating
-   specificity instead would mean re-matching every future theme rule. */
-.box[data-icon-plate="contrast"],
-.bookmark-summary-icon[data-icon-plate="contrast"] {
-  background: color-mix(in srgb, var(--ink) 60%, var(--card-tint)) !important;
-  border-color: color-mix(in srgb, var(--ink) 28%, transparent) !important;
+/* ── Themed select ──────────────────────────────────────────────────
+   Replaces the operating system's dropdown. The native element stays in the
+   DOM as the value source but never renders, so nothing here has to fight
+   platform chrome. */
+.nl-select {
+  display: inline-flex; align-items: center; justify-content: space-between; gap: 10px;
+  min-height: var(--nl-target-min); min-width: 140px; max-width: 100%;
+  padding: 0 12px; border-radius: var(--nl-radius-sm);
+  border: 1px solid var(--nl-border);
+  background: color-mix(in srgb, var(--nl-surface-elevated) 80%, transparent);
+  color: var(--nl-text-primary);
+  font: inherit; font-size: 12.5px; font-weight: 550;
+  cursor: pointer; text-align: left;
+  transition: border-color var(--nl-motion-control), background-color var(--nl-motion-control);
 }
-.box[data-icon-plate="neutral"],
-.bookmark-summary-icon[data-icon-plate="neutral"] {
-  background: color-mix(in srgb, var(--ink) 46%, var(--card-tint)) !important;
-  border-color: color-mix(in srgb, var(--ink) 28%, transparent) !important;
+.nl-select:hover { border-color: var(--nl-border-strong); }
+.nl-select[aria-expanded="true"] { border-color: var(--nl-accent); }
+.nl-select-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nl-select-caret {
+  flex: none; width: 8px; height: 8px; margin-left: auto;
+  border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor;
+  transform: translateY(-2px) rotate(45deg); opacity: .55;
+  transition: transform var(--nl-motion-control) var(--nl-ease-emphasized);
 }
-/* The settings row carries no plate of its own until one is needed. */
-.bookmark-summary-icon[data-icon-plate] { border-radius: var(--nl-radius-sm); }
+.nl-select[aria-expanded="true"] .nl-select-caret { transform: translateY(1px) rotate(-135deg); opacity: .9; }
+
+.nl-select-list {
+  position: fixed; z-index: 300;
+  max-height: min(320px, 60vh); overflow-y: auto; overscroll-behavior: contain;
+  padding: 6px; border-radius: var(--nl-radius-md);
+  border: 1px solid var(--nl-border-strong);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 96%, transparent);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  box-shadow: var(--nl-shadow-3);
+  opacity: 0; transform: translateY(-4px) scale(.985);
+  transition: opacity var(--nl-motion-control) ease, transform var(--nl-motion-control) var(--nl-ease-emphasized);
+}
+.nl-select-list.open { opacity: 1; transform: none; }
+.nl-select-group {
+  padding: 8px 10px 4px; font-size: 9.5px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--nl-text-tertiary);
+}
+.nl-select-option {
+  display: flex; align-items: center; min-height: 36px; padding: 0 10px;
+  border-radius: var(--nl-radius-sm); color: var(--nl-text-secondary);
+  font-size: 13px; cursor: pointer; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+  transition: background-color var(--nl-motion-fast), color var(--nl-motion-fast);
+}
+.nl-select-option:hover { background: color-mix(in srgb, var(--nl-text-primary) 8%, transparent); color: var(--nl-text-primary); }
+.nl-select-option[aria-selected="true"] {
+  color: var(--nl-text-primary); font-weight: 600;
+  background: color-mix(in srgb, var(--nl-accent) 16%, transparent);
+}

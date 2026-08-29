@@ -32,6 +32,72 @@ class SettingsController {
     this.initIconPickerModal();
     this.initCustomCSSEditor();
     this.initBackupManager();
+    this.initTypography();
+    // Every native dropdown gets a themed control drawn over it; the element
+    // stays as the value source but stops painting platform chrome.
+    window.NordlysUI?.enhanceSelects(document);
+  }
+
+  /* ── 0. Typography slots ──────────────────────────────────────── */
+  initTypography() {
+    const DEVICE = "__device__";
+    const SLOTS = [["display", "cfg-font-display"], ["interface", "cfg-font-interface"], ["mono", "cfg-font-mono"]];
+    const note = document.getElementById("cfg-font-note");
+    let device = [];
+
+    const fill = () => {
+      for (const [key, id] of SLOTS) {
+        const select = document.getElementById(id);
+        if (!select) continue;
+        const current = this.app.config.fonts?.[key] || NordlysType.DEFAULT;
+        select.replaceChildren();
+        let groupName = null, holder = select;
+        for (const row of NordlysType.optionsFor(key, device)) {
+          if (row.group !== groupName) {
+            groupName = row.group;
+            holder = document.createElement("optgroup");
+            holder.label = row.group;
+            select.append(holder);
+          }
+          const option = document.createElement("option");
+          option.value = row.value;
+          option.textContent = row.label;
+          // Lets the themed list render each option in the face it offers.
+          if (row.value !== NordlysType.DEFAULT) option.dataset.fontPreview = row.value;
+          holder.append(option);
+        }
+        const more = document.createElement("option");
+        more.value = DEVICE;
+        more.textContent = device.length ? "Refresh device fonts…" : "All fonts on this device…";
+        select.append(more);
+        select.value = current;
+        if (!select.value) select.value = NordlysType.DEFAULT;
+      }
+      window.NordlysUI?.refreshSelects();
+    };
+
+    for (const [key, id] of SLOTS) {
+      document.getElementById(id)?.addEventListener("change", async (event) => {
+        const select = event.target;
+        if (select.value === DEVICE) {
+          // Chrome only reveals the inventory from a user gesture, and this
+          // handler still runs inside the click that chose the option.
+          const found = await NordlysType.listLocalFonts();
+          device = found.families;
+          if (note) {
+            note.textContent = found.granted
+              ? `${device.length} fonts found on this device.`
+              : "Device fonts are unavailable — permission was not granted.";
+          }
+          fill();
+          return;
+        }
+        this.app.config.fonts = Object.assign({}, this.app.config.fonts, { [key]: select.value });
+        this.app.saveConfig();
+        this.app.applyThemeTokens();
+      });
+    }
+    fill();
   }
 
   /* ── 1. Resizable Drawer & Width Presets ──────────────────────── */
@@ -161,6 +227,8 @@ class SettingsController {
     this.updateSliderLabels();
     this.updateMiniPreview();
     this.syncBackgroundControls?.();
+    // syncFormValues writes select.value directly, which fires no event.
+    window.NordlysUI?.refreshSelects();
   }
 
   updateSliderLabels() {
@@ -508,8 +576,7 @@ class SettingsController {
       accent: document.getElementById("thm-accent-hex")?.value || "#35d6c0",
       glow: document.getElementById("thm-glow-hex")?.value || "#5b6cff",
       text: document.getElementById("thm-text-hex")?.value || "#f1f5f9",
-      dim: document.getElementById("thm-dim-hex")?.value || "#8ca0c4",
-      font: document.getElementById("thm-font")?.value || "system-ui, sans-serif"
+      dim: document.getElementById("thm-dim-hex")?.value || "#8ca0c4"
     });
 
     /* Live preview: every edit re-derives the full token set (real tokens,
@@ -552,9 +619,6 @@ class SettingsController {
     bindColorPair("thm-glow-color", "thm-glow-hex");
     bindColorPair("thm-text-color", "thm-text-hex");
     bindColorPair("thm-dim-color", "thm-dim-hex");
-
-    const fontSelect = document.getElementById("thm-font");
-    fontSelect?.addEventListener("change", livePreview);
 
     document.getElementById("thm-save-btn")?.addEventListener("click", () => {
       const name = document.getElementById("thm-name-input")?.value.trim() || `Custom ${this.customThemes.length + 1}`;

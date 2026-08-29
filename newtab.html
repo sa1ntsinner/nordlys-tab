@@ -233,17 +233,6 @@
               </div>
             </div>
 
-            <div class="row" style="margin-top: 10px;">
-              <span data-i18n="customTheme.font">Font Family</span>
-              <select id="thm-font" class="ipt">
-                <option value="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">System Default</option>
-                <option value="'Inter', -apple-system, sans-serif">Inter</option>
-                <option value="'SF Pro Display', -apple-system, sans-serif">SF Pro Display</option>
-                <option value="'Outfit', sans-serif">Outfit</option>
-                <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
-                <option value="'Fira Code', monospace">Fira Code</option>
-              </select>
-            </div>
 
             <div class="row">
               <span data-i18n="customTheme.presetName">Preset Name</span>
@@ -265,6 +254,23 @@
               <span class="lbl" data-i18n="appearance.previewBookmark">Nordlys Studio</span>
             </div>
           </section>
+        </div>
+
+        <div id="typography-controls" class="card-customizer-card" style="margin-top: 16px;">
+          <div class="settings-block-label" data-i18n="typography.title">Typography</div>
+          <div class="row setting-row">
+            <span><label for="cfg-font-display" data-i18n="typography.display">Clock &amp; headings</label></span>
+            <select id="cfg-font-display" class="ipt"></select>
+          </div>
+          <div class="row setting-row">
+            <span><label for="cfg-font-interface" data-i18n="typography.interface">Interface text</label></span>
+            <select id="cfg-font-interface" class="ipt"></select>
+          </div>
+          <div class="row setting-row">
+            <span><label for="cfg-font-mono" data-i18n="typography.mono">Monospace</label></span>
+            <select id="cfg-font-mono" class="ipt"></select>
+          </div>
+          <p class="settings-note" id="cfg-font-note" data-i18n="typography.note">Pick “All fonts on this device” to use the fonts installed on your computer.</p>
         </div>
 
         <details id="advanced-glass-settings" class="advanced-settings">
@@ -1006,6 +1012,7 @@
   <!-- Modular Scripts Execution -->
   <script src="src/js/ui-kit.js"></script>
   <script src="src/js/ui-primitives.js"></script>
+  <script src="src/js/typography.js"></script>
   <script src="src/js/i18n.js"></script>
   <script src="src/js/icons-db.js"></script>
   <script src="src/js/icon-presentation.js"></script>

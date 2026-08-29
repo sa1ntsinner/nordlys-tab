@@ -219,10 +219,10 @@ class GridController {
       renderedIcon.replaceChildren();
       const mono = document.createElement("span"); mono.className = "mono";
       mono.textContent = (link.name || "A").trim().charAt(0).toUpperCase(); renderedIcon.append(mono);
-      window.NordlysIcons.applyPlateContrast(box, renderedIcon);
+      window.NordlysIcons.applyIconContrast(box, renderedIcon);
     }, { once: true });
     box.appendChild(renderedIcon);
-    window.NordlysIcons.applyPlateContrast(box, renderedIcon);
+    window.NordlysIcons.applyIconContrast(box, renderedIcon);
 
     // Label
     const lbl = document.createElement("span");

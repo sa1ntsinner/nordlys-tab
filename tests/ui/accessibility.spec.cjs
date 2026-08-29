@@ -1,4 +1,14 @@
 const { AxeBuilder } = require('@axe-core/playwright');
+
+/* Native dropdowns no longer render — they stay only as the value source behind
+   the themed control. Drive them the way that control does when it commits. */
+async function chooseOption(page, locator, value) {
+  await locator.evaluate((select, chosen) => {
+    select.value = chosen;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  }, value);
+}
+
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
 
 async function expectNoHighImpactViolations(page, context) {
@@ -45,7 +55,7 @@ for (const locale of ['en', 'ru', 'es', 'de', 'fr', 'ja', 'zh', 'tr']) {
       await page.setViewportSize({ width, height: 720 });
       await page.locator('#gear').click();
       await page.locator('#settings-tab-general').click();
-      await page.locator('#cfg-language-select').selectOption(locale);
+      await chooseOption(page, page.locator('#cfg-language-select'), locale);
       await page.waitForTimeout(100);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
       const tabs = page.locator('#cfg [role="tab"]');

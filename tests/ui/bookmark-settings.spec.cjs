@@ -43,7 +43,11 @@ test('collapsed folder exposes only working management controls', async ({ nordl
   await folder.getByRole('button', { name: /Rename/ }).click();
   const name = folder.getByRole('textbox', { name: /Folder name/ }); await name.fill('Daily'); await name.press('Enter');
   await expect(folder.locator('summary strong')).toHaveText('Daily');
-  await folder.getByRole('combobox', { name: /Columns/ }).selectOption('6');
+  // The visible control is now themed; the native element behind it stays as the
+  // value source, so set it the way that control does when it commits.
+  await folder.locator('select[aria-label*="Columns"]').evaluate(select => {
+    select.value = '6'; select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
   await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[0]?.cols).toBe(6);
   await folder.getByRole('button', { name: /Add bookmark/ }).click();
   await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[0]?.links?.at(-1)?.name).toBe('New Bookmark');
@@ -52,10 +56,10 @@ test('collapsed folder exposes only working management controls', async ({ nordl
 test('expanded bookmark actions stay grouped within their row', async ({ nordlysPage }) => {
   const { page } = nordlysPage; await page.locator('#gear').click(); await page.getByRole('tab', { name: 'Bookmarks' }).click();
   await page.locator('.bookmark-folder-summary').first().click();
-  await expect(page.locator('.bookmark-summary-row').first().locator('.bookmark-row-actions > *')).toHaveCount(5);
+  await expect(page.locator('.bookmark-summary-row').first().locator('.bookmark-row-actions > *:visible')).toHaveCount(5);
   const overflow = await page.locator('.bookmark-summary-row').first().evaluate(row => {
     const bounds = row.getBoundingClientRect();
-    return [...row.querySelectorAll('.bookmark-row-actions > *')].filter(control => { const box = control.getBoundingClientRect(); return box.left < bounds.left || box.right > bounds.right || box.top < bounds.top || box.bottom > bounds.bottom; }).map(control => control.getAttribute('aria-label'));
+    return [...row.querySelectorAll('.bookmark-row-actions > *')].filter(control => control.getClientRects().length).filter(control => { const box = control.getBoundingClientRect(); return box.left < bounds.left || box.right > bounds.right || box.top < bounds.top || box.bottom > bounds.bottom; }).map(control => control.getAttribute('aria-label'));
   });
   expect(overflow).toEqual([]);
 });

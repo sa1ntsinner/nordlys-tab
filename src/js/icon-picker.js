@@ -29,7 +29,7 @@
         const presentation = NordlysIcons.resolvePresentation({ source: currentIcon, metadata, isLight: document.documentElement.classList.contains('light-ui') });
         box.replaceChildren(NordlysIcons.renderIcon(presentation));
         box.style.setProperty('--c', currentIcon.color || 'var(--nl-accent)');
-        NordlysIcons.applyPlateContrast(box);
+        NordlysIcons.applyIconContrast(box);
       }
       this.dialog.open(opener);
     }

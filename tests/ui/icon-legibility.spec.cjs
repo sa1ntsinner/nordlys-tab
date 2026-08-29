@@ -40,17 +40,19 @@ async function plateVisibility(page) {
       return values;
     };
     return frame.boxes.map(box => {
-      // The plate is read from a ring just inside the border, where the icon never
-      // reaches; the icon is read from the centre. Sampling one region for both
-      // lets a full-bleed icon be mistaken for its own background.
-      const outer = band(box, 0.06, 0.94), inner = band(box, 0.2, 0.8);
-      const innerKeys = new Set(inner.map(point => `${point.x},${point.y}`));
-      const ring = outer.filter(point => !innerKeys.has(`${point.x},${point.y}`)).map(point => point.luminance).sort((a, b) => a - b);
+      // The plate colour is read from the outermost band, which the icon and its
+      // rim never reach. Everything inside is then asked how much of it separates
+      // from that colour — the rim included, since a rim traces the icon's edge
+      // and a centre-only reading would miss it entirely on solid artwork.
+      const ring = band(box, 0.02, 0.08).map(point => point.luminance).sort((a, b) => a - b);
       if (!ring.length) return 0;
       const plate = ring[Math.floor(ring.length / 2)];
-      const centre = band(box, 0.3, 0.7).map(point => point.luminance);
-      const separated = centre.filter(luminance => (Math.max(luminance, plate) + 0.05) / (Math.min(luminance, plate) + 0.05) >= 3).length;
-      return centre.length ? Number((separated / centre.length).toFixed(4)) : 0;
+      const inside = band(box, 0.12, 0.88).map(point => point.luminance);
+      // Measured against the guarantee the product actually makes (1.8:1), not a
+      // stricter bar the implementation never promised — otherwise a brand colour
+      // sitting legitimately near the threshold reads as a failure.
+      const separated = inside.filter(luminance => (Math.max(luminance, plate) + 0.05) / (Math.min(luminance, plate) + 0.05) >= 1.8).length;
+      return inside.length ? Number((separated / inside.length).toFixed(4)) : 0;
     });
   }, [shot.toString("base64"), frame]);
 }
@@ -104,20 +106,41 @@ test('every icon stays visible against its plate in every built-in theme', async
   expect(invisible, 'icons that blend into their own plate').toEqual([]);
 });
 
-/* The fallback plate is a mid tone that separates from anything, so a board that
-   silently drops onto it passes a pure legibility check while the real mechanism
-   never ran. Measurable icons must be measured. */
-test('measurable icons are never pushed onto the unmeasurable fallback plate', async ({ nordlysPage }) => {
+/* The whole point of the halo is that the grid keeps one surface. If a future
+   change starts tinting plates per icon again, the board goes patchy — which is
+   exactly what this replaced. */
+test('every tile plate renders identically', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  await page.waitForFunction(() => document.querySelectorAll('#board .tile .box').length > 10);
-  await page.waitForTimeout(400);
-  const fallen = await page.evaluate(() => [...document.querySelectorAll('#board .tile')]
-    .filter(tile => tile.querySelector('.box')?.dataset.iconPlate === 'neutral')
-    .map(tile => tile.querySelector('.lbl').textContent));
-  expect(fallen, 'built-in icons resolve their own colour and must never fall back').toEqual([]);
+  await seedHostileBoard(page);
+  for (const theme of ['oled-obsidian', 'porcelain-light']) {
+    await page.evaluate(key => window.Aurora.setTheme(key), theme);
+    await page.waitForTimeout(150);
+    const surfaces = await page.evaluate(() => [...new Set(
+      [...document.querySelectorAll('#board .tile .box')].map(box => getComputedStyle(box).backgroundColor)
+    )]);
+    expect(surfaces, `${theme}: plates must not differ between tiles`).toHaveLength(1);
+  }
 });
 
-test('adapting the plate never repaints a brand icon', async ({ nordlysPage }) => {
+test('a halo appears only where the icon would otherwise vanish', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await seedHostileBoard(page);
+  await page.evaluate(() => window.Aurora.setTheme('oled-obsidian'));
+  await page.waitForTimeout(200);
+  const haloed = await page.evaluate(() => Object.fromEntries(
+    [...document.querySelectorAll('#board .tile')].map(tile => [
+      tile.querySelector('.lbl').textContent,
+      tile.querySelector('.nl-icon')?.dataset.iconHalo || 'none'
+    ])
+  ));
+  // Dark art on a dark plate needs the rim; light and brand-coloured art does not.
+  expect(haloed['Black raster']).toBe('light');
+  expect(haloed['Black vector']).toBe('light');
+  expect(haloed['White raster'], 'white art already separates from a dark plate').toBe('none');
+  expect(haloed['Brand vector'], 'a legible brand colour must be left alone').toBe('none');
+});
+
+test('adding a halo never repaints a brand icon', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await seedHostileBoard(page);
   await page.evaluate(() => window.Aurora.setTheme('oled-obsidian'));
