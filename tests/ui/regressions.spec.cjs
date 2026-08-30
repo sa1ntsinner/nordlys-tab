@@ -101,3 +101,26 @@ test('the folder head keeps its three parts on one line at phone width', async (
   });
   expect(spread, 'name, count and chevron share one line').toBeLessThan(6);
 });
+
+/* Not a defect we had — a defect the whole category has. Across new-tab
+   extensions, stealing focus from the address bar is one of the loudest
+   complaint clusters there is: Ctrl+T then typing is muscle memory, and a page
+   that grabs the caret reads as broken rather than as helpful. Nordlys focuses
+   its field only when the user asks with "/" or Ctrl+K, and that must stay
+   true, because it is the kind of thing a later convenience quietly undoes. */
+test('the page never takes focus the browser gave to the address bar', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.waitForTimeout(600);
+  const stolen = await page.evaluate(() => {
+    const active = document.activeElement;
+    return active && active !== document.body && active.id === 'q';
+  });
+  expect(stolen, 'the search field must not be focused on load').toBe(false);
+
+  const markup = await page.evaluate(() => document.querySelector('#q')?.hasAttribute('autofocus'));
+  expect(markup, 'no autofocus attribute may appear on the search field').toBe(false);
+
+  // And it still comes when asked.
+  await page.keyboard.press('/');
+  await expect(page.locator('#q')).toBeFocused();
+});
