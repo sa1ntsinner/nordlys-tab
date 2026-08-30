@@ -6,29 +6,15 @@
    data-i18n lets a language switch retranslate it without a listener here. */
 const SCENE_NAMES = {
   "aurora": "Aurora",
-  "gradient": "Gradient",
   "custom-image": "Wallpaper",
   "custom-video": "Video",
   "solid": "Solid"
 };
 const SCENE_KEYS = {
   "aurora": "scene.aurora",
-  "gradient": "scene.gradient",
   "custom-image": "scene.wallpaper",
   "custom-video": "scene.video",
   "solid": "scene.solid"
-};
-const GRADIENT_NAMES = {
-  "horizon": "Horizon",
-  "bloom": "Bloom",
-  "corner": "Corner",
-  "veil": "Veil"
-};
-const GRADIENT_KEYS = {
-  "horizon": "gradient.horizon",
-  "bloom": "gradient.bloom",
-  "corner": "gradient.corner",
-  "veil": "gradient.veil"
 };
 
 class SettingsController {
@@ -123,7 +109,6 @@ class SettingsController {
        Each control declares the scenes it belongs to and the rest step aside. */
     const SCENE_GROUPS = {
       procedural: ["aurora"],
-      gradient: ["gradient"],
       media: ["custom-image", "custom-video"],
       image: ["custom-image"]
     };
@@ -143,7 +128,18 @@ class SettingsController {
       this.app.bgEngine?.setAtmosphere({ motion, intensity });
       const motionLabel = document.getElementById("lbl-bg-motion");
       const intensityLabel = document.getElementById("lbl-bg-intensity");
-      if (motionLabel) motionLabel.textContent = `${Math.round(motion * 100)}%`;
+      /* Zero is a state, not a quantity, and it is the one people reach for
+         when they want the colour without the movement. Reading "0%" leaves
+         them guessing whether anything is still there; naming it says the
+         scene is painted and held. It is also the only way that state is
+         discoverable — there is no card for it, by design, because it is the
+         same scene with the motion taken out. */
+      if (motionLabel) {
+        motionLabel.textContent = motion === 0
+          ? (window.I18N ? window.I18N.t("background.motionStill", {}) : "Still")
+          : `${Math.round(motion * 100)}%`;
+        if (motionLabel.textContent === "background.motionStill") motionLabel.textContent = "Still";
+      }
       if (intensityLabel) intensityLabel.textContent = `${Math.round(intensity * 100)}%`;
     };
 
@@ -163,45 +159,6 @@ class SettingsController {
 
     /* The still field has its own small picker, built the same way, because a
        composition is a picture too and a list of four words would say less. */
-    const gradientSelect = document.getElementById("cfg-gradient");
-    const gradientGrid = document.getElementById("bg-gradient-grid");
-    if (gradientSelect && gradientGrid) {
-      gradientSelect.value = this.app.config.gradient || "horizon";
-      const paintGradients = () => {
-        gradientGrid.replaceChildren();
-        for (const option of gradientSelect.options) {
-          const card = document.createElement("button");
-          card.type = "button";
-          card.className = "scene-card";
-          card.dataset.gradient = option.value;
-          card.setAttribute("role", "radio");
-          card.setAttribute("aria-checked", String(option.value === gradientSelect.value));
-          const preview = document.createElement("span");
-          preview.className = "scene-preview gradient-preview";
-          preview.dataset.gradient = option.value;
-          preview.setAttribute("aria-hidden", "true");
-          const name = document.createElement("span");
-          name.className = "scene-name";
-          const key = GRADIENT_KEYS[option.value];
-          if (key) name.dataset.i18n = key;
-          name.textContent = (key && window.I18N?.t(key)) || GRADIENT_NAMES[option.value] || option.textContent;
-          card.append(preview, name);
-          card.addEventListener("click", () => {
-            gradientSelect.value = option.value;
-            this.app.config.gradient = option.value;
-            // Only meaningful while the gradient is the chosen background.
-            if (this.app.config.bgMode === "gradient") {
-              document.documentElement.dataset.gradient = option.value;
-            }
-            this.app.saveConfig();
-            paintGradients();
-          });
-          gradientGrid.append(card);
-        }
-      };
-      paintGradients();
-    }
-
     applyAtmosphere();
     showRelevant();
     paint();

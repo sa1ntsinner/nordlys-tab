@@ -42,7 +42,7 @@ Icons come from a built-in vector set that recognises most sites by domain, or f
 
 Type is split into three slots: the clock and headings, the interface, and monospace. Choose from the bundled faces or from the fonts already installed on your computer.
 
-One living scene — the aurora it is named after — and four still compositions built from the theme's own colours: Horizon, Bloom, Corner, Veil. The still ones are plain CSS, so they cost nothing to hold. Motion and Atmosphere dial the aurora down to a slow shimmer or almost nothing. Your own image or a looping video works too, stored locally.
+One living scene — the aurora it is named after — your own image or a looping video, stored locally, or a flat theme colour. Motion and Atmosphere dial the aurora from a slow shimmer down to Still, where the scene is painted once and held. If your system asks for reduced motion, that is what you get automatically: the picture, without the movement.
 
 Search covers ten engines with bang shortcuts, or any engine you like by pasting its address with %s where the query goes. It mixes in your own bookmarks and recent searches, and does arithmetic: type 45 * 12 + sqrt(144) and the answer sits above the suggestions.
 

@@ -92,18 +92,16 @@
   }
 
   if (!background) background = BASE[theme] || BASE["aurora-void"];
-
-  /* The still field is painted by CSS, so the first frame can carry it too —
-     otherwise a gradient user sees one frame of the theme's own wash first. */
   try {
     var mode = (config && config.bgMode) || "aurora";
-    // The scenes that were removed resolve to their survivors on first load.
-    if (mode === "particles" || mode === "mesh-gradient") mode = "gradient";
-    if (mode === "cosmos") mode = "aurora";
-    root.setAttribute("data-bg", mode);
-    if (mode === "gradient") {
-      root.setAttribute("data-gradient", (config && config.gradient) || "horizon");
+    /* The scenes that were removed resolve to their survivor on first load, so
+       the very first frame never carries a mode that no longer exists. The full
+       migration in app.js runs a moment later and also restores the stillness
+       the gradient modes had; this only needs the attribute to be honest. */
+    if (mode === "cosmos" || mode === "particles" || mode === "mesh-gradient" || mode === "gradient") {
+      mode = "aurora";
     }
+    root.setAttribute("data-bg", mode);
   } catch (error) { /* no config: the defaults below are a fine first frame */ }
 
   root.setAttribute("data-theme", theme);

@@ -79,6 +79,15 @@ body {
   transition: background-color var(--nl-transition-panel), color var(--nl-transition-control);
 }
 
+/* Solid means solid. The word says it and the preview card shows it, while the
+   page went on painting the theme's own radial wash underneath — a fine thing
+   to look at, and exactly what the other three scenes are for. This rule used
+   to live in the stylesheet for the still compositions; those are gone and it
+   is not, because it was never about them. */
+html[data-bg="solid"] body {
+  background-image: none;
+}
+
 /* ── Background Rendering Layers ──────────────────────────────── */
 #bg-container {
   position: fixed;

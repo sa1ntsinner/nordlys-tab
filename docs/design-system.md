@@ -151,14 +151,25 @@ every other improvement.
 
 ## Backgrounds
 
-One living scene (Aurora) and four still compositions built in CSS from the
-theme's own colours. Stillness is not a lesser option: anything moving behind
-glass forces every `backdrop-filter` above it to re-blur on every frame, so a
-still field is both calmer to look at and cheaper to hold.
+One living scene (Aurora), the user's own image or video, and a flat colour.
+Stillness is not a lesser option and it is not a separate scene either: it is
+Aurora with its motion at zero, where the frame is painted once and held.
+Anything moving behind glass forces every `backdrop-filter` above it to re-blur
+on every frame, so a held frame is both calmer to look at and cheaper to keep.
 
-A scene earns its place by being visibly different from the others. Two former
-scenes were measured at 0.08 and 3.02 of 255 away from a plain colour, and 3.09
-from each other. They were removed.
+**A scene earns its place by being a different kind of thing, not a different
+arrangement of the same thing.** Two former scenes measured 0.08 and 3.02 of 255
+away from a plain colour and 3.09 from each other; they were removed. Four still
+compositions — Horizon, Bloom, Corner, Veil — measured 4.55 to 8.68 apart at full
+size behind the real board, inside the band that had already condemned the first
+two, and a person only ever sees one of them at a time. A choice whose options
+cannot be told apart, and are never shown side by side, is not a choice. They
+were removed as well, and what people used them for became a slider position.
+
+**Rest is a painted frame, never an absent one.** `prefers-reduced-motion` used
+to stop the loop before it drew anything, so a reduced-motion user on the
+default background got a blank canvas over their theme. Reduce motion, hold the
+picture.
 
 ---
 

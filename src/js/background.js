@@ -55,6 +55,7 @@ class AuroraBackgroundEngine {
     this.nebulae.forEach((n, i) => {
       n.color = this.paletteRgb[i % 3].join(", ");
     });
+    this.repaint();
   }
 
   init() {
@@ -91,11 +92,12 @@ class AuroraBackgroundEngine {
 
     this.motionQuery.addEventListener?.("change", (event) => {
       if (event.matches) {
-        this.stop();
+        // The loop parks itself on its next frame; the picture stays.
         document.documentElement.style.removeProperty("--mouse-x");
         document.documentElement.style.removeProperty("--mouse-y");
       } else if (this.mode === "aurora") {
         this.start();
+        this.resumeIfMoving();
       }
     });
 
@@ -127,6 +129,8 @@ class AuroraBackgroundEngine {
     if (this.ctx) {
       this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     }
+    // Resizing clears the buffer, and a held frame will not redraw itself.
+    this.repaint();
   }
 
   initStars() {
@@ -167,19 +171,46 @@ class AuroraBackgroundEngine {
     }
   }
 
+  /* At rest the scene is painted once and held. Two things ask for that: the
+     motion slider at zero, and the system telling us the user wants less
+     movement. The second used to mean the loop never started at all, so a
+     reduced-motion user who kept the default background got a blank canvas
+     over their theme — the product's signature simply absent, for the people
+     least able to opt back into it. "Reduce motion" is not "remove the
+     picture". */
+  atRest() {
+    return this.motionQuery.matches || (this.motion ?? 1) === 0;
+  }
+
   start() {
-    if (this.running || document.hidden || this.motionQuery.matches) return;
+    if (this.running || document.hidden) return;
     this.running = true;
     this.lastFrame = performance.now();
-    const loop = (now) => {
+    this.loop = (now) => {
       if (!this.running) return;
       // dt normalized to 60fps units so speed is identical on 60/120/144Hz panels
       const dt = Math.min((now - this.lastFrame) / 16.666, 3);
       this.lastFrame = now;
       this.render(dt);
-      this.animId = requestAnimationFrame(loop);
+      /* Nothing in the scene advances at rest, so a second frame would paint
+         the same pixels. Holding the last one costs nothing to keep and lets
+         every backdrop-filter above it sample a layer that never invalidates. */
+      if (this.atRest()) { this.animId = null; return; }
+      this.animId = requestAnimationFrame(this.loop);
     };
-    this.animId = requestAnimationFrame(loop);
+    this.animId = requestAnimationFrame(this.loop);
+  }
+
+  /* A parked scene has no next frame coming, so anything that changes what the
+     frame should look like has to ask for one. */
+  repaint() {
+    if (this.running && this.ctx && this.animId === null) this.render(0);
+  }
+
+  resumeIfMoving() {
+    if (!this.running || this.animId !== null || this.atRest()) return;
+    this.lastFrame = performance.now();
+    this.animId = requestAnimationFrame(this.loop);
   }
 
   stop() {
@@ -207,6 +238,8 @@ class AuroraBackgroundEngine {
   setAtmosphere({ motion, intensity } = {}) {
     if (Number.isFinite(motion)) this.motion = Math.max(0, Math.min(1.5, motion));
     if (Number.isFinite(intensity)) this.intensity = Math.max(0.15, Math.min(1.5, intensity));
+    this.resumeIfMoving();
+    this.repaint();
   }
 
   render(dt = 1) {
@@ -276,6 +309,11 @@ class AuroraBackgroundEngine {
   }
 
   renderMeteors(chance = 0.003, dt = 1) {
+    /* A meteor is motion and nothing else. Held still it reads as a scratch on
+       the picture, so at rest there are none rather than one stopped mid-fall.
+       They also used to ignore the motion setting entirely, taking dt straight,
+       which is why turning motion down to zero still left them falling. */
+    if (this.atRest()) { this.meteors.length = 0; return; }
     if (Math.random() < chance * dt && this.meteors.length < 3) {
       this.meteors.push({
         x: Math.random() * (this.w * 0.85),

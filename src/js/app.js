@@ -7,7 +7,6 @@ const DEFAULT_CONFIG = {
   theme: "aurora-void",
   colorMode: "dark",
   bgMode: "aurora",
-  gradient: "horizon",
   glassLevel: "full",
   headerStyle: "full",
   bgBlur: 0,
@@ -109,13 +108,23 @@ const LIGHT_THEMES = [
 ];
 /* Old saved theme keys from previous releases → current keys */
 /* Backgrounds that no longer exist, and the closest thing that does. Cosmos was
-   Aurora without its ribbons, so it goes to Aurora; Particles drew almost
-   nothing, so it goes to the still field that replaced it. */
+   Aurora without its ribbons. Particles drew almost nothing — 0.08 of 255 away
+   from a plain colour, measured. The four gradient compositions were a choice
+   between arrangements that sat 4.5 to 8.7 of 255 apart and were never seen
+   side by side, so the difference being chosen between could not be perceived
+   by the person choosing.
+
+   All four land on Aurora, and the ones that were still stay still: what people
+   used a gradient FOR is a coloured field that does not move, which is now the
+   aurora with its motion at zero. One scene and a slider, rather than a second
+   scene carrying a catalogue. */
 const BACKGROUND_MIGRATIONS = {
   "cosmos": "aurora",
-  "particles": "gradient",
-  "mesh-gradient": "gradient"
+  "particles": "aurora",
+  "mesh-gradient": "aurora",
+  "gradient": "aurora"
 };
+const STILL_MIGRATIONS = new Set(["particles", "mesh-gradient", "gradient"]);
 
 const THEME_MIGRATIONS = {
   "liquid-glass": "frosted-glass",
@@ -185,14 +194,12 @@ class AuroraApp {
       changed = true;
     }
     if (BACKGROUND_MIGRATIONS[config.bgMode]) {
-      /* mesh-gradient becomes the bloom composition, which is the arrangement
-         it drew. Set unconditionally: the defaults are merged in before this
-         runs, so "has the user chosen a composition" cannot be asked here — and
-         someone who picked the mesh had chosen this one already. */
-      if (config.bgMode === "mesh-gradient") config.gradient = "bloom";
+      // Whatever held still keeps holding still.
+      if (STILL_MIGRATIONS.has(config.bgMode)) config.bgMotion = 0;
       config.bgMode = BACKGROUND_MIGRATIONS[config.bgMode];
       changed = true;
     }
+    if (config.gradient !== undefined) { delete config.gradient; changed = true; }
     if (Number(config.tileSize) >= 50 && Number(config.tileSize) < 56) { config.tileSize = 56; changed = true; }
     return changed;
   }
@@ -655,23 +662,10 @@ class AuroraApp {
 
     this.applyWallpaperEffects();
 
-    /* Only the gradient mode wears this. Setting it always looked harmless and
-       was not: the rule it drives outranks the theme's own ground, so Solid
-       stopped being solid and all twenty-one themes lost the wash they define
-       for themselves — under Aurora too, where the canvas is transparent. */
-    if (bgMode === "gradient") {
-      document.documentElement.dataset.gradient = this.config.gradient || "horizon";
-    } else {
-      delete document.documentElement.dataset.gradient;
-    }
     // The chosen background, for the rules that need to know which one it is.
     document.documentElement.dataset.bg = bgMode;
 
-    if (bgMode === "gradient") {
-      if (canvas) canvas.style.display = "none";
-      clearMedia();
-      this.bgEngine.setMode("gradient");
-    } else if (bgMode === "aurora") {
+    if (bgMode === "aurora") {
       if (canvas) canvas.style.display = "block";
       clearMedia();
       this.bgEngine.setMode(bgMode);
