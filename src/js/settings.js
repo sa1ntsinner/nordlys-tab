@@ -146,6 +146,11 @@ class SettingsController {
       slider.addEventListener("input", applyAtmosphere);
       slider.addEventListener("change", () => { applyAtmosphere(); this.app.saveConfig(); });
     }
+    /* Uploading a wallpaper or removing one sets the mode from code rather than
+       from a card, and the picker has to follow: otherwise Wallpaper stays
+       highlighted while Aurora is already running behind it. */
+    this.syncScenePicker = () => { paint(); showRelevant(); };
+
     applyAtmosphere();
     showRelevant();
     paint();
@@ -743,29 +748,50 @@ class SettingsController {
       return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
     };
     const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
-    const reach = (from, towards, against, target) => {
-      let colour = from;
-      for (let step = 0; step < 24 && ratio(colour, against) < target; step++) {
-        colour = mix(colour, towards, 0.12);
+
+    /* Text has to be readable on the page and on the cards, which the user
+       chooses separately. Walking from a starting colour towards white or black
+       cannot solve that: when the two surfaces straddle the middle — a dark page
+       with light cards — the best answer is neither extreme but a mid tone, and
+       against pure black and pure white even the optimum only reaches 4.58:1.
+       So the whole greyscale is searched and the worst of the two surfaces is
+       what counts. */
+    const RAMP = Array.from({ length: 33 }, (unused, step) => {
+      const value = Math.round((step / 32) * 255);
+      return [value, value, value];
+    });
+    const worstAgainst = (colour, surfaces) => Math.min(...surfaces.map((surface) => ratio(colour, surface)));
+
+    const pickInk = (surfaces, target, wantLight, subdued) => {
+      const qualifying = RAMP.filter((candidate) => worstAgainst(candidate, surfaces) >= target);
+      if (!qualifying.length) {
+        // No colour serves both surfaces. Return the best available and let the
+        // contrast warning say so rather than shipping a quiet failure.
+        return RAMP.reduce((best, candidate) =>
+          worstAgainst(candidate, surfaces) > worstAgainst(best, surfaces) ? candidate : best);
       }
-      return colour;
+      /* Primary text takes the end of the qualifying range that suits the theme,
+         so a dark theme still reads light. Subdued text takes the qualifying
+         colour closest to the bar, which is what makes it subdued while keeping
+         it above AA rather than at the 3:1 meant for large text. */
+      if (subdued) {
+        return qualifying.reduce((best, candidate) =>
+          worstAgainst(candidate, surfaces) < worstAgainst(best, surfaces) ? candidate : best);
+      }
+      return wantLight ? qualifying[qualifying.length - 1] : qualifying[0];
     };
 
     const deriveTheme = () => {
       const bg = toRgb(document.getElementById("thm-bg-hex")?.value || "#0a0f1d");
       const card = toRgb(document.getElementById("thm-card-hex")?.value || "#111c35");
       const accent = toRgb(document.getElementById("thm-accent-hex")?.value || "#35d6c0");
-      /* Pick the direction that can actually get there rather than guessing
-         from lightness: against a mid grey like #7a7a7a white tops out at
-         4.17:1 while black reaches 5.03:1, and a luminance threshold chooses
-         white and then cannot explain why the result fails. */
-      const white = [255, 255, 255], black = [0, 0, 0];
-      const ink = ratio(white, bg) >= ratio(black, bg) ? white : black;
-      const onDark = ink === white;
+      const surfaces = [bg, card];
+      const wantLight = (luminance(bg) + luminance(card)) / 2 < 0.4;
 
-      const text = reach(mix(bg, ink, 0.86), ink, bg, 4.5);
-      const dim = reach(mix(text, bg, 0.45), text, bg, 3);
-      const border = mix(card, ink, onDark ? 0.16 : 0.24);
+      const text = pickInk(surfaces, 4.5, wantLight, false);
+      const dim = pickInk(surfaces, 4.5, wantLight, true);
+      // A border is a boundary, not text: 3:1 is the bar that applies to it.
+      const border = mix(card, wantLight ? [255, 255, 255] : [0, 0, 0], wantLight ? 0.16 : 0.24);
 
       return { border: toHex(border), glow: toHex(accent), text: toHex(text), dim: toHex(dim) };
     };
@@ -932,6 +958,7 @@ class SettingsController {
       /* Picking the Wallpaper scene is not the same as having a wallpaper.
          Keying off the mode alone offered "Remove Wallpaper" with nothing to
          remove, on a fresh profile that had never uploaded anything. */
+      this.syncScenePicker?.();
       if (removeBtn) {
         const wantsMedia = cfg.bgMode === "custom-image" || cfg.bgMode === "custom-video";
         let stored = false;

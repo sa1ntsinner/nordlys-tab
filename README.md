@@ -20,7 +20,7 @@ I wanted a start page as fast as Tabliss and as customizable as nightTab, and ne
 | :---: | :---: | :---: |
 | ![Gruvbox](docs/assets/theme-gruvbox-dark.png) | ![OLED](docs/assets/theme-oled.png) | ![Mint](docs/assets/theme-mint.png) |
 
-There's a Dark / Light / Auto switch (Auto follows your OS and flips live), and a theme studio where you pick seven colors and save the result as your own preset. If none of that is enough, a live CSS editor with a class reference is built in.
+There's a Dark / Light / Auto switch (Auto follows your OS and flips live), and a theme studio that asks for three colors — the page, the glass and the accent — and derives the rest, holding the text colors above WCAG AA against both surfaces. The remaining four stay editable if you want them. If none of that is enough, a live CSS editor with a class reference is built in.
 
 ## What else it does
 

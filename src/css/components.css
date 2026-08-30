@@ -622,6 +622,12 @@ body.minimal #board {
   opacity: 1;
 }
 
+/* Resizing works by dragging the corner, and a touch device has no hover to
+   reveal it with. It shares the rule the grip and the hide button follow. */
+@media not all and (hover: hover) {
+  .card-resize-handle { opacity: 0.5; }
+}
+
 .card-resize-handle:hover::after,
 .card.is-resizing .card-resize-handle::after {
   border-color: var(--accent);

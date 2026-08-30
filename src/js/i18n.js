@@ -5,7 +5,6 @@
 const translations = {
   "en": {
     "search.placeholder": "Search or enter URL",
-    "search.engineTitle": "Search engine: {engine}",
     "search.engineTitle": "Search with {engine} (Click to switch)",
     "search.historyRemoved": "Removed {query} from history",
     "search.suggestionsClosed": "Search suggestions closed",
@@ -245,7 +244,6 @@ const translations = {
   },
   "ru": {
     "search.placeholder": "Поиск или адрес",
-    "search.engineTitle": "Поисковик: {engine}",
     "search.engineTitle": "Искать через {engine} (клик для смены)",
     "search.historyRemoved": "Запрос {query} удалён из истории",
     "search.suggestionsClosed": "Подсказки поиска закрыты",
@@ -485,7 +483,6 @@ const translations = {
   },
   "es": {
     "search.placeholder": "Buscar o escribir URL",
-    "search.engineTitle": "Buscador: {engine}",
     "search.engineTitle": "Buscar con {engine} (Clic para cambiar)",
     "search.historyRemoved": "{query} se eliminó del historial",
     "search.suggestionsClosed": "Sugerencias de búsqueda cerradas",
@@ -725,7 +722,6 @@ const translations = {
   },
   "de": {
     "search.placeholder": "Suchen oder URL eingeben",
-    "search.engineTitle": "Suchmaschine: {engine}",
     "search.engineTitle": "Mit {engine} suchen (Klicken zum Wechseln)",
     "search.historyRemoved": "{query} aus dem Verlauf entfernt",
     "search.suggestionsClosed": "Suchvorschläge geschlossen",
@@ -965,7 +961,6 @@ const translations = {
   },
   "fr": {
     "search.placeholder": "Rechercher ou saisir une URL",
-    "search.engineTitle": "Moteur de recherche : {engine}",
     "search.engineTitle": "Rechercher avec {engine} (Cliquer pour changer)",
     "search.historyRemoved": "{query} supprimé de l’historique",
     "search.suggestionsClosed": "Suggestions de recherche fermées",
@@ -1205,7 +1200,6 @@ const translations = {
   },
   "ja": {
     "search.placeholder": "検索または URL を入力",
-    "search.engineTitle": "検索エンジン: {engine}",
     "search.engineTitle": "{engine}で検索（クリックして切り替え）",
     "search.historyRemoved": "{query}を履歴から削除しました",
     "search.suggestionsClosed": "検索候補を閉じました",
@@ -1445,7 +1439,6 @@ const translations = {
   },
   "zh": {
     "search.placeholder": "搜索或输入网址",
-    "search.engineTitle": "搜索引擎：{engine}",
     "search.engineTitle": "使用 {engine} 搜索（点击切换）",
     "search.historyRemoved": "已从历史记录中删除 {query}",
     "search.suggestionsClosed": "搜索建议已关闭",
@@ -1685,7 +1678,6 @@ const translations = {
   },
   "tr": {
     "search.placeholder": "Ara veya URL gir",
-    "search.engineTitle": "Arama motoru: {engine}",
     "search.engineTitle": "{engine} ile ara (Değiştirmek için tıkla)",
     "search.historyRemoved": "{query} geçmişten kaldırıldı",
     "search.suggestionsClosed": "Arama önerileri kapatıldı",

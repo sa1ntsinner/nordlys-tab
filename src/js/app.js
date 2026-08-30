@@ -177,6 +177,7 @@ class AuroraApp {
           if (migrated) chrome.storage.local.set({ [STORAGE_KEY]: this.config });
           this.applyThemeTokens();
           this.applyGeometryTokens();
+          this.applyHeaderStyle();
           this.injectCustomCSS(this.config.customCss || "");
           this.updateBackgroundMode();
           this.grid?.render();

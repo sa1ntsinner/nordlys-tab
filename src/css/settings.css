@@ -1857,7 +1857,7 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 #toast-dock .toast { pointer-events: auto; }
 
 @media (max-width: 560px) {
-  .bookmark-folder-summary { grid-template-columns: minmax(0, 1fr) auto; padding-inline: 6px; }
+  .bookmark-folder-summary { grid-template-columns: 14px minmax(0, 1fr) auto; padding-inline: 6px; }
   .bookmark-summary-row { grid-template-columns: 32px minmax(0, 1fr) auto; }
   .bookmark-editor { grid-template-columns: 1fr; }
 }
