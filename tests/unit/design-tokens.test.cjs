@@ -154,3 +154,38 @@ test('the ladder is ordered so nothing swallows what it covers', () => {
       `--nl-z-${below} (${ladder[below]}) must sit below --nl-z-${above} (${ladder[above]})`);
   }
 });
+
+/* A theme carries the palette. Every light theme already wears .light-ui, so
+   naming three of them again beside it says nothing — 420 selectors across 114
+   rule groups did exactly that, and half of themes.css was the repetition. */
+test('themes do not name a light theme that .light-ui already covers', () => {
+  const themes = fs.readFileSync(path.join(CSS_DIR, 'themes.css'), 'utf8');
+  const offenders = [];
+  for (const rule of themes.matchAll(/([^{}]*)\{[^{}]*\}/g)) {
+    const selector = rule[1];
+    if (!selector.includes('.light-ui')) continue;
+    for (const named of selector.matchAll(/html\[data-theme="([a-z-]+)"\]/g)) {
+      offenders.push(named[1]);
+    }
+  }
+  assert.deepStrictEqual([...new Set(offenders)], [],
+    `themes named alongside .light-ui: ${[...new Set(offenders)].join(', ')}`);
+});
+
+/* A coloured halo behind an icon or a control is the fastest way to date an
+   interface, and it was on every bookmark on the board. Shadows are neutral;
+   colour that carries meaning is a ring or a fill, never a bloom. */
+test('no shadow is tinted with the accent', () => {
+  const offenders = [];
+  for (const sheet of stylesheets()) {
+    for (const match of sheet.text.matchAll(/(?:filter|box-shadow):\s*([^;}]+)/g)) {
+      const value = match[1];
+      if (!/drop-shadow|px/.test(value)) continue;
+      // A ring is a colour with no blur; a bloom is a colour with one.
+      if (/drop-shadow\([^)]*(?:var\(--accent|var\(--c\b|color-mix)/.test(value)) {
+        offenders.push(`${sheet.name}: ${value.trim().slice(0, 64)}`);
+      }
+    }
+  }
+  assert.deepStrictEqual(offenders, [], `tinted shadows:\n${offenders.join('\n')}`);
+});

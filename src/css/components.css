@@ -750,7 +750,10 @@ body.minimal #board {
   height: 46%;
   fill: var(--c, var(--dim));
   color: var(--c, var(--dim));
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 10px color-mix(in srgb, var(--c, var(--dim)) 40%, transparent));
+  /* One neutral shadow lifts the mark off its plate. The second layer used to be
+     a coloured halo in the icon's own hue, which is the fastest way to date an
+     interface and made every tile glow slightly. */
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
   transition: transform var(--nl-motion-panel) var(--nl-ease-emphasized);
   object-fit: contain;
   pointer-events: none;
@@ -762,7 +765,7 @@ body.minimal #board {
   font-weight: 700;
   color: var(--c, var(--dim));
   line-height: 1;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 11px color-mix(in srgb, var(--c, var(--dim)) 45%, transparent));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
   pointer-events: none;
   user-select: none;
 }

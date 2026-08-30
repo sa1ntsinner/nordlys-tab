@@ -473,24 +473,15 @@ html[data-theme="oled-obsidian"] #veil {
    Shared across .light-ui, Porcelain, Sage Garden, and Warm Ivory
    ═══════════════════════════════════════════════════════════════════ */
 
-.light-ui #veil,
-html[data-theme="porcelain-light"] #veil,
-html[data-theme="sage-light"] #veil,
-html[data-theme="warm-ivory"] #veil {
+.light-ui #veil {
   background: radial-gradient(120% 92% at 50% 4%, transparent 55%, rgba(0, 0, 0, 0.05) 100%);
 }
 
-.light-ui #veil::after,
-html[data-theme="porcelain-light"] #veil::after,
-html[data-theme="sage-light"] #veil::after,
-html[data-theme="warm-ivory"] #veil::after {
+.light-ui #veil::after {
   opacity: 0.02;
 }
 
-.light-ui #dim,
-html[data-theme="porcelain-light"] #dim,
-html[data-theme="sage-light"] #dim,
-html[data-theme="warm-ivory"] #dim {
+.light-ui #dim {
   background: rgba(0, 0, 0, 0.22);
 }
 
@@ -500,281 +491,164 @@ html[data-theme="warm-ivory"] #dim {
    were being given background-clip: text and transparent ink, which is not
    something a card can want. */
 
-.light-ui #clock .ampm,
-html[data-theme="porcelain-light"] #clock .ampm,
-html[data-theme="sage-light"] #clock .ampm,
-html[data-theme="warm-ivory"] #clock .ampm {
+.light-ui #clock .ampm {
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, rgba(255, 255, 255, 0.8));
   border-color: color-mix(in srgb, var(--accent) 26%, transparent);
   box-shadow: var(--nl-shadow-1);
 }
 
-.light-ui #date,
-html[data-theme="porcelain-light"] #date,
-html[data-theme="sage-light"] #date,
-html[data-theme="warm-ivory"] #date {
+.light-ui #date {
   color: var(--dim);
   font-weight: 700;
 }
 
 .light-ui #greet,
-.light-ui #greeting,
-html[data-theme="porcelain-light"] #greet,
-html[data-theme="porcelain-light"] #greeting,
-html[data-theme="sage-light"] #greet,
-html[data-theme="sage-light"] #greeting,
-html[data-theme="warm-ivory"] #greet,
-html[data-theme="warm-ivory"] #greeting {
+.light-ui #greeting {
   color: var(--dim);
   font-weight: 500;
 }
 
-.light-ui #search,
-html[data-theme="porcelain-light"] #search,
-html[data-theme="sage-light"] #search,
-html[data-theme="warm-ivory"] #search {
+.light-ui #search {
   background: rgba(255, 255, 255, 0.82);
   border-color: var(--glass-border);
 }
 
 .light-ui #search:focus-within,
-.light-ui body.searching #search,
-html[data-theme="porcelain-light"] #search:focus-within,
-html[data-theme="porcelain-light"] body.searching #search,
-html[data-theme="sage-light"] #search:focus-within,
-html[data-theme="sage-light"] body.searching #search,
-html[data-theme="warm-ivory"] #search:focus-within,
-html[data-theme="warm-ivory"] body.searching #search {
+.light-ui body.searching #search {
   background: rgba(255, 255, 255, 0.95);
   border-color: var(--accent);
   box-shadow: var(--nl-shadow-2);
 }
 
-.light-ui #q,
-html[data-theme="porcelain-light"] #q,
-html[data-theme="sage-light"] #q,
-html[data-theme="warm-ivory"] #q {
+.light-ui #q {
   color: var(--ink);
 }
 
-.light-ui #q::placeholder,
-html[data-theme="porcelain-light"] #q::placeholder,
-html[data-theme="sage-light"] #q::placeholder,
-html[data-theme="warm-ivory"] #q::placeholder {
+.light-ui #q::placeholder {
   color: var(--faint);
   opacity: 0.85;
 }
 
-.light-ui #search kbd,
-html[data-theme="porcelain-light"] #search kbd,
-html[data-theme="sage-light"] #search kbd,
-html[data-theme="warm-ivory"] #search kbd {
+.light-ui #search kbd {
   color: var(--dim);
   border-color: rgba(0, 0, 0, 0.14);
   background: rgba(0, 0, 0, 0.04);
 }
 
-.light-ui #engine-selector,
-html[data-theme="porcelain-light"] #engine-selector,
-html[data-theme="sage-light"] #engine-selector,
-html[data-theme="warm-ivory"] #engine-selector {
+.light-ui #engine-selector {
   color: var(--dim);
 }
 
-.light-ui #engine-selector:hover,
-html[data-theme="porcelain-light"] #engine-selector:hover,
-html[data-theme="sage-light"] #engine-selector:hover,
-html[data-theme="warm-ivory"] #engine-selector:hover {
+.light-ui #engine-selector:hover {
   color: var(--ink);
   background: rgba(0, 0, 0, 0.06);
 }
 
-.light-ui #sugg,
-html[data-theme="porcelain-light"] #sugg,
-html[data-theme="sage-light"] #sugg,
-html[data-theme="warm-ivory"] #sugg {
+.light-ui #sugg {
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(0, 0, 0, 0.10);
   box-shadow: var(--nl-shadow-3);
 }
 
-.light-ui #sugg div,
-html[data-theme="porcelain-light"] #sugg div,
-html[data-theme="sage-light"] #sugg div,
-html[data-theme="warm-ivory"] #sugg div {
+.light-ui #sugg div {
   color: var(--ink);
 }
 
 .light-ui #sugg div.sel,
-.light-ui #sugg div:hover,
-html[data-theme="porcelain-light"] #sugg div.sel,
-html[data-theme="porcelain-light"] #sugg div:hover,
-html[data-theme="sage-light"] #sugg div.sel,
-html[data-theme="sage-light"] #sugg div:hover,
-html[data-theme="warm-ivory"] #sugg div.sel,
-html[data-theme="warm-ivory"] #sugg div:hover {
+.light-ui #sugg div:hover {
   background: var(--frost);
   color: var(--ink);
 }
 
-.light-ui #sugg svg,
-html[data-theme="porcelain-light"] #sugg svg,
-html[data-theme="sage-light"] #sugg svg,
-html[data-theme="warm-ivory"] #sugg svg {
+.light-ui #sugg svg {
   fill: var(--dim);
 }
 
-.light-ui #sugg .sugg-calc .calc-val,
-html[data-theme="porcelain-light"] #sugg .sugg-calc .calc-val,
-html[data-theme="sage-light"] #sugg .sugg-calc .calc-val,
-html[data-theme="warm-ivory"] #sugg .sugg-calc .calc-val {
+.light-ui #sugg .sugg-calc .calc-val {
   color: var(--accent);
   text-shadow: none;
 }
 
-.light-ui #sugg .bm-name,
-html[data-theme="porcelain-light"] #sugg .bm-name,
-html[data-theme="sage-light"] #sugg .bm-name,
-html[data-theme="warm-ivory"] #sugg .bm-name {
+.light-ui #sugg .bm-name {
   color: var(--ink);
 }
 
 .light-ui #sugg .bm-url,
-.light-ui #sugg .sugg-bookmark small,
-html[data-theme="porcelain-light"] #sugg .bm-url,
-html[data-theme="porcelain-light"] #sugg .sugg-bookmark small,
-html[data-theme="sage-light"] #sugg .bm-url,
-html[data-theme="sage-light"] #sugg .sugg-bookmark small,
-html[data-theme="warm-ivory"] #sugg .bm-url,
-html[data-theme="warm-ivory"] #sugg .sugg-bookmark small {
+.light-ui #sugg .sugg-bookmark small {
   color: var(--dim);
   opacity: 0.8;
 }
 
-.light-ui #sugg .hist-text,
-html[data-theme="porcelain-light"] #sugg .hist-text,
-html[data-theme="sage-light"] #sugg .hist-text,
-html[data-theme="warm-ivory"] #sugg .hist-text {
+.light-ui #sugg .hist-text {
   color: var(--ink);
 }
 
-.light-ui #sugg .sugg-history svg,
-html[data-theme="porcelain-light"] #sugg .sugg-history svg,
-html[data-theme="sage-light"] #sugg .sugg-history svg,
-html[data-theme="warm-ivory"] #sugg .sugg-history svg {
+.light-ui #sugg .sugg-history svg {
   stroke: var(--dim);
 }
 
-.light-ui #sugg .sugg-folder-badge,
-html[data-theme="porcelain-light"] #sugg .sugg-folder-badge,
-html[data-theme="sage-light"] #sugg .sugg-folder-badge,
-html[data-theme="warm-ivory"] #sugg .sugg-folder-badge {
+.light-ui #sugg .sugg-folder-badge {
   background: rgba(0, 0, 0, 0.05);
   border-color: rgba(0, 0, 0, 0.10);
   color: var(--dim);
 }
 
-.light-ui #sugg .sugg-calc-badge,
-html[data-theme="porcelain-light"] #sugg .sugg-calc-badge,
-html[data-theme="sage-light"] #sugg .sugg-calc-badge,
-html[data-theme="warm-ivory"] #sugg .sugg-calc-badge {
+.light-ui #sugg .sugg-calc-badge {
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   border-color: color-mix(in srgb, var(--accent) 25%, transparent);
   color: var(--accent);
 }
 
-.light-ui #sugg .sugg-del-btn,
-html[data-theme="porcelain-light"] #sugg .sugg-del-btn,
-html[data-theme="sage-light"] #sugg .sugg-del-btn,
-html[data-theme="warm-ivory"] #sugg .sugg-del-btn {
+.light-ui #sugg .sugg-del-btn {
   color: var(--dim);
 }
 
-.light-ui #sugg .sugg-del-btn:hover,
-html[data-theme="porcelain-light"] #sugg .sugg-del-btn:hover,
-html[data-theme="sage-light"] #sugg .sugg-del-btn:hover,
-html[data-theme="warm-ivory"] #sugg .sugg-del-btn:hover {
+.light-ui #sugg .sugg-del-btn:hover {
   color: #dc2626;
   background: rgba(239, 68, 68, 0.12);
 }
 
-.light-ui .grid[data-cols="1"] .tile,
-html[data-theme="porcelain-light"] .grid[data-cols="1"] .tile,
-html[data-theme="sage-light"] .grid[data-cols="1"] .tile,
-html[data-theme="warm-ivory"] .grid[data-cols="1"] .tile {
+.light-ui .grid[data-cols="1"] .tile {
   background: rgba(0, 0, 0, 0.02);
   border-color: rgba(0, 0, 0, 0.06);
 }
 
-.light-ui .grid[data-cols="1"] .tile:hover,
-html[data-theme="porcelain-light"] .grid[data-cols="1"] .tile:hover,
-html[data-theme="sage-light"] .grid[data-cols="1"] .tile:hover,
-html[data-theme="warm-ivory"] .grid[data-cols="1"] .tile:hover {
+.light-ui .grid[data-cols="1"] .tile:hover {
   background: rgba(0, 0, 0, 0.05);
   border-color: rgba(0, 0, 0, 0.12);
 }
 
-.light-ui .cat:hover,
-html[data-theme="porcelain-light"] .cat:hover,
-html[data-theme="sage-light"] .cat:hover,
-html[data-theme="warm-ivory"] .cat:hover {
+.light-ui .cat:hover {
   background: rgba(0, 0, 0, 0.03);
 }
 
-.light-ui .cat b,
-html[data-theme="porcelain-light"] .cat b,
-html[data-theme="sage-light"] .cat b,
-html[data-theme="warm-ivory"] .cat b {
+.light-ui .cat b {
   color: var(--dim);
   font-weight: 700;
 }
 
-.light-ui .cat:hover b,
-html[data-theme="porcelain-light"] .cat:hover b,
-html[data-theme="sage-light"] .cat:hover b,
-html[data-theme="warm-ivory"] .cat:hover b {
+.light-ui .cat:hover b {
   color: var(--ink);
 }
 
-.light-ui .cat i,
-html[data-theme="porcelain-light"] .cat i,
-html[data-theme="sage-light"] .cat i,
-html[data-theme="warm-ivory"] .cat i {
+.light-ui .cat i {
   background: linear-gradient(90deg, color-mix(in srgb, var(--dim) 25%, transparent), transparent);
 }
 
 .light-ui .groupGrip,
-.light-ui .foldBtn,
-html[data-theme="porcelain-light"] .groupGrip,
-html[data-theme="porcelain-light"] .foldBtn,
-html[data-theme="sage-light"] .groupGrip,
-html[data-theme="sage-light"] .foldBtn,
-html[data-theme="warm-ivory"] .groupGrip,
-html[data-theme="warm-ivory"] .foldBtn {
+.light-ui .foldBtn {
   color: var(--dim);
 }
 
 .light-ui .groupGrip:hover,
 .light-ui .foldBtn:hover,
-.light-ui .cat:hover .groupGrip,
-html[data-theme="porcelain-light"] .groupGrip:hover,
-html[data-theme="porcelain-light"] .foldBtn:hover,
-html[data-theme="porcelain-light"] .cat:hover .groupGrip,
-html[data-theme="sage-light"] .groupGrip:hover,
-html[data-theme="sage-light"] .foldBtn:hover,
-html[data-theme="sage-light"] .cat:hover .groupGrip,
-html[data-theme="warm-ivory"] .groupGrip:hover,
-html[data-theme="warm-ivory"] .foldBtn:hover,
-html[data-theme="warm-ivory"] .cat:hover .groupGrip {
+.light-ui .cat:hover .groupGrip {
   color: var(--ink);
   background: rgba(0, 0, 0, 0.06);
 }
 
-.light-ui .box,
-html[data-theme="porcelain-light"] .box,
-html[data-theme="sage-light"] .box,
-html[data-theme="warm-ivory"] .box {
+.light-ui .box {
   border-color: var(--glass-border);
   background:
     radial-gradient(120% 120% at 30% 18%, color-mix(in srgb, var(--c, var(--dim)) 14%, transparent), transparent 62%),
@@ -783,13 +657,7 @@ html[data-theme="warm-ivory"] .box {
 }
 
 .light-ui .tile:hover .box,
-.light-ui .tile:focus-visible .box,
-html[data-theme="porcelain-light"] .tile:hover .box,
-html[data-theme="porcelain-light"] .tile:focus-visible .box,
-html[data-theme="sage-light"] .tile:hover .box,
-html[data-theme="sage-light"] .tile:focus-visible .box,
-html[data-theme="warm-ivory"] .tile:hover .box,
-html[data-theme="warm-ivory"] .tile:focus-visible .box {
+.light-ui .tile:focus-visible .box {
   border-color: color-mix(in srgb, var(--c, var(--accent)) 60%, rgba(0, 0, 0, 0.12));
   background:
     radial-gradient(120% 120% at 30% 18%, color-mix(in srgb, var(--c, var(--accent)) 24%, transparent), transparent 66%),
@@ -799,495 +667,294 @@ html[data-theme="warm-ivory"] .tile:focus-visible .box {
 
 .light-ui .box svg,
 .light-ui .box img,
-.light-ui .box .mono,
-html[data-theme="porcelain-light"] .box svg,
-html[data-theme="porcelain-light"] .box img,
-html[data-theme="porcelain-light"] .box .mono,
-html[data-theme="sage-light"] .box svg,
-html[data-theme="sage-light"] .box img,
-html[data-theme="sage-light"] .box .mono,
-html[data-theme="warm-ivory"] .box svg,
-html[data-theme="warm-ivory"] .box img,
-html[data-theme="warm-ivory"] .box .mono {
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.22)) drop-shadow(0 0 8px color-mix(in srgb, var(--c, var(--accent)) 30%, transparent));
+.light-ui .box .mono {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.22));
 }
 
-.light-ui .lbl,
-html[data-theme="porcelain-light"] .lbl,
-html[data-theme="sage-light"] .lbl,
-html[data-theme="warm-ivory"] .lbl {
+.light-ui .lbl {
   color: var(--dim);
   font-weight: 550;
 }
 
-.light-ui .tile:hover .lbl,
-html[data-theme="porcelain-light"] .tile:hover .lbl,
-html[data-theme="sage-light"] .tile:hover .lbl,
-html[data-theme="warm-ivory"] .tile:hover .lbl {
+.light-ui .tile:hover .lbl {
   color: var(--ink);
 }
 
-.light-ui .card-resize-handle::after,
-html[data-theme="porcelain-light"] .card-resize-handle::after,
-html[data-theme="sage-light"] .card-resize-handle::after,
-html[data-theme="warm-ivory"] .card-resize-handle::after {
+.light-ui .card-resize-handle::after {
   border-color: var(--dim);
 }
 
 .light-ui .resize-indicator-pill,
-.light-ui .card-resize-pill,
-html[data-theme="porcelain-light"] .resize-indicator-pill,
-html[data-theme="porcelain-light"] .card-resize-pill,
-html[data-theme="sage-light"] .resize-indicator-pill,
-html[data-theme="sage-light"] .card-resize-pill,
-html[data-theme="warm-ivory"] .resize-indicator-pill,
-html[data-theme="warm-ivory"] .card-resize-pill {
+.light-ui .card-resize-pill {
   background: rgba(255, 255, 255, 0.95);
   border-color: var(--accent);
   color: var(--ink);
   box-shadow: var(--nl-shadow-2);
 }
 
-.light-ui #hiddenDock,
-html[data-theme="porcelain-light"] #hiddenDock,
-html[data-theme="sage-light"] #hiddenDock,
-html[data-theme="warm-ivory"] #hiddenDock {
+.light-ui #hiddenDock {
   background: rgba(255, 255, 255, 0.65);
   border-color: var(--glass-border);
   box-shadow: var(--nl-shadow-2);
 }
 
-.light-ui #hiddenDock:hover,
-html[data-theme="porcelain-light"] #hiddenDock:hover,
-html[data-theme="sage-light"] #hiddenDock:hover,
-html[data-theme="warm-ivory"] #hiddenDock:hover {
+.light-ui #hiddenDock:hover {
   background: rgba(255, 255, 255, 0.92);
   border-color: rgba(0, 0, 0, 0.16);
   box-shadow: var(--nl-shadow-2);
 }
 
-.light-ui .restoreFolder,
-html[data-theme="porcelain-light"] .restoreFolder,
-html[data-theme="sage-light"] .restoreFolder,
-html[data-theme="warm-ivory"] .restoreFolder {
+.light-ui .restoreFolder {
   border-color: var(--glass-border);
   background: rgba(0, 0, 0, 0.04);
   color: var(--dim);
 }
 
-.light-ui .restoreFolder:hover,
-html[data-theme="porcelain-light"] .restoreFolder:hover,
-html[data-theme="sage-light"] .restoreFolder:hover,
-html[data-theme="warm-ivory"] .restoreFolder:hover {
+.light-ui .restoreFolder:hover {
   color: var(--ink);
   border-color: var(--accent);
   background: var(--frost);
 }
 
-.light-ui .restoreFolder:hover .dockFolderCount,
-html[data-theme="porcelain-light"] .restoreFolder:hover .dockFolderCount,
-html[data-theme="sage-light"] .restoreFolder:hover .dockFolderCount,
-html[data-theme="warm-ivory"] .restoreFolder:hover .dockFolderCount {
+.light-ui .restoreFolder:hover .dockFolderCount {
   color: var(--ink);
   background: rgba(0, 0, 0, 0.10);
 }
 
-.light-ui .dockFolderCount,
-html[data-theme="porcelain-light"] .dockFolderCount,
-html[data-theme="sage-light"] .dockFolderCount,
-html[data-theme="warm-ivory"] .dockFolderCount {
+.light-ui .dockFolderCount {
   background: rgba(0, 0, 0, 0.06);
   color: var(--dim);
 }
 
-.light-ui #gear,
-html[data-theme="porcelain-light"] #gear,
-html[data-theme="sage-light"] #gear,
-html[data-theme="warm-ivory"] #gear {
+.light-ui #gear {
   background: rgba(255, 255, 255, 0.75);
   border-color: rgba(0, 0, 0, 0.12);
   box-shadow: var(--nl-shadow-2);
 }
 
-.light-ui #gear svg,
-html[data-theme="porcelain-light"] #gear svg,
-html[data-theme="sage-light"] #gear svg,
-html[data-theme="warm-ivory"] #gear svg {
+.light-ui #gear svg {
   fill: var(--dim);
 }
 
-.light-ui #gear:hover,
-html[data-theme="porcelain-light"] #gear:hover,
-html[data-theme="sage-light"] #gear:hover,
-html[data-theme="warm-ivory"] #gear:hover {
+.light-ui #gear:hover {
   background: rgba(255, 255, 255, 0.95);
   border-color: var(--accent);
 }
 
-.light-ui #gear:hover svg,
-html[data-theme="porcelain-light"] #gear:hover svg,
-html[data-theme="sage-light"] #gear:hover svg,
-html[data-theme="warm-ivory"] #gear:hover svg {
+.light-ui #gear:hover svg {
   fill: var(--ink);
 }
 
 /* ── Light-Mode Drawer, Modals & Menus Tuning ─────────────────── */
-.light-ui #cfg,
-html[data-theme="porcelain-light"] #cfg,
-html[data-theme="sage-light"] #cfg,
-html[data-theme="warm-ivory"] #cfg {
+.light-ui #cfg {
   background: rgba(255, 255, 255, 0.94);
   border-left: 1px solid rgba(0, 0, 0, 0.09);
   box-shadow: var(--nl-shadow-3);
 }
 
-.light-ui #cfg-resizer::after,
-html[data-theme="porcelain-light"] #cfg-resizer::after,
-html[data-theme="sage-light"] #cfg-resizer::after,
-html[data-theme="warm-ivory"] #cfg-resizer::after {
+.light-ui #cfg-resizer::after {
   background: rgba(0, 0, 0, 0.18);
 }
 
-.light-ui .chead,
-html[data-theme="porcelain-light"] .chead,
-html[data-theme="sage-light"] .chead,
-html[data-theme="warm-ivory"] .chead {
+.light-ui .chead {
   background: rgba(248, 250, 253, 0.85);
   border-bottom-color: rgba(0, 0, 0, 0.07);
 }
 
-.light-ui #cfgx,
-html[data-theme="porcelain-light"] #cfgx,
-html[data-theme="sage-light"] #cfgx,
-html[data-theme="warm-ivory"] #cfgx {
+.light-ui #cfgx {
   border-color: rgba(0, 0, 0, 0.1);
   background: rgba(0, 0, 0, 0.04);
   color: var(--dim);
 }
 
-.light-ui #cfgx:hover,
-html[data-theme="porcelain-light"] #cfgx:hover,
-html[data-theme="sage-light"] #cfgx:hover,
-html[data-theme="warm-ivory"] #cfgx:hover {
+.light-ui #cfgx:hover {
   color: #ffffff;
   background: rgba(239, 68, 68, 0.85);
   border-color: rgba(239, 68, 68, 1);
 }
 
-.light-ui .ctabs,
-html[data-theme="porcelain-light"] .ctabs,
-html[data-theme="sage-light"] .ctabs,
-html[data-theme="warm-ivory"] .ctabs {
+.light-ui .ctabs {
   background: rgba(240, 243, 249, 0.7);
   border-bottom-color: rgba(0, 0, 0, 0.07);
 }
 
-.light-ui .ctab,
-html[data-theme="porcelain-light"] .ctab,
-html[data-theme="sage-light"] .ctab,
-html[data-theme="warm-ivory"] .ctab {
+.light-ui .ctab {
   color: #475569;
 }
 
-.light-ui .ctab:hover,
-html[data-theme="porcelain-light"] .ctab:hover,
-html[data-theme="sage-light"] .ctab:hover,
-html[data-theme="warm-ivory"] .ctab:hover {
+.light-ui .ctab:hover {
   color: #0f172a;
   background: rgba(0, 0, 0, 0.05);
 }
 
-.light-ui .ctab.active,
-html[data-theme="porcelain-light"] .ctab.active,
-html[data-theme="sage-light"] .ctab.active,
-html[data-theme="warm-ivory"] .ctab.active {
+.light-ui .ctab.active {
   background: var(--accent);
   color: #071018;
   box-shadow: var(--nl-shadow-1);
 }
 
-.light-ui .cbody::-webkit-scrollbar-thumb,
-html[data-theme="porcelain-light"] .cbody::-webkit-scrollbar-thumb,
-html[data-theme="sage-light"] .cbody::-webkit-scrollbar-thumb,
-html[data-theme="warm-ivory"] .cbody::-webkit-scrollbar-thumb {
+.light-ui .cbody::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.14);
 }
 
-.light-ui .csec h3,
-html[data-theme="porcelain-light"] .csec h3,
-html[data-theme="sage-light"] .csec h3,
-html[data-theme="warm-ivory"] .csec h3 {
+.light-ui .csec h3 {
   color: #1e293b;
 }
 
-.light-ui .csec h3::after,
-html[data-theme="porcelain-light"] .csec h3::after,
-html[data-theme="sage-light"] .csec h3::after,
-html[data-theme="warm-ivory"] .csec h3::after {
+.light-ui .csec h3::after {
   background: rgba(0, 0, 0, 0.08);
 }
 
-.light-ui .ipt,
-html[data-theme="porcelain-light"] .ipt,
-html[data-theme="sage-light"] .ipt,
-html[data-theme="warm-ivory"] .ipt {
+.light-ui .ipt {
   background: rgba(255, 255, 255, 0.9);
   border-color: rgba(0, 0, 0, 0.14);
   color: #0f172a;
 }
 
-.light-ui .ipt:focus,
-html[data-theme="porcelain-light"] .ipt:focus,
-html[data-theme="sage-light"] .ipt:focus,
-html[data-theme="warm-ivory"] .ipt:focus {
+.light-ui .ipt:focus {
   background: #ffffff;
   border-color: var(--accent);
   box-shadow: var(--nl-ring);
 }
 
-.light-ui input[type="range"].ipt,
-html[data-theme="porcelain-light"] input[type="range"].ipt,
-html[data-theme="sage-light"] input[type="range"].ipt,
-html[data-theme="warm-ivory"] input[type="range"].ipt {
+.light-ui input[type="range"].ipt {
   background: rgba(0, 0, 0, 0.12);
 }
 
-.light-ui .glass-context-menu,
-html[data-theme="porcelain-light"] .glass-context-menu,
-html[data-theme="sage-light"] .glass-context-menu,
-html[data-theme="warm-ivory"] .glass-context-menu {
+.light-ui .glass-context-menu {
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow: var(--nl-shadow-3);
 }
 
-.light-ui .ctx-header,
-html[data-theme="porcelain-light"] .ctx-header,
-html[data-theme="sage-light"] .ctx-header,
-html[data-theme="warm-ivory"] .ctx-header {
+.light-ui .ctx-header {
   color: var(--accent);
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.light-ui .ctx-item,
-html[data-theme="porcelain-light"] .ctx-item,
-html[data-theme="sage-light"] .ctx-item,
-html[data-theme="warm-ivory"] .ctx-item {
+.light-ui .ctx-item {
   color: #0f172a;
 }
 
-.light-ui .ctx-item svg,
-html[data-theme="porcelain-light"] .ctx-item svg,
-html[data-theme="sage-light"] .ctx-item svg,
-html[data-theme="warm-ivory"] .ctx-item svg {
+.light-ui .ctx-item svg {
   color: var(--dim);
 }
 
-.light-ui .ctx-item:hover,
-html[data-theme="porcelain-light"] .ctx-item:hover,
-html[data-theme="sage-light"] .ctx-item:hover,
-html[data-theme="warm-ivory"] .ctx-item:hover {
+.light-ui .ctx-item:hover {
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   color: #0f172a;
 }
 
-.light-ui .ctx-item:hover svg,
-html[data-theme="porcelain-light"] .ctx-item:hover svg,
-html[data-theme="sage-light"] .ctx-item:hover svg,
-html[data-theme="warm-ivory"] .ctx-item:hover svg {
+.light-ui .ctx-item:hover svg {
   color: var(--accent);
 }
 
-.light-ui .ctx-divider,
-html[data-theme="porcelain-light"] .ctx-divider,
-html[data-theme="sage-light"] .ctx-divider,
-html[data-theme="warm-ivory"] .ctx-divider {
+.light-ui .ctx-divider {
   background: rgba(0, 0, 0, 0.08);
 }
 
 .light-ui .quick-modal-backdrop,
 .light-ui .confirm-backdrop,
 .light-ui #icon-modal,
-.light-ui #css-docs-modal,
-html[data-theme="porcelain-light"] .quick-modal-backdrop,
-html[data-theme="porcelain-light"] .confirm-backdrop,
-html[data-theme="porcelain-light"] #icon-modal,
-html[data-theme="porcelain-light"] #css-docs-modal,
-html[data-theme="sage-light"] .quick-modal-backdrop,
-html[data-theme="sage-light"] .confirm-backdrop,
-html[data-theme="sage-light"] #icon-modal,
-html[data-theme="sage-light"] #css-docs-modal,
-html[data-theme="warm-ivory"] .quick-modal-backdrop,
-html[data-theme="warm-ivory"] .confirm-backdrop,
-html[data-theme="warm-ivory"] #icon-modal,
-html[data-theme="warm-ivory"] #css-docs-modal {
+.light-ui #css-docs-modal {
   background: rgba(15, 25, 45, 0.35);
 }
 
 .light-ui .quick-modal-card,
 .light-ui .confirm-card,
 .light-ui .modal-box,
-.light-ui .css-docs-box,
-html[data-theme="porcelain-light"] .quick-modal-card,
-html[data-theme="porcelain-light"] .confirm-card,
-html[data-theme="porcelain-light"] .modal-box,
-html[data-theme="porcelain-light"] .css-docs-box,
-html[data-theme="sage-light"] .quick-modal-card,
-html[data-theme="sage-light"] .confirm-card,
-html[data-theme="sage-light"] .modal-box,
-html[data-theme="sage-light"] .css-docs-box,
-html[data-theme="warm-ivory"] .quick-modal-card,
-html[data-theme="warm-ivory"] .confirm-card,
-html[data-theme="warm-ivory"] .modal-box,
-html[data-theme="warm-ivory"] .css-docs-box {
+.light-ui .css-docs-box {
   background: rgba(255, 255, 255, 0.98);
   border: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow: var(--nl-shadow-3);
 }
 
 .light-ui .quick-modal-head,
-.light-ui .modal-head,
-html[data-theme="porcelain-light"] .quick-modal-head,
-html[data-theme="porcelain-light"] .modal-head,
-html[data-theme="sage-light"] .quick-modal-head,
-html[data-theme="sage-light"] .modal-head,
-html[data-theme="warm-ivory"] .quick-modal-head,
-html[data-theme="warm-ivory"] .modal-head {
+.light-ui .modal-head {
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.light-ui .quick-icon-box,
-html[data-theme="porcelain-light"] .quick-icon-box,
-html[data-theme="sage-light"] .quick-icon-box,
-html[data-theme="warm-ivory"] .quick-icon-box {
+.light-ui .quick-icon-box {
   background: rgba(0, 0, 0, 0.04);
   border-color: rgba(0, 0, 0, 0.1);
 }
 
-.light-ui .quick-icon-box:hover,
-html[data-theme="porcelain-light"] .quick-icon-box:hover,
-html[data-theme="sage-light"] .quick-icon-box:hover,
-html[data-theme="warm-ivory"] .quick-icon-box:hover {
+.light-ui .quick-icon-box:hover {
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   border-color: var(--accent);
 }
 
-.light-ui .toast,
-html[data-theme="porcelain-light"] .toast,
-html[data-theme="sage-light"] .toast,
-html[data-theme="warm-ivory"] .toast {
+.light-ui .toast {
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow: var(--nl-shadow-2);
   color: #0f172a;
 }
 
-.light-ui .glass-btn,
-html[data-theme="porcelain-light"] .glass-btn,
-html[data-theme="sage-light"] .glass-btn,
-html[data-theme="warm-ivory"] .glass-btn {
+.light-ui .glass-btn {
   background: rgba(0, 0, 0, 0.05);
   border-color: rgba(0, 0, 0, 0.12);
   color: #0f172a;
 }
 
-.light-ui .glass-btn:hover,
-html[data-theme="porcelain-light"] .glass-btn:hover,
-html[data-theme="sage-light"] .glass-btn:hover,
-html[data-theme="warm-ivory"] .glass-btn:hover {
+.light-ui .glass-btn:hover {
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   border-color: var(--accent);
   color: #0f172a;
 }
 
-.light-ui .glass-btn.accent,
-html[data-theme="porcelain-light"] .glass-btn.accent,
-html[data-theme="sage-light"] .glass-btn.accent,
-html[data-theme="warm-ivory"] .glass-btn.accent {
+.light-ui .glass-btn.accent {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--nl-on-accent);
 }
 
-.light-ui .theme-card,
-html[data-theme="porcelain-light"] .theme-card,
-html[data-theme="sage-light"] .theme-card,
-html[data-theme="warm-ivory"] .theme-card {
+.light-ui .theme-card {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(0, 0, 0, 0.09);
   box-shadow: var(--nl-shadow-1);
   color: #0f172a;
 }
 
-.light-ui .theme-card:hover,
-html[data-theme="porcelain-light"] .theme-card:hover,
-html[data-theme="sage-light"] .theme-card:hover,
-html[data-theme="warm-ivory"] .theme-card:hover {
+.light-ui .theme-card:hover {
   border-color: rgba(0, 0, 0, 0.16);
   background: #ffffff;
   box-shadow: var(--nl-shadow-1);
 }
 
-.light-ui .theme-card.active,
-html[data-theme="porcelain-light"] .theme-card.active,
-html[data-theme="sage-light"] .theme-card.active,
-html[data-theme="warm-ivory"] .theme-card.active {
+.light-ui .theme-card.active {
   border-color: var(--accent);
   background: #ffffff;
   box-shadow: var(--nl-ring-tight), var(--nl-shadow-1);
 }
 
-.light-ui .theme-card b,
-html[data-theme="porcelain-light"] .theme-card b,
-html[data-theme="sage-light"] .theme-card b,
-html[data-theme="warm-ivory"] .theme-card b {
+.light-ui .theme-card b {
   color: #0f172a;
   font-weight: 600;
 }
 
-.light-ui .custom-theme-tuning-card,
-html[data-theme="porcelain-light"] .custom-theme-tuning-card,
-html[data-theme="sage-light"] .custom-theme-tuning-card,
-html[data-theme="warm-ivory"] .custom-theme-tuning-card {
+.light-ui .custom-theme-tuning-card {
   background: rgba(255, 255, 255, 0.96);
   border-color: rgba(0, 0, 0, 0.12);
 }
 
-.light-ui .color-picker-wrap,
-html[data-theme="porcelain-light"] .color-picker-wrap,
-html[data-theme="sage-light"] .color-picker-wrap,
-html[data-theme="warm-ivory"] .color-picker-wrap {
+.light-ui .color-picker-wrap {
   background: #ffffff;
   border-color: rgba(0, 0, 0, 0.14);
 }
 
-.light-ui .hex-text,
-html[data-theme="porcelain-light"] .hex-text,
-html[data-theme="sage-light"] .hex-text,
-html[data-theme="warm-ivory"] .hex-text {
+.light-ui .hex-text {
   color: #0f172a;
 }
 
 .light-ui .bm-group-card,
-.light-ui .group-editor-card,
-html[data-theme="porcelain-light"] .bm-group-card,
-html[data-theme="porcelain-light"] .group-editor-card,
-html[data-theme="sage-light"] .bm-group-card,
-html[data-theme="sage-light"] .group-editor-card,
-html[data-theme="warm-ivory"] .bm-group-card,
-html[data-theme="warm-ivory"] .group-editor-card {
+.light-ui .group-editor-card {
   background: rgba(0, 0, 0, 0.025);
   border-color: rgba(0, 0, 0, 0.08);
 }
 
 .light-ui .bm-item-row,
-.light-ui .link-editor-row,
-html[data-theme="porcelain-light"] .bm-item-row,
-html[data-theme="porcelain-light"] .link-editor-row,
-html[data-theme="sage-light"] .bm-item-row,
-html[data-theme="sage-light"] .link-editor-row,
-html[data-theme="warm-ivory"] .bm-item-row,
-html[data-theme="warm-ivory"] .link-editor-row {
+.light-ui .link-editor-row {
   background: rgba(255, 255, 255, 0.85);
   border-color: rgba(0, 0, 0, 0.08);
   box-shadow: var(--nl-shadow-1);
@@ -1296,208 +963,121 @@ html[data-theme="warm-ivory"] .link-editor-row {
 .light-ui .group-label-input,
 .light-ui .link-name-ipt,
 .light-ui .link-url-ipt,
-.light-ui .cols-select,
-html[data-theme="porcelain-light"] .group-label-input,
-html[data-theme="porcelain-light"] .link-name-ipt,
-html[data-theme="porcelain-light"] .link-url-ipt,
-html[data-theme="porcelain-light"] .cols-select,
-html[data-theme="sage-light"] .group-label-input,
-html[data-theme="sage-light"] .link-name-ipt,
-html[data-theme="sage-light"] .link-url-ipt,
-html[data-theme="sage-light"] .cols-select,
-html[data-theme="warm-ivory"] .group-label-input,
-html[data-theme="warm-ivory"] .link-name-ipt,
-html[data-theme="warm-ivory"] .link-url-ipt,
-html[data-theme="warm-ivory"] .cols-select {
+.light-ui .cols-select {
   background: rgba(0, 0, 0, 0.04);
   border-color: rgba(0, 0, 0, 0.1);
   color: #0f172a;
 }
 
-.light-ui .move-btn,
-html[data-theme="porcelain-light"] .move-btn,
-html[data-theme="sage-light"] .move-btn,
-html[data-theme="warm-ivory"] .move-btn {
+.light-ui .move-btn {
   background: rgba(0, 0, 0, 0.04);
   border-color: rgba(0, 0, 0, 0.08);
   color: var(--dim);
 }
 
-.light-ui .move-btn:hover:not(:disabled),
-html[data-theme="porcelain-light"] .move-btn:hover:not(:disabled),
-html[data-theme="sage-light"] .move-btn:hover:not(:disabled),
-html[data-theme="warm-ivory"] .move-btn:hover:not(:disabled) {
+.light-ui .move-btn:hover:not(:disabled) {
   background: rgba(0, 0, 0, 0.08);
   color: #0f172a;
 }
 
-.light-ui .folder-transfer-select,
-html[data-theme="porcelain-light"] .folder-transfer-select,
-html[data-theme="sage-light"] .folder-transfer-select,
-html[data-theme="warm-ivory"] .folder-transfer-select {
+.light-ui .folder-transfer-select {
   background: rgba(255, 255, 255, 0.95);
   border-color: rgba(0, 0, 0, 0.12);
   color: #0f172a;
 }
 
-.light-ui #css-editor,
-html[data-theme="porcelain-light"] #css-editor,
-html[data-theme="sage-light"] #css-editor,
-html[data-theme="warm-ivory"] #css-editor {
+.light-ui #css-editor {
   background: rgba(255, 255, 255, 0.95);
   border-color: rgba(0, 0, 0, 0.14);
   color: #0f172a;
 }
 
-.light-ui .icon-modal-tabs,
-html[data-theme="porcelain-light"] .icon-modal-tabs,
-html[data-theme="sage-light"] .icon-modal-tabs,
-html[data-theme="warm-ivory"] .icon-modal-tabs {
+.light-ui .icon-modal-tabs {
   background: rgba(0, 0, 0, 0.03);
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.light-ui .icon-tab-btn,
-html[data-theme="porcelain-light"] .icon-tab-btn,
-html[data-theme="sage-light"] .icon-tab-btn,
-html[data-theme="warm-ivory"] .icon-tab-btn {
+.light-ui .icon-tab-btn {
   color: #475569;
 }
 
-.light-ui .icon-tab-btn:hover,
-html[data-theme="porcelain-light"] .icon-tab-btn:hover,
-html[data-theme="sage-light"] .icon-tab-btn:hover,
-html[data-theme="warm-ivory"] .icon-tab-btn:hover {
+.light-ui .icon-tab-btn:hover {
   color: #0f172a;
 }
 
-.light-ui .icon-tab-btn.active,
-html[data-theme="porcelain-light"] .icon-tab-btn.active,
-html[data-theme="sage-light"] .icon-tab-btn.active,
-html[data-theme="warm-ivory"] .icon-tab-btn.active {
+.light-ui .icon-tab-btn.active {
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
-.light-ui .glass-input,
-html[data-theme="porcelain-light"] .glass-input,
-html[data-theme="sage-light"] .glass-input,
-html[data-theme="warm-ivory"] .glass-input {
+.light-ui .glass-input {
   background: rgba(0, 0, 0, 0.04);
   border-color: rgba(0, 0, 0, 0.12);
   color: #0f172a;
 }
 
-.light-ui .glass-input:focus,
-html[data-theme="porcelain-light"] .glass-input:focus,
-html[data-theme="sage-light"] .glass-input:focus,
-html[data-theme="warm-ivory"] .glass-input:focus {
+.light-ui .glass-input:focus {
   background: #ffffff;
   border-color: var(--accent);
 }
 
-.light-ui .icon-chip,
-html[data-theme="porcelain-light"] .icon-chip,
-html[data-theme="sage-light"] .icon-chip,
-html[data-theme="warm-ivory"] .icon-chip {
+.light-ui .icon-chip {
   background: rgba(0, 0, 0, 0.04);
   border-color: rgba(0, 0, 0, 0.08);
   color: #475569;
 }
 
-.light-ui .icon-chip:hover,
-html[data-theme="porcelain-light"] .icon-chip:hover,
-html[data-theme="sage-light"] .icon-chip:hover,
-html[data-theme="warm-ivory"] .icon-chip:hover {
+.light-ui .icon-chip:hover {
   background: rgba(0, 0, 0, 0.08);
   color: #0f172a;
 }
 
-.light-ui .icon-chip.active,
-html[data-theme="porcelain-light"] .icon-chip.active,
-html[data-theme="sage-light"] .icon-chip.active,
-html[data-theme="warm-ivory"] .icon-chip.active {
+.light-ui .icon-chip.active {
   background: var(--accent);
   color: #ffffff;
 }
 
-.light-ui .icon-item,
-html[data-theme="porcelain-light"] .icon-item,
-html[data-theme="sage-light"] .icon-item,
-html[data-theme="warm-ivory"] .icon-item {
+.light-ui .icon-item {
   background: rgba(0, 0, 0, 0.03);
   border-color: rgba(0, 0, 0, 0.08);
 }
 
-.light-ui .icon-item:hover,
-html[data-theme="porcelain-light"] .icon-item:hover,
-html[data-theme="sage-light"] .icon-item:hover,
-html[data-theme="warm-ivory"] .icon-item:hover {
+.light-ui .icon-item:hover {
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   border-color: var(--accent);
 }
 
-.light-ui .icon-item svg,
-html[data-theme="porcelain-light"] .icon-item svg,
-html[data-theme="sage-light"] .icon-item svg,
-html[data-theme="warm-ivory"] .icon-item svg {
+.light-ui .icon-item svg {
   color: #0f172a;
 }
 
-.light-ui .icon-item span,
-html[data-theme="porcelain-light"] .icon-item span,
-html[data-theme="sage-light"] .icon-item span,
-html[data-theme="warm-ivory"] .icon-item span {
+.light-ui .icon-item span {
   color: #475569;
 }
 
-.light-ui .file-drop-zone,
-html[data-theme="porcelain-light"] .file-drop-zone,
-html[data-theme="sage-light"] .file-drop-zone,
-html[data-theme="warm-ivory"] .file-drop-zone {
+.light-ui .file-drop-zone {
   background: rgba(0, 0, 0, 0.02);
   border-color: rgba(0, 0, 0, 0.14);
 }
 
-.light-ui .file-drop-zone:hover,
-html[data-theme="porcelain-light"] .file-drop-zone:hover,
-html[data-theme="sage-light"] .file-drop-zone:hover,
-html[data-theme="warm-ivory"] .file-drop-zone:hover {
+.light-ui .file-drop-zone:hover {
   background: color-mix(in srgb, var(--accent) 8%, transparent);
   border-color: var(--accent);
 }
 
 .light-ui .cropper-preview-card,
-.light-ui .cropper-slider-block,
-html[data-theme="porcelain-light"] .cropper-preview-card,
-html[data-theme="porcelain-light"] .cropper-slider-block,
-html[data-theme="sage-light"] .cropper-preview-card,
-html[data-theme="sage-light"] .cropper-slider-block,
-html[data-theme="warm-ivory"] .cropper-preview-card,
-html[data-theme="warm-ivory"] .cropper-slider-block {
+.light-ui .cropper-slider-block {
   background: rgba(0, 0, 0, 0.03);
   border-color: rgba(0, 0, 0, 0.08);
 }
 
 .light-ui .cropper-top-bar,
-.light-ui .cropper-actions-footer,
-html[data-theme="porcelain-light"] .cropper-top-bar,
-html[data-theme="porcelain-light"] .cropper-actions-footer,
-html[data-theme="sage-light"] .cropper-top-bar,
-html[data-theme="sage-light"] .cropper-actions-footer,
-html[data-theme="warm-ivory"] .cropper-top-bar,
-html[data-theme="warm-ivory"] .cropper-actions-footer {
+.light-ui .cropper-actions-footer {
   border-color: rgba(0, 0, 0, 0.08);
 }
 
 .light-ui .crop-tool-btn,
-.light-ui .crop-pill-btn,
-html[data-theme="porcelain-light"] .crop-tool-btn,
-html[data-theme="porcelain-light"] .crop-pill-btn,
-html[data-theme="sage-light"] .crop-tool-btn,
-html[data-theme="sage-light"] .crop-pill-btn,
-html[data-theme="warm-ivory"] .crop-tool-btn,
-html[data-theme="warm-ivory"] .crop-pill-btn {
+.light-ui .crop-pill-btn {
   background: rgba(0, 0, 0, 0.04);
   border-color: rgba(0, 0, 0, 0.1);
   color: #0f172a;
