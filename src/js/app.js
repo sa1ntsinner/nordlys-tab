@@ -278,7 +278,12 @@ class AuroraApp {
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (document.startViewTransition && !reduceMotion) {
-      document.startViewTransition(apply);
+      const transition = document.startViewTransition(apply);
+      /* Choosing another theme before the first transition settles aborts it,
+         and the rejected promise surfaces as an uncaught error in the console.
+         The abort is the correct outcome here, not a failure. */
+      transition.ready?.catch(() => {});
+      transition.finished?.catch(() => {});
     } else {
       apply();
     }
