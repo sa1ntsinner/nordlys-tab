@@ -9,19 +9,27 @@
   right: 0;
   bottom: 0;
   z-index: var(--nl-z-drawer);
-  width: var(--drawer-width, min(94vw, 520px));
-  min-width: 380px;
+  /* Wide enough for the 168px rail and a column of content beside it. The
+     floor is where the layout breaks, so it is enforced; there is no ceiling
+     worth enforcing, because nothing breaks by being given more room. The
+     drag handler clamps to the same numbers — it used to use 380 and 95vw
+     while the stylesheet said 600 and 720, which left the handle with about
+     a hundred pixels of travel and no way to tell why. */
+  width: clamp(600px, 46vw, 720px);
+  min-width: 600px;
   max-width: 95vw;
   display: flex;
   flex-direction: column;
-  /* Drawer chrome follows the active theme instead of a fixed navy */
-  background: color-mix(in srgb, var(--card-tint-deep, #090e1c) 94%, transparent);
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(32px) saturate(1.8);
-  -webkit-backdrop-filter: blur(32px) saturate(1.8);
-  box-shadow: var(--nl-shadow-3);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 96%, transparent);
+  border-left: 1px solid var(--nl-border);
+  /* No backdrop-filter. The panel is already 94% opaque, so blurring what is
+     behind it moved the picture by 0.28 of 255 — measured, not estimated —
+     while making the browser re-sample and re-blur a full-height backdrop on
+     every frame of the slide. That is the whole cost of the effect for none of
+     its benefit. */
+  box-shadow: var(--nl-shadow-drawer);
   transform: translateX(calc(100% + 40px));
-  transition: transform var(--nl-motion-panel) var(--nl-ease-emphasized);
+  transition: transform var(--nl-transition-panel);
 }
 
 #cfg.open, body.cfgopen #cfg {
@@ -82,8 +90,11 @@ body.resizing-drawer #cfg {
 }
 
 #cfgx {
-  width: 28px;
-  height: 28px;
+  /* The touch-target size, not the 28px this rule used to claim: a line near
+     the end of the file was already resizing it, and the number here was only
+     ever read by whoever came looking for it. */
+  width: var(--nl-target-min);
+  height: var(--nl-target-min);
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.05);
@@ -94,9 +105,12 @@ body.resizing-drawer #cfg {
   transition: color var(--nl-motion-control), background-color var(--nl-motion-control), opacity var(--nl-motion-control), transform var(--nl-motion-control);
 }
 #cfgx:hover {
-  color: #ffffff;
-  background: rgba(239, 68, 68, 0.25);
-  border-color: rgba(239, 68, 68, 0.4);
+  /* Forced white ink on a translucent red is white on pale pink once a light
+     theme is underneath it. The tint carries the meaning; the ink follows the
+     theme, as it does everywhere else. */
+  color: var(--nl-status-danger);
+  background: color-mix(in srgb, var(--nl-status-danger) 18%, transparent);
+  border-color: color-mix(in srgb, var(--nl-status-danger) 40%, transparent);
 }
 
 /* ── Horizontally Scrollable Tab Navigation ───────────────────── */
@@ -130,7 +144,7 @@ body.resizing-drawer #cfg {
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: color var(--nl-motion-control) var(--nl-ease-emphasized), background-color var(--nl-motion-control) var(--nl-ease-emphasized), border-color var(--nl-motion-control) var(--nl-ease-emphasized), opacity var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: color var(--nl-transition-control), background-color var(--nl-transition-control), border-color var(--nl-transition-control), opacity var(--nl-motion-control), transform var(--nl-transition-control);
   user-select: none;
 }
 .ctab:hover {
@@ -277,7 +291,7 @@ input[type="range"].ipt:focus-visible {
   background: rgba(255, 255, 255, 0.14);
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 9999px;
-  transition: background-color var(--nl-motion-control) var(--nl-ease-emphasized), border-color var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: background-color var(--nl-transition-enter), border-color var(--nl-motion-control), transform var(--nl-transition-enter);
 }
 .tg i::after {
   content: "";
@@ -289,7 +303,7 @@ input[type="range"].ipt:focus-visible {
   border-radius: 50%;
   background: #ffffff;
   box-shadow: var(--nl-shadow-1);
-  transition: transform var(--nl-motion-control) var(--nl-ease-pop), background-color var(--nl-transition-control);
+  transition: transform var(--nl-transition-pop), background-color var(--nl-transition-control);
 }
 .tg input:focus-visible + i {
   box-shadow: var(--nl-ring);
@@ -334,7 +348,7 @@ input[type="range"].ipt:focus-visible {
   font-size: var(--nl-text-sm);
   font-weight: 550;
   cursor: pointer;
-  transition: color var(--nl-motion-control) var(--nl-ease-emphasized), background-color var(--nl-motion-control) var(--nl-ease-emphasized), border-color var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: color var(--nl-transition-control), background-color var(--nl-transition-control), border-color var(--nl-motion-control), transform var(--nl-transition-control);
 }
 .mode-btn:hover {
   color: #f1f5f9;
@@ -409,7 +423,7 @@ input[type="range"].ipt:focus-visible {
   flex-direction: column;
   gap: 8px;
   align-items: center;
-  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-transition-control);
 }
 .theme-card:hover {
   transform: translateY(-2px);
@@ -565,7 +579,7 @@ input[type="range"].ipt:focus-visible {
   -webkit-backdrop-filter: blur(var(--glass-blur, 28px)) saturate(var(--glass-saturate, 190%));
   box-shadow: var(--nl-shadow-2);
   color: var(--ink);
-  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-transition-control);
   cursor: pointer;
   user-select: none;
 }
@@ -663,7 +677,7 @@ input[type="range"].ipt:focus-visible {
   background: rgba(14, 22, 44, 0.75);
   border: 1px solid var(--accent);
   box-shadow: var(--nl-shadow-2);
-  animation: popIn var(--nl-motion-control) var(--nl-ease-emphasized) both;
+  animation: popIn var(--nl-transition-control) both;
 }
 
 .custom-theme-box {
@@ -900,7 +914,7 @@ input[type="range"].ipt:focus-visible {
   font-weight: 500;
   cursor: pointer;
   backdrop-filter: blur(12px);
-  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-transition-control);
 }
 /* One icon size across every button that has one, so a row of them lines up. */
 .btn-icon { width: 16px; height: 16px; flex: 0 0 16px; opacity: .85; }
@@ -1018,7 +1032,7 @@ input[type="range"].ipt:focus-visible {
 /* Pop plays on every open, not just once at page load */
 #icon-modal.open .modal-box,
 #css-docs-modal.open .modal-box {
-  animation: modalPop var(--nl-motion-panel) var(--nl-ease-emphasized) both;
+  animation: modalPop var(--nl-transition-panel) both;
 }
 
 @keyframes modalPop {
@@ -1635,16 +1649,11 @@ input[type="range"].ipt:focus-visible {
   }
 }
 
-/* Nordlys Refined settings shell */
-#cfg {
-  width: clamp(600px, 46vw, 720px);
-  min-width: 600px;
-  max-width: 720px;
-  background: color-mix(in srgb, var(--nl-surface-card-deep) 96%, transparent);
-  border-left-color: var(--nl-border);
-  box-shadow: var(--nl-shadow-3);
-  transition: transform var(--nl-motion-panel) var(--nl-ease-emphasized);
-}
+/* This section used to open by redeclaring #cfg entirely — width, background,
+   border and shadow — sixteen hundred lines below the rule it was overriding.
+   Every edit to the real rule was silently discarded, which is how a shadow
+   pointing the wrong way survived being fixed. Those values now live in the
+   one #cfg rule at the top of this file. */
 .settings-layout { min-height: 0; flex: 1; display: grid; grid-template-columns: 168px minmax(0, 1fr); }
 .ctabs {
   min-width: 0; padding: 16px 10px; display: flex; flex-direction: column; align-items: stretch; gap: 18px;
@@ -1660,13 +1669,14 @@ input[type="range"].ipt:focus-visible {
 .csec[hidden] { display: none !important; }
 .setting-row { min-height: 56px; padding-block: 6px; }
 .setting-row :where(button, select, input:not([type="range"]), label.tg) { min-height: var(--nl-target-min); }
-/* The drawer carries its own backdrop-filter; a blurring scrim underneath it
-   stacked two blurs and muddied the glass. The colour lives with the scrim. */
+/* The scrim does not blur either. The drawer stopped carrying a backdrop-filter
+   once it was measured at 0.28 of 255 behind a 94%-opaque panel, and a blur
+   here would be the only one left — paid for on a full-screen layer, to soften
+   a background that is already being covered. */
 #dim, #dim.on { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 #cfg :where(button, select, textarea, input:not([type="file"]), [role="button"]) { min-height: var(--nl-target-min); }
 #cfg :where(button, select, [role="button"]) { min-width: var(--nl-target-min); }
 #cfg input[type="range"] { height: var(--nl-target-min); margin-block: 0; }
-#cfgx { width: var(--nl-target-min); height: var(--nl-target-min); }
 
 @media (max-width: 759px) {
   #cfg { width: 100vw !important; min-width: 0 !important; max-width: 100vw !important; }
@@ -1698,7 +1708,7 @@ input[type="range"].ipt:focus-visible {
 .bookmark-folder-summary { min-height: 52px; display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 0 6px 0 10px; cursor: pointer; }
 /* The chevron says the row opens; it used to say nothing and people clicked the
    name hoping. It turns when the folder is open. */
-.bookmark-folder-chevron { width: 14px; height: 14px; border-right: 1.8px solid var(--nl-text-tertiary); border-bottom: 1.8px solid var(--nl-text-tertiary); transform: rotate(-45deg) translate(-2px, -2px); transition: transform var(--nl-motion-control) var(--nl-ease-emphasized); }
+.bookmark-folder-chevron { width: 14px; height: 14px; border-right: 1.8px solid var(--nl-text-tertiary); border-bottom: 1.8px solid var(--nl-text-tertiary); transform: rotate(-45deg) translate(-2px, -2px); transition: transform var(--nl-transition-enter); }
 .bookmark-folder-summary[aria-expanded="true"] .bookmark-folder-chevron { transform: rotate(45deg) translate(-1px, -3px); }
 
 /* One button per row instead of five. */
@@ -1754,7 +1764,7 @@ input[type="range"].ipt:focus-visible {
   display: grid; gap: 7px; padding: 7px; border-radius: var(--nl-radius-md);
   border: 1px solid var(--nl-border); background: transparent; cursor: pointer;
   color: var(--nl-text-secondary); font: inherit; font-size: var(--nl-text-xs); text-align: center;
-  transition: border-color var(--nl-motion-control), color var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: border-color var(--nl-motion-control), color var(--nl-motion-control), transform var(--nl-transition-control);
 }
 .scene-card:hover { border-color: var(--nl-border-strong); color: var(--nl-text-primary); transform: translateY(-1px); }
 .scene-card[aria-checked="true"] { border-color: var(--nl-accent); color: var(--nl-text-primary); }
@@ -1858,35 +1868,6 @@ input[type="range"].ipt:focus-visible {
 
 /* The composition cards show the arrangement itself, in the theme's own
    colours, so choosing one is a matter of looking rather than reading. */
-.gradient-preview { background: var(--nl-canvas); }
-.gradient-preview[data-gradient="horizon"] {
-  background:
-    radial-gradient(120% 78% at 50% 116%, color-mix(in srgb, var(--shader-1) 46%, transparent), transparent 68%),
-    radial-gradient(90% 62% at 86% 108%, color-mix(in srgb, var(--shader-3) 34%, transparent), transparent 72%),
-    var(--nl-canvas);
-}
-.gradient-preview[data-gradient="bloom"] {
-  background:
-    radial-gradient(58% 62% at 26% 34%, color-mix(in srgb, var(--shader-1) 44%, transparent), transparent 70%),
-    radial-gradient(54% 58% at 78% 26%, color-mix(in srgb, var(--shader-3) 40%, transparent), transparent 72%),
-    radial-gradient(70% 66% at 62% 86%, color-mix(in srgb, var(--shader-2) 36%, transparent), transparent 74%),
-    var(--nl-canvas);
-}
-.gradient-preview[data-gradient="corner"] {
-  background:
-    radial-gradient(105% 92% at 4% 0%, color-mix(in srgb, var(--shader-1) 42%, transparent), transparent 62%),
-    radial-gradient(80% 70% at 96% 100%, color-mix(in srgb, var(--shader-3) 26%, transparent), transparent 70%),
-    var(--nl-canvas);
-}
-.gradient-preview[data-gradient="veil"] {
-  background:
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--shader-2) 30%, transparent) 0%,
-      transparent 45%,
-      color-mix(in srgb, var(--shader-1) 26%, transparent) 100%),
-    var(--nl-canvas);
-}
-
 /* Group labels inside the appearance panel. They used to style themselves with
    inline uppercase and tracking, which is how a tracking table gets bypassed. */
 .settings-group-label {

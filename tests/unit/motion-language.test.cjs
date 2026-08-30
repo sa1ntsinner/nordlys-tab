@@ -37,7 +37,50 @@ test('interaction easing comes from the two named curves', () => {
 
 test('the motion scale and both curves are actually defined', () => {
   const foundations = fs.readFileSync(path.join(CSS_DIR, 'foundations.css'), 'utf8');
-  for (const token of ['--nl-motion-fast', '--nl-motion-control', '--nl-motion-panel', '--nl-motion-enter', '--nl-ease-emphasized', '--nl-ease-pop']) {
+  for (const token of ['--nl-motion-fast', '--nl-motion-control', '--nl-motion-panel', '--nl-motion-enter', '--nl-ease-state', '--nl-ease-emphasized', '--nl-ease-pop']) {
     assert.ok(foundations.includes(`${token}:`), `${token} is used but never defined`);
   }
+});
+
+/* The split this locks was not a preference. Every composite token pointed at
+   the emphasized curve, which is a decelerate: right for a panel that travels,
+   wrong for the fifty-odd hovers and fades that merely answer the user, where
+   it lands as a snap followed by a crawl. One sweep put it everywhere and
+   nothing in the suite noticed, so the sweep is what this guards against. */
+test('state transitions and travelling transitions keep different curves', () => {
+  const foundations = fs.readFileSync(path.join(CSS_DIR, 'foundations.css'), 'utf8');
+  const curveOf = (token) => {
+    const line = foundations.split('\n').find(text => text.trim().startsWith(`${token}:`));
+    assert.ok(line, `${token} is never defined`);
+    const curve = ['--nl-ease-state', '--nl-ease-emphasized', '--nl-ease-pop']
+      .find(name => line.includes(`var(${name})`));
+    assert.ok(curve, `${token} carries no named curve: ${line.trim()}`);
+    return curve;
+  };
+  assert.strictEqual(curveOf('--nl-transition-fast'), '--nl-ease-state',
+    'a 120ms answer to the user must not use the panel curve');
+  assert.strictEqual(curveOf('--nl-transition-control'), '--nl-ease-state',
+    'hovers, fades and colour changes must not use the panel curve');
+  assert.strictEqual(curveOf('--nl-transition-panel'), '--nl-ease-emphasized',
+    'something that travels should leave fast and settle slow');
+});
+
+/* The composites exist so nobody pairs a duration with a curve by hand. That
+   matters because hand pairing is invisible to a sweep: when every transition
+   was moved onto the travel curve, the composites carried the change and could
+   carry it back, while twenty-six controls that had written the pair out
+   themselves kept snapping under the cursor after the revert was declared
+   done. A rule that names a composite has said which kind of motion it is; a
+   rule that pairs by hand has said nothing. */
+test('no stylesheet pairs a duration with a curve by hand', () => {
+  const offenders = [];
+  for (const file of fs.readdirSync(CSS_DIR).filter(name => name.endsWith('.css'))) {
+    if (file === 'foundations.css') continue;
+    const text = fs.readFileSync(path.join(CSS_DIR, file), 'utf8');
+    for (const match of text.matchAll(/var\(--nl-motion-([a-z]+)\)\s+var\(--nl-ease-([a-z]+)\)/g)) {
+      offenders.push(`${file}: --nl-motion-${match[1]} + --nl-ease-${match[2]}`);
+    }
+  }
+  assert.deepStrictEqual([...new Set(offenders)], [],
+    `hand-paired transitions:\n${[...new Set(offenders)].join('\n')}`);
 });

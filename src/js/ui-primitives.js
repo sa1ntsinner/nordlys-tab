@@ -211,7 +211,16 @@
       this.trigger.addEventListener('click', () => (this.isOpen ? this.close() : this.open()));
       this.trigger.addEventListener('keydown', event => this.onTriggerKey(event));
       this.root.addEventListener('keydown', event => this.onListKey(event));
-      this.onReposition = () => (this.isOpen ? this.close() : null);
+      /* An open list closes when the page moves under it, because the trigger it
+         is anchored to has moved. Its own inner scrolling is not that: the list
+         scrolls whenever a row is brought into view, which is exactly what
+         type-ahead and a keyboard walk past the visible rows both do. Reacting
+         to it meant typing the first letter of any option below the fold shut
+         the list and put the old value back. */
+      this.onReposition = (event) => {
+        if (event?.target instanceof Node && this.root.contains(event.target)) return;
+        if (this.isOpen) this.close();
+      };
       this.sync();
     }
 

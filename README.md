@@ -4,6 +4,8 @@ A new tab page for Chrome that opens instantly and looks like something you'd ac
 
 No frameworks, no build step, no analytics. Plain JavaScript and CSS, everything stored on your machine.
 
+**Still a beta.** The version number cannot say so — the store only accepts numbers that go up, and this line of them started at 2.x before the product deserved it — so it is said here instead. Things still get removed as well as added: two background scenes and four gradient compositions have already gone, each one measured rather than argued about. What does not get broken is your setup, which is why every migration keeps a restore point.
+
 ![Nordlys live aurora](docs/assets/aurora-live.gif)
 
 ## Why this exists
@@ -28,7 +30,7 @@ There's a Dark / Light / Auto switch (Auto follows your OS and flips live), and 
 - **Bookmarks as folders.** Drag tiles between folders, drag whole folders around, resize a folder's column count by pulling its corner, fold folders into a small dock at the bottom. Right click anything to edit it in place.
 - **Icons your way.** A built-in vector library with auto-detection by domain, site favicons, any image URL, a local file, or a monogram. There's a small cropper studio with pan, zoom, and rotate for when a logo comes with junk around it.
 - **Search that does math.** Type `45 * 12 + sqrt(144)` and the answer appears above the suggestions, one click to copy. Ten engines to pick from (Google, DuckDuckGo, Bing, Brave, Ecosia, Yandex, YouTube, GitHub, Reddit, Wikipedia), bang shortcuts like `!gh` and `!w`, plus your own bookmarks and recent searches in the same dropdown.
-- **Backgrounds.** One living scene — the aurora the product is named after — and four still compositions built from the theme's own colours: Horizon, Bloom, Corner, Veil. The still ones are pure CSS, so they cost nothing to hold and the glass above them stops re-blurring every frame. Motion and Atmosphere dial the aurora down to a slow shimmer or almost nothing. Your own image or looping video works too, stored locally in IndexedDB, with blur and dim.
+- **Backgrounds.** One living scene — the aurora the product is named after — plus your own image or looping video, stored locally in IndexedDB with blur and dim, or a flat theme colour. Motion and Atmosphere dial the aurora from a slow shimmer down to Still, where the scene is painted once and held: no loop, nothing scheduled, and the glass above it stops re-blurring. That is also what a system-level Reduce Motion setting now gets — the picture held, rather than a blank canvas.
 - **Type.** Three slots: the clock and headings, the interface, and monospace. Bundled faces, or the fonts already installed on your machine.
 - **Icons that stay visible.** Each icon is measured against the plate behind it, and only the ones that would vanish get re-toned, so a coloured logo keeps its colour and a black mark on a black theme doesn't disappear. Overridable per bookmark.
 - **Surfaces.** Glass at three levels — frosted, subtle, none — rather than four raw filter sliders, because those were a decision nobody made handed over in the form the renderer happens to take, and they reached states where text stopped being readable. Corner radius, tile size, spacing, icon shape, ambient glow and hover style stay as they were. Every control updates the page as you move it.

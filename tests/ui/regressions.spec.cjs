@@ -124,3 +124,47 @@ test('the page never takes focus the browser gave to the address bar', async ({ 
   await page.keyboard.press('/');
   await expect(page.locator('#q')).toBeFocused();
 });
+
+/* Motion was swept once with a single token, and the sweep did two things at
+   the same time: it removed the page's entrance choreography, which was worth
+   removing, and it removed the interface's response to the user, which was not.
+   These three hold the difference open. */
+test('the gear still turns under the pointer', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const mark = page.locator('#gear svg');
+  expect(await mark.evaluate(node => getComputedStyle(node).transform)).toBe('none');
+  await page.locator('#gear').hover();
+  await page.waitForTimeout(400);
+  const turned = await mark.evaluate(node => getComputedStyle(node).transform);
+  expect(turned, 'hovering the gear turns it').not.toBe('none');
+  // matrix(a, b, ...) with b away from zero is a rotation, not a translation.
+  const [a, b] = turned.replace(/matrix\(|\)/g, '').split(',').map(Number);
+  expect(Math.abs(b), 'and it is a rotation').toBeGreaterThan(0.5);
+  expect(a).toBeLessThan(0.99);
+});
+
+test('the drawer casts its shadow onto the page it covers', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.locator('#gear').click();
+  await page.waitForTimeout(500);
+  const shadow = await page.locator('#cfg').evaluate(node => getComputedStyle(node).boxShadow);
+
+  /* The drawer is flush against the right edge, so a shadow offset downward —
+     which is what the vertical elevation ladder produces — falls past the
+     bottom of the window and lands on nothing. It has to point left, back
+     towards the page. */
+  const offsets = [...shadow.matchAll(/(-?\d+(?:\.\d+)?)px\s+(-?\d+(?:\.\d+)?)px\s+(-?\d+(?:\.\d+)?)px/g)];
+  expect(offsets.length, 'the drawer has a shadow at all').toBeGreaterThan(0);
+  for (const [, x] of offsets) {
+    expect(Number(x), `shadow layer points left, not down: ${shadow}`).toBeLessThan(0);
+  }
+});
+
+test('the drawer does not pay for a blur nobody can see', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const filter = await page.locator('#cfg').evaluate(node => getComputedStyle(node).backdropFilter);
+  /* Measured at 0.28 of 255 against a running aurora, because the panel is
+     already 94% opaque — while costing a full-height backdrop re-sample on
+     every frame of the slide. */
+  expect(['none', ''], `drawer backdrop-filter: ${filter}`).toContain(filter);
+});

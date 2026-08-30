@@ -33,7 +33,9 @@ test('a migration keeps what it replaced', async ({ nordlysPage }) => {
   await page.waitForFunction(() => Boolean(window.Aurora?.grid));
 
   // The migration ran.
-  expect(await page.evaluate(() => window.Aurora.config.bgMode)).toBe('gradient');
+  expect(await page.evaluate(() => window.Aurora.config.bgMode)).toBe('aurora');
+  // Particles held still, so what replaced it holds still too.
+  expect(await page.evaluate(() => window.Aurora.config.bgMotion)).toBe(0);
   expect(await page.evaluate(() => window.Aurora.config.glassLevel)).toBe('off');
 
   // And the state it replaced is still there, exactly as it was.

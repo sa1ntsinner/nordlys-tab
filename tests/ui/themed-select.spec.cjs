@@ -106,3 +106,25 @@ test('font options preview themselves and reach the canvas', async ({ nordlysPag
   await expect.poll(() => page.evaluate(() => window.Aurora.config.fonts?.display)).toBe('Georgia');
   expect(await page.evaluate(() => getComputedStyle(document.getElementById('clock')).fontFamily)).toContain('Georgia');
 });
+
+/* The list scrolls a row into view whenever focus lands on one that is below
+   the fold. It was also closing itself on any scroll event, including that one,
+   so walking the keyboard to a row far down — or typing the first letter of
+   anything below the fold — shut the list and restored the previous value. */
+test('reaching a row below the fold does not close the list', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await openSettings(page, 'general');
+  await page.locator('#cfg-default-engine + .nl-select').click();
+  const list = page.locator('.nl-select-list.open');
+  await expect(list).toBeVisible();
+  const last = (await list.locator('[role="option"]').last().textContent()).trim();
+
+  await page.keyboard.press('End');
+  await expect(list, 'the list survives being scrolled to its last row').toBeVisible();
+  expect(await page.evaluate(() => document.activeElement?.textContent?.trim())).toBe(last);
+
+  // And the value it commits is the one the walk actually reached.
+  await page.keyboard.press('Enter');
+  await expect(list).toBeHidden();
+  expect(await page.locator('#cfg-default-engine').inputValue()).toBe('wikipedia');
+});

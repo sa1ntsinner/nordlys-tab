@@ -272,3 +272,42 @@ test('every locale carries exactly the same keys', () => {
       `locale ${index + 2} disagrees with English`);
   });
 });
+
+/* The drawer's shadow was fixed once and stayed broken, because sixteen hundred
+   lines below the rule that defines #cfg a later section redeclared the whole
+   thing. Nothing failed; the edit simply had no effect. An id is structural and
+   belongs to one rule — a second one at the top level of the same file is not a
+   refinement, it is an override that the next person will not find. */
+test('no id is declared twice at the top level of a stylesheet', () => {
+  const offenders = [];
+  for (const sheet of stylesheets()) {
+    const seen = new Map();
+    let depth = 0;
+    let selector = '';
+    for (let i = 0; i < sheet.text.length; i++) {
+      const character = sheet.text[i];
+      if (character === '{') {
+        if (depth === 0) {
+          const cleaned = selector.replace(/\/\*[\s\S]*?\*\//g, '').trim().replace(/\s+/g, ' ');
+          // Only whole-rule id selectors: "#cfg", "#cfg, #dim" — not "#cfg .row",
+          // which is a different element and legitimately has rules of its own.
+          if (cleaned && !cleaned.startsWith('@')) {
+            for (const part of cleaned.split(',').map(text => text.trim())) {
+              if (!/^#[\w-]+$/.test(part)) continue;
+              if (seen.has(part)) offenders.push(`${sheet.name}: ${part} declared again`);
+              else seen.set(part, true);
+            }
+          }
+        }
+        depth++;
+        selector = '';
+      } else if (character === '}') {
+        depth--;
+        selector = '';
+      } else if (depth === 0) {
+        selector += character;
+      }
+    }
+  }
+  assert.deepStrictEqual(offenders, [], `duplicate id rules:\n${offenders.join('\n')}`);
+});
