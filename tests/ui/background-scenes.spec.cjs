@@ -193,3 +193,26 @@ test('the atmosphere sliders visibly change what the canvas draws', async ({ nor
   const faint = await sample();
   expect(bright, 'a fainter atmosphere must paint less light').toBeGreaterThan(faint);
 });
+
+/* Guarding only the zero case is how a partial fix passes for a whole one: the
+   suite asserted the endpoint, the endpoint worked, and every other slider
+   position was still wrong. A meteor is the fastest thing in the frame, so if
+   anything ignores the pace it is the thing the eye will find. */
+test('every moving part keeps the pace the slider sets', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const travelAt = motion => page.evaluate(pace => {
+    const engine = window.Aurora.bgEngine;
+    engine.setAtmosphere({ motion: pace });
+    // One meteor, placed by hand, so the measurement does not wait on a dice roll.
+    engine.meteors = [{ x: 100, y: 100, len: 60, speed: 10, angle: Math.PI / 4, life: 1 }];
+    for (let frame = 0; frame < 10; frame++) engine.renderMeteors(0, 1);
+    const meteor = engine.meteors[0];
+    return meteor ? Math.hypot(meteor.x - 100, meteor.y - 100) : 0;
+  }, motion);
+
+  const full = await travelAt(1);
+  const tenth = await travelAt(0.1);
+  expect(full, 'a meteor at full pace travels').toBeGreaterThan(10);
+  expect(tenth, 'and at a tenth of the pace it travels about a tenth as far')
+    .toBeLessThan(full * 0.25);
+});

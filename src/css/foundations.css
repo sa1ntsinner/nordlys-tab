@@ -92,6 +92,19 @@
   --nl-transition-fast: var(--nl-motion-fast) var(--nl-ease-state);
   --nl-transition-control: var(--nl-motion-control) var(--nl-ease-state);
   --nl-transition-panel: var(--nl-motion-panel) var(--nl-ease-emphasized);
+  /* Travel at control speed, and at fast speed. The composites exist so that
+     nobody has to pair a duration with a curve by hand, and a rule that does
+     is a rule whose intent was never written down: it was exactly such hand
+     pairing that survived the sweep which moved every state transition onto
+     the travel curve, so twenty-six controls kept snapping under the cursor
+     after the sweep was declared reverted. A test now forbids the pairing
+     outside this file, which means every call site has to say which of these
+     it means. */
+  --nl-transition-enter: var(--nl-motion-control) var(--nl-ease-emphasized);
+  --nl-transition-enter-fast: var(--nl-motion-fast) var(--nl-ease-emphasized);
+  --nl-transition-pop: var(--nl-motion-control) var(--nl-ease-pop);
+  --nl-transition-pop-fast: var(--nl-motion-fast) var(--nl-ease-pop);
+  --nl-transition-pop-panel: var(--nl-motion-panel) var(--nl-ease-pop);
   --nl-ease-pop: cubic-bezier(.2, .9, .3, 1.25);
   /* Three levels of one material. The four raw filter sliders that used to sit
      in settings were an unmade decision handed to the user, and they could be

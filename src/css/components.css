@@ -100,7 +100,7 @@ body.seconds .sc, body.seconds #ss {
   position: relative;
   margin-top: 18px;
   width: min(88vw, 640px);
-  transition: width var(--nl-motion-panel) var(--nl-ease-emphasized);
+  transition: width var(--nl-transition-panel);
 }
 
 #search {
@@ -226,7 +226,7 @@ body.seconds .sc, body.seconds #ss {
   color: #c9d6f0;
   cursor: pointer;
   transition: background var(--nl-motion-fast), color var(--nl-motion-fast);
-  animation: suggIn var(--nl-motion-control) var(--nl-ease-emphasized) both;
+  animation: suggIn var(--nl-transition-control) both;
   /* Cascade, but bounded: eight suggestions at 24ms each would put the last
      one outside the motion budget on its own. */
   animation-delay: min(calc(var(--si, 0) * 24ms), 120ms);
@@ -364,7 +364,7 @@ body.searching #search {
   /* Entering search is a mode change the user asked for, and the bar is the
      thing that changed. Without this it swaps its border and shadow with no
      motion at all, which reads as a repaint rather than a response. */
-  animation: pop var(--nl-motion-panel) var(--nl-ease-emphasized);
+  animation: pop var(--nl-transition-panel);
   border-color: var(--accent);
   background: color-mix(in srgb, var(--card-tint, #141c34) 94%, transparent);
   box-shadow: var(--nl-shadow-3), var(--nl-ring);
@@ -419,7 +419,7 @@ body.minimal #board {
     inset 0 1px 0 rgba(255, 255, 255, calc(0.02 + var(--glass-border-sheen, 0.45) * 0.16));
   contain: layout style;
   transform: translate3d(0, 0, 0);
-  transition: transform var(--nl-motion-control) var(--nl-ease-emphasized), box-shadow var(--nl-transition-control), border-color var(--nl-transition-control);
+  transition: transform var(--nl-transition-control), box-shadow var(--nl-transition-control), border-color var(--nl-transition-control);
   position: relative;
 }
 
@@ -431,7 +431,7 @@ body.minimal #board {
 }
 
 .tile.tile-updated {
-  animation: tileGlow var(--nl-motion-panel) var(--nl-ease-emphasized) both;
+  animation: tileGlow var(--nl-transition-panel) both;
 }
 
 @keyframes tileGlow {
@@ -515,7 +515,11 @@ body.minimal #board {
   height: var(--nl-target-min);
   border-radius: 8px;
   opacity: 0.45;
-  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), opacity var(--nl-motion-control);
+  /* transform belongs in this list. Without it the two-pixel nudge on hover
+     was a teleport in both directions — the displacement restored, the
+     motion not. */
+  transition: color var(--nl-transition-control), background-color var(--nl-transition-control),
+              opacity var(--nl-transition-control), transform var(--nl-transition-control);
 }
 .foldBtn svg { width: 16px; height: 16px; }
 .foldBtn:hover {
@@ -558,7 +562,7 @@ body.minimal #board {
      stretch left a gap between a short folder's title and its first icon, which
      read as a rendering fault; starting them lines every folder's first row up. */
   align-content: start;
-  transition: grid-template-columns var(--nl-motion-panel) var(--nl-ease-emphasized);
+  transition: grid-template-columns var(--nl-transition-panel);
 }
 .grid[data-cols="1"] {
   grid-template-columns: minmax(180px, 1fr);
@@ -672,7 +676,7 @@ body.minimal #board {
   border-color: var(--accent);
   box-shadow: var(--nl-shadow-2);
   transform: translateX(-50%) translateY(0);
-  transition: opacity var(--nl-transition-control), transform var(--nl-motion-control) var(--nl-ease-emphasized), visibility 0s, border-color var(--nl-motion-control), box-shadow var(--nl-motion-control);
+  transition: opacity var(--nl-transition-control), transform var(--nl-transition-enter), visibility 0s, border-color var(--nl-motion-control), box-shadow var(--nl-motion-control);
 }
 
 .card.is-resizing {
@@ -700,7 +704,7 @@ body.minimal #board {
   -webkit-backdrop-filter: blur(16px) saturate(1.4);
   pointer-events: none;
   z-index: var(--nl-z-float);
-  animation: pillIn var(--nl-motion-fast) var(--nl-ease-pop) both;
+  animation: pillIn var(--nl-transition-pop-fast) both;
 }
 
 @keyframes pillIn {
@@ -737,7 +741,7 @@ body.minimal #board {
     radial-gradient(120% 120% at 30% 18%, color-mix(in srgb, var(--c, var(--dim)) 12%, transparent), transparent 62%),
     linear-gradient(150deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015));
   box-shadow: var(--nl-shadow-2);
-  transition: transform var(--nl-motion-panel) var(--nl-ease-emphasized), box-shadow var(--nl-motion-panel) var(--nl-ease-emphasized), border-color var(--nl-motion-panel), background var(--nl-motion-panel);
+  transition: transform var(--nl-transition-panel), box-shadow var(--nl-transition-panel), border-color var(--nl-motion-panel), background var(--nl-motion-panel);
 }
 
 .box::after {
@@ -758,7 +762,7 @@ body.minimal #board {
      rule that makes toned icons legible sets filter: none on exactly these
      elements — so a shadow declared here reached monograms and nothing else,
      leaving two kinds of tile on one board that did not match. */
-  transition: transform var(--nl-motion-panel) var(--nl-ease-emphasized);
+  transition: transform var(--nl-transition-panel);
   object-fit: contain;
   pointer-events: none;
   user-select: none;
@@ -927,7 +931,7 @@ body.hover-none .tile:hover .box {
   font-size: var(--nl-text-xs);
   font-weight: 500;
   letter-spacing: var(--nl-track-tight);
-  transition: color var(--nl-motion-control) var(--nl-ease-emphasized), background-color var(--nl-motion-control) var(--nl-ease-emphasized), border-color var(--nl-motion-control) var(--nl-ease-emphasized), opacity var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: color var(--nl-transition-control), background-color var(--nl-transition-control), border-color var(--nl-transition-control), opacity var(--nl-motion-control), transform var(--nl-transition-control);
   user-select: none;
 }
 
@@ -1017,8 +1021,8 @@ body.hover-none .tile:hover .box {
    Removing motion from a page that assembles itself on load is a saving.
    Removing it from a response to the user is just a deader interface. */
 #gear svg {
-  transition: fill var(--nl-motion-control) var(--nl-ease-state),
-              transform var(--nl-motion-panel) var(--nl-ease-emphasized);
+  transition: fill var(--nl-transition-control),
+              transform var(--nl-transition-panel);
 }
 #gear:hover svg {
   fill: var(--ink);
@@ -1061,7 +1065,7 @@ body.hover-none .tile:hover .box {
   /* --origin is set from JS so the menu grows out of the cursor */
   transform-origin: var(--origin, top left);
   transform: scale(0.92);
-  transition: opacity var(--nl-transition-fast), transform var(--nl-motion-fast) var(--nl-ease-pop), visibility 0s var(--nl-motion-fast);
+  transition: opacity var(--nl-transition-fast), transform var(--nl-transition-pop-fast), visibility 0s var(--nl-motion-fast);
   user-select: none;
 }
 
@@ -1069,7 +1073,7 @@ body.hover-none .tile:hover .box {
   opacity: 1;
   visibility: visible;
   transform: none;
-  transition: opacity var(--nl-transition-fast), transform var(--nl-motion-fast) var(--nl-ease-emphasized), visibility 0s;
+  transition: opacity var(--nl-transition-fast), transform var(--nl-transition-enter-fast), visibility 0s;
 }
 
 .ctx-header {
@@ -1178,7 +1182,7 @@ body.hover-none .tile:hover .box {
 
 /* Pop plays on every open, not just once at page load */
 .quick-modal-backdrop.open .quick-modal-card {
-  animation: modalPop var(--nl-motion-control) var(--nl-ease-emphasized) both;
+  animation: modalPop var(--nl-transition-enter) both;
 }
 
 .quick-modal-head {
@@ -1232,7 +1236,7 @@ body.hover-none .tile:hover .box {
   transition: transform var(--nl-transition-fast), opacity var(--nl-transition-fast);
 }
 .digit-tick {
-  animation: digitTick var(--nl-motion-fast) var(--nl-ease-emphasized);
+  animation: digitTick var(--nl-transition-enter-fast);
 }
 @keyframes digitTick {
   0% { opacity: 0.45; transform: translateY(-3px); }
@@ -1271,7 +1275,7 @@ body.hover-none .tile:hover .box {
   letter-spacing: var(--nl-track-tight);
   opacity: 0;
   transform: translateY(14px) scale(0.96);
-  transition: opacity var(--nl-transition-panel), transform var(--nl-motion-panel) var(--nl-ease-pop);
+  transition: opacity var(--nl-transition-panel), transform var(--nl-transition-pop-panel);
 }
 .toast.on {
   opacity: 1;
@@ -1365,7 +1369,7 @@ body.hover-none .tile:hover .box {
   border: 1px solid var(--nl-border);
   background: color-mix(in srgb, var(--nl-surface-card) 78%, transparent);
   box-shadow: var(--nl-shadow-1);
-  transition: transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: transform var(--nl-transition-control);
 }
 .box::after { display: none; }
 .box .nl-icon { display: grid; place-items: center; transform: scale(var(--icon-optical-scale, 1)); color: var(--icon-accent); }
@@ -1434,7 +1438,7 @@ body.hover-none .tile:hover .box {
   flex: none; width: 8px; height: 8px; margin-left: auto;
   border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor;
   transform: translateY(-2px) rotate(45deg); opacity: .55;
-  transition: transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: transform var(--nl-transition-enter);
 }
 .nl-select[aria-expanded="true"] .nl-select-caret { transform: translateY(1px) rotate(-135deg); opacity: .9; }
 
@@ -1448,7 +1452,7 @@ body.hover-none .tile:hover .box {
   -webkit-backdrop-filter: blur(24px) saturate(1.5);
   box-shadow: var(--nl-shadow-3);
   opacity: 0; transform: translateY(-4px) scale(.985);
-  transition: opacity var(--nl-transition-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: opacity var(--nl-transition-control), transform var(--nl-transition-enter);
 }
 .nl-select-list.open { opacity: 1; transform: none; }
 .nl-select-group {

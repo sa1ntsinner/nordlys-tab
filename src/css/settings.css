@@ -29,7 +29,7 @@
      its benefit. */
   box-shadow: var(--nl-shadow-drawer);
   transform: translateX(calc(100% + 40px));
-  transition: transform var(--nl-motion-panel) var(--nl-ease-emphasized);
+  transition: transform var(--nl-transition-panel);
 }
 
 #cfg.open, body.cfgopen #cfg {
@@ -144,7 +144,7 @@ body.resizing-drawer #cfg {
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: color var(--nl-motion-control) var(--nl-ease-emphasized), background-color var(--nl-motion-control) var(--nl-ease-emphasized), border-color var(--nl-motion-control) var(--nl-ease-emphasized), opacity var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: color var(--nl-transition-control), background-color var(--nl-transition-control), border-color var(--nl-transition-control), opacity var(--nl-motion-control), transform var(--nl-transition-control);
   user-select: none;
 }
 .ctab:hover {
@@ -291,7 +291,7 @@ input[type="range"].ipt:focus-visible {
   background: rgba(255, 255, 255, 0.14);
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 9999px;
-  transition: background-color var(--nl-motion-control) var(--nl-ease-emphasized), border-color var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: background-color var(--nl-transition-enter), border-color var(--nl-motion-control), transform var(--nl-transition-enter);
 }
 .tg i::after {
   content: "";
@@ -303,7 +303,7 @@ input[type="range"].ipt:focus-visible {
   border-radius: 50%;
   background: #ffffff;
   box-shadow: var(--nl-shadow-1);
-  transition: transform var(--nl-motion-control) var(--nl-ease-pop), background-color var(--nl-transition-control);
+  transition: transform var(--nl-transition-pop), background-color var(--nl-transition-control);
 }
 .tg input:focus-visible + i {
   box-shadow: var(--nl-ring);
@@ -348,7 +348,7 @@ input[type="range"].ipt:focus-visible {
   font-size: var(--nl-text-sm);
   font-weight: 550;
   cursor: pointer;
-  transition: color var(--nl-motion-control) var(--nl-ease-emphasized), background-color var(--nl-motion-control) var(--nl-ease-emphasized), border-color var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: color var(--nl-transition-control), background-color var(--nl-transition-control), border-color var(--nl-motion-control), transform var(--nl-transition-control);
 }
 .mode-btn:hover {
   color: #f1f5f9;
@@ -423,7 +423,7 @@ input[type="range"].ipt:focus-visible {
   flex-direction: column;
   gap: 8px;
   align-items: center;
-  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-transition-control);
 }
 .theme-card:hover {
   transform: translateY(-2px);
@@ -579,7 +579,7 @@ input[type="range"].ipt:focus-visible {
   -webkit-backdrop-filter: blur(var(--glass-blur, 28px)) saturate(var(--glass-saturate, 190%));
   box-shadow: var(--nl-shadow-2);
   color: var(--ink);
-  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-transition-control);
   cursor: pointer;
   user-select: none;
 }
@@ -677,7 +677,7 @@ input[type="range"].ipt:focus-visible {
   background: rgba(14, 22, 44, 0.75);
   border: 1px solid var(--accent);
   box-shadow: var(--nl-shadow-2);
-  animation: popIn var(--nl-motion-control) var(--nl-ease-emphasized) both;
+  animation: popIn var(--nl-transition-control) both;
 }
 
 .custom-theme-box {
@@ -914,7 +914,7 @@ input[type="range"].ipt:focus-visible {
   font-weight: 500;
   cursor: pointer;
   backdrop-filter: blur(12px);
-  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-transition-control);
 }
 /* One icon size across every button that has one, so a row of them lines up. */
 .btn-icon { width: 16px; height: 16px; flex: 0 0 16px; opacity: .85; }
@@ -1032,7 +1032,7 @@ input[type="range"].ipt:focus-visible {
 /* Pop plays on every open, not just once at page load */
 #icon-modal.open .modal-box,
 #css-docs-modal.open .modal-box {
-  animation: modalPop var(--nl-motion-panel) var(--nl-ease-emphasized) both;
+  animation: modalPop var(--nl-transition-panel) both;
 }
 
 @keyframes modalPop {
@@ -1708,7 +1708,7 @@ input[type="range"].ipt:focus-visible {
 .bookmark-folder-summary { min-height: 52px; display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 0 6px 0 10px; cursor: pointer; }
 /* The chevron says the row opens; it used to say nothing and people clicked the
    name hoping. It turns when the folder is open. */
-.bookmark-folder-chevron { width: 14px; height: 14px; border-right: 1.8px solid var(--nl-text-tertiary); border-bottom: 1.8px solid var(--nl-text-tertiary); transform: rotate(-45deg) translate(-2px, -2px); transition: transform var(--nl-motion-control) var(--nl-ease-emphasized); }
+.bookmark-folder-chevron { width: 14px; height: 14px; border-right: 1.8px solid var(--nl-text-tertiary); border-bottom: 1.8px solid var(--nl-text-tertiary); transform: rotate(-45deg) translate(-2px, -2px); transition: transform var(--nl-transition-enter); }
 .bookmark-folder-summary[aria-expanded="true"] .bookmark-folder-chevron { transform: rotate(45deg) translate(-1px, -3px); }
 
 /* One button per row instead of five. */
@@ -1764,7 +1764,7 @@ input[type="range"].ipt:focus-visible {
   display: grid; gap: 7px; padding: 7px; border-radius: var(--nl-radius-md);
   border: 1px solid var(--nl-border); background: transparent; cursor: pointer;
   color: var(--nl-text-secondary); font: inherit; font-size: var(--nl-text-xs); text-align: center;
-  transition: border-color var(--nl-motion-control), color var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: border-color var(--nl-motion-control), color var(--nl-motion-control), transform var(--nl-transition-control);
 }
 .scene-card:hover { border-color: var(--nl-border-strong); color: var(--nl-text-primary); transform: translateY(-1px); }
 .scene-card[aria-checked="true"] { border-color: var(--nl-accent); color: var(--nl-text-primary); }
@@ -1868,35 +1868,6 @@ input[type="range"].ipt:focus-visible {
 
 /* The composition cards show the arrangement itself, in the theme's own
    colours, so choosing one is a matter of looking rather than reading. */
-.gradient-preview { background: var(--nl-canvas); }
-.gradient-preview[data-gradient="horizon"] {
-  background:
-    radial-gradient(120% 78% at 50% 116%, color-mix(in srgb, var(--shader-1) 46%, transparent), transparent 68%),
-    radial-gradient(90% 62% at 86% 108%, color-mix(in srgb, var(--shader-3) 34%, transparent), transparent 72%),
-    var(--nl-canvas);
-}
-.gradient-preview[data-gradient="bloom"] {
-  background:
-    radial-gradient(58% 62% at 26% 34%, color-mix(in srgb, var(--shader-1) 44%, transparent), transparent 70%),
-    radial-gradient(54% 58% at 78% 26%, color-mix(in srgb, var(--shader-3) 40%, transparent), transparent 72%),
-    radial-gradient(70% 66% at 62% 86%, color-mix(in srgb, var(--shader-2) 36%, transparent), transparent 74%),
-    var(--nl-canvas);
-}
-.gradient-preview[data-gradient="corner"] {
-  background:
-    radial-gradient(105% 92% at 4% 0%, color-mix(in srgb, var(--shader-1) 42%, transparent), transparent 62%),
-    radial-gradient(80% 70% at 96% 100%, color-mix(in srgb, var(--shader-3) 26%, transparent), transparent 70%),
-    var(--nl-canvas);
-}
-.gradient-preview[data-gradient="veil"] {
-  background:
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--shader-2) 30%, transparent) 0%,
-      transparent 45%,
-      color-mix(in srgb, var(--shader-1) 26%, transparent) 100%),
-    var(--nl-canvas);
-}
-
 /* Group labels inside the appearance panel. They used to style themselves with
    inline uppercase and tracking, which is how a tracking table gets bypassed. */
 .settings-group-label {

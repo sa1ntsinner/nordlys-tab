@@ -64,3 +64,23 @@ test('state transitions and travelling transitions keep different curves', () =>
   assert.strictEqual(curveOf('--nl-transition-panel'), '--nl-ease-emphasized',
     'something that travels should leave fast and settle slow');
 });
+
+/* The composites exist so nobody pairs a duration with a curve by hand. That
+   matters because hand pairing is invisible to a sweep: when every transition
+   was moved onto the travel curve, the composites carried the change and could
+   carry it back, while twenty-six controls that had written the pair out
+   themselves kept snapping under the cursor after the revert was declared
+   done. A rule that names a composite has said which kind of motion it is; a
+   rule that pairs by hand has said nothing. */
+test('no stylesheet pairs a duration with a curve by hand', () => {
+  const offenders = [];
+  for (const file of fs.readdirSync(CSS_DIR).filter(name => name.endsWith('.css'))) {
+    if (file === 'foundations.css') continue;
+    const text = fs.readFileSync(path.join(CSS_DIR, file), 'utf8');
+    for (const match of text.matchAll(/var\(--nl-motion-([a-z]+)\)\s+var\(--nl-ease-([a-z]+)\)/g)) {
+      offenders.push(`${file}: --nl-motion-${match[1]} + --nl-ease-${match[2]}`);
+    }
+  }
+  assert.deepStrictEqual([...new Set(offenders)], [],
+    `hand-paired transitions:\n${[...new Set(offenders)].join('\n')}`);
+});

@@ -17,9 +17,10 @@ class AuroraBackgroundEngine {
     /* One living scene. Cosmos was Aurora with the aurora removed — the same
        nebulae, stars and meteors, minus the ribbons that give the thing its
        name — and Particles measured 0.08 of 255 different from a plain colour,
-       while both held a full animation loop open to draw it. Stillness is now
-       a CSS gradient (see gradients.css), which costs nothing and lets the
-       glass above it stop re-blurring every frame. */
+       while both held a full animation loop open to draw it. Stillness is not a
+       scene at all now: it is this one with its motion at zero, painted once
+       and held, which costs nothing to keep and lets the glass above it stop
+       re-blurring every frame. */
     this.mode = "aurora"; // 'aurora', 'custom-image', 'custom-video', 'solid'
     this.motion = 1;
     this.intensity = 1;
@@ -314,7 +315,13 @@ class AuroraBackgroundEngine {
        They also used to ignore the motion setting entirely, taking dt straight,
        which is why turning motion down to zero still left them falling. */
     if (this.atRest()) { this.meteors.length = 0; return; }
-    if (Math.random() < chance * dt && this.meteors.length < 3) {
+    /* Scaled by motion like everything else in the scene. Guarding only the
+       zero case fixed the slider's endpoint and left every other position
+       wrong: at 10% the ribbons and stars crawled while the meteors went on
+       streaking at full speed and full frequency, which is the one thing in
+       the frame that draws the eye. */
+    const pace = this.motion ?? 1;
+    if (Math.random() < chance * dt * pace && this.meteors.length < 3) {
       this.meteors.push({
         x: Math.random() * (this.w * 0.85),
         y: Math.random() * (this.h * 0.35),
@@ -328,9 +335,9 @@ class AuroraBackgroundEngine {
     const light = this.lightMode;
     for (let i = this.meteors.length - 1; i >= 0; i--) {
       let m = this.meteors[i];
-      m.x += Math.cos(m.angle) * m.speed * dt;
-      m.y += Math.sin(m.angle) * m.speed * dt;
-      m.life -= 0.028 * dt;
+      m.x += Math.cos(m.angle) * m.speed * dt * pace;
+      m.y += Math.sin(m.angle) * m.speed * dt * pace;
+      m.life -= 0.028 * dt * pace;
 
       if (m.life <= 0 || m.x > this.w || m.y > this.h) {
         this.meteors.splice(i, 1);
