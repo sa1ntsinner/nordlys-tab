@@ -7,6 +7,8 @@ const DEFAULT_CONFIG = {
   theme: "aurora-void",
   colorMode: "dark",
   bgMode: "aurora",
+  gradient: "horizon",
+  glassLevel: "full",
   headerStyle: "full",
   bgBlur: 0,
   bgDim: 0,
@@ -16,10 +18,6 @@ const DEFAULT_CONFIG = {
   openNewTab: false,
   showSuggestions: true,
   defaultEngine: "google",
-  glassBlur: 28,
-  glassSaturate: 190,
-  glassOpacity: 0.70,
-  glassSheen: 0.45,
   cardRadius: 24,
   tileSize: 78,
   cardGap: 12,
@@ -108,6 +106,15 @@ const LIGHT_THEMES = [
   "peach-sunset", "mint-breeze"
 ];
 /* Old saved theme keys from previous releases → current keys */
+/* Backgrounds that no longer exist, and the closest thing that does. Cosmos was
+   Aurora without its ribbons, so it goes to Aurora; Particles drew almost
+   nothing, so it goes to the still field that replaced it. */
+const BACKGROUND_MIGRATIONS = {
+  "cosmos": "aurora",
+  "particles": "gradient",
+  "mesh-gradient": "gradient"
+};
+
 const THEME_MIGRATIONS = {
   "liquid-glass": "frosted-glass",
   "liquid-tahoe": "frosted-glass",
@@ -127,6 +134,13 @@ class AuroraApp {
 
   /* The board is the point of the page; the header is how much context sits
      above it. Kept on <body> so Custom CSS can still see the choice. */
+  /* One material at three levels. Someone arriving with the four old numbers
+     keeps roughly what they had: whether they had turned the blur off is the
+     only distinction the levels can honestly preserve. */
+  applyGlassLevel() {
+    document.documentElement.dataset.glass = this.config.glassLevel || "full";
+  }
+
   applyHeaderStyle() {
     document.body.dataset.header = this.config.headerStyle || "full";
   }
@@ -134,6 +148,25 @@ class AuroraApp {
   normalizeStoredConfig(config) {
     let changed = false;
     if (THEME_MIGRATIONS[config.theme]) { config.theme = THEME_MIGRATIONS[config.theme]; changed = true; }
+    /* Keyed on the presence of an old value, not the absence of the new one.
+       The defaults are merged before this runs, so "glassLevel is missing" can
+       never be true — it is in DEFAULT_CONFIG. glassBlur no longer is, so its
+       presence means it came from something the user actually saved. */
+    if (config.glassBlur !== undefined) {
+      const blur = config.glassBlur;
+      config.glassLevel = blur === 0 ? "off" : (blur != null && blur <= 14 ? "subtle" : "full");
+      for (const dead of ["glassBlur", "glassSaturate", "glassOpacity", "glassSheen"]) delete config[dead];
+      changed = true;
+    }
+    if (BACKGROUND_MIGRATIONS[config.bgMode]) {
+      /* mesh-gradient becomes the bloom composition, which is the arrangement
+         it drew. Set unconditionally: the defaults are merged in before this
+         runs, so "has the user chosen a composition" cannot be asked here — and
+         someone who picked the mesh had chosen this one already. */
+      if (config.bgMode === "mesh-gradient") config.gradient = "bloom";
+      config.bgMode = BACKGROUND_MIGRATIONS[config.bgMode];
+      changed = true;
+    }
     if (Number(config.tileSize) >= 50 && Number(config.tileSize) < 56) { config.tileSize = 56; changed = true; }
     return changed;
   }
@@ -178,6 +211,7 @@ class AuroraApp {
           this.applyThemeTokens();
           this.applyGeometryTokens();
           this.applyHeaderStyle();
+          this.applyGlassLevel();
           this.injectCustomCSS(this.config.customCss || "");
           this.updateBackgroundMode();
           this.grid?.render();
@@ -216,6 +250,7 @@ class AuroraApp {
     this.applyThemeTokens();
     this.applyGeometryTokens();
     this.applyHeaderStyle();
+    this.applyGlassLevel();
     if (this.config.customCss) {
       this.injectCustomCSS(this.config.customCss);
     }
@@ -422,10 +457,9 @@ class AuroraApp {
     const root = document.documentElement.style;
     const cfg = this.config;
 
-    if (cfg.glassBlur != null) root.setProperty("--glass-blur", `${cfg.glassBlur}px`);
-    if (cfg.glassSaturate != null) root.setProperty("--glass-saturate", `${cfg.glassSaturate}%`);
-    if (cfg.glassOpacity != null) root.setProperty("--glass-opacity", cfg.glassOpacity);
-    if (cfg.glassSheen != null) root.setProperty("--glass-border-sheen", cfg.glassSheen);
+    /* The glass level owns these now. Writing them inline here put them beyond
+       the reach of every selector, which is why a control that looked wired up
+       changed nothing at all. */
     if (cfg.cardRadius != null) root.setProperty("--card-radius", `${cfg.cardRadius}px`);
     // Preserve a usable 56px floor; narrow layouts reflow instead of collapsing controls.
     if (cfg.tileSize != null) root.setProperty("--tw", `clamp(56px, 12vw, ${Math.max(56, cfg.tileSize)}px)`);
@@ -557,7 +591,23 @@ class AuroraApp {
 
     this.applyWallpaperEffects();
 
-    if (["aurora", "cosmos", "mesh-gradient", "particles"].includes(bgMode)) {
+    /* Only the gradient mode wears this. Setting it always looked harmless and
+       was not: the rule it drives outranks the theme's own ground, so Solid
+       stopped being solid and all twenty-one themes lost the wash they define
+       for themselves — under Aurora too, where the canvas is transparent. */
+    if (bgMode === "gradient") {
+      document.documentElement.dataset.gradient = this.config.gradient || "horizon";
+    } else {
+      delete document.documentElement.dataset.gradient;
+    }
+    // The chosen background, for the rules that need to know which one it is.
+    document.documentElement.dataset.bg = bgMode;
+
+    if (bgMode === "gradient") {
+      if (canvas) canvas.style.display = "none";
+      clearMedia();
+      this.bgEngine.setMode("gradient");
+    } else if (bgMode === "aurora") {
       if (canvas) canvas.style.display = "block";
       clearMedia();
       this.bgEngine.setMode(bgMode);

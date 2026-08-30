@@ -19,7 +19,6 @@
   --faint: #5a739e;
   --accent: #35d6c0;
   --accent-glow: rgba(53, 214, 192, 0.45);
-  --glass-blur: 26px;
   --card-tint: #0f1c32;
   --card-tint-deep: #070d18;
   --shader-1: #35d6c0;
@@ -43,7 +42,6 @@
   --faint: #d946ef;
   --accent: #ff007f;
   --accent-glow: rgba(255, 0, 127, 0.55);
-  --glass-blur: 22px;
   --card-tint: #180a2a;
   --card-tint-deep: #0a0414;
   --shader-1: #ff007f;
@@ -66,7 +64,6 @@
   --faint: #565f89;
   --accent: #7aa2f7;
   --accent-glow: rgba(122, 162, 247, 0.45);
-  --glass-blur: 24px;
   --card-tint: #1f2335;
   --card-tint-deep: #13141f;
   --shader-1: #7aa2f7;
@@ -89,7 +86,6 @@
   --faint: #6c7086;
   --accent: #cba6f7;
   --accent-glow: rgba(203, 166, 247, 0.42);
-  --glass-blur: 24px;
   --card-tint: #242438;
   --card-tint-deep: #181825;
   --shader-1: #cba6f7;
@@ -110,7 +106,6 @@
   --faint: #787878;
   --accent: #f1f5f9;
   --accent-glow: rgba(255, 255, 255, 0.28);
-  --glass-blur: 16px;
   --card-tint: #0e0e10;
   --card-tint-deep: #050506;
   --shader-1: #52525b;
@@ -136,7 +131,6 @@ html[data-theme="oled-obsidian"] #veil {
   --faint: #88c0d0;
   --accent: #88c0d0;
   --accent-glow: rgba(136, 192, 208, 0.4);
-  --glass-blur: 24px;
   --card-tint: #2e3440;
   --card-tint-deep: #232831;
   --shader-1: #88c0d0;
@@ -160,7 +154,6 @@ html[data-theme="oled-obsidian"] #veil {
   --faint: #928374;
   --accent: #fabd2f;
   --accent-glow: rgba(250, 189, 47, 0.42);
-  --glass-blur: 24px;
   --card-tint: #32302f;
   --card-tint-deep: #1d2021;
   --shader-1: #fabd2f;
@@ -182,7 +175,6 @@ html[data-theme="oled-obsidian"] #veil {
   --faint: #34d399;
   --accent: #10b981;
   --accent-glow: rgba(16, 185, 129, 0.45);
-  --glass-blur: 26px;
   --card-tint: #0a2014;
   --card-tint-deep: #040e08;
   --shader-1: #10b981;
@@ -204,7 +196,6 @@ html[data-theme="oled-obsidian"] #veil {
   --faint: #fb923c;
   --accent: #f97316;
   --accent-glow: rgba(249, 115, 22, 0.5);
-  --glass-blur: 26px;
   --card-tint: #26120c;
   --card-tint-deep: #140904;
   --shader-1: #f97316;
@@ -227,7 +218,6 @@ html[data-theme="oled-obsidian"] #veil {
   --faint: #6272a4;
   --accent: #bd93f9;
   --accent-glow: rgba(189, 147, 249, 0.45);
-  --glass-blur: 26px;
   --card-tint: #282a36;
   --card-tint-deep: #191a21;
   --shader-1: #bd93f9;
@@ -255,7 +245,6 @@ html[data-theme="oled-obsidian"] #veil {
   --faint: #64748b;
   --accent: #3b82f6;
   --accent-glow: rgba(59, 130, 246, 0.28);
-  --glass-blur: 24px;
   --card-tint: #ffffff;
   --card-tint-deep: #f1f5f9;
   --shader-1: #3b82f6;
@@ -280,7 +269,6 @@ html[data-theme="oled-obsidian"] #veil {
   --faint: #856d5b;
   --accent: #d97706;
   --accent-glow: rgba(217, 119, 6, 0.28);
-  --glass-blur: 24px;
   --card-tint: #ffffff;
   --card-tint-deep: #f5eedf;
   --shader-1: #d97706;
@@ -305,7 +293,6 @@ html[data-theme="oled-obsidian"] #veil {
   --faint: #507a60;
   --accent: #16a34a;
   --accent-glow: rgba(22, 163, 74, 0.28);
-  --glass-blur: 24px;
   --card-tint: #ffffff;
   --card-tint-deep: #e3efe7;
   --shader-1: #16a34a;
@@ -330,7 +317,6 @@ html[data-theme="oled-obsidian"] #veil {
   --faint: #9d174d;
   --accent: #ec4899;
   --accent-glow: rgba(236, 72, 153, 0.28);
-  --glass-blur: 24px;
   --card-tint: #ffffff;
   --card-tint-deep: #fce7f3;
   --shader-1: #ec4899;
@@ -355,7 +341,6 @@ html[data-theme="oled-obsidian"] #veil {
   --faint: #657b83;
   --accent: #2aa198;
   --accent-glow: rgba(42, 161, 152, 0.28);
-  --glass-blur: 24px;
   --card-tint: #fffdf5;
   --card-tint-deep: #eee8d5;
   --shader-1: #2aa198;
@@ -380,7 +365,6 @@ html[data-theme="oled-obsidian"] #veil {
   --faint: #475569;
   --accent: #0284c7;
   --accent-glow: rgba(2, 132, 199, 0.28);
-  --glass-blur: 24px;
   --card-tint: #ffffff;
   --card-tint-deep: #e2e8f0;
   --shader-1: #0284c7;
@@ -405,7 +389,6 @@ html[data-theme="oled-obsidian"] #veil {
   --faint: #7c3aed;
   --accent: #8b5cf6;
   --accent-glow: rgba(139, 92, 246, 0.28);
-  --glass-blur: 24px;
   --card-tint: #ffffff;
   --card-tint-deep: #ede9fe;
   --shader-1: #8b5cf6;
@@ -430,7 +413,6 @@ html[data-theme="oled-obsidian"] #veil {
   --faint: #7c6f64;
   --accent: #d65d0e;
   --accent-glow: rgba(214, 93, 14, 0.28);
-  --glass-blur: 24px;
   --card-tint: #fffbe6;
   --card-tint-deep: #ebdbb2;
   --shader-1: #d65d0e;
@@ -455,7 +437,6 @@ html[data-theme="oled-obsidian"] #veil {
   --faint: #9f1239;
   --accent: #f43f5e;
   --accent-glow: rgba(244, 63, 94, 0.28);
-  --glass-blur: 24px;
   --card-tint: #ffffff;
   --card-tint-deep: #ffedd5;
   --shader-1: #f43f5e;
@@ -480,7 +461,6 @@ html[data-theme="oled-obsidian"] #veil {
   --faint: #134e4a;
   --accent: #0d9488;
   --accent-glow: rgba(13, 148, 136, 0.28);
-  --glass-blur: 24px;
   --card-tint: #ffffff;
   --card-tint-deep: #ccfbf1;
   --shader-1: #0d9488;
@@ -514,19 +494,11 @@ html[data-theme="warm-ivory"] #dim {
   background: rgba(0, 0, 0, 0.22);
 }
 
-.light-ui .card,
-html[data-theme="porcelain-light"] .card,
-html[data-theme="sage-light"] .card,
-.light-ui #clock,
-html[data-theme="porcelain-light"] #clock,
-html[data-theme="sage-light"] #clock,
-html[data-theme="warm-ivory"] #clock {
-  background: linear-gradient(180deg, var(--dim) 0%, var(--ink) 55%, var(--dim) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 10px 26px var(--accent-glow));
-}
+/* The clipped-gradient clock and its coloured halo were removed from the shared
+   rules but survived here, so ten of the twenty-one themes kept exactly what
+   was said to be gone. Three .card selectors were caught in the same list and
+   were being given background-clip: text and transparent ink, which is not
+   something a card can want. */
 
 .light-ui #clock .ampm,
 html[data-theme="porcelain-light"] #clock .ampm,

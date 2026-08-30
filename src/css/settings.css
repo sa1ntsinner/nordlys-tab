@@ -8,7 +8,7 @@
   top: 0;
   right: 0;
   bottom: 0;
-  z-index: 100;
+  z-index: var(--nl-z-drawer);
   width: var(--drawer-width, min(94vw, 520px));
   min-width: 380px;
   max-width: 95vw;
@@ -44,7 +44,7 @@ body.resizing-drawer #cfg {
   bottom: 0;
   width: 12px;
   cursor: ew-resize;
-  z-index: 15;
+  z-index: var(--nl-z-raised);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -55,7 +55,7 @@ body.resizing-drawer #cfg {
   height: 48px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.2);
-  transition: height var(--nl-motion-control) ease, background var(--nl-motion-control) ease, box-shadow var(--nl-motion-control) ease;
+  transition: height var(--nl-transition-control), background var(--nl-transition-control), box-shadow var(--nl-transition-control);
 }
 #cfg-resizer:hover::after, #cfg-resizer.dragging::after {
   height: 80px;
@@ -289,7 +289,7 @@ input[type="range"].ipt:focus-visible {
   border-radius: 50%;
   background: #ffffff;
   box-shadow: var(--nl-shadow-1);
-  transition: transform var(--nl-motion-control) var(--nl-ease-pop), background-color var(--nl-motion-control) ease;
+  transition: transform var(--nl-motion-control) var(--nl-ease-pop), background-color var(--nl-transition-control);
 }
 .tg input:focus-visible + i {
   box-shadow: var(--nl-ring);
@@ -715,8 +715,8 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   text-align: center;
   cursor: pointer;
   opacity: 0;
-  transition: opacity var(--nl-motion-fast) ease, transform var(--nl-motion-fast) ease;
-  z-index: 5;
+  transition: opacity var(--nl-transition-fast), transform var(--nl-transition-fast);
+  z-index: var(--nl-z-raised);
 }
 
 .theme-card:hover .del-custom-thm-btn {
@@ -806,7 +806,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: opacity var(--nl-motion-control) ease, border-color var(--nl-motion-control) ease;
+  transition: opacity var(--nl-transition-control), border-color var(--nl-transition-control);
 }
 .group-editor-card.is-hidden-folder {
   opacity: 0.6;
@@ -1058,7 +1058,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
 #icon-modal {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: var(--nl-z-overlay);
   background: rgba(2, 6, 14, 0.7);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -1516,7 +1516,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
 #css-docs-modal {
   position: fixed;
   inset: 0;
-  z-index: 250;
+  z-index: var(--nl-z-modal);
   background: rgba(2, 6, 14, 0.7);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -1543,7 +1543,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
 }
 .css-tab-pane.active {
   display: block;
-  animation: fadeIn var(--nl-motion-control) ease both;
+  animation: fadeIn var(--nl-transition-control) both;
 }
 .css-tab-pane h4 {
   font-size: var(--nl-text-lg);
@@ -1799,7 +1799,7 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 .theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .theme-card { width: 100%; min-width: 0; min-height: 88px; text-align: left; font-family: inherit; }
 .theme-card[aria-pressed="true"] { border-color: var(--nl-accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--nl-accent) 30%, transparent); }
-.appearance-shared-preview { position: sticky; top: -20px; z-index: 4; padding: 8px 0 12px; background: linear-gradient(var(--nl-surface-card-deep) 72%, transparent); }
+.appearance-shared-preview { position: sticky; top: -20px; z-index: var(--nl-z-raised); padding: 8px 0 12px; background: linear-gradient(var(--nl-surface-card-deep) 72%, transparent); }
 .appearance-preview-card { width: 100%; min-height: 116px; padding: 16px; align-items: center; justify-content: center; }
 .appearance-preview-card .tile { cursor: default; }
 .appearance-shared-preview .nl-icon { --icon-accent: var(--nl-text-primary); }
@@ -1850,10 +1850,10 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 .bookmark-editor[hidden] { display: none; }
 .bookmark-editor input { min-height: 40px; min-width: 0; border: 1px solid var(--nl-border); border-radius: var(--nl-radius-sm); padding: 0 10px; color: var(--nl-text-primary); background: var(--nl-surface-card-deep); }
 #icon-modal .modal-box { width: min(660px, calc(100vw - 24px)); max-width: 660px; }
-.icon-live-preview { position: sticky; top: 0; z-index: 2; display: flex; justify-content: center; padding: 8px; background: linear-gradient(var(--nl-surface-elevated), transparent); }
+.icon-live-preview { position: sticky; top: 0; z-index: var(--nl-z-raised); display: flex; justify-content: center; padding: 8px; background: linear-gradient(var(--nl-surface-elevated), transparent); }
 .icon-live-preview .card { width: 126px; padding: 12px; align-items: center; }
 .icon-item { min-width: 72px; min-height: 72px; }
-#toast-dock { z-index: 500; pointer-events: none; }
+#toast-dock { z-index: var(--nl-z-toast); pointer-events: none; }
 #toast-dock .toast { pointer-events: auto; }
 
 @media (max-width: 560px) {
@@ -1885,31 +1885,15 @@ html[data-theme="warm-ivory"] .css-docs-list code {
     radial-gradient(70% 50% at 75% 100%, color-mix(in srgb, var(--shader-2, #5b6cff) 60%, transparent), transparent 68%),
     var(--nl-canvas);
 }
-.scene-preview[data-scene="cosmos"] {
-  background:
-    radial-gradient(1.5px 1.5px at 22% 34%, var(--nl-text-primary), transparent),
-    radial-gradient(1.5px 1.5px at 68% 22%, var(--nl-text-primary), transparent),
-    radial-gradient(1.5px 1.5px at 44% 72%, var(--nl-text-primary), transparent),
-    radial-gradient(1.5px 1.5px at 82% 62%, var(--nl-text-primary), transparent),
-    radial-gradient(90% 70% at 50% 20%, color-mix(in srgb, var(--shader-3, #9d4edd) 45%, transparent), transparent 75%),
-    var(--nl-canvas);
-}
-.scene-preview[data-scene="mesh-gradient"] {
-  background:
-    radial-gradient(50% 50% at 25% 30%, color-mix(in srgb, var(--shader-1, #35d6c0) 85%, transparent), transparent 70%),
-    radial-gradient(50% 50% at 75% 40%, color-mix(in srgb, var(--shader-2, #5b6cff) 85%, transparent), transparent 70%),
-    radial-gradient(50% 50% at 50% 80%, color-mix(in srgb, var(--shader-3, #9d4edd) 85%, transparent), transparent 70%),
-    var(--nl-canvas);
-}
-.scene-preview[data-scene="particles"] {
-  background:
-    radial-gradient(3px 3px at 30% 40%, color-mix(in srgb, var(--shader-1, #35d6c0) 80%, transparent), transparent),
-    radial-gradient(4px 4px at 62% 30%, color-mix(in srgb, var(--shader-2, #5b6cff) 70%, transparent), transparent),
-    radial-gradient(2.5px 2.5px at 48% 70%, color-mix(in srgb, var(--shader-3, #9d4edd) 80%, transparent), transparent),
-    radial-gradient(3.5px 3.5px at 78% 66%, color-mix(in srgb, var(--shader-1, #35d6c0) 60%, transparent), transparent),
-    var(--nl-canvas);
-}
 .scene-preview[data-scene="solid"] { background: var(--nl-canvas); }
+/* The still field, shown as the composition currently chosen would look. */
+.scene-preview[data-scene="gradient"] {
+  background:
+    radial-gradient(58% 62% at 26% 34%, color-mix(in srgb, var(--shader-1) 40%, transparent), transparent 70%),
+    radial-gradient(54% 58% at 78% 26%, color-mix(in srgb, var(--shader-3) 36%, transparent), transparent 72%),
+    radial-gradient(70% 66% at 62% 86%, color-mix(in srgb, var(--shader-2) 32%, transparent), transparent 74%),
+    var(--nl-canvas);
+}
 /* These two slots have nothing to preview until the user supplies a file. The
    placeholder stripes that stood here read as a broken texture and looked the
    same for both; a picture and a play mark say what each slot takes. */
@@ -1987,3 +1971,45 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 /* The icon preview is the way to change the icon, so it has to look pressable. */
 .quick-icon-box { cursor: pointer; transition: border-color var(--nl-motion-control), transform var(--nl-motion-control); }
 .quick-icon-box:hover { border-color: var(--nl-accent); transform: translateY(-1px); }
+
+/* The composition cards show the arrangement itself, in the theme's own
+   colours, so choosing one is a matter of looking rather than reading. */
+.gradient-preview { background: var(--nl-canvas); }
+.gradient-preview[data-gradient="horizon"] {
+  background:
+    radial-gradient(120% 78% at 50% 116%, color-mix(in srgb, var(--shader-1) 46%, transparent), transparent 68%),
+    radial-gradient(90% 62% at 86% 108%, color-mix(in srgb, var(--shader-3) 34%, transparent), transparent 72%),
+    var(--nl-canvas);
+}
+.gradient-preview[data-gradient="bloom"] {
+  background:
+    radial-gradient(58% 62% at 26% 34%, color-mix(in srgb, var(--shader-1) 44%, transparent), transparent 70%),
+    radial-gradient(54% 58% at 78% 26%, color-mix(in srgb, var(--shader-3) 40%, transparent), transparent 72%),
+    radial-gradient(70% 66% at 62% 86%, color-mix(in srgb, var(--shader-2) 36%, transparent), transparent 74%),
+    var(--nl-canvas);
+}
+.gradient-preview[data-gradient="corner"] {
+  background:
+    radial-gradient(105% 92% at 4% 0%, color-mix(in srgb, var(--shader-1) 42%, transparent), transparent 62%),
+    radial-gradient(80% 70% at 96% 100%, color-mix(in srgb, var(--shader-3) 26%, transparent), transparent 70%),
+    var(--nl-canvas);
+}
+.gradient-preview[data-gradient="veil"] {
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--shader-2) 30%, transparent) 0%,
+      transparent 45%,
+      color-mix(in srgb, var(--shader-1) 26%, transparent) 100%),
+    var(--nl-canvas);
+}
+
+/* Group labels inside the appearance panel. They used to style themselves with
+   inline uppercase and tracking, which is how a tracking table gets bypassed. */
+.settings-group-label {
+  margin-top: 10px;
+  color: var(--dim);
+  font-size: var(--nl-text-2xs);
+  font-weight: 650;
+  letter-spacing: var(--nl-track-label);
+  text-transform: uppercase;
+}

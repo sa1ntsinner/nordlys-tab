@@ -6,21 +6,29 @@
    data-i18n lets a language switch retranslate it without a listener here. */
 const SCENE_NAMES = {
   "aurora": "Aurora",
-  "cosmos": "Cosmos",
-  "mesh-gradient": "Mesh",
-  "particles": "Particles",
+  "gradient": "Gradient",
   "custom-image": "Wallpaper",
   "custom-video": "Video",
   "solid": "Solid"
 };
 const SCENE_KEYS = {
   "aurora": "scene.aurora",
-  "cosmos": "scene.cosmos",
-  "mesh-gradient": "scene.mesh",
-  "particles": "scene.particles",
+  "gradient": "scene.gradient",
   "custom-image": "scene.wallpaper",
   "custom-video": "scene.video",
   "solid": "scene.solid"
+};
+const GRADIENT_NAMES = {
+  "horizon": "Horizon",
+  "bloom": "Bloom",
+  "corner": "Corner",
+  "veil": "Veil"
+};
+const GRADIENT_KEYS = {
+  "horizon": "gradient.horizon",
+  "bloom": "gradient.bloom",
+  "corner": "gradient.corner",
+  "veil": "gradient.veil"
 };
 
 class SettingsController {
@@ -113,7 +121,8 @@ class SettingsController {
        slider with nothing to blur, is noise the user has to read and dismiss.
        Each control declares the scenes it belongs to and the rest step aside. */
     const SCENE_GROUPS = {
-      procedural: ["aurora", "cosmos", "mesh-gradient", "particles"],
+      procedural: ["aurora"],
+      gradient: ["gradient"],
       media: ["custom-image", "custom-video"],
       image: ["custom-image"]
     };
@@ -150,6 +159,47 @@ class SettingsController {
        from a card, and the picker has to follow: otherwise Wallpaper stays
        highlighted while Aurora is already running behind it. */
     this.syncScenePicker = () => { paint(); showRelevant(); };
+
+    /* The still field has its own small picker, built the same way, because a
+       composition is a picture too and a list of four words would say less. */
+    const gradientSelect = document.getElementById("cfg-gradient");
+    const gradientGrid = document.getElementById("bg-gradient-grid");
+    if (gradientSelect && gradientGrid) {
+      gradientSelect.value = this.app.config.gradient || "horizon";
+      const paintGradients = () => {
+        gradientGrid.replaceChildren();
+        for (const option of gradientSelect.options) {
+          const card = document.createElement("button");
+          card.type = "button";
+          card.className = "scene-card";
+          card.dataset.gradient = option.value;
+          card.setAttribute("role", "radio");
+          card.setAttribute("aria-checked", String(option.value === gradientSelect.value));
+          const preview = document.createElement("span");
+          preview.className = "scene-preview gradient-preview";
+          preview.dataset.gradient = option.value;
+          preview.setAttribute("aria-hidden", "true");
+          const name = document.createElement("span");
+          name.className = "scene-name";
+          const key = GRADIENT_KEYS[option.value];
+          if (key) name.dataset.i18n = key;
+          name.textContent = (key && window.I18N?.t(key)) || GRADIENT_NAMES[option.value] || option.textContent;
+          card.append(preview, name);
+          card.addEventListener("click", () => {
+            gradientSelect.value = option.value;
+            this.app.config.gradient = option.value;
+            // Only meaningful while the gradient is the chosen background.
+            if (this.app.config.bgMode === "gradient") {
+              document.documentElement.dataset.gradient = option.value;
+            }
+            this.app.saveConfig();
+            paintGradients();
+          });
+          gradientGrid.append(card);
+        }
+      };
+      paintGradients();
+    }
 
     applyAtmosphere();
     showRelevant();
@@ -322,10 +372,7 @@ class SettingsController {
     if (defaultEngine) defaultEngine.value = cfg.defaultEngine || "google";
 
     // Aesthetics Sliders & Selects
-    const glassBlur = document.getElementById("cfg-glass-blur");
-    const glassSaturate = document.getElementById("cfg-glass-saturate");
-    const glassOpacity = document.getElementById("cfg-glass-opacity");
-    const glassSheen = document.getElementById("cfg-glass-sheen");
+    const glassLevel = document.getElementById("cfg-glass-level");
     const cardRadius = document.getElementById("cfg-card-radius");
     const tileSize = document.getElementById("cfg-tile-size");
     const cardGap = document.getElementById("cfg-card-gap");
@@ -333,10 +380,7 @@ class SettingsController {
     const hoverEffect = document.getElementById("cfg-hover-effect");
     const iconShape = document.getElementById("cfg-icon-shape");
 
-    if (glassBlur) glassBlur.value = cfg.glassBlur != null ? cfg.glassBlur : 28;
-    if (glassSaturate) glassSaturate.value = cfg.glassSaturate != null ? cfg.glassSaturate : 190;
-    if (glassOpacity) glassOpacity.value = Math.round((cfg.glassOpacity !== undefined ? cfg.glassOpacity : 0.7) * 100);
-    if (glassSheen) glassSheen.value = Math.round((cfg.glassSheen !== undefined ? cfg.glassSheen : 0.45) * 100);
+    if (glassLevel) glassLevel.value = cfg.glassLevel || "full";
     if (cardRadius) cardRadius.value = cfg.cardRadius != null ? cfg.cardRadius : 24;
     if (tileSize) tileSize.value = cfg.tileSize != null ? cfg.tileSize : 78;
     if (cardGap) cardGap.value = cfg.cardGap != null ? cfg.cardGap : 12;
@@ -353,10 +397,6 @@ class SettingsController {
 
   updateSliderLabels() {
     const cfg = this.app.config;
-    const lblBlur = document.getElementById("lbl-blur");
-    const lblSat = document.getElementById("lbl-sat");
-    const lblOpac = document.getElementById("lbl-opac");
-    const lblSheen = document.getElementById("lbl-sheen");
     const lblRadius = document.getElementById("lbl-radius");
     const lblTile = document.getElementById("lbl-tile");
     const lblGap = document.getElementById("lbl-gap");
@@ -364,10 +404,6 @@ class SettingsController {
     const lblBgBlur = document.getElementById("lbl-bgblur");
     const lblBgDim = document.getElementById("lbl-bgdim");
 
-    if (lblBlur) lblBlur.textContent = `${cfg.glassBlur != null ? cfg.glassBlur : 28}px`;
-    if (lblSat) lblSat.textContent = `${cfg.glassSaturate != null ? cfg.glassSaturate : 190}%`;
-    if (lblOpac) lblOpac.textContent = `${Math.round((cfg.glassOpacity !== undefined ? cfg.glassOpacity : 0.7) * 100)}%`;
-    if (lblSheen) lblSheen.textContent = `${Math.round((cfg.glassSheen !== undefined ? cfg.glassSheen : 0.45) * 100)}%`;
     if (lblRadius) lblRadius.textContent = `${cfg.cardRadius != null ? cfg.cardRadius : 24}px`;
     if (lblTile) lblTile.textContent = `${cfg.tileSize != null ? cfg.tileSize : 78}px`;
     if (lblGap) lblGap.textContent = `${cfg.cardGap != null ? cfg.cardGap : 12}px`;
@@ -382,14 +418,12 @@ class SettingsController {
     if (!previewCard) return;
 
     const cfg = this.app.config;
-    const blurVal = `${cfg.glassBlur != null ? cfg.glassBlur : 28}px`;
-    const satVal = `${cfg.glassSaturate != null ? cfg.glassSaturate : 190}%`;
-    const opacVal = cfg.glassOpacity !== undefined ? cfg.glassOpacity : 0.70;
-    const sheenVal = cfg.glassSheen !== undefined ? cfg.glassSheen : 0.45;
     const radiusVal = `${cfg.cardRadius != null ? cfg.cardRadius : 24}px`;
 
-    previewCard.style.backdropFilter = `blur(${blurVal}) saturate(${satVal}) contrast(94%) brightness(106%)`;
-    previewCard.style.webkitBackdropFilter = `blur(${blurVal}) saturate(${satVal}) contrast(94%) brightness(106%)`;
+    /* The preview reads the same tokens the real surface does, so it cannot
+       drift from it and cannot invent a fifth filter function of its own. */
+    previewCard.style.removeProperty("backdrop-filter");
+    previewCard.style.removeProperty("-webkit-backdrop-filter");
     previewCard.style.borderRadius = radiusVal;
 
     if (iconBox) {
@@ -424,52 +458,28 @@ class SettingsController {
     });
 
     // Glass Sliders
-    const glassBlur = document.getElementById("cfg-glass-blur");
-    const glassSaturate = document.getElementById("cfg-glass-saturate");
-    const glassOpacity = document.getElementById("cfg-glass-opacity");
-    const glassSheen = document.getElementById("cfg-glass-sheen");
+    const glassLevel = document.getElementById("cfg-glass-level");
 
-    glassBlur?.addEventListener("input", (e) => {
-      const val = `${e.target.value}px`;
-      document.documentElement.style.setProperty("--glass-blur", val);
-      this.app.config.glassBlur = parseInt(e.target.value, 10);
-      this.updateSliderLabels();
-      this.updateMiniPreview();
-      this.app.saveConfig();
-    });
 
-    glassSaturate?.addEventListener("input", (e) => {
-      const val = `${e.target.value}%`;
-      document.documentElement.style.setProperty("--glass-saturate", val);
-      this.app.config.glassSaturate = parseInt(e.target.value, 10);
-      this.updateSliderLabels();
-      this.updateMiniPreview();
-      this.app.saveConfig();
-    });
 
-    glassOpacity?.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value) / 100;
-      document.documentElement.style.setProperty("--glass-opacity", val);
-      this.app.config.glassOpacity = val;
-      this.updateSliderLabels();
-      this.updateMiniPreview();
-      this.app.saveConfig();
-    });
 
-    glassSheen?.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value) / 100;
-      document.documentElement.style.setProperty("--glass-border-sheen", val);
-      this.app.config.glassSheen = val;
-      this.updateSliderLabels();
-      this.updateMiniPreview();
-      this.app.saveConfig();
-    });
 
     // Geometry & Layout controls
     const cardRadius = document.getElementById("cfg-card-radius");
     const tileSize = document.getElementById("cfg-tile-size");
     const cardGap = document.getElementById("cfg-card-gap");
     const iconShape = document.getElementById("cfg-icon-shape");
+
+    /* Three levels of one material, rather than four raw filter knobs. The
+       knobs were a decision nobody made, handed to the user in the form the
+       renderer happens to take, and they reached states where text stopped
+       being readable. */
+    glassLevel?.addEventListener("change", (e) => {
+      this.app.config.glassLevel = e.target.value;
+      this.app.applyGlassLevel();
+      this.app.saveConfig();
+      this.updateMiniPreview();
+    });
 
     cardRadius?.addEventListener("input", (e) => {
       const val = `${e.target.value}px`;

@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="src/css/foundations.css">
   <link rel="stylesheet" href="src/css/liquid-glass.css">
   <link rel="stylesheet" href="src/css/themes.css">
+  <link rel="stylesheet" href="src/css/gradients.css">
   <link rel="stylesheet" href="src/css/components.css">
   <link rel="stylesheet" href="src/css/settings.css">
 </head>
@@ -294,26 +295,18 @@
           </h4>
 
           <!-- 1. Surface & Glass Section -->
-          <div style="font-size: var(--nl-text-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 4px;" data-i18n="appearance.surfaceGlass">Glass</div>
+          <div class="settings-group-label" data-i18n="appearance.surfaceGlass">Glass</div>
           <div class="row">
-            <span><span data-i18n="appearance.glassBlur">Blur</span> (<b id="lbl-blur">28px</b>)</span>
-            <input id="cfg-glass-blur" type="range" class="ipt" min="0" max="60" value="28">
-          </div>
-          <div class="row">
-            <span><span data-i18n="appearance.glassSaturate">Saturation</span> (<b id="lbl-sat">190%</b>)</span>
-            <input id="cfg-glass-saturate" type="range" class="ipt" min="100" max="250" value="190">
-          </div>
-          <div class="row">
-            <span><span data-i18n="appearance.glassTranslucency">Opacity</span> (<b id="lbl-opac">70%</b>)</span>
-            <input id="cfg-glass-opacity" type="range" class="ipt" min="10" max="95" value="70">
-          </div>
-          <div class="row">
-            <span><span data-i18n="appearance.glassSheen">Border highlight</span> (<b id="lbl-sheen">45%</b>)</span>
-            <input id="cfg-glass-sheen" type="range" class="ipt" min="0" max="100" value="45">
+            <span data-i18n="appearance.glassLevel">Glass</span>
+            <select id="cfg-glass-level" class="ipt">
+              <option value="full" data-i18n="glass.full">Frosted</option>
+              <option value="subtle" data-i18n="glass.subtle">Subtle</option>
+              <option value="off" data-i18n="glass.off">None</option>
+            </select>
           </div>
 
           <!-- 2. Geometry & Spacing Section -->
-          <div style="font-size: var(--nl-text-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 6px;" data-i18n="appearance.geometry">Geometry</div>
+          <div class="settings-group-label" data-i18n="appearance.geometry">Geometry</div>
           <div class="row">
             <span><span data-i18n="appearance.cardRadius">Corner radius</span> (<b id="lbl-radius">24px</b>)</span>
             <input id="cfg-card-radius" type="range" class="ipt" min="6" max="36" value="24">
@@ -449,15 +442,23 @@
         <div class="scene-block">
           <span class="settings-block-label" data-i18n="background.scene">Scene</span>
           <select id="cfg-bg-mode" class="ipt" hidden data-native aria-hidden="true" tabindex="-1">
-            <option value="aurora">Dynamic Aurora Borealis (Ribbons & Meteors)</option>
-            <option value="cosmos">Cosmic Starfield & Twinkling</option>
-            <option value="mesh-gradient">Floating Mesh Gradient Orbs</option>
-            <option value="particles">Interactive Bokeh Dust Particles</option>
-            <option value="custom-image">Custom Wallpaper (Image)</option>
-            <option value="custom-video">Custom Wallpaper (Video Loop)</option>
-            <option value="solid">Minimalist Solid Background</option>
+            <option value="aurora">Aurora</option>
+            <option value="gradient">Gradient</option>
+            <option value="custom-image">Wallpaper</option>
+            <option value="custom-video">Video</option>
+            <option value="solid">Solid</option>
           </select>
           <div class="scene-grid" id="bg-scene-grid" role="radiogroup" aria-label="Background scene"></div>
+        </div>
+        <div class="scene-block" data-scene-only="gradient">
+          <span class="settings-block-label" data-i18n="background.composition">Composition</span>
+          <select id="cfg-gradient" class="ipt" hidden data-native aria-hidden="true" tabindex="-1">
+            <option value="horizon">Horizon</option>
+            <option value="bloom">Bloom</option>
+            <option value="corner">Corner</option>
+            <option value="veil">Veil</option>
+          </select>
+          <div class="scene-grid" id="bg-gradient-grid" role="radiogroup" aria-label="Gradient composition"></div>
         </div>
         <div class="row setting-row" data-scene-only="procedural">
           <span><span data-i18n="background.motion">Motion</span> (<b id="lbl-bg-motion">100%</b>)</span>

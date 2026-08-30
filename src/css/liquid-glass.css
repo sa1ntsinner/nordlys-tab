@@ -1,13 +1,22 @@
 /* ═══════════════════════════════════════════════════════════════════
-   AUTHENTIC APPLE iOS 18 & macOS FROSTED / LIQUID GLASS DESIGN SYSTEM
-   ═══════════════════════════════════════════════════════════════════ */
+   NORDLYS - THE FROSTED SURFACE
+   ═══════════════════════════════════════════════════════════════════
+
+   One translucent material, used at one level, never nested inside itself.
+
+   It used to be four stacked filter functions — blur, saturate, contrast and
+   brightness — which is four knobs approximating a colour that should simply be
+   declared, and which makes the text contrast a function of whatever the user
+   set as a wallpaper. Two functions now, and the tint is a declared colour.
+
+   The file also used to be titled after another company's material, which named
+   the thing this will be compared against and lose to. It is named after what
+   it does. */
 
 :root {
   /* Default Glass Optical Tokens */
   --glass-blur: 28px;
-  --glass-saturate: 190%;
-  --glass-contrast: 94%;
-  --glass-brightness: 106%;
+  --glass-saturate: 160%;
   --glass-opacity: 0.70;
   --glass-border-sheen: 0.45;
   
@@ -52,8 +61,8 @@
     rgba(255, 255, 255, calc(var(--glass-opacity, 0.7) * 0.06)) 100%
   );
   border: 1px solid rgba(255, 255, 255, calc(var(--glass-border-sheen, 0.45) * 0.75));
-  backdrop-filter: blur(var(--glass-blur, 28px)) saturate(var(--glass-saturate, 190%)) contrast(var(--glass-contrast, 94%)) brightness(var(--glass-brightness, 106%));
-  -webkit-backdrop-filter: blur(var(--glass-blur, 28px)) saturate(var(--glass-saturate, 190%)) contrast(var(--glass-contrast, 94%)) brightness(var(--glass-brightness, 106%));
+  backdrop-filter: blur(var(--glass-blur, 28px)) saturate(var(--glass-saturate, 160%));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 28px)) saturate(var(--glass-saturate, 160%));
   box-shadow: var(--nl-shadow-3);
 }
 
