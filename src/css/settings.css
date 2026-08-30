@@ -315,10 +315,7 @@ input[type="range"].ipt:focus-visible {
   border-radius: 12px;
   margin-bottom: 12px;
 }
-.light-ui .color-mode-segmented,
-html[data-theme="porcelain-light"] .color-mode-segmented,
-html[data-theme="sage-light"] .color-mode-segmented,
-html[data-theme="warm-ivory"] .color-mode-segmented {
+.light-ui .color-mode-segmented {
   background: rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(0, 0, 0, 0.08);
 }
@@ -343,24 +340,15 @@ html[data-theme="warm-ivory"] .color-mode-segmented {
   color: #f1f5f9;
   background: rgba(255, 255, 255, 0.06);
 }
-.light-ui .mode-btn,
-html[data-theme="porcelain-light"] .mode-btn,
-html[data-theme="sage-light"] .mode-btn,
-html[data-theme="warm-ivory"] .mode-btn {
+.light-ui .mode-btn {
   color: #475569;
 }
-.light-ui .mode-btn:hover,
-html[data-theme="porcelain-light"] .mode-btn:hover,
-html[data-theme="sage-light"] .mode-btn:hover,
-html[data-theme="warm-ivory"] .mode-btn:hover {
+.light-ui .mode-btn:hover {
   background: rgba(0, 0, 0, 0.06);
   color: #0f172a;
 }
 .mode-btn.active,
-.light-ui .mode-btn.active,
-html[data-theme="porcelain-light"] .mode-btn.active,
-html[data-theme="sage-light"] .mode-btn.active,
-html[data-theme="warm-ivory"] .mode-btn.active {
+.light-ui .mode-btn.active {
   background: var(--accent);
   /* dark ink on the accent pill passes contrast on all 21 accents */
   color: #071018;
@@ -388,10 +376,7 @@ html[data-theme="warm-ivory"] .mode-btn.active {
   align-items: center;
   gap: 7px;
 }
-.light-ui .theme-section-title,
-html[data-theme="porcelain-light"] .theme-section-title,
-html[data-theme="sage-light"] .theme-section-title,
-html[data-theme="warm-ivory"] .theme-section-title {
+.light-ui .theme-section-title {
   color: #334155;
 }
 .theme-section-badge {
@@ -403,10 +388,7 @@ html[data-theme="warm-ivory"] .theme-section-title {
   color: #cbd5e1;
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
-.light-ui .theme-section-badge,
-html[data-theme="porcelain-light"] .theme-section-badge,
-html[data-theme="sage-light"] .theme-section-badge,
-html[data-theme="warm-ivory"] .theme-section-badge {
+.light-ui .theme-section-badge {
   background: rgba(0, 0, 0, 0.06);
   border-color: rgba(0, 0, 0, 0.10);
   color: #334155;
@@ -440,26 +422,17 @@ html[data-theme="warm-ivory"] .theme-section-badge {
   box-shadow: var(--nl-ring-tight), var(--nl-shadow-2);
 }
 
-.light-ui .theme-card,
-html[data-theme="porcelain-light"] .theme-card,
-html[data-theme="sage-light"] .theme-card,
-html[data-theme="warm-ivory"] .theme-card {
+.light-ui .theme-card {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(0, 0, 0, 0.09);
   box-shadow: var(--nl-shadow-1);
 }
-.light-ui .theme-card:hover,
-html[data-theme="porcelain-light"] .theme-card:hover,
-html[data-theme="sage-light"] .theme-card:hover,
-html[data-theme="warm-ivory"] .theme-card:hover {
+.light-ui .theme-card:hover {
   background: #ffffff;
   border-color: rgba(0, 0, 0, 0.16);
   box-shadow: var(--nl-shadow-1);
 }
-.light-ui .theme-card.active,
-html[data-theme="porcelain-light"] .theme-card.active,
-html[data-theme="sage-light"] .theme-card.active,
-html[data-theme="warm-ivory"] .theme-card.active {
+.light-ui .theme-card.active {
   border-color: var(--accent);
   background: #ffffff;
   box-shadow: var(--nl-ring-tight), var(--nl-shadow-1);
@@ -477,10 +450,7 @@ html[data-theme="warm-ivory"] .theme-card.active {
   color: #f1f5f9;
   text-align: center;
 }
-.light-ui .theme-card b,
-html[data-theme="porcelain-light"] .theme-card b,
-html[data-theme="sage-light"] .theme-card b,
-html[data-theme="warm-ivory"] .theme-card b {
+.light-ui .theme-card b {
   color: #0f172a;
   font-weight: 600;
 }
@@ -499,95 +469,63 @@ html[data-theme="warm-ivory"] .theme-card b {
 }
 .light-ui .card-customizer-card,
 .light-ui .liquid-glass-tuning-card,
-.light-ui .custom-theme-tuning-card,
-html[data-theme="porcelain-light"] .card-customizer-card,
-html[data-theme="porcelain-light"] .liquid-glass-tuning-card,
-html[data-theme="porcelain-light"] .custom-theme-tuning-card,
-html[data-theme="sage-light"] .card-customizer-card,
-html[data-theme="sage-light"] .liquid-glass-tuning-card,
-html[data-theme="sage-light"] .custom-theme-tuning-card,
-html[data-theme="warm-ivory"] .card-customizer-card,
-html[data-theme="warm-ivory"] .liquid-glass-tuning-card,
-html[data-theme="warm-ivory"] .custom-theme-tuning-card {
+.light-ui .custom-theme-tuning-card {
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(0, 0, 0, 0.09);
   box-shadow: var(--nl-shadow-2);
 }
 .light-ui .card-customizer-card h4,
 .light-ui .liquid-glass-tuning-card h4,
-.light-ui .custom-theme-tuning-card h4,
-html[data-theme="porcelain-light"] .card-customizer-card h4,
-html[data-theme="sage-light"] .card-customizer-card h4,
-html[data-theme="warm-ivory"] .card-customizer-card h4 {
+.light-ui .custom-theme-tuning-card h4 {
   color: var(--accent);
 }
-.light-ui .card-customizer-card div[data-i18n],
-html[data-theme="porcelain-light"] .card-customizer-card div[data-i18n],
-html[data-theme="sage-light"] .card-customizer-card div[data-i18n],
-html[data-theme="warm-ivory"] .card-customizer-card div[data-i18n] {
+.light-ui .card-customizer-card div[data-i18n] {
   color: #475569;
 }
 .light-ui .card-customizer-card .row span,
 .light-ui .liquid-glass-tuning-card .row span,
-.light-ui .custom-theme-tuning-card .row span,
-html[data-theme="porcelain-light"] .card-customizer-card .row span,
-html[data-theme="sage-light"] .card-customizer-card .row span,
-html[data-theme="warm-ivory"] .card-customizer-card .row span {
+.light-ui .custom-theme-tuning-card .row span {
   color: #1e293b;
 }
 .light-ui .card-customizer-card .row b,
 .light-ui .liquid-glass-tuning-card .row b,
-.light-ui .custom-theme-tuning-card .row b,
-html[data-theme="porcelain-light"] .card-customizer-card .row b,
-html[data-theme="sage-light"] .card-customizer-card .row b,
-html[data-theme="warm-ivory"] .card-customizer-card .row b {
+.light-ui .custom-theme-tuning-card .row b {
   color: var(--accent);
   font-weight: 650;
 }
 .light-ui .card-customizer-card .ipt,
 .light-ui .liquid-glass-tuning-card .ipt,
-.light-ui .custom-theme-tuning-card .ipt,
-html[data-theme="porcelain-light"] .card-customizer-card .ipt,
-html[data-theme="sage-light"] .card-customizer-card .ipt,
-html[data-theme="warm-ivory"] .card-customizer-card .ipt {
+.light-ui .custom-theme-tuning-card .ipt {
   background: rgba(241, 245, 249, 0.95);
   border-color: rgba(0, 0, 0, 0.12);
   color: #0f172a;
 }
+/* The resting rule above ties with the light-theme focus rule and wins on file
+   order, which left this one field showing only its focus ring while every
+   other input also lightened and took an accent border. */
+.light-ui .custom-theme-tuning-card .ipt:focus {
+  background: #ffffff;
+  border-color: var(--nl-accent);
+}
 .light-ui .card-customizer-card input[type="range"].ipt,
 .light-ui .liquid-glass-tuning-card input[type="range"].ipt,
-.light-ui .custom-theme-tuning-card input[type="range"].ipt,
-html[data-theme="porcelain-light"] input[type="range"].ipt,
-html[data-theme="sage-light"] input[type="range"].ipt,
-html[data-theme="warm-ivory"] input[type="range"].ipt {
+.light-ui .custom-theme-tuning-card input[type="range"].ipt {
   background: rgba(0, 0, 0, 0.12);
 }
-.light-ui .custom-theme-box,
-html[data-theme="porcelain-light"] .custom-theme-box,
-html[data-theme="sage-light"] .custom-theme-box,
-html[data-theme="warm-ivory"] .custom-theme-box {
+.light-ui .custom-theme-box {
   background: rgba(241, 245, 249, 0.9);
   border-color: rgba(0, 0, 0, 0.08);
 }
-.light-ui .color-picker-wrap,
-html[data-theme="porcelain-light"] .color-picker-wrap,
-html[data-theme="sage-light"] .color-picker-wrap,
-html[data-theme="warm-ivory"] .color-picker-wrap {
+.light-ui .color-picker-wrap {
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.14);
   box-shadow: var(--nl-shadow-1);
 }
-.light-ui .color-label,
-html[data-theme="porcelain-light"] .color-label,
-html[data-theme="sage-light"] .color-label,
-html[data-theme="warm-ivory"] .color-label {
+.light-ui .color-label {
   color: #0f172a;
   font-weight: 550;
 }
-.light-ui .hex-text,
-html[data-theme="porcelain-light"] .hex-text,
-html[data-theme="sage-light"] .hex-text,
-html[data-theme="warm-ivory"] .hex-text {
+.light-ui .hex-text {
   color: #0f172a;
   font-weight: 600;
 }
@@ -631,10 +569,7 @@ html[data-theme="warm-ivory"] .hex-text {
   cursor: pointer;
   user-select: none;
 }
-.light-ui .preview-interactive-card,
-html[data-theme="porcelain-light"] .preview-interactive-card,
-html[data-theme="sage-light"] .preview-interactive-card,
-html[data-theme="warm-ivory"] .preview-interactive-card {
+.light-ui .preview-interactive-card {
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: var(--nl-shadow-2);
@@ -665,20 +600,14 @@ html[data-theme="warm-ivory"] .preview-interactive-card {
   font-weight: 650;
   color: #f1f5f9;
 }
-.light-ui .preview-card-title,
-html[data-theme="porcelain-light"] .preview-card-title,
-html[data-theme="sage-light"] .preview-card-title,
-html[data-theme="warm-ivory"] .preview-card-title {
+.light-ui .preview-card-title {
   color: #0f172a;
 }
 .preview-card-sub {
   font-size: var(--nl-text-2xs);
   color: #94a3b8;
 }
-.light-ui .preview-card-sub,
-html[data-theme="porcelain-light"] .preview-card-sub,
-html[data-theme="sage-light"] .preview-card-sub,
-html[data-theme="warm-ivory"] .preview-card-sub {
+.light-ui .preview-card-sub {
   color: #64748b;
 }
 
@@ -1615,119 +1544,74 @@ html[data-theme="warm-ivory"] .preview-card-sub {
 }
 
 /* ── Light-Mode Polish & High-Contrast Overrides ──────────────── */
-.light-ui .tg i,
-html[data-theme="porcelain-light"] .tg i,
-html[data-theme="sage-light"] .tg i,
-html[data-theme="warm-ivory"] .tg i {
+.light-ui .tg i {
   background: rgba(0, 0, 0, 0.12);
   border-color: rgba(0, 0, 0, 0.16);
 }
-.light-ui .tg i::after,
-html[data-theme="porcelain-light"] .tg i::after,
-html[data-theme="sage-light"] .tg i::after,
-html[data-theme="warm-ivory"] .tg i::after {
+.light-ui .tg i::after {
   background: #ffffff;
   box-shadow: var(--nl-shadow-1);
 }
-.light-ui .tg input:checked + i,
-html[data-theme="porcelain-light"] .tg input:checked + i,
-html[data-theme="sage-light"] .tg input:checked + i,
-html[data-theme="warm-ivory"] .tg input:checked + i {
+.light-ui .tg input:checked + i {
   background: var(--accent);
   border-color: var(--accent);
   box-shadow: var(--nl-shadow-1);
 }
-.light-ui .tg input:checked + i::after,
-html[data-theme="porcelain-light"] .tg input:checked + i::after,
-html[data-theme="sage-light"] .tg input:checked + i::after,
-html[data-theme="warm-ivory"] .tg input:checked + i::after {
+.light-ui .tg input:checked + i::after {
   transform: translateX(20px);
   background: #ffffff;
 }
 
-.light-ui select.ipt option,
-html[data-theme="porcelain-light"] select.ipt option,
-html[data-theme="sage-light"] select.ipt option,
-html[data-theme="warm-ivory"] select.ipt option {
+.light-ui select.ipt option {
   background: #ffffff;
   color: #0f172a;
 }
 
-.light-ui .glass-file-btn,
-html[data-theme="porcelain-light"] .glass-file-btn,
-html[data-theme="sage-light"] .glass-file-btn,
-html[data-theme="warm-ivory"] .glass-file-btn {
+.light-ui .glass-file-btn {
   background: rgba(0, 0, 0, 0.04);
   border: 1.5px dashed rgba(0, 0, 0, 0.18);
   color: #0f172a;
 }
-.light-ui .glass-file-btn:hover,
-html[data-theme="porcelain-light"] .glass-file-btn:hover,
-html[data-theme="sage-light"] .glass-file-btn:hover,
-html[data-theme="warm-ivory"] .glass-file-btn:hover {
+.light-ui .glass-file-btn:hover {
   background: color-mix(in srgb, var(--accent) 8%, transparent);
   border-color: var(--accent);
   box-shadow: var(--nl-shadow-1);
 }
 
-.light-ui .glass-btn.danger,
-html[data-theme="porcelain-light"] .glass-btn.danger,
-html[data-theme="sage-light"] .glass-btn.danger,
-html[data-theme="warm-ivory"] .glass-btn.danger {
+.light-ui .glass-btn.danger {
   color: #dc2626;
   background: rgba(239, 68, 68, 0.08);
   border-color: rgba(239, 68, 68, 0.3);
   font-weight: 600;
 }
-.light-ui .glass-btn.danger:hover,
-html[data-theme="porcelain-light"] .glass-btn.danger:hover,
-html[data-theme="sage-light"] .glass-btn.danger:hover,
-html[data-theme="warm-ivory"] .glass-btn.danger:hover {
+.light-ui .glass-btn.danger:hover {
   background: rgba(239, 68, 68, 0.18);
   color: #b91c1c;
 }
 
-.light-ui .css-preset-btn,
-html[data-theme="porcelain-light"] .css-preset-btn,
-html[data-theme="sage-light"] .css-preset-btn,
-html[data-theme="warm-ivory"] .css-preset-btn {
+.light-ui .css-preset-btn {
   background: rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(0, 0, 0, 0.12);
   color: #475569;
 }
-.light-ui .css-preset-btn:hover,
-html[data-theme="porcelain-light"] .css-preset-btn:hover,
-html[data-theme="sage-light"] .css-preset-btn:hover,
-html[data-theme="warm-ivory"] .css-preset-btn:hover {
+.light-ui .css-preset-btn:hover {
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   border-color: var(--accent);
   color: #0f172a;
 }
 
-.light-ui .css-recipe-item,
-html[data-theme="porcelain-light"] .css-recipe-item,
-html[data-theme="sage-light"] .css-recipe-item,
-html[data-theme="warm-ivory"] .css-recipe-item {
+.light-ui .css-recipe-item {
   background: rgba(0, 0, 0, 0.025);
   border-color: rgba(0, 0, 0, 0.08);
 }
-.light-ui .css-recipe-item pre,
-html[data-theme="porcelain-light"] .css-recipe-item pre,
-html[data-theme="sage-light"] .css-recipe-item pre,
-html[data-theme="warm-ivory"] .css-recipe-item pre {
+.light-ui .css-recipe-item pre {
   background: rgba(15, 23, 42, 0.94);
   border: 1px solid rgba(0, 0, 0, 0.12);
 }
-.light-ui .css-recipe-item code,
-html[data-theme="porcelain-light"] .css-recipe-item code,
-html[data-theme="sage-light"] .css-recipe-item code,
-html[data-theme="warm-ivory"] .css-recipe-item code {
+.light-ui .css-recipe-item code {
   color: #38bdf8;
 }
-.light-ui .css-docs-list code,
-html[data-theme="porcelain-light"] .css-docs-list code,
-html[data-theme="sage-light"] .css-docs-list code,
-html[data-theme="warm-ivory"] .css-docs-list code {
+.light-ui .css-docs-list code {
   background: rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(0, 0, 0, 0.08);
   color: var(--accent);

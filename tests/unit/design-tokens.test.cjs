@@ -158,32 +158,80 @@ test('the ladder is ordered so nothing swallows what it covers', () => {
 /* A theme carries the palette. Every light theme already wears .light-ui, so
    naming three of them again beside it says nothing — 420 selectors across 114
    rule groups did exactly that, and half of themes.css was the repetition. */
-test('themes do not name a light theme that .light-ui already covers', () => {
-  const themes = fs.readFileSync(path.join(CSS_DIR, 'themes.css'), 'utf8');
+test('no stylesheet names a light theme that .light-ui already covers', () => {
+  /* Enforced across every stylesheet, not only themes.css: the first version
+     policed the one file that had already been cleaned, while settings.css
+     still carried 123 of the very same selectors. */
   const offenders = [];
-  for (const rule of themes.matchAll(/([^{}]*)\{[^{}]*\}/g)) {
-    const selector = rule[1];
-    if (!selector.includes('.light-ui')) continue;
-    for (const named of selector.matchAll(/html\[data-theme="([a-z-]+)"\]/g)) {
-      offenders.push(named[1]);
+  for (const sheet of stylesheets()) {
+    for (const rule of sheet.text.matchAll(/([^{}]*)\{[^{}]*\}/g)) {
+      const selector = rule[1];
+      if (!selector.includes('.light-ui')) continue;
+      for (const named of selector.matchAll(/html\[data-theme="([a-z-]+)"\]/g)) {
+        offenders.push(`${sheet.name}: ${named[1]}`);
+      }
     }
   }
   assert.deepStrictEqual([...new Set(offenders)], [],
-    `themes named alongside .light-ui: ${[...new Set(offenders)].join(', ')}`);
+    `named beside .light-ui:\n${[...new Set(offenders)].join('\n')}`);
 });
 
 /* A coloured halo behind an icon or a control is the fastest way to date an
    interface, and it was on every bookmark on the board. Shadows are neutral;
    colour that carries meaning is a ring or a fill, never a bloom. */
 test('no shadow is tinted with the accent', () => {
+  /* The first version of this only looked inside drop-shadow(), so it blessed a
+     box-shadow that made every hovered tile bloom in its icon's own colour, on
+     every theme — the exact thing it was written to forbid. It reads each
+     shadow layer now, whatever property carries it, and judges by whether the
+     layer has a blur: a ring is colour without one, a bloom is colour with. */
+  const TINT = /var\(--accent|var\(--c\b|var\(--glow|color-mix|#[0-9a-fA-F]{3,8}|\brgb\(|\bhsl\(|\boklch\(/;
+
+  /* Three places may bloom in colour, and only these three. Two are settings
+     the user turned on deliberately — the ambient glow slider and the neon
+     hover style — and forbidding those would be overruling a choice rather
+     than enforcing a doctrine. The third marks where a dragged tile will land,
+     where the colour is the message and lasts only while dragging. */
+  const ALLOWED = [
+    /--card-glow-intensity/,
+    /body\.hover-glow/,
+    /\.drop-before|\.drop-after|\.group-before|\.group-after/
+  ];
   const offenders = [];
+
+  const layers = value => {
+    const parts = [];
+    let depth = 0;
+    let current = '';
+    for (const character of value) {
+      if (character === '(') depth++;
+      if (character === ')') depth--;
+      if (character === ',' && depth === 0) { parts.push(current); current = ''; }
+      else current += character;
+    }
+    if (current.trim()) parts.push(current);
+    return parts;
+  };
+
   for (const sheet of stylesheets()) {
-    for (const match of sheet.text.matchAll(/(?:filter|box-shadow):\s*([^;}]+)/g)) {
-      const value = match[1];
-      if (!/drop-shadow|px/.test(value)) continue;
-      // A ring is a colour with no blur; a bloom is a colour with one.
-      if (/drop-shadow\([^)]*(?:var\(--accent|var\(--c\b|color-mix)/.test(value)) {
-        offenders.push(`${sheet.name}: ${value.trim().slice(0, 64)}`);
+    // Walk rules rather than declarations, so an exception can be granted to a
+    // selector rather than to a value that might appear anywhere.
+    for (const rule of sheet.text.matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
+      const [, selector, declarations] = rule;
+      if (ALLOWED.some(allowed => allowed.test(selector) || allowed.test(declarations))) continue;
+      for (const match of declarations.matchAll(/(?:filter|box-shadow|text-shadow):\s*([^;}]+)/g)) {
+      for (const layer of layers(match[1])) {
+        /* A bare 0 is a length too. Matching only Npx is how the previous
+           version of this test read "0 0 20px <colour>" as a single length and
+           concluded there was no blur. */
+        const lengths = layer.match(/-?[\d.]+px|(?<![\w.-])0(?![\w.])/g) || [];
+        const blurred = lengths.length >= 3 && parseFloat(lengths[2]) > 0;
+        if (!blurred) continue;
+        const neutral = /rgba?\(\s*0\s*,\s*0\s*,\s*0\s*[,)]|rgba?\(\s*255\s*,\s*255\s*,\s*255\s*[,)]/.test(layer);
+        if (!neutral && TINT.test(layer)) {
+          offenders.push(`${sheet.name}: ${layer.trim().slice(0, 70)}`);
+        }
+      }
       }
     }
   }

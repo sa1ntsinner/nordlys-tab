@@ -662,7 +662,7 @@ html[data-theme="oled-obsidian"] #veil {
   background:
     radial-gradient(120% 120% at 30% 18%, color-mix(in srgb, var(--c, var(--accent)) 24%, transparent), transparent 66%),
     linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.78));
-  box-shadow: var(--nl-shadow-2), 0 14px 30px -8px color-mix(in srgb, var(--c, var(--accent)) 35%, transparent), 0 0 16px -2px color-mix(in srgb, var(--c, var(--accent)) 25%, transparent);
+  box-shadow: var(--nl-shadow-2);
 }
 
 .light-ui .box svg,

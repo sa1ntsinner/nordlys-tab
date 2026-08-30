@@ -241,7 +241,6 @@ body.seconds .sc, body.seconds #ss {
   font-family: var(--font-mono);
   font-weight: 600;
   color: var(--accent);
-  text-shadow: 0 0 14px var(--accent-glow);
 }
 #sugg .bm-info {
   display: flex;
@@ -750,10 +749,10 @@ body.minimal #board {
   height: 46%;
   fill: var(--c, var(--dim));
   color: var(--c, var(--dim));
-  /* One neutral shadow lifts the mark off its plate. The second layer used to be
-     a coloured halo in the icon's own hue, which is the fastest way to date an
-     interface and made every tile glow slightly. */
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+  /* No shadow. The plate already separates the mark from the board, and the
+     rule that makes toned icons legible sets filter: none on exactly these
+     elements — so a shadow declared here reached monograms and nothing else,
+     leaving two kinds of tile on one board that did not match. */
   transition: transform var(--nl-motion-panel) var(--nl-ease-emphasized);
   object-fit: contain;
   pointer-events: none;
@@ -765,7 +764,7 @@ body.minimal #board {
   font-weight: 700;
   color: var(--c, var(--dim));
   line-height: 1;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+
   pointer-events: none;
   user-select: none;
 }
@@ -789,9 +788,10 @@ body.minimal #board {
   background:
     radial-gradient(120% 120% at 30% 18%, color-mix(in srgb, var(--c, var(--dim)) 28%, transparent), transparent 66%),
     linear-gradient(150deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    0 18px 38px -10px color-mix(in srgb, var(--c, var(--dim)) 42%, transparent),
-    0 0 24px -4px color-mix(in srgb, var(--c, var(--dim)) 32%, transparent);
+  /* The plate and its border already say which tile this is. A halo in
+     the bookmark's own colour on top of them is decoration, and it was on
+     by default rather than chosen. */
+  box-shadow: var(--nl-shadow-2);
 }
 
 /* Dynamic Hover Styles */
@@ -1107,15 +1107,15 @@ body.hover-none .tile:hover .box {
   cursor: default;
 }
 
-.ctx-item.danger {
-  color: #f87171;
-}
+.ctx-item.danger,
 .ctx-item.danger svg {
-  color: #f87171;
+  color: var(--nl-status-danger);
 }
 .ctx-item.danger:hover {
-  background: rgba(239, 68, 68, 0.22);
-  color: #ffffff;
+  /* This forced white ink on a translucent red, which on a light menu is white
+     on pale pink. The tint carries the warning; the ink stays readable. */
+  background: color-mix(in srgb, var(--nl-status-danger) 16%, transparent);
+  color: var(--nl-status-danger);
 }
 
 .ctx-divider {
@@ -1359,7 +1359,7 @@ body.hover-none .tile:hover .box {
   transform: translateY(-2px) scale(1.02);
   background: color-mix(in srgb, var(--nl-surface-card) 84%, transparent);
   border-color: color-mix(in srgb, var(--nl-accent) 34%, var(--nl-border));
-  box-shadow: var(--nl-shadow-2), 0 0 20px color-mix(in srgb, var(--c) 18%, transparent);
+  box-shadow: var(--nl-shadow-2);
 }
 .tile:hover .box svg, .tile:hover .box img { transform: none; }
 .tile:active .box { transform: translateY(0) scale(.97); }
