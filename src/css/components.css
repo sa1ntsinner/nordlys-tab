@@ -1052,6 +1052,14 @@ body.hover-none .tile:hover .box {
 }
 
 .ctx-item {
+  /* The board's items are divs; the settings overflow menu uses real buttons,
+     which arrive wearing user-agent chrome. One reset serves both. */
+  appearance: none;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1075,6 +1083,11 @@ body.hover-none .tile:hover .box {
 }
 .ctx-item:hover svg {
   color: var(--accent);
+}
+
+.ctx-item[disabled] {
+  opacity: 0.38;
+  cursor: default;
 }
 
 .ctx-item.danger {

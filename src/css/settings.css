@@ -1810,7 +1810,24 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 @media (max-width: 480px) { .theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 .bookmark-folder-accordion { border: 1px solid var(--nl-border); border-radius: var(--nl-radius-md); background: color-mix(in srgb, var(--nl-surface-card) 55%, transparent); overflow: clip; }
-.bookmark-folder-summary { min-height: 52px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 0 6px 0 14px; cursor: pointer; }
+.bookmark-folder-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px; padding-right: 6px; }
+.bookmark-folder-summary { min-height: 52px; display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 0 6px 0 10px; cursor: pointer; }
+/* The chevron says the row opens; it used to say nothing and people clicked the
+   name hoping. It turns when the folder is open. */
+.bookmark-folder-chevron { width: 14px; height: 14px; border-right: 1.8px solid var(--nl-text-tertiary); border-bottom: 1.8px solid var(--nl-text-tertiary); transform: rotate(-45deg) translate(-2px, -2px); transition: transform var(--nl-motion-control) var(--nl-ease-emphasized); }
+.bookmark-folder-summary[aria-expanded="true"] .bookmark-folder-chevron { transform: rotate(45deg) translate(-1px, -3px); }
+
+/* One button per row instead of five. */
+.bookmark-overflow { font-size: 17px; line-height: 1; letter-spacing: .06em; color: var(--nl-text-tertiary); }
+.bookmark-overflow:hover { color: var(--nl-text-primary); }
+.nl-overflow-menu { min-width: 210px; }
+
+/* The obvious next thing to do inside an open folder, rather than the seventh
+   identical grey button in a wrapped row. */
+.bookmark-folder-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 6px 0 12px; }
+.bookmark-add { min-height: var(--nl-target-min); }
+.bookmark-columns { display: inline-flex; align-items: center; gap: 8px; color: var(--nl-text-secondary); font-size: 13px; }
+.bookmark-columns select { min-width: 64px; min-height: var(--nl-target-min); color: var(--nl-text-primary); background: var(--nl-surface-card-deep); border: 1px solid var(--nl-border); border-radius: var(--nl-radius-sm); }
 .bookmark-folder-count { min-width: 24px; padding: 2px 7px; border-radius: 999px; text-align: center; background: color-mix(in srgb, var(--nl-accent) 14%, transparent); color: var(--nl-text-secondary); }
 /* Wraps rather than running off both edges of a phone-width sheet. */
 .bookmark-folder-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; padding: 0 10px 8px; }
@@ -1820,7 +1837,7 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 .bookmark-compact-action:hover { background: color-mix(in srgb, var(--nl-text-primary) 7%, transparent); color: var(--nl-text-primary); }
 .bookmark-compact-action.danger { color: var(--nl-status-danger); }
 .bookmark-summary-list { padding: 4px 10px 12px; border-top: 1px solid var(--nl-border); }
-.bookmark-summary-row { min-height: 64px; display: grid; grid-template-columns: 36px minmax(80px, 1fr) minmax(196px, 1.7fr); align-items: center; gap: 6px; padding: 6px 0; border-bottom: 1px solid color-mix(in srgb, var(--nl-border) 65%, transparent); }
+.bookmark-summary-row { min-height: 56px; display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid color-mix(in srgb, var(--nl-border) 65%, transparent); }
 .bookmark-row-actions { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px; }
 .bookmark-row-actions select { flex: 1 1 108px; max-width: 132px; }
 .bookmark-summary-icon { width: 32px; height: 32px; display: grid; place-items: center; }
@@ -1841,8 +1858,7 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 
 @media (max-width: 560px) {
   .bookmark-folder-summary { grid-template-columns: minmax(0, 1fr) auto; padding-inline: 6px; }
-  .bookmark-summary-row { grid-template-columns: 32px minmax(0, 1fr); }
-  .bookmark-row-actions { grid-column: 1 / -1; }
+  .bookmark-summary-row { grid-template-columns: 32px minmax(0, 1fr) auto; }
   .bookmark-editor { grid-template-columns: 1fr; }
 }
 

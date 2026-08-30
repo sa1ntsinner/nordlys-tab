@@ -1,4 +1,5 @@
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
+const { openIconPicker } = require('../helpers/flows.cjs');
 
 /* The clock, the date and the greeting all change on their own schedule. Baking
    any of them into a baseline makes the suite fail at midnight, or at whatever
@@ -41,8 +42,7 @@ test('icon picker dialog', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.locator('#gear').click(); await page.getByRole('tab', { name: 'Bookmarks' }).click();
   const folder = page.locator('.bookmark-folder-accordion').first(); await folder.locator('summary').click();
-  await folder.locator('.bookmark-summary-row').first().getByRole('button', { name: /Edit YouTube/ }).click();
-  await folder.getByRole('button', { name: /Choose icon/ }).click();
+  await openIconPicker(page, folder);
   await snapshot(page, 'dialog-icon-picker-1440.png');
 });
 

@@ -1,4 +1,5 @@
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
+const { openIconPicker } = require('../helpers/flows.cjs');
 
 async function renderedFocusableIds(root) {
   return root.evaluate(node => [...node.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]
@@ -27,8 +28,7 @@ test('every settings section contains forward and backward keyboard focus', asyn
 test('icon picker is the sole top layer and restores its settings opener', async ({ nordlysPage }) => {
   const { page } = nordlysPage; await page.locator('#gear').click(); await page.getByRole('tab', { name: 'Bookmarks' }).click();
   const folder = page.locator('.bookmark-folder-accordion').first(); await folder.locator('summary').click();
-  await folder.locator('.bookmark-summary-row').first().getByRole('button', { name: /Edit YouTube/ }).click();
-  const opener = folder.getByRole('button', { name: /Choose icon/ }); await opener.click();
+  const opener = await openIconPicker(page, folder);
   const picker = page.locator('#icon-modal'); await expect(picker).toBeVisible(); await expect(page.locator('#cfg')).toHaveAttribute('inert', ''); await expectCycles(page, picker);
   await page.keyboard.press('Escape'); await expect(picker).toBeHidden(); await expect(opener).toBeFocused(); await expect(page.locator('#cfg')).not.toHaveAttribute('inert', '');
   await expect(page.locator('#cfg')).toBeVisible(); await page.keyboard.press('Escape'); await expect(page.locator('#gear')).toBeFocused();

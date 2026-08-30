@@ -6,6 +6,42 @@
       this.expanded = new Set(); this.renaming = new Set();
     }
     text(key, fallback) { return window.I18N?.t(key) || fallback; }
+
+    /* Every row used to wear its whole vocabulary: Edit, up, down, a Move-to
+       select and Delete, five controls competing with the bookmark they act on.
+       One button holds them now, and a single shared menu serves every row. */
+    overflow() {
+      if (this._overflow) return this._overflow;
+      const root = document.createElement('div');
+      root.className = 'glass-context-menu nl-overflow-menu';
+      document.body.append(root);
+      this._overflow = new NordlysUI.MenuController(root);
+      return this._overflow;
+    }
+    openOverflow(button, entries) {
+      const menu = this.overflow();
+      const fill = list => {
+        menu.root.replaceChildren();
+        for (const entry of list) {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = `ctx-item${entry.danger ? ' danger' : ''}`;
+          item.setAttribute('role', 'menuitem');
+          item.textContent = entry.label;
+          if (entry.disabled) item.setAttribute('disabled', '');
+          item.addEventListener('click', () => {
+            // A submenu keeps the menu open and swaps its contents, so moving a
+            // bookmark to another folder never needs a select inside a menu.
+            if (entry.submenu) { fill(entry.submenu()); menu.root.querySelector('[role="menuitem"]')?.focus(); return; }
+            menu.close(); entry.run?.();
+          });
+          menu.root.append(item);
+        }
+      };
+      fill(entries);
+      const box = button.getBoundingClientRect();
+      menu.open(button, { x: box.right - 210, y: box.bottom + 6 });
+    }
     save(message) { this.app.saveConfig(); this.app.grid?.render(); if (message) NordlysUI.announce(message); }
     moveFolder(folder, delta) {
       const groups = this.app.config.groups, index = groups.indexOf(folder), target = Math.max(0, Math.min(groups.length - 1, index + delta)); if (index < 0 || target === index) return;
@@ -34,56 +70,111 @@
     }
     render() {
       if (!this.root) return; this.root.replaceChildren();
-      (this.app.config.groups || []).forEach((group, groupIndex) => {
+      const groups = this.app.config.groups || [];
+      groups.forEach((group, groupIndex) => {
         const details = document.createElement('article'); details.className = 'bookmark-folder-accordion'; details.dataset.groupIndex = groupIndex;
+        const open = this.expanded.has(group);
         const summary = document.createElement('summary'); summary.className = 'bookmark-folder-summary';
-        summary.setAttribute('role', 'button'); summary.tabIndex = 0; summary.setAttribute('aria-expanded', String(this.expanded.has(group)));
+        summary.setAttribute('role', 'button'); summary.tabIndex = 0; summary.setAttribute('aria-expanded', String(open));
+        const chevron = document.createElement('span'); chevron.className = 'bookmark-folder-chevron'; chevron.setAttribute('aria-hidden', 'true');
         const name = document.createElement('strong'); name.textContent = group.label || 'Folder';
         const count = document.createElement('span'); count.className = 'bookmark-folder-count'; count.textContent = String((group.links || []).length); count.setAttribute('aria-label', `${count.textContent} bookmarks`);
-        const actions = document.createElement('span'); actions.className = 'bookmark-folder-actions';
-        const action = (label, text, handler, disabled = false) => { const button = document.createElement('button'); button.type = 'button'; button.className = 'bookmark-compact-action'; button.setAttribute('aria-label', label); button.textContent = text; button.disabled = disabled; button.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); handler(); }); return button; };
+
+        const button = (label, text, handler, extra = {}) => {
+          const node = document.createElement('button'); node.type = 'button';
+          node.className = extra.className || 'bookmark-compact-action';
+          node.setAttribute('aria-label', label);
+          node.textContent = text;
+          if (extra.disabled) node.disabled = true;
+          node.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); handler(node); });
+          return node;
+        };
+
         const renameInput = document.createElement('input'); renameInput.className = 'bookmark-folder-name-input'; renameInput.setAttribute('aria-label', `Folder name for ${group.label}`); renameInput.value = group.label || '';
         renameInput.hidden = !this.renaming.has(group);
         const commitRename = () => { group.label = renameInput.value.trim() || this.text('bookmarks.newFolder', 'New Folder'); this.renaming.delete(group); this.save(`${group.label} renamed`); this.render(); };
-        renameInput.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); commitRename(); } }); renameInput.addEventListener('change', commitRename);
+        renameInput.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); commitRename(); } });
+        renameInput.addEventListener('change', commitRename);
+        renameInput.addEventListener('click', event => event.stopPropagation());
+
+        const addBookmark = () => {
+          (group.links ||= []).push({ name: 'New Bookmark', url: 'https://', color: '#35d6c0', icon: 'globe' });
+          this.expanded.add(group); this.save('Bookmark added'); this.render();
+        };
+
+        const folderMenu = button(`More actions for ${group.label}`, '⋯', node => this.openOverflow(node, [
+          { label: this.text('bookmarks.rename', 'Rename'), run: () => { this.renaming.add(group); this.render(); this.root.querySelector(`[data-group-index="${this.app.config.groups.indexOf(group)}"] .bookmark-folder-name-input`)?.focus(); } },
+          { label: this.text('bookmarks.addBookmark', 'Add bookmark'), run: addBookmark },
+          { label: group.hidden ? this.text('bookmarks.showOnBoard', 'Show on the board') : this.text('bookmarks.hideFromBoard', 'Hide from the board'), run: () => { group.hidden = !group.hidden; this.save(`${group.label} ${group.hidden ? 'hidden' : 'shown'}`); this.render(); } },
+          { label: this.text('bookmarks.moveUp', 'Move up'), disabled: groupIndex === 0, run: () => this.moveFolder(group, -1) },
+          { label: this.text('bookmarks.moveDown', 'Move down'), disabled: groupIndex === groups.length - 1, run: () => this.moveFolder(group, 1) },
+          { label: this.text('bookmarks.deleteFolder', 'Delete folder'), danger: true, run: async () => {
+            const ok = await confirmDialog({ title: this.text('confirm.deleteFolderTitle', 'Delete folder?'), message: `${group.label}`, danger: true });
+            if (!ok) return;
+            const index = this.app.config.groups.indexOf(group);
+            if (index >= 0) this.app.grid.deleteFolderWithUndo(index);
+          } }
+        ]), { className: 'bookmark-compact-action bookmark-overflow' });
+
+        const toggle = () => { this.expanded.has(group) ? this.expanded.delete(group) : this.expanded.add(group); this.render(); };
+        summary.addEventListener('click', toggle);
+        summary.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggle(); } });
+        /* The overflow button used to sit inside the summary, which is itself a
+           button: a control nested in a control, which Axe flags and screen
+           readers cannot describe. They are siblings on one grid row now. */
+        summary.append(chevron, name, count);
+        const head = document.createElement('div'); head.className = 'bookmark-folder-head';
+        head.append(summary, folderMenu);
+        details.append(head, renameInput);
+
+        const list = document.createElement('div'); list.className = 'bookmark-summary-list'; list.hidden = !open;
+
+        /* Adding a bookmark used to be one identical grey button among seven.
+           Inside the folder it is the obvious next thing to do. */
+        const toolbar = document.createElement('div'); toolbar.className = 'bookmark-folder-toolbar';
+        const add = button(`Add bookmark to ${group.label}`, this.text('bookmarks.addBookmark', 'Add bookmark'), addBookmark, { className: 'glass-btn accent bookmark-add' });
+        const columnsLabel = document.createElement('label'); columnsLabel.className = 'bookmark-columns';
+        const columnsText = document.createElement('span'); columnsText.textContent = this.text('bookmarks.columns', 'Columns');
         const columns = document.createElement('select'); columns.setAttribute('aria-label', `Columns for ${group.label}`);
         for (let value = 1; value <= 8; value++) { const option = document.createElement('option'); option.value = String(value); option.textContent = `${value}`; option.selected = Number(group.cols) === value; columns.append(option); }
         columns.addEventListener('change', () => { group.cols = Number(columns.value); this.save(`${group.label}: ${group.cols} columns`); });
-        actions.append(
-          action(`${group.hidden ? 'Show' : 'Hide'} ${group.label}`, group.hidden ? 'Show' : 'Hide', () => { group.hidden = !group.hidden; this.save(`${group.label} ${group.hidden ? 'hidden' : 'shown'}`); this.render(); }),
-          action(`Move ${group.label} up`, '↑', () => this.moveFolder(group, -1), groupIndex === 0),
-          action(`Move ${group.label} down`, '↓', () => this.moveFolder(group, 1), groupIndex === this.app.config.groups.length - 1),
-          action(`Rename ${group.label}`, 'Rename', () => { this.renaming.add(group); this.render(); this.root.querySelector(`[data-group-index="${this.app.config.groups.indexOf(group)}"] .bookmark-folder-name-input`)?.focus(); }),
-          columns,
-          action(`Add bookmark to ${group.label}`, this.text('bookmarks.addBookmark', 'Add bookmark'), () => { (group.links ||= []).push({ name: 'New Bookmark', url: 'https://', color: '#35d6c0', icon: 'globe' }); this.expanded.add(group); this.save('Bookmark added'); this.render(); }),
-          action(`Delete folder ${group.label}`, 'Delete', async () => { const ok = await confirmDialog({ title: 'Delete folder?', message: `Delete ${group.label}?`, danger: true }); if (!ok) return; const index = this.app.config.groups.indexOf(group); if (index < 0) return; this.app.grid.deleteFolderWithUndo(index); })
-        );
-        const toggle = () => { this.expanded.has(group) ? this.expanded.delete(group) : this.expanded.add(group); this.render(); };
-        summary.addEventListener('click', toggle); summary.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggle(); } });
-        summary.append(name, count); details.append(summary, actions, renameInput);
-        const list = document.createElement('div'); list.className = 'bookmark-summary-list'; list.hidden = !this.expanded.has(group);
+        columnsLabel.append(columnsText, columns);
+        toolbar.append(add, columnsLabel);
+        list.append(toolbar);
+
         (group.links || []).forEach((link, bookmarkIndex) => {
           const row = document.createElement('article'); row.className = 'bookmark-summary-row';
           const icon = document.createElement('span'); icon.className = 'bookmark-summary-icon'; icon.append(this.iconFor(link));
           NordlysIcons.applyIconContrast(icon);
           const meta = document.createElement('span'); meta.className = 'bookmark-summary-meta';
           const title = document.createElement('strong'); title.className = 'bookmark-summary-name'; title.textContent = link.name || 'Bookmark';
-          const host = document.createElement('span'); host.className = 'bookmark-summary-host'; try { host.textContent = new URL(link.url).hostname; } catch { host.textContent = link.url || ''; } meta.append(title, host);
+          const host = document.createElement('span'); host.className = 'bookmark-summary-host';
+          try { host.textContent = new URL(link.url).hostname; } catch { host.textContent = link.url || ''; }
+          meta.append(title, host);
+
           const editor = document.createElement('div'); editor.className = 'bookmark-editor'; editor.hidden = true;
           const titleInput = document.createElement('input'); titleInput.value = link.name || ''; titleInput.setAttribute('aria-label', 'Bookmark title');
           const urlInput = document.createElement('input'); urlInput.value = link.url || ''; urlInput.type = 'url'; urlInput.setAttribute('aria-label', 'Bookmark URL');
           const currentGroupIndex = () => this.app.config.groups.indexOf(group), currentBookmarkIndex = () => group.links.indexOf(link);
-          const iconButton = action(`Choose icon for ${link.name}`, 'Choose icon', () => this.openIconPicker(currentGroupIndex(), currentBookmarkIndex(), iconButton));
-          const saveButton = action(`Save ${link.name}`, 'Save', () => { link.name = titleInput.value.trim() || 'Bookmark'; link.url = /^https?:\/\//i.test(urlInput.value) ? urlInput.value : `https://${urlInput.value}`; this.save(`${link.name} saved`); this.render(); });
+          const iconButton = button(`Choose icon for ${link.name}`, this.text('modal.chooseIcon', 'Choose icon'), () => this.openIconPicker(currentGroupIndex(), currentBookmarkIndex(), iconButton));
+          const saveButton = button(`Save ${link.name}`, this.text('modal.saveChanges', 'Save'), () => {
+            link.name = titleInput.value.trim() || 'Bookmark';
+            link.url = /^https?:\/\//i.test(urlInput.value) ? urlInput.value : `https://${urlInput.value}`;
+            this.save(`${link.name} saved`); this.render();
+          });
           editor.append(titleInput, urlInput, iconButton, saveButton);
-          const edit = action(`Edit ${link.name}`, 'Edit', () => { editor.hidden = false; titleInput.focus(); });
-          const up = action(`Move ${link.name} up`, '↑', () => this.moveBookmark(group, link, -1), bookmarkIndex === 0);
-          const down = action(`Move ${link.name} down`, '↓', () => this.moveBookmark(group, link, 1), bookmarkIndex === group.links.length - 1);
-          const transfer = document.createElement('select'); transfer.setAttribute('aria-label', `Move ${link.name} to folder`); const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = 'Move to…'; placeholder.selected = true; transfer.append(placeholder);
-          this.app.config.groups.forEach((candidate, index) => { if (candidate === group) return; const option = document.createElement('option'); option.value = String(index); option.textContent = candidate.label; transfer.append(option); });
-          transfer.addEventListener('change', () => this.transferBookmark(group, link, this.app.config.groups[Number(transfer.value)]));
-          const remove = action(`Delete ${link.name}`, 'Delete', () => this.removeWithUndo({ group, link })); remove.classList.add('danger');
-          const rowActions = document.createElement('span'); rowActions.className = 'bookmark-row-actions'; rowActions.append(edit, up, down, transfer, remove);
+
+          const rowMenu = button(`More actions for ${link.name}`, '⋯', node => this.openOverflow(node, [
+            { label: this.text('ctx.editBookmark', 'Edit'), run: () => { editor.hidden = false; titleInput.focus(); } },
+            { label: this.text('bookmarks.moveUp', 'Move up'), disabled: bookmarkIndex === 0, run: () => this.moveBookmark(group, link, -1) },
+            { label: this.text('bookmarks.moveDown', 'Move down'), disabled: bookmarkIndex === group.links.length - 1, run: () => this.moveBookmark(group, link, 1) },
+            { label: this.text('bookmarks.moveTo', 'Move to folder'), disabled: groups.length < 2, submenu: () => groups
+                .filter(candidate => candidate !== group)
+                .map(candidate => ({ label: candidate.label || 'Folder', run: () => this.transferBookmark(group, link, candidate) })) },
+            { label: this.text('ctx.deleteBookmark', 'Delete'), danger: true, run: () => this.removeWithUndo({ group, link }) }
+          ]), { className: 'bookmark-compact-action bookmark-overflow' });
+
+          const rowActions = document.createElement('span'); rowActions.className = 'bookmark-row-actions'; rowActions.append(rowMenu);
           row.append(icon, meta, rowActions, editor); list.append(row);
         });
         details.append(list); this.root.append(details);
