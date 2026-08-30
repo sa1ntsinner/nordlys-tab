@@ -19,15 +19,30 @@ async function animationAudit(page, context = null) {
   }), context);
 }
 
-test('entrance and interactive motion use only transform and opacity within budget', async ({ nordlysPage }) => {
+/* The page used to assemble itself: the clock bloomed, the search bar rose, the
+   cards lifted and the tiles cascaded, and a timer switched the whole thing off
+   after as much as two seconds. On a surface opened dozens of times a day that
+   is not a flourish, it is a toll — so arrival is now instant by contract, and
+   motion belongs only to things the user starts. */
+test('the page does not animate itself on arrival', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  const entrance = await animationAudit(page);
-  expect(entrance.length).toBeGreaterThan(0);
-  for (const animation of entrance) {
+  const onArrival = await animationAudit(page);
+  const moving = onArrival.filter(animation => animation.duration > 0);
+  expect(moving, `nothing should be animating on load: ${JSON.stringify(moving)}`).toEqual([]);
+});
+
+test('interactive motion uses only transform and opacity within budget', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.locator('#q').click();
+  await page.locator('#q').fill('git');
+  await page.waitForTimeout(60);
+  const suggestions = await animationAudit(page, '#sugg');
+  for (const animation of suggestions) {
     expect.soft(animation.properties.filter(property => !['transform', 'opacity'].includes(property)), JSON.stringify(animation)).toEqual([]);
     expect.soft(animation.duration + Math.max(0, animation.delay), JSON.stringify(animation)).toBeLessThanOrEqual(320);
   }
-  await page.waitForTimeout(350);
+  await page.keyboard.press('Escape');
+
   await page.locator('#gear').click();
   const panel = await animationAudit(page, '#cfg, #dim');
   for (const animation of panel) expect.soft(animation.duration, JSON.stringify(animation)).toBeLessThanOrEqual(280);

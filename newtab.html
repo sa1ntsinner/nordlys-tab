@@ -8,6 +8,15 @@
   <!-- Original Vector Icon -->
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
   
+  <!-- Last-resort ground colour: if the boot script below fails for any reason,
+       the tab still must not open white. -->
+  <style>html{background-color:#060a14}</style>
+
+  <!-- The first frame. Runs before <body> exists and before any stylesheet, so
+       the page opens already wearing the user's theme instead of flashing the
+       browser's white and then the wrong theme. Must stay above the sheets. -->
+  <script src="src/js/boot.js"></script>
+
   <!-- Modular Design System & Stylesheets -->
   <link rel="stylesheet" href="src/css/main.css">
   <link rel="stylesheet" href="src/css/foundations.css">

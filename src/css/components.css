@@ -9,7 +9,6 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  animation: bloom var(--nl-motion-enter) var(--nl-ease-emphasized) both;
   transition: opacity var(--nl-motion-control) ease, transform var(--nl-motion-control) ease;
 }
 
@@ -84,7 +83,6 @@ body.seconds .sc, body.seconds #ss {
   margin-top: 18px;
   width: min(88vw, 640px);
   transition: width var(--nl-motion-panel) var(--nl-ease-emphasized);
-  animation: rise var(--nl-motion-enter) var(--nl-ease-emphasized) both;
 }
 
 #search {
@@ -211,7 +209,9 @@ body.seconds .sc, body.seconds #ss {
   cursor: pointer;
   transition: background var(--nl-motion-fast), color var(--nl-motion-fast);
   animation: suggIn var(--nl-motion-control) var(--nl-ease-emphasized) both;
-  animation-delay: calc(var(--si, 0) * 24ms);
+  /* Cascade, but bounded: eight suggestions at 24ms each would put the last
+     one outside the motion budget on its own. */
+  animation-delay: min(calc(var(--si, 0) * 24ms), 120ms);
 }
 
 @keyframes suggIn {
@@ -409,14 +409,6 @@ body.minimal #board {
 }
 
 /* First-paint choreography: cards rise in sequence, then never re-animate */
-#board:not(.board-loaded) .card {
-  animation: cardRise var(--nl-motion-panel) var(--nl-ease-emphasized) both;
-}
-
-@keyframes cardRise {
-  from { opacity: 0; transform: translateY(14px) scale(0.99); }
-  to { opacity: 1; transform: none; }
-}
 
 .card:hover {
   border-color: color-mix(in srgb, var(--glass-border) 40%, var(--accent) 22%);
@@ -713,10 +705,6 @@ body.minimal #board {
   position: relative;
 }
 
-/* Tiles cascade in only on the very first render — later re-renders are instant */
-#board:not(.board-loaded) .tile {
-  animation: tin var(--nl-motion-panel) var(--nl-ease-emphasized) both;
-}
 
 .box {
   position: relative;
@@ -1456,7 +1444,6 @@ body.hover-none .tile:hover .box {
   border-radius: var(--nl-radius-xl);
   border: 1px dashed var(--nl-border-strong);
   background: color-mix(in srgb, var(--nl-surface-card) 34%, transparent);
-  animation: rise var(--nl-motion-enter) var(--nl-ease-emphasized) both;
 }
 .board-empty-text { color: var(--nl-text-secondary); font-size: 13.5px; }
 
