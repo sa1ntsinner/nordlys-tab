@@ -724,6 +724,63 @@ class SettingsController {
       }
     };
 
+    /* Seven colour wells asked for a designer before they would give you a
+       theme, and the one with an actual correctness requirement — text you can
+       read on the background you picked — was left to taste like the rest.
+       Three colours carry the idea; the other four follow, and the text pair is
+       pushed until it clears WCAG AA rather than merely looking plausible. */
+    const toRgb = (hex) => {
+      const match = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim());
+      if (!match) return [0, 0, 0];
+      const value = parseInt(match[1], 16);
+      return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+    };
+    const toHex = (rgb) => `#${rgb.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("")}`;
+    const channel = (v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    const luminance = ([r, g, b]) => 0.2126 * channel(r / 255) + 0.7152 * channel(g / 255) + 0.0722 * channel(b / 255);
+    const ratio = (a, b) => {
+      const la = luminance(a), lb = luminance(b);
+      return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+    };
+    const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+    const reach = (from, towards, against, target) => {
+      let colour = from;
+      for (let step = 0; step < 24 && ratio(colour, against) < target; step++) {
+        colour = mix(colour, towards, 0.12);
+      }
+      return colour;
+    };
+
+    const deriveTheme = () => {
+      const bg = toRgb(document.getElementById("thm-bg-hex")?.value || "#0a0f1d");
+      const card = toRgb(document.getElementById("thm-card-hex")?.value || "#111c35");
+      const accent = toRgb(document.getElementById("thm-accent-hex")?.value || "#35d6c0");
+      /* Pick the direction that can actually get there rather than guessing
+         from lightness: against a mid grey like #7a7a7a white tops out at
+         4.17:1 while black reaches 5.03:1, and a luminance threshold chooses
+         white and then cannot explain why the result fails. */
+      const white = [255, 255, 255], black = [0, 0, 0];
+      const ink = ratio(white, bg) >= ratio(black, bg) ? white : black;
+      const onDark = ink === white;
+
+      const text = reach(mix(bg, ink, 0.86), ink, bg, 4.5);
+      const dim = reach(mix(text, bg, 0.45), text, bg, 3);
+      const border = mix(card, ink, onDark ? 0.16 : 0.24);
+
+      return { border: toHex(border), glow: toHex(accent), text: toHex(text), dim: toHex(dim) };
+    };
+
+    const applyDerived = () => {
+      const derived = deriveTheme();
+      for (const [key, value] of Object.entries(derived)) {
+        const hex = document.getElementById(`thm-${key}-hex`);
+        const well = document.getElementById(`thm-${key}-color`);
+        if (hex) hex.value = value;
+        if (well) well.value = value;
+      }
+      livePreview();
+    };
+
     const bindColorPair = (wellId, hexId) => {
       const well = document.getElementById(wellId);
       const hex = document.getElementById(hexId);
@@ -744,11 +801,21 @@ class SettingsController {
 
     bindColorPair("thm-bg-color", "thm-bg-hex");
     bindColorPair("thm-card-color", "thm-card-hex");
-    bindColorPair("thm-border-color", "thm-border-hex");
     bindColorPair("thm-accent-color", "thm-accent-hex");
+    bindColorPair("thm-border-color", "thm-border-hex");
     bindColorPair("thm-glow-color", "thm-glow-hex");
     bindColorPair("thm-text-color", "thm-text-hex");
     bindColorPair("thm-dim-color", "thm-dim-hex");
+
+    /* Changing one of the three re-derives the four. An edit made inside
+       Fine-tune stands until a base colour moves again, which is the moment it
+       stopped describing that base. */
+    for (const id of ["thm-bg-hex", "thm-card-hex", "thm-accent-hex", "thm-bg-color", "thm-card-color", "thm-accent-color"]) {
+      document.getElementById(id)?.addEventListener("input", (event) => {
+        if (event.target.type === "text" && !/^#[0-9A-F]{6}$/i.test(event.target.value)) return;
+        applyDerived();
+      });
+    }
 
     document.getElementById("thm-save-btn")?.addEventListener("click", () => {
       const name = document.getElementById("thm-name-input")?.value.trim() || `Custom ${this.customThemes.length + 1}`;

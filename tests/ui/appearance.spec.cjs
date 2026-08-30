@@ -60,6 +60,9 @@ test('custom theme accent actions and preview artwork keep WCAG contrast', async
 
 test('custom theme studio warns when authored text colors fail contrast', async ({ nordlysPage }) => {
   const { page } = nordlysPage; await page.locator('#gear').click(); await page.locator('#btn-create-custom-theme').click();
+  /* Derived colours clear AA on their own; this is about the override the
+     Fine-tune disclosure still offers, which can be made unreadable by hand. */
+  await page.locator('.theme-advanced summary').click();
   await page.locator('#thm-text-hex').fill('#111111');
   await expect(page.locator('#custom-theme-contrast-warning')).toBeVisible();
   await expect(page.locator('#custom-theme-contrast-warning')).toHaveAttribute('role', 'status');

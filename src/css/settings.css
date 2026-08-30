@@ -1970,3 +1970,9 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 .favicon-sources summary { display: inline-flex; align-items: center; min-height: var(--nl-target-min); color: var(--nl-text-secondary); font-size: 12.5px; cursor: pointer; }
 .favicon-sources summary:hover { color: var(--nl-text-primary); }
 .favicon-source-chips { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; }
+
+/* Three colours make a theme; the rest are consequences, kept out of the way. */
+.theme-advanced { margin: 6px 0 2px; }
+.theme-advanced summary { display: inline-flex; align-items: center; min-height: var(--nl-target-min); color: var(--nl-text-secondary); font-size: 12.5px; cursor: pointer; }
+.theme-advanced summary:hover { color: var(--nl-text-primary); }
+.theme-advanced[open] summary { margin-bottom: 6px; }
