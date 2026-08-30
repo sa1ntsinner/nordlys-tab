@@ -2,7 +2,7 @@
 
 **Effective Date:** August 16, 2026
 **Last Updated:** August 30, 2026
-**Version:** 2.2.0
+**Version:** 2.3.0
 
 Nordlys ("the extension", "we", or "our") is designed with a strict **Privacy-by-Architecture** principle. Nordlys is a client-side, offline-capable New Tab override extension.
 
@@ -53,6 +53,7 @@ In accordance with the Principle of Least Privilege, Nordlys requests only the m
 - **`storage`**: Used strictly to persist user customizations (bookmarks, themes, folders) locally.
 - **`unlimitedStorage`**: Allows saving custom user wallpaper images and video loops inside client-side IndexedDB without hitting strict browser storage limits.
 - **`favicon`**: Allows displaying website favicons from Chrome's local favicon cache on bookmark tiles.
+- **`bookmarks` (optional, never requested at install)**: Only asked for at the moment you point a folder at one of your browser's bookmark folders, and only used to read that folder's contents so the tiles can mirror it. Nordlys never writes to your browser bookmarks and never sends them anywhere. Revoking it in `chrome://extensions` stops the mirroring; the tiles already on screen stay.
 - **Narrow host permissions**: Only the search-suggestion endpoints listed in section 3 plus `images.weserv.nl`. Nordlys cannot read, alter, or transmit data from web pages you visit.
 - **No `tabs` History Access**: Nordlys does not inspect your browsing history, active tabs, or open URLs.
 

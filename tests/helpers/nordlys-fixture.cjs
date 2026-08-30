@@ -21,7 +21,43 @@ const test = base.extend({
         set(values, callback) { Object.assign(state, values); persist(); window.__nordlysStorageSet(values); callback?.(); },
         remove(keys, callback) { for (const key of Array.isArray(keys) ? keys : [keys]) delete state[key]; persist(); window.__nordlysStorageRemove(keys); callback?.(); },
         clear(callback) { const keys = Object.keys(state); for (const key of keys) delete state[key]; persist(); window.__nordlysStorageRemove(keys); callback?.(); }
-      } }, runtime: { getURL: path => `${location.origin}/${String(path).replace(/^\//, '')}` } };
+      } }, runtime: { getURL: path => `${location.origin}/${String(path).replace(/^\//, '')}` },
+        /* A bookmark tree the tests can shape, plus the optional-permission
+           dance Chrome requires before any of it is readable. Tests drive both
+           through window.__bookmarks. */
+        permissions: {
+          contains(request, callback) { callback(Boolean(window.__bookmarks?.granted)); },
+          request(request, callback) {
+            if (window.__bookmarks) window.__bookmarks.granted = window.__bookmarks.grantOnRequest !== false;
+            callback(Boolean(window.__bookmarks?.granted));
+          }
+        },
+        bookmarks: {
+          getTree(callback) { callback(window.__bookmarks?.tree || []); },
+          getChildren(id, callback) {
+            const find = nodes => {
+              for (const node of nodes || []) {
+                if (String(node.id) === String(id)) return node.children || [];
+                const deeper = find(node.children);
+                if (deeper) return deeper;
+              }
+              return null;
+            };
+            const children = find(window.__bookmarks?.tree || []);
+            if (children === null) {
+              window.chrome.runtime.lastError = { message: 'No bookmark with id: ' + id };
+              callback(undefined);
+              delete window.chrome.runtime.lastError;
+              return;
+            }
+            callback(children);
+          },
+          onCreated: { addListener(fn) { (window.__bookmarks.listeners ||= []).push(fn); }, removeListener() {} },
+          onRemoved: { addListener() {}, removeListener() {} },
+          onChanged: { addListener() {}, removeListener() {} },
+          onMoved: { addListener() {}, removeListener() {} },
+          onChildrenReordered: { addListener() {}, removeListener() {} }
+        } };
     }, storageState);
     await page.goto(`${server.origin}/newtab.html`);
     await page.waitForFunction(() => Boolean(window.Aurora?.grid));

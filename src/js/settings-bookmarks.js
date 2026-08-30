@@ -73,6 +73,53 @@
       const def = resolveIcon(link.url, link.icon), presentation = NordlysIcons.resolvePresentation({ source: link, metadata: def || {}, isLight: this.app.isLightTheme() });
       return NordlysIcons.renderIcon(presentation);
     }
+    /* Linking hands ownership of a folder's contents to the browser. Unlinking
+       keeps whatever was on screen, because taking the bookmarks away would be
+       the data loss this feature exists to avoid. */
+    async toggleBrowserLink(group) {
+      const sync = window.NordlysBookmarks;
+      if (!sync) return;
+
+      if (group.source?.folderId) {
+        delete group.source;
+        for (const link of group.links || []) delete link.fromBrowser;
+        this.save(`${group.label} no longer follows the browser`);
+        this.render();
+        return;
+      }
+
+      // Asked here, on the click, so installing never prompts about bookmarks.
+      if (!(await sync.granted()) && !(await sync.request())) return;
+
+      let folders;
+      try {
+        folders = await sync.folders();
+      } catch (error) {
+        NordlysUI.announce(this.text('bookmarks.linkUnavailable', 'Browser bookmarks are not available'));
+        return;
+      }
+      if (!folders.length) {
+        NordlysUI.announce(this.text('bookmarks.linkEmpty', 'No bookmark folders found'));
+        return;
+      }
+
+      const button = this.root.querySelector(`[data-group-index="${this.app.config.groups.indexOf(group)}"] .bookmark-overflow`);
+      this.openOverflow(button || document.body, folders.slice(0, 40).map((folder) => ({
+        label: folder.path,
+        run: async () => {
+          group.source = { type: 'browser', folderId: folder.id, title: folder.title };
+          try {
+            group.links = await sync.linksIn(folder.id);
+          } catch (error) {
+            group.links = [];
+          }
+          this.save(`${group.label} follows ${folder.title}`);
+          this.render();
+          this.app.grid?.render();
+        }
+      })));
+    }
+
     render() {
       if (!this.root) return; this.root.replaceChildren();
       const groups = this.app.config.groups || [];
@@ -84,6 +131,19 @@
         const chevron = document.createElement('span'); chevron.className = 'bookmark-folder-chevron'; chevron.setAttribute('aria-hidden', 'true');
         const name = document.createElement('strong'); name.textContent = group.label || 'Folder';
         const count = document.createElement('span'); count.className = 'bookmark-folder-count'; count.textContent = String((group.links || []).length); count.setAttribute('aria-label', `${count.textContent} bookmarks`);
+        /* The browser owns these, so the row says whose they are. Built here,
+           attached with the rest of the summary below: an element that is not
+           in the document yet cannot have a sibling inserted after it. */
+        let linkedBadge = null;
+        if (group.source?.folderId) {
+          details.dataset.linked = 'true';
+          linkedBadge = document.createElement('span');
+          linkedBadge.className = 'bookmark-folder-linked';
+          linkedBadge.textContent = group.source.missing
+            ? this.text('bookmarks.linkMissing', 'folder missing')
+            : (group.source.title || this.text('bookmarks.linkedShort', 'browser'));
+          linkedBadge.title = this.text('bookmarks.linkedTitle', 'Follows a browser bookmark folder');
+        }
 
         const button = (label, text, handler, extra = {}) => {
           const node = document.createElement('button'); node.type = 'button';
@@ -113,6 +173,10 @@
           { label: group.hidden ? this.text('bookmarks.showOnBoard', 'Show on the board') : this.text('bookmarks.hideFromBoard', 'Hide from the board'), run: () => { group.hidden = !group.hidden; this.save(`${group.label} ${group.hidden ? 'hidden' : 'shown'}`); this.render(); } },
           { label: this.text('bookmarks.moveUp', 'Move up'), disabled: groupIndex === 0, run: () => this.moveFolder(group, -1) },
           { label: this.text('bookmarks.moveDown', 'Move down'), disabled: groupIndex === groups.length - 1, run: () => this.moveFolder(group, 1) },
+          { label: group.source?.folderId
+              ? this.text('bookmarks.unlink', 'Stop following the browser')
+              : this.text('bookmarks.link', 'Follow a browser folder'),
+            run: () => this.toggleBrowserLink(group) },
           { label: this.text('bookmarks.deleteFolder', 'Delete folder'), danger: true, run: async () => {
             const ok = await confirmDialog({ title: this.text('confirm.deleteFolderTitle', 'Delete folder?'), message: `${group.label}`, danger: true });
             if (!ok) return;
@@ -128,6 +192,7 @@
            button: a control nested in a control, which Axe flags and screen
            readers cannot describe. They are siblings on one grid row now. */
         summary.append(chevron, name, count);
+        if (linkedBadge) summary.append(linkedBadge);
         const head = document.createElement('div'); head.className = 'bookmark-folder-head';
         head.append(summary, folderMenu);
         details.append(head, renameInput);
@@ -138,6 +203,10 @@
            Inside the folder it is the obvious next thing to do. */
         const toolbar = document.createElement('div'); toolbar.className = 'bookmark-folder-toolbar';
         const add = button(`Add bookmark to ${group.label}`, this.text('bookmarks.addBookmark', 'Add bookmark'), addBookmark, { className: 'glass-btn accent bookmark-add' });
+        if (group.source?.folderId) {
+          add.disabled = true;
+          add.title = this.text('bookmarks.linkedAddHint', 'Add it in the browser; this folder follows along');
+        }
         const columnsLabel = document.createElement('label'); columnsLabel.className = 'bookmark-columns';
         const columnsText = document.createElement('span'); columnsText.textContent = this.text('bookmarks.columns', 'Columns');
         const columns = document.createElement('select'); columns.setAttribute('aria-label', `Columns for ${group.label}`);

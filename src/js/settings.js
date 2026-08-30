@@ -942,6 +942,41 @@ class SettingsController {
       this.app.grid?.render();
     });
 
+    /* A template without a %s has nowhere to put the query. Saying so beside the
+       field beats letting the search silently fall back to Google. */
+    const customEngine = document.getElementById("cfg-custom-engine");
+    const customRow = document.getElementById("custom-engine-row");
+    const customNote = document.getElementById("custom-engine-note");
+    const showCustomEngine = () => {
+      if (customRow) customRow.hidden = this.app.config.defaultEngine !== "custom";
+    };
+    const checkTemplate = () => {
+      if (!customNote) return;
+      const value = (this.app.config.customEngineUrl || "").trim();
+      if (!value) { customNote.textContent = ""; customNote.dataset.state = ""; return; }
+      const usable = value.includes("%s") && /^https?:\/\//i.test(value);
+      customNote.dataset.state = usable ? "ok" : "warn";
+      customNote.textContent = usable
+        ? (window.I18N ? window.I18N.t("general.engineReady") : "Ready")
+        : (window.I18N ? window.I18N.t("general.engineNeedsPlaceholder") : "The address needs %s where the query goes");
+    };
+    if (customEngine) {
+      customEngine.value = this.app.config.customEngineUrl || "";
+      customEngine.addEventListener("input", (e) => {
+        this.app.config.customEngineUrl = e.target.value;
+        this.app.saveConfig();
+        checkTemplate();
+        this.app.widgets?.updateEngineIcon?.();
+      });
+    }
+    showCustomEngine();
+    checkTemplate();
+
+    defaultEngine?.addEventListener("change", () => {
+      showCustomEngine();
+      checkTemplate();
+    });
+
     showSuggestions?.addEventListener("change", (e) => {
       this.app.config.showSuggestions = e.target.checked;
       this.app.saveConfig();

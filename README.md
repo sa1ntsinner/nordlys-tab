@@ -24,13 +24,14 @@ There's a Dark / Light / Auto switch (Auto follows your OS and flips live), and 
 
 ## What else it does
 
+- **Folders that follow the browser.** Point a folder at one of your browser's bookmark folders and it mirrors it, one way, so the browser stays the owner of the data and nothing here can lose it. The permission is optional and asked for on the click that links a folder, so installing Nordlys shows no prompt about reading bookmarks.
 - **Bookmarks as folders.** Drag tiles between folders, drag whole folders around, resize a folder's column count by pulling its corner, fold folders into a small dock at the bottom. Right click anything to edit it in place.
 - **Icons your way.** A built-in vector library with auto-detection by domain, site favicons, any image URL, a local file, or a monogram. There's a small cropper studio with pan, zoom, and rotate for when a logo comes with junk around it.
 - **Search that does math.** Type `45 * 12 + sqrt(144)` and the answer appears above the suggestions, one click to copy. Ten engines to pick from (Google, DuckDuckGo, Bing, Brave, Ecosia, Yandex, YouTube, GitHub, Reddit, Wikipedia), bang shortcuts like `!gh` and `!w`, plus your own bookmarks and recent searches in the same dropdown.
 - **Backgrounds.** One living scene — the aurora the product is named after — and four still compositions built from the theme's own colours: Horizon, Bloom, Corner, Veil. The still ones are pure CSS, so they cost nothing to hold and the glass above them stops re-blurring every frame. Motion and Atmosphere dial the aurora down to a slow shimmer or almost nothing. Your own image or looping video works too, stored locally in IndexedDB, with blur and dim.
 - **Type.** Three slots: the clock and headings, the interface, and monospace. Bundled faces, or the fonts already installed on your machine.
 - **Icons that stay visible.** Each icon is measured against the plate behind it, and only the ones that would vanish get re-toned, so a coloured logo keeps its colour and a black mark on a black theme doesn't disappear. Overridable per bookmark.
-- **Glass tuning.** Blur radius, saturation, translucency, border sheen, corner radius, tile size, grid spacing, icon shape, glow, hover animation. Every slider updates the page while you drag it.
+- **Surfaces.** Glass at three levels — frosted, subtle, none — rather than four raw filter sliders, because those were a decision nobody made handed over in the form the renderer happens to take, and they reached states where text stopped being readable. Corner radius, tile size, spacing, icon shape, ambient glow and hover style stay as they were. Every control updates the page as you move it.
 - **8 languages.** English, Russian, Spanish, German, French, Japanese, Chinese, Turkish.
 - **Import and export.** Netscape HTML bookmarks from any browser in, JSON or HTML back out.
 
