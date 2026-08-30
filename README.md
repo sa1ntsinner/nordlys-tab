@@ -4,6 +4,8 @@ A new tab page for Chrome that opens instantly and looks like something you'd ac
 
 No frameworks, no build step, no analytics. Plain JavaScript and CSS, everything stored on your machine.
 
+**Still a beta.** The version number cannot say so — the store only accepts numbers that go up, and this line of them started at 2.x before the product deserved it — so it is said here instead. Things still get removed as well as added: two background scenes and four gradient compositions have already gone, each one measured rather than argued about. What does not get broken is your setup, which is why every migration keeps a restore point.
+
 ![Nordlys live aurora](docs/assets/aurora-live.gif)
 
 ## Why this exists

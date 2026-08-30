@@ -3,6 +3,12 @@
 The exact text to paste into the Developer Dashboard. Keep this file and the
 dashboard in step; when one changes, change the other.
 
+**On the version number.** This is still a beta, and the number does not say so.
+It cannot: the store accepts only versions that increase, and this line started
+at 2.x before the product had earned it. Renumbering down to 0.x would be
+rejected on upload and would strand everyone already installed, so the word
+carries what the number cannot — the description below opens by saying it.
+
 ## Title
 
 ```
@@ -33,6 +39,8 @@ Productivity.
 
 ```
 Nordlys replaces the new tab page. It opens instantly, keeps everything on your machine, and is meant to be looked at rather than got past.
+
+This is a beta. Things get removed as well as added — two background scenes and four gradient variants have already gone, each one dropped because it measured as indistinguishable from another rather than because someone disliked it. What does not change without warning is your setup: every upgrade that migrates anything keeps a restore point you can go back to.
 
 Bookmarks live in folders you arrange yourself. Drag a tile into another folder, drag folders around, pull a corner to change how many columns a folder has, fold the ones you rarely open into a dock at the bottom. Right click anything to edit it in place.
 

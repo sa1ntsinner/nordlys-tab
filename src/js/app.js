@@ -3,7 +3,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 const DEFAULT_CONFIG = {
-  version: "0.3.1",
+  version: "2.2.1",
   theme: "aurora-void",
   colorMode: "dark",
   bgMode: "aurora",

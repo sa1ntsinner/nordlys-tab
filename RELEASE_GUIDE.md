@@ -27,8 +27,8 @@ git push
 Tag a release when publishing a new store version:
 
 ```powershell
-git tag -a v0.3.1 -m "Release v0.3.1"
-git push origin v0.3.1
+git tag -a v2.2.1 -m "Release v2.2.1"
+git push origin v2.2.1
 ```
 
 ---
@@ -39,10 +39,10 @@ Google Chrome Web Store requires a `.zip` archive where `manifest.json` is at th
 
 ### On Windows (PowerShell), from inside the project directory:
 ```powershell
-Compress-Archive -Path manifest.json, newtab.html, PRIVACY.md, README.md, LICENSE, icons, src -DestinationPath nordlys-v0.3.1.zip -Force
+Compress-Archive -Path manifest.json, newtab.html, PRIVACY.md, README.md, LICENSE, icons, src -DestinationPath nordlys-v2.2.1.zip -Force
 ```
 
-This generates `nordlys-v0.3.1.zip` ready for upload.
+This generates `nordlys-v2.2.1.zip` ready for upload.
 
 ---
 
@@ -59,7 +59,7 @@ This generates `nordlys-v0.3.1.zip` ready for upload.
 ## 🏪 Step 4: Fill Store Listing in Developer Dashboard
 
 1. In the [Developer Dashboard](https://chrome.google.com/webstore/devconsole), click **`+ New Item`**.
-2. Upload `nordlys-v0.3.1.zip`.
+2. Upload `nordlys-v2.2.1.zip`.
 
 ### 4.1 Store Listing Details
 - **Title**: `Nordlys — Aesthetic Glass Dashboard` (Max 45 chars)
