@@ -499,19 +499,45 @@ body.minimal #board {
 }
 
 .foldBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: var(--nl-target-min);
   height: var(--nl-target-min);
   border-radius: 8px;
-  font-size: 19px;
-  line-height: 21px;
   opacity: 0.45;
-  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), opacity var(--nl-motion-control), transform var(--nl-motion-control);
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), opacity var(--nl-motion-control);
 }
+.foldBtn svg { width: 16px; height: 16px; }
 .foldBtn:hover {
   opacity: 1;
   color: var(--ink);
   background: rgba(255, 255, 255, 0.1);
-  transform: translateX(2px);
+}
+
+/* Arranging chrome only matters while you are arranging. Where there is a
+   pointer to hover with, the grip and the hide button wait for the card; where
+   there is not — touch, or a keyboard walking the page — they stay put, since
+   a control you cannot reveal is a control you do not have. */
+@media (hover: hover) and (pointer: fine) {
+  .groupGrip,
+  .foldBtn {
+    opacity: 0;
+  }
+  .card:hover .groupGrip,
+  .card:focus-within .groupGrip {
+    opacity: 0.35;
+  }
+  .card:hover .foldBtn,
+  .card:focus-within .foldBtn {
+    opacity: 0.45;
+  }
+  .card .groupGrip:hover,
+  .card .groupGrip:focus-visible,
+  .card .foldBtn:hover,
+  .card .foldBtn:focus-visible {
+    opacity: 1;
+  }
 }
 
 .grid {
@@ -591,6 +617,7 @@ body.minimal #board {
 }
 
 .card:hover .card-resize-handle,
+.card:focus-within .card-resize-handle,
 .card.is-resizing .card-resize-handle {
   opacity: 1;
 }
@@ -788,8 +815,9 @@ body.hover-none .tile:hover .box {
 }
 
 .tile {
-  cursor: grab;
+  cursor: pointer;
 }
+.tile.dragging,
 .tile:active {
   cursor: grabbing;
 }
