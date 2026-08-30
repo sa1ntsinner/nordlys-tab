@@ -54,7 +54,7 @@
   border: 1px solid rgba(255, 255, 255, calc(var(--glass-border-sheen, 0.45) * 0.75));
   backdrop-filter: blur(var(--glass-blur, 28px)) saturate(var(--glass-saturate, 190%)) contrast(var(--glass-contrast, 94%)) brightness(var(--glass-brightness, 106%));
   -webkit-backdrop-filter: blur(var(--glass-blur, 28px)) saturate(var(--glass-saturate, 190%)) contrast(var(--glass-contrast, 94%)) brightness(var(--glass-brightness, 106%));
-  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.38), inset 0 1px 1px rgba(255, 255, 255, var(--glass-border-sheen, 0.45));
+  box-shadow: var(--nl-shadow-3);
 }
 
 /* Top Specular Rim for Frosted Glass */

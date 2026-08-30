@@ -50,10 +50,6 @@
   --shader-2: #00f3ff;
   --shader-3: #9d4edd;
 }
-html[data-theme="cyberpunk-neon"] .card {
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 25px rgba(255, 0, 127, 0.18);
-}
-
 /* ── 3. Tokyo Night (Midnight Indigo & Neon Blue-Violet) ──────── */
 :root[data-theme="tokyo-night"], html[data-theme="tokyo-night"] {
   --theme-name: "Tokyo Night";
@@ -77,10 +73,6 @@ html[data-theme="cyberpunk-neon"] .card {
   --shader-2: #bb9af7;
   --shader-3: #2ac3de;
 }
-html[data-theme="tokyo-night"] .card {
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 22px rgba(122, 162, 247, 0.15);
-}
-
 /* ── 4. Catppuccin Mocha (Cozy Pastel Slate & Dreamy Lavender) ── */
 :root[data-theme="catppuccin-mocha"], html[data-theme="catppuccin-mocha"] {
   --theme-name: "Catppuccin Mocha";
@@ -175,10 +167,6 @@ html[data-theme="oled-obsidian"] #veil {
   --shader-2: #fe8019;
   --shader-3: #b8bb26;
 }
-html[data-theme="gruvbox-dark"] .card {
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 20px rgba(250, 189, 47, 0.12);
-}
-
 /* ── 8. Boreal Emerald (Mystic Pine Forest & Mint Aurora) ─────── */
 :root[data-theme="boreal-emerald"], html[data-theme="boreal-emerald"] {
   --theme-name: "Boreal Emerald";
@@ -201,10 +189,6 @@ html[data-theme="gruvbox-dark"] .card {
   --shader-2: #34d399;
   --shader-3: #2dd4bf;
 }
-html[data-theme="boreal-emerald"] .card {
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55), 0 0 25px rgba(16, 185, 129, 0.14);
-}
-
 /* ── 9. Sunset Amber (Volcanic Molten Ember & Solar Flare) ────── */
 :root[data-theme="sunset-amber"], html[data-theme="sunset-amber"] {
   --theme-name: "Sunset Amber";
@@ -227,10 +211,6 @@ html[data-theme="boreal-emerald"] .card {
   --shader-2: #ef4444;
   --shader-3: #facc15;
 }
-html[data-theme="sunset-amber"] .card {
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55), 0 0 25px rgba(249, 115, 22, 0.18);
-}
-
 /* ── 10. Dracula Velvet (Gothic Vampire Violet & Neon Pink) ───── */
 :root[data-theme="dracula-velvet"], html[data-theme="dracula-velvet"] {
   --theme-name: "Dracula Velvet";
@@ -254,16 +234,14 @@ html[data-theme="sunset-amber"] .card {
   --shader-2: #ff79c6;
   --shader-3: #8be9fd;
 }
-html[data-theme="dracula-velvet"] .card {
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55), 0 0 25px rgba(189, 147, 249, 0.16);
-}
-
 /* ───────────────────────────────────────────────────────────────────
    ☀️ 10 LIGHT THEMES
    ─────────────────────────────────────────────────────────────────── */
 
 /* ── 11. Porcelain Pure (Airy Daylight White & Sky Blue) ──────── */
 :root[data-theme="porcelain-light"], html[data-theme="porcelain-light"] {
+  --nl-shadow-ink: #1c2a52;
+  --nl-shadow-strength: .42;
   --theme-name: "Porcelain Pure";
   --void: #f8fafc;
   --void-gradient:
@@ -287,6 +265,8 @@ html[data-theme="dracula-velvet"] .card {
 
 /* ── 12. Warm Ivory (Cashmere Linen & Caramel Gold) ───────────── */
 :root[data-theme="warm-ivory"], html[data-theme="warm-ivory"] {
+  --nl-shadow-ink: #281d14;
+  --nl-shadow-strength: .40;
   --theme-name: "Warm Ivory";
   --void: #faf7f2;
   --void-gradient:
@@ -310,6 +290,8 @@ html[data-theme="dracula-velvet"] .card {
 
 /* ── 13. Sage Garden (Japanese Matcha & Botanical Green) ──────── */
 :root[data-theme="sage-light"], html[data-theme="sage-light"] {
+  --nl-shadow-ink: #14291c;
+  --nl-shadow-strength: .40;
   --theme-name: "Sage Garden";
   --void: #f2f7f4;
   --void-gradient:
@@ -333,6 +315,8 @@ html[data-theme="dracula-velvet"] .card {
 
 /* ── 14. Sakura Blossom (Pastel Cherry Blossom & Rose Plum) ───── */
 :root[data-theme="sakura-daylight"], html[data-theme="sakura-daylight"] {
+  --nl-shadow-ink: #4a1c33;
+  --nl-shadow-strength: .40;
   --theme-name: "Sakura Blossom";
   --void: #fdf2f8;
   --void-gradient:
@@ -356,6 +340,8 @@ html[data-theme="dracula-velvet"] .card {
 
 /* ── 15. Solarized Light (Warm Sepia Parchment & Cyan Coast) ──── */
 :root[data-theme="solarized-light"], html[data-theme="solarized-light"] {
+  --nl-shadow-ink: #3a2f14;
+  --nl-shadow-strength: .40;
   --theme-name: "Solarized Light";
   --void: #fdf6e3;
   --void-gradient:
@@ -379,6 +365,8 @@ html[data-theme="dracula-velvet"] .card {
 
 /* ── 16. Nordic Snow (Frosted Polar Ice & Royal Cobalt) ───────── */
 :root[data-theme="nordic-snow"], html[data-theme="nordic-snow"] {
+  --nl-shadow-ink: #1c2a52;
+  --nl-shadow-strength: .42;
   --theme-name: "Nordic Snow";
   --void: #f0f4f8;
   --void-gradient:
@@ -402,6 +390,8 @@ html[data-theme="dracula-velvet"] .card {
 
 /* ── 17. Lavender Mist (Dreamy Pastel Lilac & Royal Amethyst) ─── */
 :root[data-theme="lavender-mist"], html[data-theme="lavender-mist"] {
+  --nl-shadow-ink: #241c52;
+  --nl-shadow-strength: .42;
   --theme-name: "Lavender Mist";
   --void: #f5f3ff;
   --void-gradient:
@@ -425,6 +415,8 @@ html[data-theme="dracula-velvet"] .card {
 
 /* ── 18. Gruvbox Light (Vintage Book Sepia & Cinnamon Amber) ──── */
 :root[data-theme="gruvbox-light"], html[data-theme="gruvbox-light"] {
+  --nl-shadow-ink: #3c3020;
+  --nl-shadow-strength: .40;
   --theme-name: "Gruvbox Light";
   --void: #fbf1c7;
   --void-gradient:
@@ -448,6 +440,8 @@ html[data-theme="dracula-velvet"] .card {
 
 /* ── 19. Peach Sunset (Golden Apricot Dawn & Coral Glow) ──────── */
 :root[data-theme="peach-sunset"], html[data-theme="peach-sunset"] {
+  --nl-shadow-ink: #4a2a14;
+  --nl-shadow-strength: .40;
   --theme-name: "Peach Sunset";
   --void: #fff7ed;
   --void-gradient:
@@ -471,6 +465,8 @@ html[data-theme="dracula-velvet"] .card {
 
 /* ── 20. Mint Breeze (Refreshing Aqua Marine & Oceanic Teal) ──── */
 :root[data-theme="mint-breeze"], html[data-theme="mint-breeze"] {
+  --nl-shadow-ink: #0f3020;
+  --nl-shadow-strength: .40;
   --theme-name: "Mint Breeze";
   --void: #f0fdf4;
   --void-gradient:
@@ -521,10 +517,6 @@ html[data-theme="warm-ivory"] #dim {
 .light-ui .card,
 html[data-theme="porcelain-light"] .card,
 html[data-theme="sage-light"] .card,
-html[data-theme="warm-ivory"] .card {
-  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.85);
-}
-
 .light-ui #clock,
 html[data-theme="porcelain-light"] #clock,
 html[data-theme="sage-light"] #clock,
@@ -543,7 +535,7 @@ html[data-theme="warm-ivory"] #clock .ampm {
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, rgba(255, 255, 255, 0.8));
   border-color: color-mix(in srgb, var(--accent) 26%, transparent);
-  box-shadow: 0 2px 8px var(--accent-glow);
+  box-shadow: var(--nl-shadow-1);
 }
 
 .light-ui #date,
@@ -572,7 +564,6 @@ html[data-theme="sage-light"] #search,
 html[data-theme="warm-ivory"] #search {
   background: rgba(255, 255, 255, 0.82);
   border-color: var(--glass-border);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
 .light-ui #search:focus-within,
@@ -585,7 +576,7 @@ html[data-theme="warm-ivory"] #search:focus-within,
 html[data-theme="warm-ivory"] body.searching #search {
   background: rgba(255, 255, 255, 0.95);
   border-color: var(--accent);
-  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.12), 0 0 0 4px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 1);
+  box-shadow: var(--nl-shadow-2);
 }
 
 .light-ui #q,
@@ -633,7 +624,7 @@ html[data-theme="sage-light"] #sugg,
 html[data-theme="warm-ivory"] #sugg {
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(0, 0, 0, 0.10);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.14);
+  box-shadow: var(--nl-shadow-3);
 }
 
 .light-ui #sugg div,
@@ -816,7 +807,7 @@ html[data-theme="warm-ivory"] .box {
   background:
     radial-gradient(120% 120% at 30% 18%, color-mix(in srgb, var(--c, var(--dim)) 14%, transparent), transparent 62%),
     linear-gradient(150deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.58));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 6px 18px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--nl-shadow-2);
 }
 
 .light-ui .tile:hover .box,
@@ -831,9 +822,7 @@ html[data-theme="warm-ivory"] .tile:focus-visible .box {
   background:
     radial-gradient(120% 120% at 30% 18%, color-mix(in srgb, var(--c, var(--accent)) 24%, transparent), transparent 66%),
     linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.78));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1),
-    0 14px 30px -8px color-mix(in srgb, var(--c, var(--accent)) 35%, transparent),
-    0 0 16px -2px color-mix(in srgb, var(--c, var(--accent)) 25%, transparent);
+  box-shadow: var(--nl-shadow-2), 0 14px 30px -8px color-mix(in srgb, var(--c, var(--accent)) 35%, transparent), 0 0 16px -2px color-mix(in srgb, var(--c, var(--accent)) 25%, transparent);
 }
 
 .light-ui .box svg,
@@ -884,7 +873,7 @@ html[data-theme="warm-ivory"] .card-resize-pill {
   background: rgba(255, 255, 255, 0.95);
   border-color: var(--accent);
   color: var(--ink);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 0 12px var(--accent-glow);
+  box-shadow: var(--nl-shadow-2);
 }
 
 .light-ui #hiddenDock,
@@ -893,7 +882,7 @@ html[data-theme="sage-light"] #hiddenDock,
 html[data-theme="warm-ivory"] #hiddenDock {
   background: rgba(255, 255, 255, 0.65);
   border-color: var(--glass-border);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  box-shadow: var(--nl-shadow-2);
 }
 
 .light-ui #hiddenDock:hover,
@@ -902,7 +891,7 @@ html[data-theme="sage-light"] #hiddenDock:hover,
 html[data-theme="warm-ivory"] #hiddenDock:hover {
   background: rgba(255, 255, 255, 0.92);
   border-color: rgba(0, 0, 0, 0.16);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1);
+  box-shadow: var(--nl-shadow-2);
 }
 
 .light-ui .restoreFolder,
@@ -945,7 +934,7 @@ html[data-theme="sage-light"] #gear,
 html[data-theme="warm-ivory"] #gear {
   background: rgba(255, 255, 255, 0.75);
   border-color: rgba(0, 0, 0, 0.12);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--nl-shadow-2);
 }
 
 .light-ui #gear svg,
@@ -977,7 +966,7 @@ html[data-theme="sage-light"] #cfg,
 html[data-theme="warm-ivory"] #cfg {
   background: rgba(255, 255, 255, 0.94);
   border-left: 1px solid rgba(0, 0, 0, 0.09);
-  box-shadow: -30px 0 90px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--nl-shadow-3);
 }
 
 .light-ui #cfg-resizer::after,
@@ -1042,7 +1031,7 @@ html[data-theme="sage-light"] .ctab.active,
 html[data-theme="warm-ivory"] .ctab.active {
   background: var(--accent);
   color: #071018;
-  box-shadow: 0 4px 14px var(--accent-glow);
+  box-shadow: var(--nl-shadow-1);
 }
 
 .light-ui .cbody::-webkit-scrollbar-thumb,
@@ -1081,7 +1070,7 @@ html[data-theme="sage-light"] .ipt:focus,
 html[data-theme="warm-ivory"] .ipt:focus {
   background: #ffffff;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
+  box-shadow: var(--nl-ring);
 }
 
 .light-ui input[type="range"].ipt,
@@ -1097,7 +1086,7 @@ html[data-theme="sage-light"] .glass-context-menu,
 html[data-theme="warm-ivory"] .glass-context-menu {
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 1);
+  box-shadow: var(--nl-shadow-3);
 }
 
 .light-ui .ctx-header,
@@ -1181,7 +1170,7 @@ html[data-theme="warm-ivory"] .modal-box,
 html[data-theme="warm-ivory"] .css-docs-box {
   background: rgba(255, 255, 255, 0.98);
   border: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.20);
+  box-shadow: var(--nl-shadow-3);
 }
 
 .light-ui .quick-modal-head,
@@ -1217,7 +1206,7 @@ html[data-theme="sage-light"] .toast,
 html[data-theme="warm-ivory"] .toast {
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.14);
+  box-shadow: var(--nl-shadow-2);
   color: #0f172a;
 }
 
@@ -1254,7 +1243,7 @@ html[data-theme="sage-light"] .theme-card,
 html[data-theme="warm-ivory"] .theme-card {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(0, 0, 0, 0.09);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--nl-shadow-1);
   color: #0f172a;
 }
 
@@ -1264,7 +1253,7 @@ html[data-theme="sage-light"] .theme-card:hover,
 html[data-theme="warm-ivory"] .theme-card:hover {
   border-color: rgba(0, 0, 0, 0.16);
   background: #ffffff;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--nl-shadow-1);
 }
 
 .light-ui .theme-card.active,
@@ -1273,7 +1262,7 @@ html[data-theme="sage-light"] .theme-card.active,
 html[data-theme="warm-ivory"] .theme-card.active {
   border-color: var(--accent);
   background: #ffffff;
-  box-shadow: 0 0 0 2px var(--accent), 0 6px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--nl-ring-tight), var(--nl-shadow-1);
 }
 
 .light-ui .theme-card b,
@@ -1329,7 +1318,7 @@ html[data-theme="warm-ivory"] .bm-item-row,
 html[data-theme="warm-ivory"] .link-editor-row {
   background: rgba(255, 255, 255, 0.85);
   border-color: rgba(0, 0, 0, 0.08);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--nl-shadow-1);
 }
 
 .light-ui .group-label-input,
@@ -1546,29 +1535,15 @@ html[data-theme="warm-ivory"] .crop-pill-btn {
 html[data-theme="porcelain-light"] #veil {
   background: radial-gradient(120% 92% at 50% 4%, transparent 55%, rgba(28, 42, 82, 0.10) 100%);
 }
-html[data-theme="porcelain-light"] .card {
-  box-shadow: 0 22px 60px rgba(28, 42, 82, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.85);
-}
-html[data-theme="porcelain-light"] #search {
-  box-shadow: 0 18px 50px rgba(28, 42, 82, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95);
-}
-
 html[data-theme="sage-light"] #veil {
   background: radial-gradient(120% 92% at 50% 4%, transparent 55%, rgba(20, 41, 28, 0.09) 100%);
 }
-html[data-theme="sage-light"] .card {
-  box-shadow: 0 22px 60px rgba(20, 41, 28, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.85);
-}
-html[data-theme="sage-light"] #search {
-  box-shadow: 0 18px 50px rgba(20, 41, 28, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95);
-}
-
 html[data-theme="warm-ivory"] #veil {
   background: radial-gradient(120% 92% at 50% 4%, transparent 55%, rgba(40, 29, 20, 0.09) 100%);
 }
 html[data-theme="warm-ivory"] .card {
-  box-shadow: 0 22px 60px rgba(40, 29, 20, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  box-shadow: var(--nl-shadow-3);
 }
 html[data-theme="warm-ivory"] #search {
-  box-shadow: 0 18px 50px rgba(40, 29, 20, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  box-shadow: var(--nl-shadow-3);
 }

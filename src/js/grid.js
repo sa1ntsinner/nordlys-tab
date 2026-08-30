@@ -45,7 +45,6 @@ class GridController {
       }
     }, true);
 
-    this.hasInitialLoaded = false;
 
     // One delegated listener disarms folder dragging after any mouse release
     // (previously each render attached a fresh window listener per card — a leak)
@@ -92,15 +91,10 @@ class GridController {
       this.dock.style.display = hasHidden ? "inline-flex" : "none";
     }
 
-    if (!this.hasInitialLoaded) {
-      // Once the entry choreography has fully played, freeze it so later
-      // re-renders (edits, drags, settings tweaks) never re-animate the board.
-      const entryMs = Math.min(2000, 350 + visibleIdx * 70 + maxLinks * 15 + 700);
-      setTimeout(() => {
-        this.hasInitialLoaded = true;
-        this.board?.classList.add("board-loaded");
-      }, entryMs);
-    }
+    /* The board used to animate itself in over as much as two seconds, and this
+       is where that choreography was switched off so later renders would not
+       replay it. Nothing animates on arrival now, so there is nothing to switch
+       off: the page is finished the moment it is painted. */
   }
 
   createEmptyState() {
