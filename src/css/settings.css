@@ -1976,3 +1976,14 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 .theme-advanced summary { display: inline-flex; align-items: center; min-height: var(--nl-target-min); color: var(--nl-text-secondary); font-size: 12.5px; cursor: pointer; }
 .theme-advanced summary:hover { color: var(--nl-text-primary); }
 .theme-advanced[open] summary { margin-bottom: 6px; }
+
+/* Colour and tone matter now and then; the name and the address matter every
+   time. The dialog opens on the second group and keeps the first out of it. */
+.quick-advanced summary { display: inline-flex; align-items: center; min-height: var(--nl-target-min); color: var(--nl-text-secondary); font-size: 12.5px; cursor: pointer; }
+.quick-advanced summary:hover { color: var(--nl-text-primary); }
+.quick-advanced-row { display: flex; align-items: flex-end; gap: 12px; padding-top: 8px; }
+.quick-advanced-row .quick-field { flex: 1; min-width: 0; }
+
+/* The icon preview is the way to change the icon, so it has to look pressable. */
+.quick-icon-box { cursor: pointer; transition: border-color var(--nl-motion-control), transform var(--nl-motion-control); }
+.quick-icon-box:hover { border-color: var(--nl-accent); transform: translateY(-1px); }

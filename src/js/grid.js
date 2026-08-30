@@ -484,7 +484,6 @@ class GridController {
 
     // Quick Bookmark Modal controls
     const quickModalX = document.getElementById("quick-modal-x");
-    const quickChangeIconBtn = document.getElementById("quick-change-icon-btn");
     const quickIconPreview = document.getElementById("quick-icon-preview");
     const quickSaveBtn = document.getElementById("quick-save-btn");
 
@@ -533,7 +532,8 @@ class GridController {
       // 4. Open Icon Picker for this exact bookmark
       this.app.settings?.openIconModal(gIdx, lIdx);
     };
-    quickChangeIconBtn?.addEventListener("click", triggerIconPicker);
+    /* The preview was already the button; a second one underneath saying
+       "Choose Icon..." was the same action twice, competing with Save. */
     quickIconPreview?.addEventListener("click", triggerIconPicker);
 
     quickSaveBtn?.addEventListener("click", () => {

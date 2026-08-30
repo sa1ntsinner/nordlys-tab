@@ -914,28 +914,33 @@
           <input id="quick-url-input" type="url" class="glass-input" placeholder="https://...">
         </div>
 
-        <div style="display: flex; gap: 12px; align-items: center;">
-          <div style="flex: 1;">
-            <label class="quick-label" for="quick-folder-select" data-i18n="modal.folder">Folder</label>
-            <select id="quick-folder-select" class="glass-input" style="cursor: pointer;"></select>
-          </div>
-          <div>
-            <label class="quick-label" for="quick-color-input" data-i18n="modal.colorTint">Color Accent</label>
-            <input type="color" id="quick-color-input" class="link-color-ipt" value="#35d6c0">
-          </div>
-          <div class="quick-field">
-            <label class="quick-label" for="quick-tone-select" data-i18n="modal.iconTone">Icon tone</label>
-            <select id="quick-tone-select" class="glass-input">
-              <option value="auto" data-i18n="tone.auto">Auto</option>
-              <option value="original" data-i18n="tone.original">Keep original</option>
-              <option value="light" data-i18n="tone.light">Light</option>
-              <option value="dark" data-i18n="tone.dark">Dark</option>
-            </select>
-          </div>
+        <div>
+          <label class="quick-label" for="quick-folder-select" data-i18n="modal.folder">Folder</label>
+          <select id="quick-folder-select" class="glass-input" style="cursor: pointer;"></select>
         </div>
 
+        <!-- Name, address and folder are what a bookmark is. How it looks is a
+             separate question, and most edits never ask it. -->
+        <details class="quick-advanced">
+          <summary data-i18n="nav.appearance">Appearance</summary>
+          <div class="quick-advanced-row">
+            <div class="quick-field">
+              <label class="quick-label" for="quick-color-input" data-i18n="modal.colorTint">Color Accent</label>
+              <input type="color" id="quick-color-input" class="link-color-ipt" value="#35d6c0">
+            </div>
+            <div class="quick-field">
+              <label class="quick-label" for="quick-tone-select" data-i18n="modal.iconTone">Icon tone</label>
+              <select id="quick-tone-select" class="glass-input">
+                <option value="auto" data-i18n="tone.auto">Auto</option>
+                <option value="original" data-i18n="tone.original">Keep original</option>
+                <option value="light" data-i18n="tone.light">Light</option>
+                <option value="dark" data-i18n="tone.dark">Dark</option>
+              </select>
+            </div>
+          </div>
+        </details>
+
         <div style="display: flex; gap: 8px; margin-top: 8px;">
-          <button id="quick-change-icon-btn" class="glass-btn" style="flex: 1;" data-i18n="modal.chooseIcon">Choose Icon...</button>
           <button id="quick-save-btn" class="glass-btn accent" style="flex: 1;" data-i18n="modal.saveChanges">Save Changes</button>
         </div>
       </div>
