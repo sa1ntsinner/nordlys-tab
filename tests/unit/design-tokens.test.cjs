@@ -106,3 +106,51 @@ test('themes do not redeclare card elevation', () => {
   }
   assert.deepStrictEqual(offenders, [], `themes declaring their own shadows:\n${offenders.join('\n')}`);
 });
+
+/* Twenty unnamed z-index literals from 0 to 500, with #toast-dock declared
+   twice at two different values and the portalled select list sitting below the
+   dialog it can be opened from. Names make a new layer say where it belongs
+   instead of picking a number larger than the last one someone remembered. */
+test('every layer comes from the z-index ladder', () => {
+  const offenders = [];
+  for (const sheet of stylesheets()) {
+    if (sheet.name === 'foundations.css') continue;
+    for (const match of sheet.text.matchAll(/z-index:\s*([^;}]+)/g)) {
+      const value = match[1].trim();
+      if (!value.startsWith('var(--nl-z-') && value !== 'auto' && value !== 'inherit') {
+        offenders.push(`${sheet.name}: z-index: ${value}`);
+      }
+    }
+  }
+  assert.deepStrictEqual(offenders, [], `unnamed layers:\n${offenders.join('\n')}`);
+});
+
+/* Ordering is the whole point of a ladder, and one inversion is not cosmetic:
+   putting a panel's backdrop above the panel makes the backdrop swallow every
+   click meant for it. That mistake cost thirty test timeouts. */
+test('the ladder is ordered so nothing swallows what it covers', () => {
+  const foundations = fs.readFileSync(path.join(CSS_DIR, 'foundations.css'), 'utf8');
+  const ladder = {};
+  for (const match of foundations.matchAll(/--nl-z-([\w-]+):\s*(\d+);/g)) {
+    ladder[match[1]] = Number(match[2]);
+  }
+  const required = ['background', 'veil', 'chrome', 'scrim', 'raised',
+                    'float', 'drawer-scrim', 'drawer', 'overlay', 'modal', 'menu', 'toast'];
+  for (const name of required) {
+    assert.ok(name in ladder, `--nl-z-${name} is missing from the ladder`);
+  }
+
+  const order = [
+    ['background', 'veil'], ['veil', 'chrome'],
+    // The search scrim covers the page furniture, which is why the board, the
+    // clock and the dock no longer each dim themselves.
+    ['chrome', 'scrim'], ['scrim', 'raised'], ['raised', 'float'],
+    // A panel sits above its own backdrop; a dialog sits above the panel.
+    ['float', 'drawer-scrim'], ['drawer-scrim', 'drawer'], ['drawer', 'overlay'],
+    ['overlay', 'modal'], ['modal', 'menu'], ['menu', 'toast']
+  ];
+  for (const [below, above] of order) {
+    assert.ok(ladder[below] < ladder[above],
+      `--nl-z-${below} (${ladder[below]}) must sit below --nl-z-${above} (${ladder[above]})`);
+  }
+});

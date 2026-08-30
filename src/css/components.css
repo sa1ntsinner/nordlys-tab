@@ -36,10 +36,11 @@
   /* Reserved for the widest state the clock can reach, not for the current one:
      a minimum the content already exceeds reserves nothing. The slack is
      invisible because the digits are centred inside it. */
-  /* Never wider than what is available: at 320px the clamped size makes 8ch
-     wider than the window, and reserving space is not worth a scrollbar. */
-  min-width: min(8ch, 100%);
-  max-width: 100%;
+  /* #hero is shrink-to-fit, so a percentage here resolves against the clock's
+     own width and reserves nothing — which is exactly what the previous attempt
+     did. Reserve in ch, and stand down on narrow screens where eight characters
+     are wider than the window. */
+  min-width: 8ch;
   text-align: center;
   user-select: none;
 }
@@ -211,7 +212,7 @@ body.seconds .sc, body.seconds #ss {
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
   box-shadow: var(--nl-shadow-3);
   display: none;
-  z-index: 20;
+  z-index: var(--nl-z-float);
 }
 #sugg.on {
   display: block;
@@ -327,7 +328,7 @@ body.seconds .sc, body.seconds #ss {
 #dim {
   position: fixed;
   inset: 0;
-  z-index: 3;
+  z-index: var(--nl-z-scrim);
   background: rgba(3, 7, 18, 0.32);
   opacity: 0;
   visibility: hidden;
@@ -348,21 +349,16 @@ body.searching #dim {
 #dim.on {
   opacity: 1;
   visibility: visible;
-  z-index: 60;
+  z-index: var(--nl-z-drawer-scrim);
   pointer-events: auto;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
-body.searching #hero {
-  opacity: 0.42;
-  pointer-events: none;
-}
-
 /* The bar keeps its width. Growing it on focus moved the caret out from under
    the cursor that had just clicked it. */
 body.searching #searchwrap {
-  z-index: 20;
+  z-index: var(--nl-z-float);
 }
 
 body.searching #search {
@@ -372,13 +368,12 @@ body.searching #search {
   filter: none !important;
 }
 
-body.searching #board {
-  opacity: 0.34;
-  pointer-events: none;
-}
-
+/* The scrim covers them now. It used to sit below the page, which is why every
+   element had to step back on its own — three rules doing one rule's job, and
+   the reason the first attempt at simplifying this failed. */
+body.searching #board,
+body.searching #hero,
 body.searching #hiddenDock {
-  opacity: 0.28;
   pointer-events: none;
 }
 
@@ -608,7 +603,7 @@ body.minimal #board {
   width: 28px;
   height: 28px;
   cursor: nwse-resize;
-  z-index: 10;
+  z-index: var(--nl-z-raised);
   opacity: 0;
   transition: opacity var(--nl-transition-control), background var(--nl-transition-control);
   border-bottom-right-radius: var(--card-radius);
@@ -664,7 +659,7 @@ body.minimal #board {
   pointer-events: none;
   transition: opacity var(--nl-transition-control), transform var(--nl-transition-control), visibility 0s var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control);
   white-space: nowrap;
-  z-index: 50;
+  z-index: var(--nl-z-float);
 }
 
 .resize-indicator-pill.show {
@@ -679,7 +674,7 @@ body.minimal #board {
 .card.is-resizing {
   border-color: var(--accent);
   box-shadow: var(--nl-shadow-3), var(--nl-ring);
-  z-index: 100;
+  z-index: var(--nl-z-float);
 }
 
 /* Live column-count pill injected while a folder is being resized */
@@ -700,7 +695,7 @@ body.minimal #board {
   backdrop-filter: blur(16px) saturate(1.4);
   -webkit-backdrop-filter: blur(16px) saturate(1.4);
   pointer-events: none;
-  z-index: 60;
+  z-index: var(--nl-z-float);
   animation: pillIn var(--nl-motion-fast) var(--nl-ease-pop) both;
 }
 
@@ -850,7 +845,7 @@ body.hover-none .tile:hover .box {
   border-radius: 4px;
   background: var(--accent);
   box-shadow: 0 0 16px 2px var(--accent-glow);
-  z-index: 5;
+  z-index: var(--nl-z-raised);
   animation: pulse 1.2s ease-in-out infinite;
 }
 .tile.drop-before::before { left: -7px; }
@@ -867,7 +862,7 @@ body.hover-none .tile:hover .box {
   border-radius: 4px;
   background: var(--accent);
   box-shadow: 0 0 20px 4px var(--accent-glow), 0 0 6px var(--accent);
-  z-index: 40;
+  z-index: var(--nl-z-raised);
   animation: pulse 1.2s ease-in-out infinite;
 }
 .card.group-before::before { left: -10px; }
@@ -896,7 +891,7 @@ body.hover-none .tile:hover .box {
   opacity: 0.7;
   transition: opacity var(--nl-transition-control), transform var(--nl-transition-control), background var(--nl-transition-control), border-color var(--nl-transition-control);
   animation: fadeIn var(--nl-transition-panel) both;
-  z-index: 4;
+  z-index: var(--nl-z-chrome);
 }
 
 #hiddenDock:hover {
@@ -981,7 +976,7 @@ body.hover-none .tile:hover .box {
   position: fixed;
   right: 18px;
   bottom: 16px;
-  z-index: 5;
+  z-index: var(--nl-z-chrome);
   width: 44px;
   height: 44px;
   border-radius: 14px;
@@ -1013,6 +1008,12 @@ body.hover-none .tile:hover .box {
   fill: var(--ink);
 }
 
+/* Below this the reservation would overflow the window, and a scrollbar costs
+   more than a clock that shifts when seconds are switched on. */
+@media (max-width: 560px) {
+  #clock { min-width: 0; }
+}
+
 @media (max-width: 480px) {
   #gear { top: 12px; right: 12px; bottom: auto; }
 }
@@ -1020,7 +1021,7 @@ body.hover-none .tile:hover .box {
 /* ── Frosted Glass Bookmark Context Menu ──────────────────────── */
 .glass-context-menu {
   position: fixed;
-  z-index: 150;
+  z-index: var(--nl-z-menu);
   min-width: 190px;
   background: rgba(11, 18, 36, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -1124,7 +1125,7 @@ body.hover-none .tile:hover .box {
 .quick-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: var(--nl-z-overlay);
   background: rgba(2, 6, 14, 0.65);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -1221,7 +1222,7 @@ body.hover-none .tile:hover .box {
   bottom: 26px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 400;
+  z-index: var(--nl-z-toast);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1269,7 +1270,7 @@ body.hover-none .tile:hover .box {
 
 /* ── Glass Confirm Dialog ─────────────────────────────────────── */
 .confirm-backdrop {
-  z-index: 320;
+  z-index: var(--nl-z-modal);
 }
 .confirm-card {
   width: min(92vw, 360px);
@@ -1415,7 +1416,7 @@ body.hover-none .tile:hover .box {
 .nl-select[aria-expanded="true"] .nl-select-caret { transform: translateY(1px) rotate(-135deg); opacity: .9; }
 
 .nl-select-list {
-  position: fixed; z-index: 300;
+  position: fixed; z-index: var(--nl-z-menu);
   max-height: min(320px, 60vh); overflow-y: auto; overscroll-behavior: contain;
   padding: 6px; border-radius: var(--nl-radius-md);
   border: 1px solid var(--nl-border-strong);

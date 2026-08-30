@@ -96,10 +96,15 @@
   /* The still field is painted by CSS, so the first frame can carry it too —
      otherwise a gradient user sees one frame of the theme's own wash first. */
   try {
-    if (config && config.bgMode === "gradient") {
-      root.setAttribute("data-gradient", config.gradient || "horizon");
+    var mode = (config && config.bgMode) || "aurora";
+    // The scenes that were removed resolve to their survivors on first load.
+    if (mode === "particles" || mode === "mesh-gradient") mode = "gradient";
+    if (mode === "cosmos") mode = "aurora";
+    root.setAttribute("data-bg", mode);
+    if (mode === "gradient") {
+      root.setAttribute("data-gradient", (config && config.gradient) || "horizon");
     }
-  } catch (error) { /* no config, no gradient */ }
+  } catch (error) { /* no config: the defaults below are a fine first frame */ }
 
   root.setAttribute("data-theme", theme);
   if (LIGHT.indexOf(theme) !== -1) root.classList.add("light-ui");

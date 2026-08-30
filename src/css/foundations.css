@@ -79,6 +79,31 @@
   /* Three levels of one material. The four raw filter sliders that used to sit
      in settings were an unmade decision handed to the user, and they could be
      driven to states where text stopped being readable. */
+  /* One ladder, named, so a new layer has to say where it belongs rather than
+     pick a number bigger than the last one someone remembered. There were
+     twenty distinct literals from 0 to 500, #toast-dock was declared twice with
+     two different values, and the portalled select list sat below the confirm
+     dialog it can be opened from. */
+  --nl-z-background: 0;
+  --nl-z-veil: 1;
+  /* <main id="page"> deliberately has no layer of its own: giving it one made it
+     a stacking context, which trapped the search bar inside it and forced the
+     scrim below the whole composition. */
+  /* Page furniture — the settings button and the folded-folder dock — sits above
+     the board but below the scrim, so focusing search quiets them too. */
+  --nl-z-chrome: 4;
+  --nl-z-scrim: 6;
+  --nl-z-raised: 10;
+  --nl-z-float: 20;
+  /* The drawer's own backdrop sits below it. Putting the two the other way
+     round is not a cosmetic mistake: the scrim swallows every click meant for
+     the panel it is dimming behind. */
+  --nl-z-drawer-scrim: 90;
+  --nl-z-drawer: 100;
+  --nl-z-overlay: 200;
+  --nl-z-modal: 300;
+  --nl-z-menu: 400;
+  --nl-z-toast: 500;
   --nl-target-min: 40px;
 }
 

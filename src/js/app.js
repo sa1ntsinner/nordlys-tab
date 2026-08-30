@@ -18,10 +18,6 @@ const DEFAULT_CONFIG = {
   openNewTab: false,
   showSuggestions: true,
   defaultEngine: "google",
-  glassBlur: 28,
-  glassSaturate: 190,
-  glassOpacity: 0.70,
-  glassSheen: 0.45,
   cardRadius: 24,
   tileSize: 78,
   cardGap: 12,
@@ -152,7 +148,11 @@ class AuroraApp {
   normalizeStoredConfig(config) {
     let changed = false;
     if (THEME_MIGRATIONS[config.theme]) { config.theme = THEME_MIGRATIONS[config.theme]; changed = true; }
-    if (config.glassLevel === undefined) {
+    /* Keyed on the presence of an old value, not the absence of the new one.
+       The defaults are merged before this runs, so "glassLevel is missing" can
+       never be true — it is in DEFAULT_CONFIG. glassBlur no longer is, so its
+       presence means it came from something the user actually saved. */
+    if (config.glassBlur !== undefined) {
       const blur = config.glassBlur;
       config.glassLevel = blur === 0 ? "off" : (blur != null && blur <= 14 ? "subtle" : "full");
       for (const dead of ["glassBlur", "glassSaturate", "glassOpacity", "glassSheen"]) delete config[dead];
@@ -457,10 +457,9 @@ class AuroraApp {
     const root = document.documentElement.style;
     const cfg = this.config;
 
-    if (cfg.glassBlur != null) root.setProperty("--glass-blur", `${cfg.glassBlur}px`);
-    if (cfg.glassSaturate != null) root.setProperty("--glass-saturate", `${cfg.glassSaturate}%`);
-    if (cfg.glassOpacity != null) root.setProperty("--glass-opacity", cfg.glassOpacity);
-    if (cfg.glassSheen != null) root.setProperty("--glass-border-sheen", cfg.glassSheen);
+    /* The glass level owns these now. Writing them inline here put them beyond
+       the reach of every selector, which is why a control that looked wired up
+       changed nothing at all. */
     if (cfg.cardRadius != null) root.setProperty("--card-radius", `${cfg.cardRadius}px`);
     // Preserve a usable 56px floor; narrow layouts reflow instead of collapsing controls.
     if (cfg.tileSize != null) root.setProperty("--tw", `clamp(56px, 12vw, ${Math.max(56, cfg.tileSize)}px)`);

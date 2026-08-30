@@ -83,7 +83,7 @@ body {
 #bg-container {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: var(--nl-z-background);
   pointer-events: none;
   overflow: hidden;
 }
@@ -126,7 +126,7 @@ body {
 #veil {
   position: fixed;
   inset: 0;
-  z-index: 1;
+  z-index: var(--nl-z-veil);
   pointer-events: none;
   background: radial-gradient(120% 92% at 50% 4%, transparent 50%, rgba(2, 4, 10, 0.55) 100%);
   transition: opacity var(--nl-transition-panel);
@@ -144,7 +144,6 @@ body {
 /* ── Main Layout Frame ────────────────────────────────────────── */
 #page {
   position: relative;
-  z-index: 5;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
