@@ -1487,7 +1487,7 @@ class SettingsController {
     this.isCropperDragging = false;
     this.cropperDragStartX = 0;
     this.cropperDragStartY = 0;
-    this.cropperPrevSourceTab = "url";
+    this.cropperPrevSourceTab = "custom";
     this.cropperOriginalSource = null;
 
     const zoomSlider = document.getElementById("cropper-zoom-slider");
@@ -1718,7 +1718,10 @@ class SettingsController {
   }
 
   async openCropper(imageSource, sourceTab) {
-    this.cropperPrevSourceTab = sourceTab || "url";
+    /* The cropper returns to the pane it was opened from. Its callers still
+       name the source they came from, which is no longer a tab of its own. */
+    const MERGED = ["url", "upload", "monogram"];
+    this.cropperPrevSourceTab = MERGED.includes(sourceTab) ? "custom" : (sourceTab || "custom");
     this.cropperOriginalSource = imageSource;
 
     const modalTabs = document.querySelectorAll(".icon-tab-btn");
@@ -1934,12 +1937,9 @@ class SettingsController {
     const modalTabs = document.querySelectorAll(".icon-tab-btn");
     const modalPanes = document.querySelectorAll(".modal-tab-pane");
     
-    let defaultTab = "library";
-    if (link.customImg) {
-      defaultTab = link.customImg.startsWith("data:") ? "upload" : "url";
-    } else if (link.monogram) {
-      defaultTab = "monogram";
-    }
+    // A pasted URL, an uploaded file and a monogram share one pane now, so
+    // whichever of them the bookmark is already using lands in the same place.
+    const defaultTab = (link.customImg || link.monogram) ? "custom" : "library";
 
     this.iconPicker.select(defaultTab);
     this.activeModalTab = defaultTab;

@@ -542,11 +542,9 @@
 
       <!-- 5 Modal Source Tabs -->
       <div class="icon-modal-tabs">
-        <button class="icon-tab-btn active" data-tab="library" data-i18n="modal.tabLibrary">Built-in Library</button>
-        <button class="icon-tab-btn" data-tab="favicon" data-i18n="modal.tabFavicon">Smart Favicon</button>
-        <button class="icon-tab-btn" data-tab="url" data-i18n="modal.tabUrl">Image URL</button>
-        <button class="icon-tab-btn" data-tab="upload" data-i18n="modal.tabUpload">Upload File</button>
-        <button class="icon-tab-btn" data-tab="monogram" data-i18n="modal.tabMonogram">Monogram</button>
+        <button class="icon-tab-btn active" data-tab="library" data-i18n="modal.tabLibrary">Library</button>
+        <button class="icon-tab-btn" data-tab="favicon" data-i18n="modal.tabFavicon">Website icon</button>
+        <button class="icon-tab-btn" data-tab="custom" data-i18n="modal.tabCustom">Custom</button>
       </div>
 
       <div class="modal-body">
@@ -576,12 +574,15 @@
             <button id="favicon-fetch-btn" type="button" class="glass-btn accent">Fetch</button>
           </div>
           
-          <div class="favicon-source-chips" style="display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; scrollbar-width: none;">
-            <button type="button" class="icon-chip active" data-fav-source="google">Google S2 (128px)</button>
-            <button type="button" class="icon-chip" data-fav-source="duckduckgo">DuckDuckGo</button>
-            <button type="button" class="icon-chip" data-fav-source="chrome">Browser Cache</button>
-            <button type="button" class="icon-chip" data-fav-source="direct">Apple / Direct</button>
-          </div>
+          <details class="favicon-sources">
+            <summary data-i18n="modal.trySource">Try another source</summary>
+            <div class="favicon-source-chips">
+              <button type="button" class="icon-chip active" data-fav-source="google">Google</button>
+              <button type="button" class="icon-chip" data-fav-source="duckduckgo">DuckDuckGo</button>
+              <button type="button" class="icon-chip" data-fav-source="chrome">Browser cache</button>
+              <button type="button" class="icon-chip" data-fav-source="direct">The site itself</button>
+            </div>
+          </details>
 
           <div class="url-preview-box" id="favicon-preview-wrap">
             <div id="favicon-preview-img-box" class="url-preview-square" title="Click to open in Cropper Studio">
@@ -604,8 +605,31 @@
           </div>
         </div>
 
-        <!-- Tab 3: Web Image / URL -->
-        <div id="modal-pane-url" class="modal-tab-pane">
+        <div id="modal-pane-custom" class="modal-tab-pane">
+          <!-- One pane, three ways in. Splitting an image URL, a local file and
+               a monogram across three tabs made the user choose a mechanism
+               before knowing which one they had. -->
+          <section class="custom-source">
+            <h4 data-i18n="modal.customUpload">From a file on this computer</h4>
+          <input type="file" id="icon-file-input" class="hidden-file-input" accept="image/png, image/jpeg, image/svg+xml, image/webp, image/gif">
+          <label for="icon-file-input" class="file-drop-zone" id="icon-drop-zone">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 8px; color: var(--accent);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <b style="font-size: 13px; color: var(--ink);">Drag & drop or Click to choose file</b>
+            <span style="font-size: 11px; color: var(--dim); margin-top: 4px;">PNG, SVG, JPG, WebP, GIF (Max 5MB)</span>
+          </label>
+          <div id="icon-file-preview-wrap" style="display: none; margin-top: 12px;" class="url-preview-box">
+            <div id="icon-file-preview-img-box" class="url-preview-square" title="Click to open Cropper"></div>
+            <div style="flex: 1;">
+              <b id="icon-file-name" style="font-size: 12px; color: var(--ink);">image.png</b>
+              <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <button id="icon-file-crop-btn" type="button" class="glass-btn accent" style="flex: 1.2;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>Crop &amp; Adjust Icon</button>
+                <button id="icon-file-apply-btn" type="button" class="glass-btn" style="flex: 1;">Use Full Image</button>
+              </div>
+            </div>
+          </div>
+        </section>
+          <section class="custom-source">
+            <h4 data-i18n="modal.customUrl">From a web address</h4>
           <label style="display: block; font-size: 12px; color: var(--dim); margin-bottom: 6px;">Image Web URL (SVG, PNG, JPG, WebP, GIF)</label>
           <div style="display: flex; gap: 8px; margin-bottom: 12px;">
             <input id="icon-url-input" type="url" class="glass-input" placeholder="https://example.com/icon.png" style="flex: 1;">
@@ -623,30 +647,9 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- Tab 4: Local File Upload -->
-        <div id="modal-pane-upload" class="modal-tab-pane">
-          <input type="file" id="icon-file-input" class="hidden-file-input" accept="image/png, image/jpeg, image/svg+xml, image/webp, image/gif">
-          <label for="icon-file-input" class="file-drop-zone" id="icon-drop-zone">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 8px; color: var(--accent);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <b style="font-size: 13px; color: var(--ink);">Drag & drop or Click to choose file</b>
-            <span style="font-size: 11px; color: var(--dim); margin-top: 4px;">PNG, SVG, JPG, WebP, GIF (Max 5MB)</span>
-          </label>
-          <div id="icon-file-preview-wrap" style="display: none; margin-top: 12px;" class="url-preview-box">
-            <div id="icon-file-preview-img-box" class="url-preview-square" title="Click to open Cropper"></div>
-            <div style="flex: 1;">
-              <b id="icon-file-name" style="font-size: 12px; color: var(--ink);">image.png</b>
-              <div style="display: flex; gap: 8px; margin-top: 8px;">
-                <button id="icon-file-crop-btn" type="button" class="glass-btn accent" style="flex: 1.2;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>Crop &amp; Adjust Icon</button>
-                <button id="icon-file-apply-btn" type="button" class="glass-btn" style="flex: 1;">Use Full Image</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab 5: Monogram / Initial -->
-        <div id="modal-pane-monogram" class="modal-tab-pane">
+        </section>
+          <section class="custom-source">
+            <h4 data-i18n="modal.customMonogram">Or just a letter</h4>
           <div style="display: flex; gap: 14px; align-items: center;">
             <div style="flex: 1;">
               <label style="font-size: 12px; color: var(--dim); display: block; margin-bottom: 4px;">Monogram Text (1-3 chars)</label>
@@ -655,6 +658,7 @@
             <div id="monogram-preview-box" class="url-preview-square" style="width: 54px; height: 54px; font-size: 22px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #6366f1, #35d6c0);">A</div>
           </div>
           <button id="icon-monogram-apply-btn" type="button" class="glass-btn accent" style="margin-top: 14px; width: 100%;">Use Monogram Icon</button>
+        </section>
         </div>
 
         <!-- Dedicated Interactive Icon Cropper Studio Pane -->

@@ -1958,3 +1958,15 @@ html[data-theme="warm-ivory"] .css-docs-list code {
    cropper's showed the one being made — two unlabelled previews contradicting
    each other. The cropper carries its own, so the shared one steps aside. */
 #icon-modal:has(#modal-pane-cropper.active) .icon-live-preview { display: none; }
+
+/* One Custom pane holds three ways to supply an icon, so each needs to say
+   which one it is without shouting. */
+.custom-source + .custom-source { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--nl-border); }
+.custom-source h4 { margin: 0 0 10px; font-size: 12.5px; font-weight: 650; color: var(--nl-text-secondary); }
+
+/* Which service supplies the favicon is a detail; it matters only when the
+   first answer is wrong. */
+.favicon-sources { margin-bottom: 12px; }
+.favicon-sources summary { display: inline-flex; align-items: center; min-height: var(--nl-target-min); color: var(--nl-text-secondary); font-size: 12.5px; cursor: pointer; }
+.favicon-sources summary:hover { color: var(--nl-text-primary); }
+.favicon-source-chips { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; }

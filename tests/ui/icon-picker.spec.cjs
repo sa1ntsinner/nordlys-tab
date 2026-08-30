@@ -8,7 +8,12 @@ test('icon picker is a focus-contained source-tab dialog with real tile preview'
   const dialog = page.locator('#icon-modal'); await expect(dialog).toHaveAttribute('role', 'dialog'); await expect(dialog).toHaveAttribute('aria-modal', 'true');
   await page.waitForTimeout(300);
   const width = (await dialog.locator('.modal-box').boundingBox()).width; expect(width).toBeGreaterThanOrEqual(640); expect(width).toBeLessThanOrEqual(680);
-  await expect(dialog.getByRole('tab')).toHaveCount(5);
+  /* Three sources, not five: a pasted URL, an uploaded file and a monogram are
+     all "something of your own" and made the user pick a mechanism first. */
+  await expect(dialog.getByRole('tab')).toHaveCount(3);
+  await expect(dialog.getByRole('tab', { name: 'Library' })).toBeVisible();
+  await expect(dialog.getByRole('tab', { name: 'Website icon' })).toBeVisible();
+  await expect(dialog.getByRole('tab', { name: 'Custom' })).toBeVisible();
   await expect(dialog.locator('#icon-live-preview .tile .box')).toBeVisible();
   await expect(dialog.locator('#icon-live-preview .nl-icon[data-icon-kind="builtin"]')).toHaveCount(1);
   await expect(dialog.locator('#icon-live-preview .mono')).toHaveCount(0);
