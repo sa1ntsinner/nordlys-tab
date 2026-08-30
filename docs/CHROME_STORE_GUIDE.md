@@ -33,14 +33,14 @@ Run this from the repository root. List the shipped paths explicitly — a wildc
 producing a ~40 MB upload instead of ~600 KB.
 
 ```powershell
-Compress-Archive -Path manifest.json, newtab.html, PRIVACY.md, README.md, LICENSE, icons, src -DestinationPath nordlys-v2.2.0.zip -Force
+Compress-Archive -Path manifest.json, newtab.html, PRIVACY.md, README.md, LICENSE, icons, src -DestinationPath nordlys-v0.3.1.zip -Force
 ```
 
 Verify before uploading — `manifest.json` must sit at the zip root and nothing
 else should be present:
 
 ```powershell
-Expand-Archive nordlys-v2.2.0.zip -DestinationPath .\zip-check -Force; Get-ChildItem .\zip-check
+Expand-Archive nordlys-v0.3.1.zip -DestinationPath .\zip-check -Force; Get-ChildItem .\zip-check
 ```
 
 ---
@@ -49,7 +49,7 @@ Expand-Archive nordlys-v2.2.0.zip -DestinationPath .\zip-check -Force; Get-Child
 
 1. Visit the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole).
 2. Sign in with your Google account (one-time $5 developer registration fee if new).
-3. Click **Add new item** and upload `nordlys-v2.2.0.zip`.
+3. Click **Add new item** and upload `nordlys-v0.3.1.zip`.
 4. Fill in the listing from [store-listing.md](store-listing.md), which holds the
    title, summary, description, artwork inventory and the privacy answers as
    text to paste. Do not retype them here; one copy is enough.

@@ -9,17 +9,25 @@
   right: 0;
   bottom: 0;
   z-index: var(--nl-z-drawer);
-  width: var(--drawer-width, min(94vw, 520px));
-  min-width: 380px;
+  /* Wide enough for the 168px rail and a column of content beside it. The
+     floor is where the layout breaks, so it is enforced; there is no ceiling
+     worth enforcing, because nothing breaks by being given more room. The
+     drag handler clamps to the same numbers — it used to use 380 and 95vw
+     while the stylesheet said 600 and 720, which left the handle with about
+     a hundred pixels of travel and no way to tell why. */
+  width: clamp(600px, 46vw, 720px);
+  min-width: 600px;
   max-width: 95vw;
   display: flex;
   flex-direction: column;
-  /* Drawer chrome follows the active theme instead of a fixed navy */
-  background: color-mix(in srgb, var(--card-tint-deep, #090e1c) 94%, transparent);
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(32px) saturate(1.8);
-  -webkit-backdrop-filter: blur(32px) saturate(1.8);
-  box-shadow: var(--nl-shadow-3);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 96%, transparent);
+  border-left: 1px solid var(--nl-border);
+  /* No backdrop-filter. The panel is already 94% opaque, so blurring what is
+     behind it moved the picture by 0.28 of 255 — measured, not estimated —
+     while making the browser re-sample and re-blur a full-height backdrop on
+     every frame of the slide. That is the whole cost of the effect for none of
+     its benefit. */
+  box-shadow: var(--nl-shadow-drawer);
   transform: translateX(calc(100% + 40px));
   transition: transform var(--nl-motion-panel) var(--nl-ease-emphasized);
 }
@@ -82,8 +90,11 @@ body.resizing-drawer #cfg {
 }
 
 #cfgx {
-  width: 28px;
-  height: 28px;
+  /* The touch-target size, not the 28px this rule used to claim: a line near
+     the end of the file was already resizing it, and the number here was only
+     ever read by whoever came looking for it. */
+  width: var(--nl-target-min);
+  height: var(--nl-target-min);
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.05);
@@ -94,9 +105,12 @@ body.resizing-drawer #cfg {
   transition: color var(--nl-motion-control), background-color var(--nl-motion-control), opacity var(--nl-motion-control), transform var(--nl-motion-control);
 }
 #cfgx:hover {
-  color: #ffffff;
-  background: rgba(239, 68, 68, 0.25);
-  border-color: rgba(239, 68, 68, 0.4);
+  /* Forced white ink on a translucent red is white on pale pink once a light
+     theme is underneath it. The tint carries the meaning; the ink follows the
+     theme, as it does everywhere else. */
+  color: var(--nl-status-danger);
+  background: color-mix(in srgb, var(--nl-status-danger) 18%, transparent);
+  border-color: color-mix(in srgb, var(--nl-status-danger) 40%, transparent);
 }
 
 /* ── Horizontally Scrollable Tab Navigation ───────────────────── */
@@ -1635,16 +1649,11 @@ input[type="range"].ipt:focus-visible {
   }
 }
 
-/* Nordlys Refined settings shell */
-#cfg {
-  width: clamp(600px, 46vw, 720px);
-  min-width: 600px;
-  max-width: 720px;
-  background: color-mix(in srgb, var(--nl-surface-card-deep) 96%, transparent);
-  border-left-color: var(--nl-border);
-  box-shadow: var(--nl-shadow-3);
-  transition: transform var(--nl-motion-panel) var(--nl-ease-emphasized);
-}
+/* This section used to open by redeclaring #cfg entirely — width, background,
+   border and shadow — sixteen hundred lines below the rule it was overriding.
+   Every edit to the real rule was silently discarded, which is how a shadow
+   pointing the wrong way survived being fixed. Those values now live in the
+   one #cfg rule at the top of this file. */
 .settings-layout { min-height: 0; flex: 1; display: grid; grid-template-columns: 168px minmax(0, 1fr); }
 .ctabs {
   min-width: 0; padding: 16px 10px; display: flex; flex-direction: column; align-items: stretch; gap: 18px;
@@ -1660,13 +1669,14 @@ input[type="range"].ipt:focus-visible {
 .csec[hidden] { display: none !important; }
 .setting-row { min-height: 56px; padding-block: 6px; }
 .setting-row :where(button, select, input:not([type="range"]), label.tg) { min-height: var(--nl-target-min); }
-/* The drawer carries its own backdrop-filter; a blurring scrim underneath it
-   stacked two blurs and muddied the glass. The colour lives with the scrim. */
+/* The scrim does not blur either. The drawer stopped carrying a backdrop-filter
+   once it was measured at 0.28 of 255 behind a 94%-opaque panel, and a blur
+   here would be the only one left — paid for on a full-screen layer, to soften
+   a background that is already being covered. */
 #dim, #dim.on { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 #cfg :where(button, select, textarea, input:not([type="file"]), [role="button"]) { min-height: var(--nl-target-min); }
 #cfg :where(button, select, [role="button"]) { min-width: var(--nl-target-min); }
 #cfg input[type="range"] { height: var(--nl-target-min); margin-block: 0; }
-#cfgx { width: var(--nl-target-min); height: var(--nl-target-min); }
 
 @media (max-width: 759px) {
   #cfg { width: 100vw !important; min-width: 0 !important; max-width: 100vw !important; }

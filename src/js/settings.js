@@ -288,7 +288,9 @@ class SettingsController {
 
       window.addEventListener("pointermove", (e) => {
         if (!isResizing) return;
-        const newWidth = Math.max(380, Math.min(window.innerWidth - e.clientX, window.innerWidth * 0.95));
+        // Same bounds the stylesheet enforces, so the handle never travels
+        // through a range where min-width is quietly discarding the result.
+        const newWidth = Math.max(600, Math.min(window.innerWidth - e.clientX, window.innerWidth * 0.95));
         this.drawer.style.width = `${newWidth}px`;
       }, { passive: true });
 

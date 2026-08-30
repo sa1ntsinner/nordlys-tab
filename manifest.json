@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Nordlys",
-  "version": "2.3.0",
+  "version": "0.3.1",
   "description": "A new tab page with 21 themes, a living aurora, still gradients, bookmark folders you arrange, and search that does arithmetic.",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"

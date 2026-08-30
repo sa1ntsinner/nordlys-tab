@@ -61,6 +61,14 @@
   --nl-shadow-2:
     0 4px 12px color-mix(in srgb, var(--nl-shadow-ink) calc(18% * var(--nl-shadow-strength)), transparent),
     0 12px 32px color-mix(in srgb, var(--nl-shadow-ink) calc(22% * var(--nl-shadow-strength)), transparent);
+  /* A drawer is not lifted off the board, it is beside it. The ladder above is
+     for things that rise, so borrowing it here aimed the shadow downward, past
+     the bottom edge, where no page is left to receive it — and the panel lost
+     the one cue that made it read as sliding over the page rather than being
+     pasted onto it. This one points back the way the drawer came in. */
+  --nl-shadow-drawer:
+    -8px 0 24px color-mix(in srgb, var(--nl-shadow-ink) calc(26% * var(--nl-shadow-strength)), transparent),
+    -32px 0 64px color-mix(in srgb, var(--nl-shadow-ink) calc(30% * var(--nl-shadow-strength)), transparent);
   --nl-shadow-3:
     0 8px 24px color-mix(in srgb, var(--nl-shadow-ink) calc(26% * var(--nl-shadow-strength)), transparent),
     0 32px 64px color-mix(in srgb, var(--nl-shadow-ink) calc(30% * var(--nl-shadow-strength)), transparent);
@@ -68,12 +76,21 @@
   --nl-motion-control: 170ms;
   --nl-motion-panel: 260ms;
   --nl-motion-enter: 320ms;
+  /* Two curves, and which one applies is not a matter of taste but of what the
+     motion is for. Something that travels — a drawer entering, a menu appearing,
+     a panel sliding — should leave fast and settle slow, which is the
+     emphasized curve. Something that merely answers — a colour under the
+     cursor, an opacity, a two-pixel nudge — is not travelling anywhere, and
+     given a decelerate curve it snaps at the start and crawls at the end.
+     Sweeping one token across all of them is how every hover in this product
+     came to feel abrupt at once. */
+  --nl-ease-state: ease;
   --nl-ease-emphasized: cubic-bezier(.2, .8, .2, 1);
   /* One deliberate overshoot for moments that should feel like they landed. */
   /* Duration and curve travel together. Kept apart, 119 call sites re-pair them
      by hand and several quietly pair a token duration with a bare `ease`. */
-  --nl-transition-fast: var(--nl-motion-fast) var(--nl-ease-emphasized);
-  --nl-transition-control: var(--nl-motion-control) var(--nl-ease-emphasized);
+  --nl-transition-fast: var(--nl-motion-fast) var(--nl-ease-state);
+  --nl-transition-control: var(--nl-motion-control) var(--nl-ease-state);
   --nl-transition-panel: var(--nl-motion-panel) var(--nl-ease-emphasized);
   --nl-ease-pop: cubic-bezier(.2, .9, .3, 1.25);
   /* Three levels of one material. The four raw filter sliders that used to sit

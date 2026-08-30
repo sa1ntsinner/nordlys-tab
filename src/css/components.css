@@ -361,6 +361,10 @@ body.searching #searchwrap {
 }
 
 body.searching #search {
+  /* Entering search is a mode change the user asked for, and the bar is the
+     thing that changed. Without this it swaps its border and shadow with no
+     motion at all, which reads as a repaint rather than a response. */
+  animation: pop var(--nl-motion-panel) var(--nl-ease-emphasized);
   border-color: var(--accent);
   background: color-mix(in srgb, var(--card-tint, #141c34) 94%, transparent);
   box-shadow: var(--nl-shadow-3), var(--nl-ring);
@@ -518,6 +522,7 @@ body.minimal #board {
   opacity: 1;
   color: var(--ink);
   background: rgba(255, 255, 255, 0.1);
+  transform: translateX(2px);
 }
 
 /* Arranging chrome only matters while you are arranging. Where there is a
@@ -1005,10 +1010,25 @@ body.hover-none .tile:hover .box {
   background: color-mix(in srgb, var(--card-tint, #141c34) 75%, transparent);
   transform: translateY(-2px);
 }
-/* The gear used to spin 75 degrees on hover. It drew the eye to the one control
-   that should stay out of the way, and it said nothing about what would happen. */
+/* This was removed once, on the grounds that it drew the eye to a control that
+   should stay out of the way. That reasoning does not survive contact with the
+   fact that it is a hover state: it fires only once the pointer is already
+   there, and nothing can attract attention to what is already being looked at.
+   Removing motion from a page that assembles itself on load is a saving.
+   Removing it from a response to the user is just a deader interface. */
+#gear svg {
+  transition: fill var(--nl-motion-control) var(--nl-ease-state),
+              transform var(--nl-motion-panel) var(--nl-ease-emphasized);
+}
 #gear:hover svg {
   fill: var(--ink);
+  transform: rotate(75deg);
+}
+/* The shared press rule is :where(), so it carries no specificity and the hover
+   lift above beat it — pressing the one control with a hover transform gave no
+   press response at all. */
+#gear:active {
+  transform: translateY(-2px) scale(.97);
 }
 
 /* Below this the reservation would overflow the window, and a scrollbar costs
