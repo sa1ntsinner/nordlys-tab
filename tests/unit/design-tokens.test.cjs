@@ -189,3 +189,38 @@ test('no shadow is tinted with the accent', () => {
   }
   assert.deepStrictEqual(offenders, [], `tinted shadows:\n${offenders.join('\n')}`);
 });
+
+/* A translation nobody asks for is not free: it is eight strings that a
+   translator has to read, and a reader has to believe still means something.
+   Twenty keys survived the features that used them. */
+test('every message key is referenced somewhere', () => {
+  const root = path.join(__dirname, '..', '..');
+  const dictionary = fs.readFileSync(path.join(root, 'src', 'js', 'i18n.js'), 'utf8');
+  const english = dictionary.slice(dictionary.indexOf('"en": {'), dictionary.indexOf('"ru": {'));
+  const keys = [...english.matchAll(/"([\w.]+)":\s*"/g)].map(match => match[1]);
+
+  const sources = ['newtab.html']
+    .concat(fs.readdirSync(path.join(root, 'src', 'js')).filter(name => name !== 'i18n.js').map(name => path.join('src', 'js', name)))
+    .concat(fs.readdirSync(path.join(root, 'tests', 'ui')).filter(name => name.endsWith('.spec.cjs')).map(name => path.join('tests', 'ui', name)))
+    .map(file => fs.readFileSync(path.join(root, file), 'utf8'))
+    .join('\n');
+
+  const orphans = keys.filter(key => !sources.includes(key));
+  assert.deepStrictEqual(orphans, [], `message keys nothing references:\n${orphans.join('\n')}`);
+});
+
+/* Eight languages that disagree about which keys exist is how one of them ends
+   up showing a raw key on screen. */
+test('every locale carries exactly the same keys', () => {
+  const dictionary = fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'js', 'i18n.js'), 'utf8');
+  const blocks = dictionary.split(/\n {2}"(?:en|ru|es|de|fr|ja|zh|tr)": \{/).slice(1);
+  assert.strictEqual(blocks.length, 8, 'expected eight locales');
+  const sets = blocks.map(block => new Set([...block.matchAll(/"([\w.]+)":\s*"/g)].map(match => match[1])));
+  const [first, ...rest] = sets;
+  rest.forEach((keys, index) => {
+    const missing = [...first].filter(key => !keys.has(key));
+    const extra = [...keys].filter(key => !first.has(key));
+    assert.deepStrictEqual({ missing, extra }, { missing: [], extra: [] },
+      `locale ${index + 2} disagrees with English`);
+  });
+});
