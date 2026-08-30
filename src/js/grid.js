@@ -917,8 +917,8 @@ class GridController {
       pillEl = document.createElement("div");
       pillEl.className = "card-resize-pill";
       pillEl.textContent = currentCols === 1
-        ? (window.I18N ? window.I18N.t('hint.columnSingle') : `✦ 1 Column (List)`)
-        : (window.I18N ? window.I18N.t('hint.columnsCount', { count: currentCols }) : `✦ ${currentCols} Columns`);
+        ? (window.I18N ? window.I18N.t('hint.columnSingle') : `1 Column (List)`)
+        : (window.I18N ? window.I18N.t('hint.columnsCount', { count: currentCols }) : `${currentCols} Columns`);
       cardEl.appendChild(pillEl);
     };
 
@@ -941,8 +941,8 @@ class GridController {
         handleEl.setAttribute("aria-valuenow", String(currentCols));
         if (pillEl) {
           pillEl.textContent = currentCols === 1
-            ? (window.I18N ? window.I18N.t('hint.columnSingle') : `✦ 1 Column (List)`)
-            : (window.I18N ? window.I18N.t('hint.columnsCount', { count: currentCols }) : `✦ ${currentCols} Columns`);
+            ? (window.I18N ? window.I18N.t('hint.columnSingle') : `1 Column (List)`)
+            : (window.I18N ? window.I18N.t('hint.columnsCount', { count: currentCols }) : `${currentCols} Columns`);
         }
       }
     };

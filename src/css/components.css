@@ -958,7 +958,7 @@ body.hover-none .tile:hover .box {
   width: 21px;
   height: 21px;
   fill: var(--dim);
-  transition: fill var(--nl-motion-control), transform var(--nl-motion-panel) var(--nl-ease-emphasized);
+  transition: fill var(--nl-motion-control);
 }
 #gear:hover {
   opacity: 1;
@@ -966,9 +966,10 @@ body.hover-none .tile:hover .box {
   background: color-mix(in srgb, var(--card-tint, #141c34) 75%, transparent);
   transform: translateY(-2px);
 }
+/* The gear used to spin 75 degrees on hover. It drew the eye to the one control
+   that should stay out of the way, and it said nothing about what would happen. */
 #gear:hover svg {
   fill: var(--ink);
-  transform: rotate(75deg);
 }
 
 @media (max-width: 480px) {

@@ -171,7 +171,7 @@
         <div id="custom-theme-editor-card" class="custom-theme-tuning-card" style="display: none; margin-top: 14px;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
             <h4 style="margin: 0; color: var(--accent); font-size: 13.5px; font-weight: 650; display: flex; align-items: center; gap: 6px;">
-              <span data-i18n="customTheme.title">✦ Custom Theme Studio</span>
+              <span data-i18n="customTheme.title">Custom Theme Studio</span>
             </h4>
             <button id="close-custom-theme-editor" type="button" class="xbtn" style="font-size: 12px; padding: 2px 6px;">✕</button>
           </div>
@@ -242,7 +242,7 @@
             <p id="custom-theme-contrast-warning" class="custom-theme-warning" role="status" data-i18n="customTheme.contrastWarning" hidden>Text colors need more contrast against the background and cards.</p>
 
             <div style="display: flex; gap: 8px; margin-top: 14px;">
-              <button id="thm-save-btn" class="glass-btn accent" style="flex: 1;" data-i18n="customTheme.saveApply">Save & Apply Theme</button>
+              <button id="thm-save-btn" class="glass-btn accent" style="flex: 1;" data-i18n="customTheme.saveApply">Save &amp; Apply Theme</button>
             </div>
           </div>
         </div>
@@ -275,47 +275,47 @@
 
         <details id="advanced-glass-settings" class="advanced-settings">
           <summary>Advanced glass & geometry</summary>
-        <!-- ✦ Bookmark & Card Aesthetics Studio -->
+        <!-- Bookmark & Card Aesthetics Studio -->
         <div id="card-customizer-controls" class="card-customizer-card" style="margin-top: 16px;">
           <h4 style="margin: 0; color: var(--accent); font-size: 13.5px; font-weight: 650; display: flex; align-items: center; gap: 6px;">
-            <span data-i18n="appearance.cardStudioTitle">✦ Card & Bookmark Aesthetics</span>
+            <span data-i18n="appearance.cardStudioTitle">Card &amp; Bookmark Aesthetics</span>
           </h4>
 
           <!-- 1. Surface & Glass Section -->
-          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 4px;" data-i18n="appearance.surfaceGlass">Glass & Surface Material</div>
+          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 4px;" data-i18n="appearance.surfaceGlass">Glass</div>
           <div class="row">
-            <span><span data-i18n="appearance.glassBlur">Glass Blur Radius</span> (<b id="lbl-blur">28px</b>)</span>
+            <span><span data-i18n="appearance.glassBlur">Blur</span> (<b id="lbl-blur">28px</b>)</span>
             <input id="cfg-glass-blur" type="range" class="ipt" min="0" max="60" value="28">
           </div>
           <div class="row">
-            <span><span data-i18n="appearance.glassSaturate">Vibrance / Saturation</span> (<b id="lbl-sat">190%</b>)</span>
+            <span><span data-i18n="appearance.glassSaturate">Saturation</span> (<b id="lbl-sat">190%</b>)</span>
             <input id="cfg-glass-saturate" type="range" class="ipt" min="100" max="250" value="190">
           </div>
           <div class="row">
-            <span><span data-i18n="appearance.glassTranslucency">Glass Translucency</span> (<b id="lbl-opac">70%</b>)</span>
+            <span><span data-i18n="appearance.glassTranslucency">Opacity</span> (<b id="lbl-opac">70%</b>)</span>
             <input id="cfg-glass-opacity" type="range" class="ipt" min="10" max="95" value="70">
           </div>
           <div class="row">
-            <span><span data-i18n="appearance.glassSheen">Specular Border Sheen</span> (<b id="lbl-sheen">45%</b>)</span>
+            <span><span data-i18n="appearance.glassSheen">Border highlight</span> (<b id="lbl-sheen">45%</b>)</span>
             <input id="cfg-glass-sheen" type="range" class="ipt" min="0" max="100" value="45">
           </div>
 
           <!-- 2. Geometry & Spacing Section -->
-          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 6px;" data-i18n="appearance.geometry">Geometry & Sizes</div>
+          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 6px;" data-i18n="appearance.geometry">Geometry</div>
           <div class="row">
-            <span><span data-i18n="appearance.cardRadius">Card Corner Radius</span> (<b id="lbl-radius">24px</b>)</span>
+            <span><span data-i18n="appearance.cardRadius">Corner radius</span> (<b id="lbl-radius">24px</b>)</span>
             <input id="cfg-card-radius" type="range" class="ipt" min="6" max="36" value="24">
           </div>
           <div class="row">
-            <span><span data-i18n="appearance.tileSize">Tile Dimension</span> (<b id="lbl-tile">78px</b>)</span>
+            <span><span data-i18n="appearance.tileSize">Tile size</span> (<b id="lbl-tile">78px</b>)</span>
             <input id="cfg-tile-size" type="range" class="ipt" min="50" max="110" value="78">
           </div>
           <div class="row">
-            <span><span data-i18n="appearance.cardGap">Bookmark Grid Spacing</span> (<b id="lbl-gap">12px</b>)</span>
+            <span><span data-i18n="appearance.cardGap">Spacing</span> (<b id="lbl-gap">12px</b>)</span>
             <input id="cfg-card-gap" type="range" class="ipt" min="6" max="28" value="12">
           </div>
           <div class="row">
-            <span data-i18n="appearance.iconShape">Icon Monogram Shape</span>
+            <span data-i18n="appearance.iconShape">Icon shape</span>
             <select id="cfg-icon-shape" class="ipt">
               <option value="squircle" data-i18n="appearance.shapeSquircle">Modern Squircle</option>
               <option value="rounded" data-i18n="appearance.shapeRounded">Classic Rounded</option>
@@ -324,13 +324,13 @@
           </div>
 
           <!-- 3. Glow & Hover Effects Section -->
-          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 6px;" data-i18n="appearance.cardGlow">Ambient Glow & Shadows</div>
+          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 6px;" data-i18n="appearance.cardGlow">Glow</div>
           <div class="row">
-            <span><span data-i18n="appearance.cardGlow">Ambient Glow & Shadows</span> (<b id="lbl-glow">40%</b>)</span>
+            <span><span data-i18n="appearance.cardGlow">Glow</span> (<b id="lbl-glow">40%</b>)</span>
             <input id="cfg-card-glow" type="range" class="ipt" min="0" max="100" value="40">
           </div>
           <div class="row">
-            <span data-i18n="appearance.hoverEffect">Hover Animation Style</span>
+            <span data-i18n="appearance.hoverEffect">Hover effect</span>
             <select id="cfg-hover-effect" class="ipt">
               <option value="lift" data-i18n="appearance.hoverLift">Smooth Elevation Lift</option>
               <option value="glow" data-i18n="appearance.hoverGlow">Neon Edge Glow</option>
@@ -341,7 +341,7 @@
 
           <!-- Live Interactive Bookmark Card Preview Widget -->
           <div style="margin-top: 6px;">
-            <span style="font-size: 11.5px; color: var(--dim); display: block; margin-bottom: 6px; font-weight: 500;" data-i18n="appearance.livePreviewCard">Live Interactive Card Preview:</span>
+            <span style="font-size: 11.5px; color: var(--dim); display: block; margin-bottom: 6px; font-weight: 500;" data-i18n="appearance.livePreviewCard">Preview</span>
             <div class="card-live-preview-box">
               <div id="preview-interactive-card" class="preview-interactive-card">
                 <div id="preview-icon-box" class="preview-icon-box">
@@ -362,7 +362,7 @@
 
       <!-- 3. General Section -->
       <section id="sec-general" class="csec">
-        <h3 data-i18n="general.timeGreeting">Time & Greeting</h3>
+        <h3 data-i18n="general.timeGreeting">Time &amp; Greeting</h3>
         <div class="row">
           <span data-i18n="general.language">Language</span>
           <select id="cfg-language-select" class="ipt">
@@ -462,18 +462,18 @@
 
         <h3 data-scene-only="media" data-i18n="background.wallpaperEffects">Wallpaper Effects</h3>
         <div class="row" data-scene-only="image">
-          <span><span data-i18n="background.blur">Wallpaper Blur</span> (<b id="lbl-bgblur">0px</b>)</span>
+          <span><span data-i18n="background.blur">Blur</span> (<b id="lbl-bgblur">0px</b>)</span>
           <input id="cfg-bg-blur" type="range" class="ipt" min="0" max="40" value="0">
         </div>
         <div class="row" data-scene-only="media">
-          <span><span data-i18n="background.dim">Wallpaper Dim Darkness</span> (<b id="lbl-bgdim">0%</b>)</span>
+          <span><span data-i18n="background.dim">Dim</span> (<b id="lbl-bgdim">0%</b>)</span>
           <input id="cfg-bg-dim" type="range" class="ipt" min="0" max="80" value="0">
         </div>
       </section>
 
       <!-- 5. Bookmarks Section -->
       <section id="sec-bookmarks" class="csec">
-        <h3 data-i18n="bookmarks.managerTitle">Bookmarks & Folders</h3>
+        <h3 data-i18n="bookmarks.managerTitle">Bookmarks &amp; Folders</h3>
         <div id="cfg-groups-editor"></div>
         <button id="cfg-add-group" class="glass-btn accent" style="width: 100%; margin-top: 14px;" data-i18n="bookmarks.addFolder">+ Add Folder</button>
       </section>
@@ -485,7 +485,7 @@
         
         <button id="btn-open-css-docs" type="button" class="glass-btn accent" style="margin-bottom: 12px; width: 100%; display: flex; justify-content: center; gap: 8px;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-          <span data-i18n="customCss.guideBtn">📖 CSS Guide & Class Reference</span>
+          <span data-i18n="customCss.guideBtn">CSS Guide &amp; Class Reference</span>
         </button>
         
         <!-- Preset Snippets -->
@@ -499,14 +499,14 @@
 
         <textarea id="css-editor" placeholder="/* Custom CSS snippets */&#10;.card { border-radius: 30px; }"></textarea>
         <div style="display: flex; gap: 8px; margin-top: 10px;">
-          <button id="cfg-inject-css" class="glass-btn accent" style="flex: 1;" data-i18n="customCss.applySave">Apply & Save CSS</button>
+          <button id="cfg-inject-css" class="glass-btn accent" style="flex: 1;" data-i18n="customCss.applySave">Apply &amp; Save CSS</button>
           <button id="cfg-clear-css" class="glass-btn" style="width: 90px;" data-i18n="customCss.clear">Clear</button>
         </div>
       </section>
 
       <!-- 7. Data & Backup Section -->
       <section id="sec-backup" class="csec">
-        <h3 data-i18n="backup.title">Backup & Migration</h3>
+        <h3 data-i18n="backup.title">Backup &amp; Migration</h3>
         <div style="display: flex; gap: 8px; margin-bottom: 12px;">
           <button id="cfg-export" class="glass-btn" style="flex: 1;" data-i18n="backup.exportJson">Export JSON Config</button>
           <button id="cfg-export-html" class="glass-btn" style="flex: 1;" data-i18n="backup.exportHtml">Export HTML Bookmarks</button>
@@ -523,7 +523,7 @@
           </div>
         </div>
 
-        <h3 style="margin-top: 24px;" data-i18n="backup.resetDefaults">Danger Zone</h3>
+        <h3 style="margin-top: 24px;" data-i18n="backup.dangerZone">Danger zone</h3>
         <div class="row">
           <button id="cfg-reset" class="glass-btn danger" style="width: 100%;" data-i18n="backup.resetDefaults">Reset to Defaults</button>
         </div>
@@ -544,9 +544,9 @@
       <div class="icon-modal-tabs">
         <button class="icon-tab-btn active" data-tab="library" data-i18n="modal.tabLibrary">Built-in Library</button>
         <button class="icon-tab-btn" data-tab="favicon" data-i18n="modal.tabFavicon">Smart Favicon</button>
-        <button class="icon-tab-btn" data-tab="url" data-i18n="modal.tabUrl">Web Image / URL</button>
-        <button class="icon-tab-btn" data-tab="upload" data-i18n="modal.tabUpload">Local File Upload</button>
-        <button class="icon-tab-btn" data-tab="monogram" data-i18n="modal.tabMonogram">Monogram / Initial</button>
+        <button class="icon-tab-btn" data-tab="url" data-i18n="modal.tabUrl">Image URL</button>
+        <button class="icon-tab-btn" data-tab="upload" data-i18n="modal.tabUpload">Upload File</button>
+        <button class="icon-tab-btn" data-tab="monogram" data-i18n="modal.tabMonogram">Monogram</button>
       </div>
 
       <div class="modal-body">
@@ -598,7 +598,7 @@
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
                   <span data-i18n="modal.applyFavicon">Apply Favicon</span>
                 </button>
-                <button id="favicon-crop-btn" type="button" class="glass-btn" style="flex: 1;">✂️ Adjust in Cropper</button>
+                <button id="favicon-crop-btn" type="button" class="glass-btn" style="flex: 1;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>Adjust in Cropper</button>
               </div>
             </div>
           </div>
@@ -618,7 +618,7 @@
             <div style="flex: 1;">
               <span id="icon-url-status" style="font-size: 12px; color: var(--dim);">Enter an image URL above to test</span>
               <div id="icon-url-actions" style="display: none; gap: 8px; margin-top: 8px;">
-                <button id="icon-url-crop-btn" type="button" class="glass-btn accent" style="flex: 1.2;">✂️ Crop & Adjust Icon</button>
+                <button id="icon-url-crop-btn" type="button" class="glass-btn accent" style="flex: 1.2;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>Crop &amp; Adjust Icon</button>
                 <button id="icon-url-apply-btn" type="button" class="glass-btn" style="flex: 1;">Use Full Image</button>
               </div>
             </div>
@@ -638,7 +638,7 @@
             <div style="flex: 1;">
               <b id="icon-file-name" style="font-size: 12px; color: var(--ink);">image.png</b>
               <div style="display: flex; gap: 8px; margin-top: 8px;">
-                <button id="icon-file-crop-btn" type="button" class="glass-btn accent" style="flex: 1.2;">✂️ Crop & Adjust Icon</button>
+                <button id="icon-file-crop-btn" type="button" class="glass-btn accent" style="flex: 1.2;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>Crop &amp; Adjust Icon</button>
                 <button id="icon-file-apply-btn" type="button" class="glass-btn" style="flex: 1;">Use Full Image</button>
               </div>
             </div>
@@ -662,7 +662,7 @@
           <div class="cropper-top-bar">
             <div class="cropper-title-wrap">
               <b style="font-size: 13.5px; color: var(--ink); display: flex; align-items: center; gap: 6px;">
-                <span>✂️ Icon Cropper Studio</span>
+                <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg><span>Icon Cropper Studio</span>
               </b>
               <span style="font-size: 11px; color: var(--dim);">Drag image to frame the icon • Scroll or slider to zoom</span>
             </div>
@@ -732,7 +732,7 @@
   <div id="css-docs-modal" aria-labelledby="css-docs-title">
     <div class="modal-box css-docs-box">
       <div class="modal-head">
-        <b id="css-docs-title">📖 CSS Guide & Class Reference</b>
+        <b id="css-docs-title"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>CSS Guide &amp; Class Reference</b>
         <button id="css-docs-modal-x" type="button" class="xbtn" aria-label="Close CSS guide">✕</button>
       </div>
 
@@ -793,49 +793,49 @@
           <div class="css-recipe-item">
             <div class="css-recipe-header">
               <b>Transparent Minimal Cards</b>
-              <button class="glass-btn btn-copy-recipe" data-recipe=".card { background: transparent !important; box-shadow: none !important; border: none !important; }">📋 Copy Snippet</button>
+              <button class="glass-btn btn-copy-recipe" data-recipe=".card { background: transparent !important; box-shadow: none !important; border: none !important; }"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy Snippet</button>
             </div>
             <pre><code>.card { background: transparent !important; box-shadow: none !important; border: none !important; }</code></pre>
           </div>
           <div class="css-recipe-item">
             <div class="css-recipe-header">
               <b>Cyberpunk Neon Borders</b>
-              <button class="glass-btn btn-copy-recipe" data-recipe=".card { border: 2px solid #ff007f !important; box-shadow: 0 0 10px #00f3ff, inset 0 0 10px #00f3ff !important; }">📋 Copy Snippet</button>
+              <button class="glass-btn btn-copy-recipe" data-recipe=".card { border: 2px solid #ff007f !important; box-shadow: 0 0 10px #00f3ff, inset 0 0 10px #00f3ff !important; }"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy Snippet</button>
             </div>
             <pre><code>.card { border: 2px solid #ff007f !important; box-shadow: 0 0 10px #00f3ff, inset 0 0 10px #00f3ff !important; }</code></pre>
           </div>
           <div class="css-recipe-item">
             <div class="css-recipe-header">
               <b>Compact Grid & Hover Zoom</b>
-              <button class="glass-btn btn-copy-recipe" data-recipe=".tile { transition: transform 0.2s !important; } .tile:hover { transform: scale(1.1) !important; z-index: 10; }">📋 Copy Snippet</button>
+              <button class="glass-btn btn-copy-recipe" data-recipe=".tile { transition: transform 0.2s !important; } .tile:hover { transform: scale(1.1) !important; z-index: 10; }"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy Snippet</button>
             </div>
             <pre><code>.tile { transition: transform 0.2s !important; } .tile:hover { transform: scale(1.1) !important; z-index: 10; }</code></pre>
           </div>
           <div class="css-recipe-item">
             <div class="css-recipe-header">
               <b>Square Sharp Modernist</b>
-              <button class="glass-btn btn-copy-recipe" data-recipe=":root { --card-radius: 0px !important; --tile-radius: 0px !important; }">📋 Copy Snippet</button>
+              <button class="glass-btn btn-copy-recipe" data-recipe=":root { --card-radius: 0px !important; --tile-radius: 0px !important; }"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy Snippet</button>
             </div>
             <pre><code>:root { --card-radius: 0px !important; --tile-radius: 0px !important; }</code></pre>
           </div>
           <div class="css-recipe-item">
             <div class="css-recipe-header">
               <b>Monochrome Matte Black</b>
-              <button class="glass-btn btn-copy-recipe" data-recipe=":root { --card-tint: #111111 !important; --card-tint-deep: #0a0a0a !important; --glass-border: #333 !important; } .tile { filter: grayscale(100%); }">📋 Copy Snippet</button>
+              <button class="glass-btn btn-copy-recipe" data-recipe=":root { --card-tint: #111111 !important; --card-tint-deep: #0a0a0a !important; --glass-border: #333 !important; } .tile { filter: grayscale(100%); }"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy Snippet</button>
             </div>
             <pre><code>:root { --card-tint: #111111 !important; --card-tint-deep: #0a0a0a !important; --glass-border: #333 !important; } .tile { filter: grayscale(100%); }</code></pre>
           </div>
           <div class="css-recipe-item">
             <div class="css-recipe-header">
               <b>Floating Gradient Text Header</b>
-              <button class="glass-btn btn-copy-recipe" data-recipe="#clock { background: linear-gradient(90deg, #ff8a00, #e52e71); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }">📋 Copy Snippet</button>
+              <button class="glass-btn btn-copy-recipe" data-recipe="#clock { background: linear-gradient(90deg, #ff8a00, #e52e71); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy Snippet</button>
             </div>
             <pre><code>#clock { background: linear-gradient(90deg, #ff8a00, #e52e71); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }</code></pre>
           </div>
           <div class="css-recipe-item">
             <div class="css-recipe-header">
               <b>Hide Clock & Center Bento</b>
-              <button class="glass-btn btn-copy-recipe" data-recipe="#hero { display: none !important; } #board { margin: auto; }">📋 Copy Snippet</button>
+              <button class="glass-btn btn-copy-recipe" data-recipe="#hero { display: none !important; } #board { margin: auto; }"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy Snippet</button>
             </div>
             <pre><code>#hero { display: none !important; } #board { margin: auto; }</code></pre>
           </div>
@@ -844,8 +844,8 @@
       </div>
 
       <div class="modal-footer" style="padding: 16px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; gap: 8px;">
-        <button id="btn-download-docs" class="glass-btn" style="flex: 1;">📥 Download Documentation (.md)</button>
-        <button id="btn-download-css" class="glass-btn" style="flex: 1;">📥 Download Starter CSS (.css)</button>
+        <button id="btn-download-docs" class="glass-btn" style="flex: 1;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download Documentation (.md)</button>
+        <button id="btn-download-css" class="glass-btn" style="flex: 1;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download Starter CSS (.css)</button>
       </div>
     </div>
   </div>
@@ -1005,7 +1005,7 @@
     </div>
     <div class="ctx-item" data-action="toggle-themes">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-      <span data-i18n="ctx.themeShaders">Theme & Shaders...</span>
+      <span data-i18n="ctx.themeShaders">Theme &amp; Shaders...</span>
     </div>
   </div>
 

@@ -176,10 +176,9 @@ body.resizing-drawer #cfg {
 }
 
 .csec h3 {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
+  font-size: 12.5px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
   color: #94a3b8;
   margin-top: 4px;
   display: flex;
@@ -200,7 +199,7 @@ body.resizing-drawer #cfg {
   gap: 14px;
 }
 .row span {
-  font-size: 13px;
+  font-size: 14px;
   color: #f1f5f9;
   font-weight: 450;
 }
@@ -381,10 +380,9 @@ html[data-theme="warm-ivory"] .mode-btn.active {
   margin-top: 2px;
 }
 .theme-section-title {
-  font-size: 11.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size: 12.5px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
   color: #94a3b8;
   display: flex;
   align-items: center;
@@ -975,6 +973,9 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   backdrop-filter: blur(12px);
   transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
 }
+/* One icon size across every button that has one, so a row of them lines up. */
+.btn-icon { width: 16px; height: 16px; flex: 0 0 16px; opacity: .85; }
+
 .glass-btn:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.25);
@@ -1390,10 +1391,8 @@ html[data-theme="warm-ivory"] .preview-card-sub {
 }
 
 .cropper-label {
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 550;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
   color: var(--dim);
 }
 
@@ -1768,7 +1767,7 @@ html[data-theme="warm-ivory"] .css-docs-list code {
   overflow: auto; mask-image: none; border: 0; border-right: 1px solid var(--nl-border); background: transparent;
 }
 .settings-nav-group { display: flex; flex-direction: column; gap: 4px; }
-.settings-nav-label { padding: 0 10px 5px; color: var(--nl-text-tertiary); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.settings-nav-label { padding: 0 10px 5px; color: var(--nl-text-tertiary); font-size: 11px; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; }
 .ctab { position: relative; min-height: 42px; padding: 0 12px; border-radius: var(--nl-radius-sm); text-align: left; display: flex; align-items: center; gap: 10px; }
 .settings-tab-icon { width: 17px; height: 17px; flex: 0 0 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; opacity: .82; }
 .ctab.active { color: var(--nl-text-primary); background: color-mix(in srgb, var(--nl-accent) 14%, transparent); box-shadow: none; }
