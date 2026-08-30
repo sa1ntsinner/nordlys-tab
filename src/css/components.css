@@ -1505,3 +1505,8 @@ body.hover-none .tile:hover .box {
 /* The bar already lights up as a whole through :focus-within, so the field inside
    it must not draw a second rectangle of its own. */
 #search #q:focus-visible { outline: none; box-shadow: none; }
+
+/* How much of the header to keep. Hiding the greeting or the whole block used
+   to need Custom CSS, which is a strange price for wanting less on screen. */
+body[data-header="compact"] #greet { display: none; }
+body[data-header="hidden"] #hero { display: none; }

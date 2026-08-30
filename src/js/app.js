@@ -7,6 +7,7 @@ const DEFAULT_CONFIG = {
   theme: "aurora-void",
   colorMode: "dark",
   bgMode: "aurora",
+  headerStyle: "full",
   bgBlur: 0,
   bgDim: 0,
   timeFormat: "24h",
@@ -124,6 +125,12 @@ class AuroraApp {
     this.init();
   }
 
+  /* The board is the point of the page; the header is how much context sits
+     above it. Kept on <body> so Custom CSS can still see the choice. */
+  applyHeaderStyle() {
+    document.body.dataset.header = this.config.headerStyle || "full";
+  }
+
   normalizeStoredConfig(config) {
     let changed = false;
     if (THEME_MIGRATIONS[config.theme]) { config.theme = THEME_MIGRATIONS[config.theme]; changed = true; }
@@ -207,6 +214,7 @@ class AuroraApp {
     // 1. Apply Active Theme, Geometry & Custom CSS
     this.applyThemeTokens();
     this.applyGeometryTokens();
+    this.applyHeaderStyle();
     if (this.config.customCss) {
       this.injectCustomCSS(this.config.customCss);
     }

@@ -309,6 +309,8 @@ class SettingsController {
     if (languageSelect) languageSelect.value = cfg.language || "en";
     if (userName) userName.value = cfg.userName || "";
     if (timeFormat) timeFormat.value = cfg.timeFormat || "24h";
+    const headerStyle = document.getElementById("cfg-header-style");
+    if (headerStyle) headerStyle.value = cfg.headerStyle || "full";
     if (showSeconds) showSeconds.checked = !!cfg.showSeconds;
     if (openNewTab) openNewTab.checked = !!cfg.openNewTab;
     if (showSuggestions) showSuggestions.checked = cfg.showSuggestions !== false;
@@ -811,6 +813,12 @@ class SettingsController {
       this.app.config.timeFormat = e.target.value;
       this.app.saveConfig();
       this.app.widgets?.updateClock();
+    });
+
+    document.getElementById("cfg-header-style")?.addEventListener("change", (e) => {
+      this.app.config.headerStyle = e.target.value;
+      this.app.applyHeaderStyle();
+      this.app.saveConfig();
     });
 
     showSeconds?.addEventListener("change", (e) => {
