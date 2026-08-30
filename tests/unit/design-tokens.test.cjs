@@ -67,3 +67,42 @@ test('the scale and the tracking table are actually defined', () => {
     assert.ok(foundations.includes(`${token}:`), `${token} is used but never defined`);
   }
 });
+
+/* Eighty-four distinct shadows is not a vocabulary, it is eighty-four implied
+   light sources. Three elevations, one direction, and a theme may tint and damp
+   the ladder but never redeclare it. */
+test('shadows come from the elevation ladder', () => {
+  const allowed = /^(var\(--nl-(shadow-[123]|ring|ring-tight)\)|none|inherit)$/;
+  const offenders = [];
+  for (const sheet of stylesheets()) {
+    if (sheet.name === 'foundations.css') continue;
+    for (const match of sheet.text.matchAll(/box-shadow:\s*([^;}]+)/g)) {
+      const value = match[1].split(',').map(part => part.trim());
+      for (const layer of value) {
+        if (!allowed.test(layer) && !layer.startsWith('var(--nl-')) {
+          offenders.push(`${sheet.name}: ${match[1].trim().slice(0, 72)}`);
+          break;
+        }
+      }
+    }
+  }
+  // Drag affordances and the user's own card-glow slider still draw with colour
+  // on purpose; everything else is on the ladder.
+  const budget = 30;
+  assert.ok(offenders.length <= budget,
+    `${offenders.length} shadows outside the ladder (budget ${budget}):\n${offenders.slice(0, 12).join('\n')}`);
+});
+
+/* A theme carries colour. The moment it starts declaring its own elevation there
+   are as many light sources as there are themes. */
+test('themes do not redeclare card elevation', () => {
+  const themes = fs.readFileSync(path.join(CSS_DIR, 'themes.css'), 'utf8');
+  const offenders = [];
+  for (const rule of themes.matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
+    const [, selector, body] = rule;
+    if (!/box-shadow:/.test(body)) continue;
+    const value = /box-shadow:\s*([^;}]+)/.exec(body)[1].trim();
+    if (!value.startsWith('var(--nl-')) offenders.push(`${selector.trim().slice(-50)} => ${value.slice(0, 50)}`);
+  }
+  assert.deepStrictEqual(offenders, [], `themes declaring their own shadows:\n${offenders.join('\n')}`);
+});

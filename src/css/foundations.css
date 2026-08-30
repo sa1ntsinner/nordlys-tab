@@ -39,9 +39,31 @@
   --nl-space-1: 4px; --nl-space-2: 8px; --nl-space-3: 12px; --nl-space-4: 16px;
   --nl-space-5: 20px; --nl-space-6: 24px; --nl-space-8: 32px; --nl-space-10: 40px; --nl-space-12: 48px;
   --nl-radius-sm: 10px; --nl-radius-md: 14px; --nl-radius-lg: 18px; --nl-radius-xl: 24px;
-  --nl-shadow-1: 0 4px 14px rgba(0, 0, 0, .18);
-  --nl-shadow-2: 0 12px 34px rgba(0, 0, 0, .28);
-  --nl-shadow-3: 0 24px 70px rgba(0, 0, 0, .38);
+  /* Elevation. One light source, above and slightly in front, for the whole
+     product. Three steps: a control that lifts off its surface, a surface that
+     floats over the page, and a surface that owns the screen. There were
+     eighty-four distinct shadows here, which is not a vocabulary, it is
+     eighty-four different implied light sources. */
+  /* Selection and focus are a ring, not a bloom. One width, so a focused input,
+     a chosen theme and a card being dragged all say the same thing the same
+     way; previously they said it at one, two, three and four pixels. */
+  --nl-ring: 0 0 0 3px var(--accent-glow);
+  --nl-ring-tight: 0 0 0 2px var(--accent);
+  /* A theme tints and dampens the ladder; it does not get to redeclare it.
+     Six dark themes used to write out their own card shadow, differing only in
+     the hue of a glow and two points of alpha, and three light themes wrote a
+     hand-tinted one with a white rim on top. Two variables replace all twelve. */
+  --nl-shadow-ink: #000;
+  --nl-shadow-strength: 1;
+  --nl-shadow-1:
+    0 1px 2px color-mix(in srgb, var(--nl-shadow-ink) calc(14% * var(--nl-shadow-strength)), transparent),
+    0 2px 8px color-mix(in srgb, var(--nl-shadow-ink) calc(10% * var(--nl-shadow-strength)), transparent);
+  --nl-shadow-2:
+    0 4px 12px color-mix(in srgb, var(--nl-shadow-ink) calc(18% * var(--nl-shadow-strength)), transparent),
+    0 12px 32px color-mix(in srgb, var(--nl-shadow-ink) calc(22% * var(--nl-shadow-strength)), transparent);
+  --nl-shadow-3:
+    0 8px 24px color-mix(in srgb, var(--nl-shadow-ink) calc(26% * var(--nl-shadow-strength)), transparent),
+    0 32px 64px color-mix(in srgb, var(--nl-shadow-ink) calc(30% * var(--nl-shadow-strength)), transparent);
   --nl-motion-fast: 120ms;
   --nl-motion-control: 170ms;
   --nl-motion-panel: 260ms;
