@@ -10,6 +10,7 @@ async function chooseOption(page, locator, value) {
 }
 
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
+const { openIconPicker } = require('../helpers/flows.cjs');
 
 async function expectNoHighImpactViolations(page, context) {
   const results = await new AxeBuilder({ page }).include(context).analyze();
@@ -126,8 +127,7 @@ test('every target in the product has a 40px hit area', async ({ nordlysPage }) 
   await page.locator('#settings-tab-bookmarks').click();
   await folder.locator('summary').click();
   small.push(...await undersizedTargets(page, 'bookmarks expanded'));
-  await folder.locator('.bookmark-summary-row').first().getByRole('button', { name: /Edit/ }).first().click();
-  await folder.getByRole('button', { name: /Choose icon/ }).click();
+  await openIconPicker(page, folder);
   small.push(...await undersizedTargets(page, 'icon picker'));
 
   await page.keyboard.press('Escape'); await page.keyboard.press('Escape'); await page.keyboard.press('Escape');

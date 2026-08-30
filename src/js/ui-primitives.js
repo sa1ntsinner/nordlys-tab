@@ -400,7 +400,14 @@
     return region;
   }
   function announce(message) { const region = liveRegion(); region.textContent = ''; requestAnimationFrame(() => { region.textContent = String(message); }); }
-  function showUndoToast({ message, actionLabel = 'Undo', onAction, duration = 5000 }) {
+  /* Every caller wants the same sentence in the user's language, so the default
+     label comes from the dictionary rather than from each call site. */
+  function undoText(key, params) {
+    return window.I18N ? window.I18N.t(key, params) : null;
+  }
+
+  function showUndoToast({ message, actionLabel, onAction, duration = 5000 }) {
+    actionLabel = actionLabel || undoText('toast.undo') || 'Undo';
     const dock = document.getElementById('toast-dock') || document.body;
     const item = document.createElement('div'); item.className = 'toast toast-info on'; item.setAttribute('role', 'status');
     const text = document.createElement('span'); text.textContent = message;
@@ -410,5 +417,5 @@
     const timer = setTimeout(() => finish(false), duration); return { dismiss: () => finish(false) };
   }
 
-  window.NordlysUI = { FocusScope, DialogController, RovingTabs, MenuController, SelectMenu, enhanceSelect, enhanceSelects, refreshSelects, announce, showUndoToast, animateReflow, visibleFocusable, layers };
+  window.NordlysUI = { FocusScope, DialogController, RovingTabs, MenuController, SelectMenu, enhanceSelect, enhanceSelects, refreshSelects, announce, showUndoToast, undoText, animateReflow, visibleFocusable, layers };
 })();

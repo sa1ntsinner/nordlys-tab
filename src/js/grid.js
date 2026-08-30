@@ -140,7 +140,7 @@ class GridController {
       <b>${esc(group.label || "Group")}</b>
       <i></i>
       <button class="groupGrip" title="${esc(window.I18N ? window.I18N.t('hint.dragFolder') : 'Drag folder')}" aria-label="Drag folder">⋮⋮</button>
-      <button class="foldBtn" title="${esc(window.I18N ? window.I18N.t('hint.foldFolder') : 'Hide/Fold this folder')}" aria-label="Fold folder">−</button>
+      <button class="foldBtn" title="${esc(window.I18N ? window.I18N.t('hint.foldFolder') : 'Hide this folder')}" aria-label="${esc(window.I18N ? window.I18N.t('hint.foldFolder') : 'Hide this folder')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M6.61 6.61A18.4 18.4 0 0 0 2 12s3 8 10 8a9.1 9.1 0 0 0 5.39-1.61"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="2" y1="2" x2="22" y2="22"/></svg></button>
     `;
 
     // Folder Fold action
@@ -432,11 +432,7 @@ class GridController {
           this.app.settings?.renderBookmarksManager();
         } else if (action === "delete-folder") {
           this.confirmFolderDelete(group).then((ok) => {
-            if (!ok) return;
-            this.app.config.groups.splice(gIdx, 1);
-            this.app.saveConfig();
-            this.render();
-            this.app.settings?.renderBookmarksManager();
+            if (ok) this.deleteFolderWithUndo(gIdx);
           });
         }
       });
@@ -608,12 +604,35 @@ class GridController {
       const group = this.app.config.groups[gIdx];
       this.confirmFolderDelete(group).then((ok) => {
         if (!ok) return;
-        this.app.config.groups.splice(gIdx, 1);
-        this.app.saveConfig();
-        this.render();
-        this.app.settings?.renderBookmarksManager();
+        this.deleteFolderWithUndo(gIdx);
         this.closeQuickFolderModal();
       });
+    });
+  }
+
+  /* A folder holds a whole set of links, and a confirm dialog only protects
+     against the click you were paying attention to. A single bookmark has had
+     Undo since the redesign; the folder that contains it had none. */
+  deleteFolderWithUndo(gIdx) {
+    const groups = this.app.config.groups;
+    if (!Array.isArray(groups) || gIdx < 0 || gIdx >= groups.length) return;
+    const [removed] = groups.splice(gIdx, 1);
+    const snapshot = JSON.parse(JSON.stringify(removed));
+    const name = snapshot.label || "Folder";
+    const refresh = () => {
+      this.app.saveConfig();
+      this.render();
+      this.app.settings?.renderBookmarksManager();
+    };
+    refresh();
+    const say = (key, fallback) => (window.I18N ? window.I18N.t(key, { name }) : fallback);
+    window.NordlysUI?.showUndoToast({
+      message: say("toast.itemDeleted", `${name} deleted`),
+      onAction: () => {
+        groups.splice(Math.min(gIdx, groups.length), 0, snapshot);
+        refresh();
+        window.NordlysUI?.announce?.(say("toast.itemRestored", `${name} restored`));
+      }
     });
   }
 
@@ -898,8 +917,8 @@ class GridController {
       pillEl = document.createElement("div");
       pillEl.className = "card-resize-pill";
       pillEl.textContent = currentCols === 1
-        ? (window.I18N ? window.I18N.t('hint.columnSingle') : `✦ 1 Column (List)`)
-        : (window.I18N ? window.I18N.t('hint.columnsCount', { count: currentCols }) : `✦ ${currentCols} Columns`);
+        ? (window.I18N ? window.I18N.t('hint.columnSingle') : `1 Column (List)`)
+        : (window.I18N ? window.I18N.t('hint.columnsCount', { count: currentCols }) : `${currentCols} Columns`);
       cardEl.appendChild(pillEl);
     };
 
@@ -922,8 +941,8 @@ class GridController {
         handleEl.setAttribute("aria-valuenow", String(currentCols));
         if (pillEl) {
           pillEl.textContent = currentCols === 1
-            ? (window.I18N ? window.I18N.t('hint.columnSingle') : `✦ 1 Column (List)`)
-            : (window.I18N ? window.I18N.t('hint.columnsCount', { count: currentCols }) : `✦ ${currentCols} Columns`);
+            ? (window.I18N ? window.I18N.t('hint.columnSingle') : `1 Column (List)`)
+            : (window.I18N ? window.I18N.t('hint.columnsCount', { count: currentCols }) : `${currentCols} Columns`);
         }
       }
     };

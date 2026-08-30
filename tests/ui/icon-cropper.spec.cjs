@@ -1,4 +1,5 @@
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
+const { openIconPicker } = require('../helpers/flows.cjs');
 
 /* A 1024px logo could not be zoomed out far enough to see: the slider floored at
    30%, the initial fit was floored at 40%, and Fit View ran into the same floor —
@@ -13,8 +14,7 @@ async function openCropperWith(page, source) {
     await page.locator('#settings-tab-bookmarks').click();
     const folder = page.locator('.bookmark-folder-accordion').first();
     await folder.locator('summary').click();
-    await folder.locator('.bookmark-summary-row').first().getByRole('button', { name: /^Edit/ }).first().click();
-    await folder.getByRole('button', { name: /Choose icon/ }).click();
+    await openIconPicker(page, folder);
     await expect(page.locator('#icon-modal')).toBeVisible();
   }
   await page.evaluate(async src => {
