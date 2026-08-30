@@ -55,7 +55,7 @@ body.resizing-drawer #cfg {
   height: 48px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.2);
-  transition: height var(--nl-motion-control) ease, background var(--nl-motion-control) ease, box-shadow var(--nl-motion-control) ease;
+  transition: height var(--nl-transition-control), background var(--nl-transition-control), box-shadow var(--nl-transition-control);
 }
 #cfg-resizer:hover::after, #cfg-resizer.dragging::after {
   height: 80px;
@@ -289,7 +289,7 @@ input[type="range"].ipt:focus-visible {
   border-radius: 50%;
   background: #ffffff;
   box-shadow: var(--nl-shadow-1);
-  transition: transform var(--nl-motion-control) var(--nl-ease-pop), background-color var(--nl-motion-control) ease;
+  transition: transform var(--nl-motion-control) var(--nl-ease-pop), background-color var(--nl-transition-control);
 }
 .tg input:focus-visible + i {
   box-shadow: var(--nl-ring);
@@ -715,7 +715,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   text-align: center;
   cursor: pointer;
   opacity: 0;
-  transition: opacity var(--nl-motion-fast) ease, transform var(--nl-motion-fast) ease;
+  transition: opacity var(--nl-transition-fast), transform var(--nl-transition-fast);
   z-index: 5;
 }
 
@@ -806,7 +806,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: opacity var(--nl-motion-control) ease, border-color var(--nl-motion-control) ease;
+  transition: opacity var(--nl-transition-control), border-color var(--nl-transition-control);
 }
 .group-editor-card.is-hidden-folder {
   opacity: 0.6;
@@ -1543,7 +1543,7 @@ html[data-theme="warm-ivory"] .preview-card-sub {
 }
 .css-tab-pane.active {
   display: block;
-  animation: fadeIn var(--nl-motion-control) ease both;
+  animation: fadeIn var(--nl-transition-control) both;
 }
 .css-tab-pane h4 {
   font-size: var(--nl-text-lg);
@@ -1885,30 +1885,6 @@ html[data-theme="warm-ivory"] .css-docs-list code {
     radial-gradient(70% 50% at 75% 100%, color-mix(in srgb, var(--shader-2, #5b6cff) 60%, transparent), transparent 68%),
     var(--nl-canvas);
 }
-.scene-preview[data-scene="cosmos"] {
-  background:
-    radial-gradient(1.5px 1.5px at 22% 34%, var(--nl-text-primary), transparent),
-    radial-gradient(1.5px 1.5px at 68% 22%, var(--nl-text-primary), transparent),
-    radial-gradient(1.5px 1.5px at 44% 72%, var(--nl-text-primary), transparent),
-    radial-gradient(1.5px 1.5px at 82% 62%, var(--nl-text-primary), transparent),
-    radial-gradient(90% 70% at 50% 20%, color-mix(in srgb, var(--shader-3, #9d4edd) 45%, transparent), transparent 75%),
-    var(--nl-canvas);
-}
-.scene-preview[data-scene="mesh-gradient"] {
-  background:
-    radial-gradient(50% 50% at 25% 30%, color-mix(in srgb, var(--shader-1, #35d6c0) 85%, transparent), transparent 70%),
-    radial-gradient(50% 50% at 75% 40%, color-mix(in srgb, var(--shader-2, #5b6cff) 85%, transparent), transparent 70%),
-    radial-gradient(50% 50% at 50% 80%, color-mix(in srgb, var(--shader-3, #9d4edd) 85%, transparent), transparent 70%),
-    var(--nl-canvas);
-}
-.scene-preview[data-scene="particles"] {
-  background:
-    radial-gradient(3px 3px at 30% 40%, color-mix(in srgb, var(--shader-1, #35d6c0) 80%, transparent), transparent),
-    radial-gradient(4px 4px at 62% 30%, color-mix(in srgb, var(--shader-2, #5b6cff) 70%, transparent), transparent),
-    radial-gradient(2.5px 2.5px at 48% 70%, color-mix(in srgb, var(--shader-3, #9d4edd) 80%, transparent), transparent),
-    radial-gradient(3.5px 3.5px at 78% 66%, color-mix(in srgb, var(--shader-1, #35d6c0) 60%, transparent), transparent),
-    var(--nl-canvas);
-}
 .scene-preview[data-scene="solid"] { background: var(--nl-canvas); }
 /* The still field, shown as the composition currently chosen would look. */
 .scene-preview[data-scene="gradient"] {
@@ -2025,4 +2001,15 @@ html[data-theme="warm-ivory"] .css-docs-list code {
       transparent 45%,
       color-mix(in srgb, var(--shader-1) 26%, transparent) 100%),
     var(--nl-canvas);
+}
+
+/* Group labels inside the appearance panel. They used to style themselves with
+   inline uppercase and tracking, which is how a tracking table gets bypassed. */
+.settings-group-label {
+  margin-top: 10px;
+  color: var(--dim);
+  font-size: var(--nl-text-2xs);
+  font-weight: 650;
+  letter-spacing: var(--nl-track-label);
+  text-transform: uppercase;
 }

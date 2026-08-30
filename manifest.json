@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Nordlys",
   "version": "2.2.0",
-  "description": "A new tab page with 21 themes, animated canvas scenes, bookmark folders you arrange yourself, and search that does arithmetic.",
+  "description": "A new tab page with 21 themes, a living aurora, still gradients, bookmark folders you arrange, and search that does arithmetic.",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   },

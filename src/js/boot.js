@@ -66,12 +66,14 @@
 
   var root = document.documentElement;
   var theme = "aurora-void";
+  var raw = null;
+  var config = null;
   var background = null;
 
   try {
-    var raw = localStorage.getItem("aether_tab_config") || localStorage.getItem("aurora_tab_config");
+    raw = localStorage.getItem("aether_tab_config") || localStorage.getItem("aurora_tab_config");
     if (raw) {
-      var config = JSON.parse(raw);
+      config = JSON.parse(raw);
       var stored = config && config.theme;
       if (typeof stored === "string") {
         if (RENAMED[stored]) stored = RENAMED[stored];
@@ -90,6 +92,14 @@
   }
 
   if (!background) background = BASE[theme] || BASE["aurora-void"];
+
+  /* The still field is painted by CSS, so the first frame can carry it too —
+     otherwise a gradient user sees one frame of the theme's own wash first. */
+  try {
+    if (config && config.bgMode === "gradient") {
+      root.setAttribute("data-gradient", config.gradient || "horizon");
+    }
+  } catch (error) { /* no config, no gradient */ }
 
   root.setAttribute("data-theme", theme);
   if (LIGHT.indexOf(theme) !== -1) root.classList.add("light-ui");

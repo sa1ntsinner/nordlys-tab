@@ -70,21 +70,50 @@ test('a still field is offered in four compositions, and only when it is chosen'
   await expect(page.locator('html')).toHaveAttribute('data-gradient', 'bloom');
 });
 
-test('the still field runs no animation at all', async ({ nordlysPage }) => {
-  const { page } = nordlysPage;
-  await page.evaluate(() => {
-    window.Aurora.config.bgMode = 'gradient';
+async function chooseBackground(page, mode) {
+  await page.evaluate(key => {
+    window.Aurora.config.bgMode = key;
     window.Aurora.saveConfig();
     window.Aurora.updateBackgroundMode();
-  });
+  }, mode);
   await page.waitForTimeout(300);
+}
+
+test('the still field runs no animation at all', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await chooseBackground(page, 'gradient');
   const state = await page.evaluate(() => ({
     canvasShown: getComputedStyle(document.getElementById('bg-canvas')).display,
-    running: Boolean(window.Aurora.bgEngine.raf || window.Aurora.bgEngine.running),
+    // The loop handle is animId. An earlier version of this test read a field
+    // that does not exist, computed the answer, and then never asserted it.
+    frameHandle: window.Aurora.bgEngine.animId,
     painted: getComputedStyle(document.body).backgroundImage
   }));
   expect(state.canvasShown, 'the canvas has nothing to draw').toBe('none');
-  expect(state.painted, 'the field is painted by CSS').toContain('gradient');
+  expect(state.frameHandle, 'no frame may be scheduled for a still background').toBeFalsy();
+  expect(state.painted, 'the composition is painted by CSS').toContain('radial-gradient');
+});
+
+/* The rule that paints the still field outranks every theme's own ground, so
+   the attribute driving it must exist only in the mode that wants it. It did
+   not: it was set on every background change, which quietly made Solid not
+   solid and retired the wash all twenty-one themes define for themselves. */
+test('a background that is not the gradient does not wear one', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+
+  await chooseBackground(page, 'gradient');
+  await expect(page.locator('html')).toHaveAttribute('data-gradient', /\w+/);
+
+  await chooseBackground(page, 'solid');
+  expect(await page.evaluate(() => document.documentElement.hasAttribute('data-gradient')),
+    'solid must not carry a gradient attribute').toBe(false);
+
+  const solid = await page.evaluate(() => getComputedStyle(document.body).backgroundImage);
+  expect(solid, 'Solid means one colour, which is what its own preview promises').toBe('none');
+
+  await chooseBackground(page, 'aurora');
+  expect(await page.evaluate(() => document.documentElement.hasAttribute('data-gradient')),
+    'aurora keeps the theme ground it was designed with').toBe(false);
 });
 
 /* Someone who chose one of the removed scenes must land somewhere sensible

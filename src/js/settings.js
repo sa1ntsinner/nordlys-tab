@@ -188,7 +188,10 @@ class SettingsController {
           card.addEventListener("click", () => {
             gradientSelect.value = option.value;
             this.app.config.gradient = option.value;
-            document.documentElement.dataset.gradient = option.value;
+            // Only meaningful while the gradient is the chosen background.
+            if (this.app.config.bgMode === "gradient") {
+              document.documentElement.dataset.gradient = option.value;
+            }
             this.app.saveConfig();
             paintGradients();
           });
@@ -369,10 +372,7 @@ class SettingsController {
     if (defaultEngine) defaultEngine.value = cfg.defaultEngine || "google";
 
     // Aesthetics Sliders & Selects
-    const glassBlur = document.getElementById("cfg-glass-blur");
-    const glassSaturate = document.getElementById("cfg-glass-saturate");
-    const glassOpacity = document.getElementById("cfg-glass-opacity");
-    const glassSheen = document.getElementById("cfg-glass-sheen");
+    const glassLevel = document.getElementById("cfg-glass-level");
     const cardRadius = document.getElementById("cfg-card-radius");
     const tileSize = document.getElementById("cfg-tile-size");
     const cardGap = document.getElementById("cfg-card-gap");
@@ -380,10 +380,7 @@ class SettingsController {
     const hoverEffect = document.getElementById("cfg-hover-effect");
     const iconShape = document.getElementById("cfg-icon-shape");
 
-    if (glassBlur) glassBlur.value = cfg.glassBlur != null ? cfg.glassBlur : 28;
-    if (glassSaturate) glassSaturate.value = cfg.glassSaturate != null ? cfg.glassSaturate : 190;
-    if (glassOpacity) glassOpacity.value = Math.round((cfg.glassOpacity !== undefined ? cfg.glassOpacity : 0.7) * 100);
-    if (glassSheen) glassSheen.value = Math.round((cfg.glassSheen !== undefined ? cfg.glassSheen : 0.45) * 100);
+    if (glassLevel) glassLevel.value = cfg.glassLevel || "full";
     if (cardRadius) cardRadius.value = cfg.cardRadius != null ? cfg.cardRadius : 24;
     if (tileSize) tileSize.value = cfg.tileSize != null ? cfg.tileSize : 78;
     if (cardGap) cardGap.value = cfg.cardGap != null ? cfg.cardGap : 12;
@@ -400,10 +397,6 @@ class SettingsController {
 
   updateSliderLabels() {
     const cfg = this.app.config;
-    const lblBlur = document.getElementById("lbl-blur");
-    const lblSat = document.getElementById("lbl-sat");
-    const lblOpac = document.getElementById("lbl-opac");
-    const lblSheen = document.getElementById("lbl-sheen");
     const lblRadius = document.getElementById("lbl-radius");
     const lblTile = document.getElementById("lbl-tile");
     const lblGap = document.getElementById("lbl-gap");
@@ -411,10 +404,6 @@ class SettingsController {
     const lblBgBlur = document.getElementById("lbl-bgblur");
     const lblBgDim = document.getElementById("lbl-bgdim");
 
-    if (lblBlur) lblBlur.textContent = `${cfg.glassBlur != null ? cfg.glassBlur : 28}px`;
-    if (lblSat) lblSat.textContent = `${cfg.glassSaturate != null ? cfg.glassSaturate : 190}%`;
-    if (lblOpac) lblOpac.textContent = `${Math.round((cfg.glassOpacity !== undefined ? cfg.glassOpacity : 0.7) * 100)}%`;
-    if (lblSheen) lblSheen.textContent = `${Math.round((cfg.glassSheen !== undefined ? cfg.glassSheen : 0.45) * 100)}%`;
     if (lblRadius) lblRadius.textContent = `${cfg.cardRadius != null ? cfg.cardRadius : 24}px`;
     if (lblTile) lblTile.textContent = `${cfg.tileSize != null ? cfg.tileSize : 78}px`;
     if (lblGap) lblGap.textContent = `${cfg.cardGap != null ? cfg.cardGap : 12}px`;
@@ -429,14 +418,12 @@ class SettingsController {
     if (!previewCard) return;
 
     const cfg = this.app.config;
-    const blurVal = `${cfg.glassBlur != null ? cfg.glassBlur : 28}px`;
-    const satVal = `${cfg.glassSaturate != null ? cfg.glassSaturate : 190}%`;
-    const opacVal = cfg.glassOpacity !== undefined ? cfg.glassOpacity : 0.70;
-    const sheenVal = cfg.glassSheen !== undefined ? cfg.glassSheen : 0.45;
     const radiusVal = `${cfg.cardRadius != null ? cfg.cardRadius : 24}px`;
 
-    previewCard.style.backdropFilter = `blur(${blurVal}) saturate(${satVal}) contrast(94%) brightness(106%)`;
-    previewCard.style.webkitBackdropFilter = `blur(${blurVal}) saturate(${satVal}) contrast(94%) brightness(106%)`;
+    /* The preview reads the same tokens the real surface does, so it cannot
+       drift from it and cannot invent a fifth filter function of its own. */
+    previewCard.style.removeProperty("backdrop-filter");
+    previewCard.style.removeProperty("-webkit-backdrop-filter");
     previewCard.style.borderRadius = radiusVal;
 
     if (iconBox) {
@@ -471,52 +458,28 @@ class SettingsController {
     });
 
     // Glass Sliders
-    const glassBlur = document.getElementById("cfg-glass-blur");
-    const glassSaturate = document.getElementById("cfg-glass-saturate");
-    const glassOpacity = document.getElementById("cfg-glass-opacity");
-    const glassSheen = document.getElementById("cfg-glass-sheen");
+    const glassLevel = document.getElementById("cfg-glass-level");
 
-    glassBlur?.addEventListener("input", (e) => {
-      const val = `${e.target.value}px`;
-      document.documentElement.style.setProperty("--glass-blur", val);
-      this.app.config.glassBlur = parseInt(e.target.value, 10);
-      this.updateSliderLabels();
-      this.updateMiniPreview();
-      this.app.saveConfig();
-    });
 
-    glassSaturate?.addEventListener("input", (e) => {
-      const val = `${e.target.value}%`;
-      document.documentElement.style.setProperty("--glass-saturate", val);
-      this.app.config.glassSaturate = parseInt(e.target.value, 10);
-      this.updateSliderLabels();
-      this.updateMiniPreview();
-      this.app.saveConfig();
-    });
 
-    glassOpacity?.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value) / 100;
-      document.documentElement.style.setProperty("--glass-opacity", val);
-      this.app.config.glassOpacity = val;
-      this.updateSliderLabels();
-      this.updateMiniPreview();
-      this.app.saveConfig();
-    });
 
-    glassSheen?.addEventListener("input", (e) => {
-      const val = parseFloat(e.target.value) / 100;
-      document.documentElement.style.setProperty("--glass-border-sheen", val);
-      this.app.config.glassSheen = val;
-      this.updateSliderLabels();
-      this.updateMiniPreview();
-      this.app.saveConfig();
-    });
 
     // Geometry & Layout controls
     const cardRadius = document.getElementById("cfg-card-radius");
     const tileSize = document.getElementById("cfg-tile-size");
     const cardGap = document.getElementById("cfg-card-gap");
     const iconShape = document.getElementById("cfg-icon-shape");
+
+    /* Three levels of one material, rather than four raw filter knobs. The
+       knobs were a decision nobody made, handed to the user in the form the
+       renderer happens to take, and they reached states where text stopped
+       being readable. */
+    glassLevel?.addEventListener("change", (e) => {
+      this.app.config.glassLevel = e.target.value;
+      this.app.applyGlassLevel();
+      this.app.saveConfig();
+      this.updateMiniPreview();
+    });
 
     cardRadius?.addEventListener("input", (e) => {
       const val = `${e.target.value}px`;

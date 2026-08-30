@@ -8,6 +8,7 @@ const DEFAULT_CONFIG = {
   colorMode: "dark",
   bgMode: "aurora",
   gradient: "horizon",
+  glassLevel: "full",
   headerStyle: "full",
   bgBlur: 0,
   bgDim: 0,
@@ -137,6 +138,13 @@ class AuroraApp {
 
   /* The board is the point of the page; the header is how much context sits
      above it. Kept on <body> so Custom CSS can still see the choice. */
+  /* One material at three levels. Someone arriving with the four old numbers
+     keeps roughly what they had: whether they had turned the blur off is the
+     only distinction the levels can honestly preserve. */
+  applyGlassLevel() {
+    document.documentElement.dataset.glass = this.config.glassLevel || "full";
+  }
+
   applyHeaderStyle() {
     document.body.dataset.header = this.config.headerStyle || "full";
   }
@@ -144,6 +152,12 @@ class AuroraApp {
   normalizeStoredConfig(config) {
     let changed = false;
     if (THEME_MIGRATIONS[config.theme]) { config.theme = THEME_MIGRATIONS[config.theme]; changed = true; }
+    if (config.glassLevel === undefined) {
+      const blur = config.glassBlur;
+      config.glassLevel = blur === 0 ? "off" : (blur != null && blur <= 14 ? "subtle" : "full");
+      for (const dead of ["glassBlur", "glassSaturate", "glassOpacity", "glassSheen"]) delete config[dead];
+      changed = true;
+    }
     if (BACKGROUND_MIGRATIONS[config.bgMode]) {
       /* mesh-gradient becomes the bloom composition, which is the arrangement
          it drew. Set unconditionally: the defaults are merged in before this
@@ -197,6 +211,7 @@ class AuroraApp {
           this.applyThemeTokens();
           this.applyGeometryTokens();
           this.applyHeaderStyle();
+          this.applyGlassLevel();
           this.injectCustomCSS(this.config.customCss || "");
           this.updateBackgroundMode();
           this.grid?.render();
@@ -235,6 +250,7 @@ class AuroraApp {
     this.applyThemeTokens();
     this.applyGeometryTokens();
     this.applyHeaderStyle();
+    this.applyGlassLevel();
     if (this.config.customCss) {
       this.injectCustomCSS(this.config.customCss);
     }
@@ -576,16 +592,23 @@ class AuroraApp {
 
     this.applyWallpaperEffects();
 
-    /* A still field is a CSS gradient on <html>, so it exists whether or not a
-       canvas is running. Set it always and let the modes above decide what
-       covers it. */
-    document.documentElement.dataset.gradient = this.config.gradient || "horizon";
+    /* Only the gradient mode wears this. Setting it always looked harmless and
+       was not: the rule it drives outranks the theme's own ground, so Solid
+       stopped being solid and all twenty-one themes lost the wash they define
+       for themselves — under Aurora too, where the canvas is transparent. */
+    if (bgMode === "gradient") {
+      document.documentElement.dataset.gradient = this.config.gradient || "horizon";
+    } else {
+      delete document.documentElement.dataset.gradient;
+    }
+    // The chosen background, for the rules that need to know which one it is.
+    document.documentElement.dataset.bg = bgMode;
 
     if (bgMode === "gradient") {
       if (canvas) canvas.style.display = "none";
       clearMedia();
       this.bgEngine.setMode("gradient");
-    } else if (["aurora"].includes(bgMode)) {
+    } else if (bgMode === "aurora") {
       if (canvas) canvas.style.display = "block";
       clearMedia();
       this.bgEngine.setMode(bgMode);

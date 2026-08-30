@@ -76,7 +76,7 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color var(--nl-motion-panel) ease, color var(--nl-motion-control) ease;
+  transition: background-color var(--nl-transition-panel), color var(--nl-transition-control);
 }
 
 /* ── Background Rendering Layers ──────────────────────────────── */
@@ -103,7 +103,7 @@ body {
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity var(--nl-motion-panel) ease;
+  transition: opacity var(--nl-transition-panel);
   filter: blur(var(--bg-blur));
   /* Slight overscale hides the blurred edge bleed */
   transform: scale(calc(1 + var(--bg-blur-px) / 500));
@@ -119,7 +119,7 @@ body {
   background: #02040a;
   opacity: var(--bg-dim);
   pointer-events: none;
-  transition: opacity var(--nl-motion-control) ease;
+  transition: opacity var(--nl-transition-control);
 }
 
 /* Vignette + Organic Grain Film */
@@ -129,7 +129,7 @@ body {
   z-index: 1;
   pointer-events: none;
   background: radial-gradient(120% 92% at 50% 4%, transparent 50%, rgba(2, 4, 10, 0.55) 100%);
-  transition: opacity var(--nl-motion-panel) ease;
+  transition: opacity var(--nl-transition-panel);
 }
 
 #veil::after {

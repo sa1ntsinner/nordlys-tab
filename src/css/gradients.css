@@ -19,6 +19,13 @@ html[data-gradient] body {
   background-image: var(--nl-gradient);
 }
 
+/* Solid means solid. The word says it, the preview card shows it, and the page
+   was quietly painting the theme's own radial wash instead — which is a fine
+   thing to look at, and is exactly what Aurora and the compositions are for. */
+html[data-bg="solid"] body {
+  background-image: none;
+}
+
 /* Light gathering along the bottom edge, the way the aurora's ground glow sits.
    The most like the animated scene, without the animation. */
 html[data-gradient="horizon"] {
@@ -57,9 +64,6 @@ html[data-gradient="veil"] {
 
 /* Light themes take the same arrangements at roughly half strength: the same
    percentage of a colour reads far louder against white than against navy. */
-.light-ui[data-gradient] {
-  --nl-gradient-damp: 0.5;
-}
 .light-ui[data-gradient="horizon"] {
   --nl-gradient:
     radial-gradient(120% 78% at 50% 116%, color-mix(in srgb, var(--shader-1) 15%, transparent), transparent 68%),

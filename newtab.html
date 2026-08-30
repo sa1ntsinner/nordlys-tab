@@ -295,26 +295,18 @@
           </h4>
 
           <!-- 1. Surface & Glass Section -->
-          <div style="font-size: var(--nl-text-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 4px;" data-i18n="appearance.surfaceGlass">Glass</div>
+          <div class="settings-group-label" data-i18n="appearance.surfaceGlass">Glass</div>
           <div class="row">
-            <span><span data-i18n="appearance.glassBlur">Blur</span> (<b id="lbl-blur">28px</b>)</span>
-            <input id="cfg-glass-blur" type="range" class="ipt" min="0" max="60" value="28">
-          </div>
-          <div class="row">
-            <span><span data-i18n="appearance.glassSaturate">Saturation</span> (<b id="lbl-sat">190%</b>)</span>
-            <input id="cfg-glass-saturate" type="range" class="ipt" min="100" max="250" value="190">
-          </div>
-          <div class="row">
-            <span><span data-i18n="appearance.glassTranslucency">Opacity</span> (<b id="lbl-opac">70%</b>)</span>
-            <input id="cfg-glass-opacity" type="range" class="ipt" min="10" max="95" value="70">
-          </div>
-          <div class="row">
-            <span><span data-i18n="appearance.glassSheen">Border highlight</span> (<b id="lbl-sheen">45%</b>)</span>
-            <input id="cfg-glass-sheen" type="range" class="ipt" min="0" max="100" value="45">
+            <span data-i18n="appearance.glassLevel">Glass</span>
+            <select id="cfg-glass-level" class="ipt">
+              <option value="full" data-i18n="glass.full">Frosted</option>
+              <option value="subtle" data-i18n="glass.subtle">Subtle</option>
+              <option value="off" data-i18n="glass.off">None</option>
+            </select>
           </div>
 
           <!-- 2. Geometry & Spacing Section -->
-          <div style="font-size: var(--nl-text-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 6px;" data-i18n="appearance.geometry">Geometry</div>
+          <div class="settings-group-label" data-i18n="appearance.geometry">Geometry</div>
           <div class="row">
             <span><span data-i18n="appearance.cardRadius">Corner radius</span> (<b id="lbl-radius">24px</b>)</span>
             <input id="cfg-card-radius" type="range" class="ipt" min="6" max="36" value="24">

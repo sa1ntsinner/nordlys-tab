@@ -70,8 +70,36 @@
   --nl-motion-enter: 320ms;
   --nl-ease-emphasized: cubic-bezier(.2, .8, .2, 1);
   /* One deliberate overshoot for moments that should feel like they landed. */
+  /* Duration and curve travel together. Kept apart, 119 call sites re-pair them
+     by hand and several quietly pair a token duration with a bare `ease`. */
+  --nl-transition-fast: var(--nl-motion-fast) var(--nl-ease-emphasized);
+  --nl-transition-control: var(--nl-motion-control) var(--nl-ease-emphasized);
+  --nl-transition-panel: var(--nl-motion-panel) var(--nl-ease-emphasized);
   --nl-ease-pop: cubic-bezier(.2, .9, .3, 1.25);
+  /* Three levels of one material. The four raw filter sliders that used to sit
+     in settings were an unmade decision handed to the user, and they could be
+     driven to states where text stopped being readable. */
   --nl-target-min: 40px;
+}
+
+html[data-glass="subtle"] {
+  --glass-blur: 12px;
+  --glass-saturate: 130%;
+  --glass-opacity: 0.86;
+  --glass-border-sheen: 0.2;
+}
+
+html[data-glass="off"] {
+  --glass-blur: 0px;
+  --glass-saturate: 100%;
+  --glass-opacity: 1;
+  --glass-border-sheen: 0;
+}
+
+/* Blur is not free and is not universal. Where the browser cannot do it, the
+   surface must already be opaque enough to read against, not merely lighter. */
+@supports not (backdrop-filter: blur(1px)) {
+  :root { --glass-opacity: 0.96; }
 }
 
 :where(button, a, input, select, textarea, [tabindex]):focus-visible {

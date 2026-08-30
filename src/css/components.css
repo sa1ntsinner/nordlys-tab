@@ -9,9 +9,21 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  transition: opacity var(--nl-motion-control) ease, transform var(--nl-motion-control) ease;
+  transition: opacity var(--nl-transition-control), transform var(--nl-transition-control);
 }
 
+/* The clock is the one thing on this page that is read rather than used, so it
+   is the typographic subject and gets treated as one.
+
+   It used to be filled with a gradient through background-clip: text and lit
+   with a coloured drop-shadow. Both are the kind of thing that looks like craft
+   and is the opposite: clipped-gradient text loses subpixel rendering, and a
+   coloured halo behind type is the single fastest way to date an interface.
+   Ink, weight and size do the work.
+
+   The width is reserved in ch because tabular figures fix the width of a digit,
+   not of the clock: turning seconds on adds two digits and a separator, and the
+   hero above the search bar jumped every time. */
 #clock {
   font-family: var(--font-display);
   font-weight: 200;
@@ -19,11 +31,16 @@
   line-height: 0.95;
   letter-spacing: var(--nl-track-none);
   font-variant-numeric: tabular-nums;
-  background: linear-gradient(180deg, #ffffff 0%, var(--ink) 55%, var(--dim) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 10px 30px var(--accent-glow));
+  color: var(--ink);
+  display: inline-block;
+  /* Reserved for the widest state the clock can reach, not for the current one:
+     a minimum the content already exceeds reserves nothing. The slack is
+     invisible because the digits are centred inside it. */
+  /* Never wider than what is available: at 320px the clamped size makes 8ch
+     wider than the window, and reserving space is not worth a scrollbar. */
+  min-width: min(8ch, 100%);
+  max-width: 100%;
+  text-align: center;
   user-select: none;
 }
 
@@ -143,7 +160,7 @@ body.seconds .sc, body.seconds #ss {
   border-bottom: 1.6px solid currentColor;
   transform: rotate(45deg);
   opacity: 0;
-  transition: opacity var(--nl-motion-control) ease;
+  transition: opacity var(--nl-transition-control);
 }
 #search:hover #engine-selector::after,
 #search:focus-within #engine-selector::after,
@@ -316,7 +333,7 @@ body.seconds .sc, body.seconds #ss {
   visibility: hidden;
   backdrop-filter: blur(0px);
   -webkit-backdrop-filter: blur(0px);
-  transition: opacity var(--nl-motion-panel) ease, visibility 0s var(--nl-motion-panel);
+  transition: opacity var(--nl-transition-panel), visibility 0s var(--nl-motion-panel);
   pointer-events: none;
 }
 
@@ -324,7 +341,7 @@ body.searching #dim {
   opacity: 1;
   visibility: visible;
   background: rgba(3, 7, 18, 0.5);
-  transition: opacity var(--nl-motion-panel) ease, visibility 0s;
+  transition: opacity var(--nl-transition-panel), visibility 0s;
   pointer-events: auto;
 }
 
@@ -374,7 +391,7 @@ body.searching #hiddenDock {
   gap: 16px;
   width: min(96vw, 1480px);
   contain: layout style;
-  transition: opacity var(--nl-motion-control) ease;
+  transition: opacity var(--nl-transition-control);
 }
 
 body.minimal #board {
@@ -404,7 +421,7 @@ body.minimal #board {
     inset 0 1px 0 rgba(255, 255, 255, calc(0.02 + var(--glass-border-sheen, 0.45) * 0.16));
   contain: layout style;
   transform: translate3d(0, 0, 0);
-  transition: transform var(--nl-motion-control) var(--nl-ease-emphasized), box-shadow var(--nl-motion-control) ease, border-color var(--nl-motion-control) ease;
+  transition: transform var(--nl-motion-control) var(--nl-ease-emphasized), box-shadow var(--nl-transition-control), border-color var(--nl-transition-control);
   position: relative;
 }
 
@@ -433,12 +450,14 @@ body.minimal #board {
   user-select: none;
   border-radius: 8px;
   padding: 2px 4px;
-  transition: background var(--nl-motion-control) ease;
+  transition: background var(--nl-transition-control);
 }
 .cat:hover {
   background: rgba(255, 255, 255, 0.03);
 }
 .cat s {
+  /* A dot, not a word. The empty alt text keeps it out of the accessibility
+     tree without hiding the element from the paint. */
   width: 4px;
   height: 4px;
   border-radius: 50%;
@@ -452,7 +471,7 @@ body.minimal #board {
   letter-spacing: var(--nl-track-wide);
   color: var(--dim);
   text-transform: uppercase;
-  transition: color var(--nl-motion-control) ease;
+  transition: color var(--nl-transition-control);
   cursor: pointer;
 }
 .cat:hover b {
@@ -591,7 +610,7 @@ body.minimal #board {
   cursor: nwse-resize;
   z-index: 10;
   opacity: 0;
-  transition: opacity var(--nl-motion-control) ease, background var(--nl-motion-control) ease;
+  transition: opacity var(--nl-transition-control), background var(--nl-transition-control);
   border-bottom-right-radius: var(--card-radius);
 }
 
@@ -643,7 +662,7 @@ body.minimal #board {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity var(--nl-motion-control) ease, transform var(--nl-motion-control) ease, visibility 0s var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control);
+  transition: opacity var(--nl-transition-control), transform var(--nl-transition-control), visibility 0s var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control);
   white-space: nowrap;
   z-index: 50;
 }
@@ -654,7 +673,7 @@ body.minimal #board {
   border-color: var(--accent);
   box-shadow: var(--nl-shadow-2);
   transform: translateX(-50%) translateY(0);
-  transition: opacity var(--nl-motion-control) ease, transform var(--nl-motion-control) var(--nl-ease-emphasized), visibility 0s, border-color var(--nl-motion-control), box-shadow var(--nl-motion-control);
+  transition: opacity var(--nl-transition-control), transform var(--nl-motion-control) var(--nl-ease-emphasized), visibility 0s, border-color var(--nl-motion-control), box-shadow var(--nl-motion-control);
 }
 
 .card.is-resizing {
@@ -728,7 +747,7 @@ body.minimal #board {
   inset: 0;
   background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, 0.18) 48%, transparent 62%);
   transform: translateX(-170%);
-  transition: transform var(--nl-motion-panel) ease;
+  transition: transform var(--nl-transition-panel);
 }
 
 .box svg, .box img {
@@ -875,8 +894,8 @@ body.hover-none .tile:hover .box {
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
   box-shadow: var(--nl-shadow-2);
   opacity: 0.7;
-  transition: opacity var(--nl-motion-control) ease, transform var(--nl-motion-control) ease, background var(--nl-motion-control) ease, border-color var(--nl-motion-control) ease;
-  animation: fadeIn var(--nl-motion-panel) ease both;
+  transition: opacity var(--nl-transition-control), transform var(--nl-transition-control), background var(--nl-transition-control), border-color var(--nl-transition-control);
+  animation: fadeIn var(--nl-transition-panel) both;
   z-index: 4;
 }
 
@@ -926,7 +945,7 @@ body.hover-none .tile:hover .box {
   height: 14px;
   color: var(--accent);
   flex-shrink: 0;
-  transition: transform var(--nl-motion-control) ease;
+  transition: transform var(--nl-transition-control);
 }
 
 .restoreFolder:hover .dockFolderIcon {
@@ -1018,7 +1037,7 @@ body.hover-none .tile:hover .box {
   /* --origin is set from JS so the menu grows out of the cursor */
   transform-origin: var(--origin, top left);
   transform: scale(0.92);
-  transition: opacity var(--nl-motion-fast) ease, transform var(--nl-motion-fast) var(--nl-ease-pop), visibility 0s var(--nl-motion-fast);
+  transition: opacity var(--nl-transition-fast), transform var(--nl-motion-fast) var(--nl-ease-pop), visibility 0s var(--nl-motion-fast);
   user-select: none;
 }
 
@@ -1026,7 +1045,7 @@ body.hover-none .tile:hover .box {
   opacity: 1;
   visibility: visible;
   transform: none;
-  transition: opacity var(--nl-motion-fast) ease, transform var(--nl-motion-fast) var(--nl-ease-emphasized), visibility 0s;
+  transition: opacity var(--nl-transition-fast), transform var(--nl-motion-fast) var(--nl-ease-emphasized), visibility 0s;
 }
 
 .ctx-header {
@@ -1068,7 +1087,7 @@ body.hover-none .tile:hover .box {
 
 .ctx-item svg {
   color: var(--dim);
-  transition: color var(--nl-motion-fast) ease;
+  transition: color var(--nl-transition-fast);
 }
 
 .ctx-item:hover {
@@ -1186,7 +1205,7 @@ body.hover-none .tile:hover .box {
 /* ── Clock Digit Tick (soft morph on minute/second change) ────── */
 #hh, #mm, body.seconds #ss {
   display: inline-block;
-  transition: transform var(--nl-motion-fast) ease, opacity var(--nl-motion-fast) ease;
+  transition: transform var(--nl-transition-fast), opacity var(--nl-transition-fast);
 }
 .digit-tick {
   animation: digitTick var(--nl-motion-fast) var(--nl-ease-emphasized);
@@ -1228,7 +1247,7 @@ body.hover-none .tile:hover .box {
   letter-spacing: var(--nl-track-tight);
   opacity: 0;
   transform: translateY(14px) scale(0.96);
-  transition: opacity var(--nl-motion-panel) ease, transform var(--nl-motion-panel) var(--nl-ease-pop);
+  transition: opacity var(--nl-transition-panel), transform var(--nl-motion-panel) var(--nl-ease-pop);
 }
 .toast.on {
   opacity: 1;
@@ -1405,7 +1424,7 @@ body.hover-none .tile:hover .box {
   -webkit-backdrop-filter: blur(24px) saturate(1.5);
   box-shadow: var(--nl-shadow-3);
   opacity: 0; transform: translateY(-4px) scale(.985);
-  transition: opacity var(--nl-motion-control) ease, transform var(--nl-motion-control) var(--nl-ease-emphasized);
+  transition: opacity var(--nl-transition-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
 }
 .nl-select-list.open { opacity: 1; transform: none; }
 .nl-select-group {

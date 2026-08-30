@@ -94,7 +94,7 @@ class AuroraBackgroundEngine {
         this.stop();
         document.documentElement.style.removeProperty("--mouse-x");
         document.documentElement.style.removeProperty("--mouse-y");
-      } else if (["aurora"].includes(this.mode)) {
+      } else if (this.mode === "aurora") {
         this.start();
       }
     });
@@ -103,7 +103,7 @@ class AuroraBackgroundEngine {
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
         this.stop();
-      } else if (["aurora"].includes(this.mode)) {
+      } else if (this.mode === "aurora") {
         this.start();
       }
     });
@@ -148,7 +148,7 @@ class AuroraBackgroundEngine {
 
 
   initNebulae() {
-    // Very faint drifting color fields behind the aurora / cosmos scenes
+    // Very faint drifting colour fields behind the aurora
     this.nebulae = [
       { fx: 0.22, fy: 0.24, r: 0.42, color: "91, 108, 255", drift: 0.9 },
       { fx: 0.74, fy: 0.36, r: 0.38, color: "53, 214, 192", drift: 1.3 },
@@ -158,7 +158,7 @@ class AuroraBackgroundEngine {
 
   setMode(mode) {
     this.mode = mode;
-    if (["aurora"].includes(mode)) {
+    if (mode === "aurora") {
       if (this.canvas) this.canvas.style.display = "block";
       this.start();
     } else {
@@ -195,7 +195,7 @@ class AuroraBackgroundEngine {
   }
 
   resume() {
-    if (["aurora"].includes(this.mode)) {
+    if (this.mode === "aurora") {
       this.start();
     }
   }
