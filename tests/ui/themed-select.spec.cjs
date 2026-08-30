@@ -82,6 +82,10 @@ test('typing jumps to a matching option', async ({ nordlysPage }) => {
   await openSettings(page, 'general');
   await page.locator('#cfg-default-engine + .nl-select').click();
   await expect(page.locator('.nl-select-list.open')).toBeVisible();
+  /* The list takes focus a frame after it opens. Typing into the gap sends the
+     keys somewhere else, which is a flake under load rather than a bug — but a
+     suite that fails at random is a suite people stop reading. */
+  await expect.poll(() => page.evaluate(() => document.activeElement?.getAttribute('role'))).toBe('option');
   await page.keyboard.type('wi');
   const focused = await page.evaluate(() => document.activeElement?.textContent?.trim().toLowerCase());
   expect(focused?.startsWith('wi'), `type-ahead landed on "${focused}"`).toBe(true);
