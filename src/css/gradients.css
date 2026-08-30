@@ -1,0 +1,86 @@
+/* ═══════════════════════════════════════════════════════════════════
+   NORDLYS - STILL BACKGROUNDS
+   ═══════════════════════════════════════════════════════════════════
+
+   Four compositions of light, built from the colours the active theme already
+   declares. No canvas, no animation loop, no JavaScript.
+
+   That is the point rather than a limitation. A background that moves forces
+   every backdrop-filter above it to re-blur on every frame, so the live canvas
+   and the glass cards were competing for the same budget on a page that is
+   looked at for about two seconds at a time. A still field costs nothing to
+   hold, samples once, and is the calmer thing to stare at fifty times a day.
+
+   Compositions, not presets: each one is a way light can fall, and it takes its
+   colour from whichever theme is active. Four arrangements times twenty-one
+   themes is not a catalogue to maintain — it is one rule read twice. */
+
+html[data-gradient] body {
+  background-image: var(--nl-gradient);
+}
+
+/* Light gathering along the bottom edge, the way the aurora's ground glow sits.
+   The most like the animated scene, without the animation. */
+html[data-gradient="horizon"] {
+  --nl-gradient:
+    radial-gradient(120% 78% at 50% 116%, color-mix(in srgb, var(--shader-1) 26%, transparent), transparent 68%),
+    radial-gradient(95% 60% at 18% 104%, color-mix(in srgb, var(--shader-2) 20%, transparent), transparent 70%),
+    radial-gradient(90% 62% at 86% 108%, color-mix(in srgb, var(--shader-3) 18%, transparent), transparent 72%),
+    radial-gradient(140% 100% at 50% -20%, color-mix(in srgb, var(--shader-2) 8%, transparent), transparent 62%);
+}
+
+/* Two soft masses meeting off centre — the mesh look, held still. */
+html[data-gradient="bloom"] {
+  --nl-gradient:
+    radial-gradient(58% 62% at 26% 34%, color-mix(in srgb, var(--shader-1) 24%, transparent), transparent 70%),
+    radial-gradient(54% 58% at 78% 26%, color-mix(in srgb, var(--shader-3) 22%, transparent), transparent 72%),
+    radial-gradient(70% 66% at 62% 86%, color-mix(in srgb, var(--shader-2) 20%, transparent), transparent 74%);
+}
+
+/* One source, top left, the way almost every interface implies its light.
+   The quietest of the four and the safest under dense content. */
+html[data-gradient="corner"] {
+  --nl-gradient:
+    radial-gradient(105% 92% at 4% 0%, color-mix(in srgb, var(--shader-1) 22%, transparent), transparent 62%),
+    radial-gradient(80% 70% at 96% 100%, color-mix(in srgb, var(--shader-3) 14%, transparent), transparent 70%);
+}
+
+/* A wide vertical wash with almost nothing in it. For people who want the
+   theme's colour present without anything to look at. */
+html[data-gradient="veil"] {
+  --nl-gradient:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--shader-2) 14%, transparent) 0%,
+      transparent 42%,
+      color-mix(in srgb, var(--shader-1) 12%, transparent) 100%);
+}
+
+/* Light themes take the same arrangements at roughly half strength: the same
+   percentage of a colour reads far louder against white than against navy. */
+.light-ui[data-gradient] {
+  --nl-gradient-damp: 0.5;
+}
+.light-ui[data-gradient="horizon"] {
+  --nl-gradient:
+    radial-gradient(120% 78% at 50% 116%, color-mix(in srgb, var(--shader-1) 15%, transparent), transparent 68%),
+    radial-gradient(95% 60% at 18% 104%, color-mix(in srgb, var(--shader-2) 11%, transparent), transparent 70%),
+    radial-gradient(90% 62% at 86% 108%, color-mix(in srgb, var(--shader-3) 10%, transparent), transparent 72%);
+}
+.light-ui[data-gradient="bloom"] {
+  --nl-gradient:
+    radial-gradient(58% 62% at 26% 34%, color-mix(in srgb, var(--shader-1) 13%, transparent), transparent 70%),
+    radial-gradient(54% 58% at 78% 26%, color-mix(in srgb, var(--shader-3) 12%, transparent), transparent 72%),
+    radial-gradient(70% 66% at 62% 86%, color-mix(in srgb, var(--shader-2) 11%, transparent), transparent 74%);
+}
+.light-ui[data-gradient="corner"] {
+  --nl-gradient:
+    radial-gradient(105% 92% at 4% 0%, color-mix(in srgb, var(--shader-1) 12%, transparent), transparent 62%),
+    radial-gradient(80% 70% at 96% 100%, color-mix(in srgb, var(--shader-3) 8%, transparent), transparent 70%);
+}
+.light-ui[data-gradient="veil"] {
+  --nl-gradient:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--shader-2) 8%, transparent) 0%,
+      transparent 42%,
+      color-mix(in srgb, var(--shader-1) 7%, transparent) 100%);
+}

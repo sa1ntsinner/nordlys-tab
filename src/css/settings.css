@@ -1910,6 +1910,14 @@ html[data-theme="warm-ivory"] .css-docs-list code {
     var(--nl-canvas);
 }
 .scene-preview[data-scene="solid"] { background: var(--nl-canvas); }
+/* The still field, shown as the composition currently chosen would look. */
+.scene-preview[data-scene="gradient"] {
+  background:
+    radial-gradient(58% 62% at 26% 34%, color-mix(in srgb, var(--shader-1) 40%, transparent), transparent 70%),
+    radial-gradient(54% 58% at 78% 26%, color-mix(in srgb, var(--shader-3) 36%, transparent), transparent 72%),
+    radial-gradient(70% 66% at 62% 86%, color-mix(in srgb, var(--shader-2) 32%, transparent), transparent 74%),
+    var(--nl-canvas);
+}
 /* These two slots have nothing to preview until the user supplies a file. The
    placeholder stripes that stood here read as a broken texture and looked the
    same for both; a picture and a play mark say what each slot takes. */
@@ -1987,3 +1995,34 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 /* The icon preview is the way to change the icon, so it has to look pressable. */
 .quick-icon-box { cursor: pointer; transition: border-color var(--nl-motion-control), transform var(--nl-motion-control); }
 .quick-icon-box:hover { border-color: var(--nl-accent); transform: translateY(-1px); }
+
+/* The composition cards show the arrangement itself, in the theme's own
+   colours, so choosing one is a matter of looking rather than reading. */
+.gradient-preview { background: var(--nl-canvas); }
+.gradient-preview[data-gradient="horizon"] {
+  background:
+    radial-gradient(120% 78% at 50% 116%, color-mix(in srgb, var(--shader-1) 46%, transparent), transparent 68%),
+    radial-gradient(90% 62% at 86% 108%, color-mix(in srgb, var(--shader-3) 34%, transparent), transparent 72%),
+    var(--nl-canvas);
+}
+.gradient-preview[data-gradient="bloom"] {
+  background:
+    radial-gradient(58% 62% at 26% 34%, color-mix(in srgb, var(--shader-1) 44%, transparent), transparent 70%),
+    radial-gradient(54% 58% at 78% 26%, color-mix(in srgb, var(--shader-3) 40%, transparent), transparent 72%),
+    radial-gradient(70% 66% at 62% 86%, color-mix(in srgb, var(--shader-2) 36%, transparent), transparent 74%),
+    var(--nl-canvas);
+}
+.gradient-preview[data-gradient="corner"] {
+  background:
+    radial-gradient(105% 92% at 4% 0%, color-mix(in srgb, var(--shader-1) 42%, transparent), transparent 62%),
+    radial-gradient(80% 70% at 96% 100%, color-mix(in srgb, var(--shader-3) 26%, transparent), transparent 70%),
+    var(--nl-canvas);
+}
+.gradient-preview[data-gradient="veil"] {
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--shader-2) 30%, transparent) 0%,
+      transparent 45%,
+      color-mix(in srgb, var(--shader-1) 26%, transparent) 100%),
+    var(--nl-canvas);
+}

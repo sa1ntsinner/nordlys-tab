@@ -16,18 +16,94 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
   await expect(cards).toHaveCount(await page.locator('#cfg-bg-mode option').count());
   await expect(page.locator('#bg-scene-grid')).toHaveAttribute('role', 'radiogroup');
 
-  // Every card carries its own preview, so the grid cannot silently degrade to
-  // a row of identical squares.
+  /* Wallpaper, Video and Solid share a ground and differ by the mark drawn on
+     it, so comparing the background alone would report them identical. */
   const previews = await page.locator('#bg-scene-grid .scene-preview').evaluateAll(
+    nodes => nodes.map(node => {
+      const own = getComputedStyle(node);
+      const mark = getComputedStyle(node, '::after');
+      return `${own.backgroundImage}|${mark.clipPath}|${mark.content}|${mark.width}`;
+    })
+  );
+  expect(new Set(previews).size, 'each scene must look like itself').toBe(previews.length);
+
+  const gradient = page.locator('.scene-card[data-scene="gradient"]');
+  await gradient.click();
+  await expect(gradient).toHaveAttribute('aria-checked', 'true');
+  await expect(page.locator('.scene-card[data-scene="aurora"]')).toHaveAttribute('aria-checked', 'false');
+  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.bgMode).toBe('gradient');
+});
+
+/* Two of the four procedural scenes were not scenes. Cosmos drew Aurora's
+   nebulae, stars and meteors and left out the ribbons that give it its name;
+   Particles measured 0.08 of 255 different from a plain colour. Both held a
+   full animation loop open to do it. What replaced them is a still field that
+   costs nothing and lets the glass above stop re-blurring every frame. */
+test('only scenes that draw something are offered', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await openBackground(page);
+  const offered = await page.locator('#cfg-bg-mode option').evaluateAll(
+    nodes => nodes.map(node => node.value)
+  );
+  expect(offered).toEqual(['aurora', 'gradient', 'custom-image', 'custom-video', 'solid']);
+});
+
+test('a still field is offered in four compositions, and only when it is chosen', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await openBackground(page);
+  // Compositions belong to the gradient; on Aurora they are noise.
+  await expect(page.locator('#bg-gradient-grid')).toBeHidden();
+
+  await page.locator('.scene-card[data-scene="gradient"]').click();
+  await expect(page.locator('#bg-gradient-grid')).toBeVisible();
+  const compositions = page.locator('#bg-gradient-grid .scene-card');
+  await expect(compositions).toHaveCount(4);
+
+  // Each arrangement has to be a different arrangement.
+  const looks = await page.locator('#bg-gradient-grid .scene-preview').evaluateAll(
     nodes => nodes.map(node => getComputedStyle(node).backgroundImage)
   );
-  expect(new Set(previews).size, 'each scene must look like itself').toBeGreaterThan(3);
+  expect(new Set(looks).size, 'four compositions, four appearances').toBe(4);
 
-  const cosmos = page.locator('.scene-card[data-scene="cosmos"]');
-  await cosmos.click();
-  await expect(cosmos).toHaveAttribute('aria-checked', 'true');
-  await expect(page.locator('.scene-card[data-scene="aurora"]')).toHaveAttribute('aria-checked', 'false');
-  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.bgMode).toBe('cosmos');
+  await page.locator('.scene-card[data-gradient="bloom"]').click();
+  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.gradient).toBe('bloom');
+  await expect(page.locator('html')).toHaveAttribute('data-gradient', 'bloom');
+});
+
+test('the still field runs no animation at all', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => {
+    window.Aurora.config.bgMode = 'gradient';
+    window.Aurora.saveConfig();
+    window.Aurora.updateBackgroundMode();
+  });
+  await page.waitForTimeout(300);
+  const state = await page.evaluate(() => ({
+    canvasShown: getComputedStyle(document.getElementById('bg-canvas')).display,
+    running: Boolean(window.Aurora.bgEngine.raf || window.Aurora.bgEngine.running),
+    painted: getComputedStyle(document.body).backgroundImage
+  }));
+  expect(state.canvasShown, 'the canvas has nothing to draw').toBe('none');
+  expect(state.painted, 'the field is painted by CSS').toContain('gradient');
+});
+
+/* Someone who chose one of the removed scenes must land somewhere sensible
+   rather than on a default that throws away what they picked. */
+test('a stored scene that no longer exists migrates to its closest survivor', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  for (const [stored, expected] of [['cosmos', 'aurora'], ['particles', 'gradient'], ['mesh-gradient', 'gradient']]) {
+    await page.evaluate(mode => {
+      // Write through the app so the config lands wherever it actually lives.
+      window.Aurora.config.bgMode = mode;
+      delete window.Aurora.config.gradient;
+      window.Aurora.saveConfig();
+    }, stored);
+    await page.reload();
+    await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+    expect(await page.evaluate(() => window.Aurora.config.bgMode), `${stored} should become ${expected}`).toBe(expected);
+  }
+  // mesh-gradient drew two soft masses; bloom is that arrangement held still.
+  expect(await page.evaluate(() => window.Aurora.config.gradient)).toBe('bloom');
 });
 
 /* Before this the procedural scenes differed only in the particles they drew, so

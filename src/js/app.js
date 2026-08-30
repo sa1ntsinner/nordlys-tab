@@ -7,6 +7,7 @@ const DEFAULT_CONFIG = {
   theme: "aurora-void",
   colorMode: "dark",
   bgMode: "aurora",
+  gradient: "horizon",
   headerStyle: "full",
   bgBlur: 0,
   bgDim: 0,
@@ -108,6 +109,15 @@ const LIGHT_THEMES = [
   "peach-sunset", "mint-breeze"
 ];
 /* Old saved theme keys from previous releases → current keys */
+/* Backgrounds that no longer exist, and the closest thing that does. Cosmos was
+   Aurora without its ribbons, so it goes to Aurora; Particles drew almost
+   nothing, so it goes to the still field that replaced it. */
+const BACKGROUND_MIGRATIONS = {
+  "cosmos": "aurora",
+  "particles": "gradient",
+  "mesh-gradient": "gradient"
+};
+
 const THEME_MIGRATIONS = {
   "liquid-glass": "frosted-glass",
   "liquid-tahoe": "frosted-glass",
@@ -134,6 +144,15 @@ class AuroraApp {
   normalizeStoredConfig(config) {
     let changed = false;
     if (THEME_MIGRATIONS[config.theme]) { config.theme = THEME_MIGRATIONS[config.theme]; changed = true; }
+    if (BACKGROUND_MIGRATIONS[config.bgMode]) {
+      /* mesh-gradient becomes the bloom composition, which is the arrangement
+         it drew. Set unconditionally: the defaults are merged in before this
+         runs, so "has the user chosen a composition" cannot be asked here — and
+         someone who picked the mesh had chosen this one already. */
+      if (config.bgMode === "mesh-gradient") config.gradient = "bloom";
+      config.bgMode = BACKGROUND_MIGRATIONS[config.bgMode];
+      changed = true;
+    }
     if (Number(config.tileSize) >= 50 && Number(config.tileSize) < 56) { config.tileSize = 56; changed = true; }
     return changed;
   }
@@ -557,7 +576,16 @@ class AuroraApp {
 
     this.applyWallpaperEffects();
 
-    if (["aurora", "cosmos", "mesh-gradient", "particles"].includes(bgMode)) {
+    /* A still field is a CSS gradient on <html>, so it exists whether or not a
+       canvas is running. Set it always and let the modes above decide what
+       covers it. */
+    document.documentElement.dataset.gradient = this.config.gradient || "horizon";
+
+    if (bgMode === "gradient") {
+      if (canvas) canvas.style.display = "none";
+      clearMedia();
+      this.bgEngine.setMode("gradient");
+    } else if (["aurora"].includes(bgMode)) {
       if (canvas) canvas.style.display = "block";
       clearMedia();
       this.bgEngine.setMode(bgMode);

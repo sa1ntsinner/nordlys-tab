@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="src/css/foundations.css">
   <link rel="stylesheet" href="src/css/liquid-glass.css">
   <link rel="stylesheet" href="src/css/themes.css">
+  <link rel="stylesheet" href="src/css/gradients.css">
   <link rel="stylesheet" href="src/css/components.css">
   <link rel="stylesheet" href="src/css/settings.css">
 </head>
@@ -449,15 +450,23 @@
         <div class="scene-block">
           <span class="settings-block-label" data-i18n="background.scene">Scene</span>
           <select id="cfg-bg-mode" class="ipt" hidden data-native aria-hidden="true" tabindex="-1">
-            <option value="aurora">Dynamic Aurora Borealis (Ribbons & Meteors)</option>
-            <option value="cosmos">Cosmic Starfield & Twinkling</option>
-            <option value="mesh-gradient">Floating Mesh Gradient Orbs</option>
-            <option value="particles">Interactive Bokeh Dust Particles</option>
-            <option value="custom-image">Custom Wallpaper (Image)</option>
-            <option value="custom-video">Custom Wallpaper (Video Loop)</option>
-            <option value="solid">Minimalist Solid Background</option>
+            <option value="aurora">Aurora</option>
+            <option value="gradient">Gradient</option>
+            <option value="custom-image">Wallpaper</option>
+            <option value="custom-video">Video</option>
+            <option value="solid">Solid</option>
           </select>
           <div class="scene-grid" id="bg-scene-grid" role="radiogroup" aria-label="Background scene"></div>
+        </div>
+        <div class="scene-block" data-scene-only="gradient">
+          <span class="settings-block-label" data-i18n="background.composition">Composition</span>
+          <select id="cfg-gradient" class="ipt" hidden data-native aria-hidden="true" tabindex="-1">
+            <option value="horizon">Horizon</option>
+            <option value="bloom">Bloom</option>
+            <option value="corner">Corner</option>
+            <option value="veil">Veil</option>
+          </select>
+          <div class="scene-grid" id="bg-gradient-grid" role="radiogroup" aria-label="Gradient composition"></div>
         </div>
         <div class="row setting-row" data-scene-only="procedural">
           <span><span data-i18n="background.motion">Motion</span> (<b id="lbl-bg-motion">100%</b>)</span>

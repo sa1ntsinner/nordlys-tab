@@ -10,13 +10,17 @@ class AuroraBackgroundEngine {
     this.animId = null;
     this.stars = [];
     this.meteors = [];
-    this.particles = [];
-    this.meshOrbs = [];
     this.nebulae = [];
     this.t = 0;
     this.lastFrame = 0;
     this.running = false;
-    this.mode = "aurora"; // 'aurora', 'cosmos', 'mesh-gradient', 'particles', 'custom-image', 'custom-video', 'solid'
+    /* One living scene. Cosmos was Aurora with the aurora removed — the same
+       nebulae, stars and meteors, minus the ribbons that give the thing its
+       name — and Particles measured 0.08 of 255 different from a plain colour,
+       while both held a full animation loop open to draw it. Stillness is now
+       a CSS gradient (see gradients.css), which costs nothing and lets the
+       glass above it stop re-blurring every frame. */
+    this.mode = "aurora"; // 'aurora', 'custom-image', 'custom-video', 'solid'
     this.motion = 1;
     this.intensity = 1;
     this.isMousePending = false;
@@ -33,7 +37,7 @@ class AuroraBackgroundEngine {
   }
 
   /* Reads the active theme's --shader-1..3 tokens so every theme paints
-     its own aurora / nebulae / orbs / particles instead of one fixed set. */
+     its own aurora and nebulae instead of one fixed set. */
   refreshPalette() {
     const styles = getComputedStyle(document.documentElement);
     const fallback = ["#35d6c0", "#5b6cff", "#9d4edd"];
@@ -51,13 +55,6 @@ class AuroraBackgroundEngine {
     this.nebulae.forEach((n, i) => {
       n.color = this.paletteRgb[i % 3].join(", ");
     });
-    this.meshOrbs.forEach((orb, i) => {
-      orb.color = this.palette[i % 3];
-    });
-    this.particles.forEach((p, i) => {
-      p.color = this.palette[i % 3];
-      p.lightColor = this.palette[i % 3];
-    });
   }
 
   init() {
@@ -71,8 +68,6 @@ class AuroraBackgroundEngine {
       resizeTimer = setTimeout(() => {
         this.resize();
         this.initStars();
-        this.initParticles();
-        this.initMeshOrbs();
         this.initNebulae();
         this.refreshPalette();
       }, 120);
@@ -99,7 +94,7 @@ class AuroraBackgroundEngine {
         this.stop();
         document.documentElement.style.removeProperty("--mouse-x");
         document.documentElement.style.removeProperty("--mouse-y");
-      } else if (["aurora", "cosmos", "mesh-gradient", "particles"].includes(this.mode)) {
+      } else if (["aurora"].includes(this.mode)) {
         this.start();
       }
     });
@@ -108,14 +103,12 @@ class AuroraBackgroundEngine {
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
         this.stop();
-      } else if (["aurora", "cosmos", "mesh-gradient", "particles"].includes(this.mode)) {
+      } else if (["aurora"].includes(this.mode)) {
         this.start();
       }
     });
 
     this.initStars();
-    this.initParticles();
-    this.initMeshOrbs();
     this.initNebulae();
   }
 
@@ -152,34 +145,7 @@ class AuroraBackgroundEngine {
     }
   }
 
-  initParticles() {
-    this.particles = [];
-    const count = 45;
-    const darkColors = ["#7c9cff", "#35d6c0", "#f472b6", "#a855f7"];
-    const lightColors = ["#4361ee", "#0d9488", "#db2777", "#7c3aed"];
-    for (let i = 0; i < count; i++) {
-      const colorIdx = Math.floor(Math.random() * 4);
-      this.particles.push({
-        x: Math.random() * this.w,
-        y: Math.random() * this.h,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.4,
-        r: Math.random() * 3 + 1,
-        color: darkColors[colorIdx],
-        lightColor: lightColors[colorIdx],
-        alpha: Math.random() * 0.5 + 0.2,
-        phase: Math.random() * Math.PI * 2
-      });
-    }
-  }
 
-  initMeshOrbs() {
-    this.meshOrbs = [
-      { x: this.w * 0.2, y: this.h * 0.3, r: 280, color: "#3b82f6", vx: 0.3, vy: 0.2 },
-      { x: this.w * 0.8, y: this.h * 0.4, r: 320, color: "#8b5cf6", vx: -0.2, vy: 0.3 },
-      { x: this.w * 0.5, y: this.h * 0.7, r: 300, color: "#ec4899", vx: 0.25, vy: -0.2 }
-    ];
-  }
 
   initNebulae() {
     // Very faint drifting color fields behind the aurora / cosmos scenes
@@ -192,7 +158,7 @@ class AuroraBackgroundEngine {
 
   setMode(mode) {
     this.mode = mode;
-    if (["aurora", "cosmos", "mesh-gradient", "particles"].includes(mode)) {
+    if (["aurora"].includes(mode)) {
       if (this.canvas) this.canvas.style.display = "block";
       this.start();
     } else {
@@ -229,7 +195,7 @@ class AuroraBackgroundEngine {
   }
 
   resume() {
-    if (["aurora", "cosmos", "mesh-gradient", "particles"].includes(this.mode)) {
+    if (["aurora"].includes(this.mode)) {
       this.start();
     }
   }
@@ -267,17 +233,6 @@ class AuroraBackgroundEngine {
         this.drawRibbon(0.62, c3, 0.08, 1.5, 0.8, 1);
         break;
       }
-      case "cosmos":
-        this.renderNebulae(0.07);
-        this.renderStars();
-        this.renderMeteors(0.008, dt); // Higher frequency meteors in deep space
-        break;
-      case "mesh-gradient":
-        this.renderMeshGradients(dt);
-        break;
-      case "particles":
-        this.renderParticles(dt);
-        break;
     }
     this.ctx.globalAlpha = 1;
   }
@@ -404,74 +359,7 @@ class AuroraBackgroundEngine {
     this.ctx.restore();
   }
 
-  renderMeshGradients(dt = 1) {
-    const light = this.lightMode;
-    this.ctx.save();
-    this.ctx.globalCompositeOperation = light ? "multiply" : "screen";
-    this.meshOrbs.forEach((orb) => {
-      orb.x += orb.vx * dt;
-      orb.y += orb.vy * dt;
-      if (orb.x < 0 || orb.x > this.w) orb.vx *= -1;
-      if (orb.y < 0 || orb.y > this.h) orb.vy *= -1;
 
-      const grad = this.ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.r);
-      grad.addColorStop(0, orb.color);
-      grad.addColorStop(0.6, `${orb.color}33`);
-      grad.addColorStop(1, "transparent");
-
-      this.ctx.fillStyle = grad;
-      this.ctx.globalAlpha = light ? 0.20 : 0.35;
-      this.ctx.beginPath();
-      this.ctx.arc(orb.x, orb.y, orb.r, 0, Math.PI * 2);
-      this.ctx.fill();
-    });
-    this.ctx.restore();
-  }
-
-  renderParticles(dt = 1) {
-    const light = this.lightMode;
-    // Interactive bokeh: dust drifts freely and is softly attracted to the pointer
-    const px = (this.mouseX / 100) * this.w;
-    const py = (this.mouseY / 100) * this.h;
-    const pullRadius = Math.min(this.w, this.h) * 0.28;
-
-    this.ctx.save();
-    this.ctx.globalCompositeOperation = light ? "multiply" : "screen";
-
-    this.particles.forEach((p) => {
-      const dx = px - p.x;
-      const dy = py - p.y;
-      const dist = Math.hypot(dx, dy) || 1;
-      if (dist < pullRadius) {
-        const force = (1 - dist / pullRadius) * 0.012 * dt;
-        p.vx += (dx / dist) * force;
-        p.vy += (dy / dist) * force;
-      }
-      // Speed cap keeps the swarm dreamy instead of frantic
-      const speed = Math.hypot(p.vx, p.vy);
-      const maxSpeed = 0.9;
-      if (speed > maxSpeed) {
-        p.vx = (p.vx / speed) * maxSpeed;
-        p.vy = (p.vy / speed) * maxSpeed;
-      }
-
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      if (p.x < 0) p.x = this.w;
-      if (p.x > this.w) p.x = 0;
-      if (p.y < 0) p.y = this.h;
-      if (p.y > this.h) p.y = 0;
-
-      const breathe = 0.85 + Math.sin(this.t * 2 + p.phase) * 0.15;
-      this.ctx.fillStyle = light ? (p.lightColor || p.color) : p.color;
-      this.ctx.globalAlpha = (light ? p.alpha * 0.75 : p.alpha) * breathe;
-      this.ctx.beginPath();
-      this.ctx.arc(p.x, p.y, p.r * breathe, 0, Math.PI * 2);
-      this.ctx.fill();
-    });
-    this.ctx.restore();
-    this.ctx.globalAlpha = 1;
-  }
 }
 
 /* ── IndexedDB Media Vault ─────────────────────────────────────── */
