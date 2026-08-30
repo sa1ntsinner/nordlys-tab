@@ -2013,3 +2013,8 @@ html[data-theme="warm-ivory"] .css-docs-list code {
   letter-spacing: var(--nl-track-label);
   text-transform: uppercase;
 }
+
+/* Says whether the template can work, beside the field where it is typed. */
+.custom-engine-note { font-size: var(--nl-text-xs); color: var(--nl-text-tertiary); min-height: 1em; }
+.custom-engine-note[data-state="ok"] { color: var(--nl-status-success); }
+.custom-engine-note[data-state="warn"] { color: var(--nl-status-warning); }

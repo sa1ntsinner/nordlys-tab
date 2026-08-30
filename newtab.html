@@ -422,6 +422,7 @@
         <div class="row">
           <span data-i18n="general.defaultEngine">Default Search Engine</span>
           <select id="cfg-default-engine" class="ipt">
+            <option value="custom" data-i18n="general.engineCustom">Custom…</option>
             <option value="google">Google</option>
             <option value="duckduckgo">DuckDuckGo</option>
             <option value="bing">Bing</option>
@@ -433,6 +434,11 @@
             <option value="reddit">Reddit</option>
             <option value="wikipedia">Wikipedia</option>
           </select>
+        </div>
+        <div class="row" id="custom-engine-row" hidden style="flex-direction: column; align-items: stretch; gap: 6px;">
+          <label class="quick-label" for="cfg-custom-engine" data-i18n="general.engineTemplate">Search URL, with %s where the query goes</label>
+          <input id="cfg-custom-engine" type="url" class="ipt" placeholder="https://example.com/search?q=%s" spellcheck="false">
+          <span id="custom-engine-note" class="custom-engine-note" role="status"></span>
         </div>
       </section>
 

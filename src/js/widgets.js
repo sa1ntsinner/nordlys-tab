@@ -2,6 +2,28 @@
    NORDLYS - WIDGETS (CLOCK, DATE, GREETING, OMNI-SEARCH & CALCULATOR)
    ═══════════════════════════════════════════════════════════════════ */
 
+/* A search box that cannot reach the engine someone actually uses is a search
+   box they route around, and "let me point it somewhere else" is one of the
+   most repeated asks about start pages. One template, one placeholder. */
+const CUSTOM_ENGINE_KEY = "custom";
+
+function customEngine(template) {
+  const url = typeof template === "string" ? template.trim() : "";
+  if (!url || !url.includes("%s")) return null;
+  return {
+    name: (() => {
+      try { return new URL(url.replace("%s", "q")).hostname.replace(/^www\./, ""); }
+      catch (error) { return "Custom"; }
+    })(),
+    // The template carries the query where %s sits, so the usual
+    // "url + encoded query" contract is expressed as a prefix and a suffix.
+    url,
+    custom: true,
+    suggUrl: null,
+    icon: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2c1.7 0 3.3.6 4.6 1.6l-2 2A5 5 0 0 0 12 7a5 5 0 0 0-5 5c0 .9.2 1.7.6 2.4l-2 2A8 8 0 0 1 12 4zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm6.4.6A8 8 0 0 1 12 20a8 8 0 0 1-4.6-1.6l2-2A5 5 0 0 0 12 17a5 5 0 0 0 5-5c0-.9-.2-1.7-.6-2.4l2-2z"/></svg>`
+  };
+}
+
 const SEARCH_ENGINES = {
   google: {
     name: "Google",
@@ -261,7 +283,9 @@ class SearchWidget {
   }
 
   setEngine(engineKey) {
-    if (SEARCH_ENGINES[engineKey]) {
+    // The custom engine is deliberately not in the table: it is built from the
+    // user's own template, so the table cannot be the test of what is valid.
+    if (SEARCH_ENGINES[engineKey] || engineKey === CUSTOM_ENGINE_KEY) {
       this.activeEngine = engineKey;
       this.cfg.defaultEngine = engineKey;
       if (this.app) {
@@ -282,8 +306,20 @@ class SearchWidget {
     if (sel) sel.value = nextEngine;
   }
 
+  /* One place decides which engine is in play, so the icon, the tooltip, the
+     suggestions and the destination cannot disagree about it. */
+  resolveEngine() {
+    if (this.activeEngine === CUSTOM_ENGINE_KEY) {
+      const built = customEngine(this.app?.config?.customEngineUrl);
+      if (built) return built;
+      // A custom engine that is not usable falls back rather than doing nothing.
+      return SEARCH_ENGINES.google;
+    }
+    return SEARCH_ENGINES[this.activeEngine] || SEARCH_ENGINES.google;
+  }
+
   updateEngineIcon() {
-    const engine = SEARCH_ENGINES[this.activeEngine] || SEARCH_ENGINES.google;
+    const engine = this.resolveEngine();
     if (this.engineBtn) {
       this.engineBtn.innerHTML = engine.icon;
       this.engineBtn.title = window.I18N ? window.I18N.t('search.engineTitle', { engine: engine.name }) : `Search with ${engine.name} (Click to switch)`;
@@ -432,7 +468,7 @@ class SearchWidget {
     let webSuggestions = [];
     if (this.cfg.showSuggestions !== false) {
       try {
-        const engine = SEARCH_ENGINES[this.activeEngine] || SEARCH_ENGINES.google;
+        const engine = this.resolveEngine();
         const suggUrl = engine.suggUrl || SEARCH_ENGINES.google.suggUrl;
         const res = await fetch(suggUrl + encodeURIComponent(query));
         const data = await res.json();
@@ -689,8 +725,10 @@ class SearchWidget {
     }
 
     // Default engine search
-    const engine = SEARCH_ENGINES[this.activeEngine] || SEARCH_ENGINES.google;
-    const dest = engine.url + encodeURIComponent(query);
+    const engine = this.resolveEngine();
+    const dest = engine.custom
+      ? engine.url.replace("%s", encodeURIComponent(query))
+      : engine.url + encodeURIComponent(query);
     if (this.app?.config?.openNewTab) {
       window.open(dest, "_blank", "noopener,noreferrer");
     } else {
@@ -713,5 +751,11 @@ class WidgetsController {
 
   updateEngineIcon() {
     this.search?.updateEngineIcon();
+  }
+
+  /* The search widget decides which engine is in play; the controller is the
+     only thing the rest of the app holds a reference to. */
+  resolveEngine() {
+    return this.search?.resolveEngine();
   }
 }
