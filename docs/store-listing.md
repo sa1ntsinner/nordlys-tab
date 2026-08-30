@@ -42,9 +42,11 @@ Icons come from a built-in vector set that recognises most sites by domain, or f
 
 Type is split into three slots: the clock and headings, the interface, and monospace. Choose from the bundled faces or from the fonts already installed on your computer.
 
-Four canvas scenes: Aurora, Cosmos, Mesh and Particles. Motion and Atmosphere sliders apply to all of them, so the background can be a slow shimmer or almost nothing. Your own image or a looping video works too, stored locally.
+One living scene — the aurora it is named after — and four still compositions built from the theme's own colours: Horizon, Bloom, Corner, Veil. The still ones are plain CSS, so they cost nothing to hold. Motion and Atmosphere dial the aurora down to a slow shimmer or almost nothing. Your own image or a looping video works too, stored locally.
 
-Search covers ten engines with bang shortcuts, mixes in your own bookmarks and recent searches, and does arithmetic: type 45 * 12 + sqrt(144) and the answer sits above the suggestions.
+Search covers ten engines with bang shortcuts, or any engine you like by pasting its address with %s where the query goes. It mixes in your own bookmarks and recent searches, and does arithmetic: type 45 * 12 + sqrt(144) and the answer sits above the suggestions.
+
+A folder can follow one of your browser's bookmark folders instead of being filled in by hand. It mirrors one way, so the browser keeps the data — which also means an update here cannot lose it. Nordlys asks for permission to read bookmarks at the moment you link a folder, never at install.
 
 No account, no analytics, no telemetry, no remote code. Settings and bookmarks live in local storage, and the only requests are search suggestions from the engine you chose and the favicons you ask for. Export the lot to JSON whenever you want.
 
@@ -64,6 +66,7 @@ Answer the dashboard's justification fields from `PRIVACY.md`:
 | `unlimitedStorage` | Holds user wallpaper images and video loops in IndexedDB. |
 | `favicon` | Draws site icons from Chrome's local favicon cache. |
 | Host permissions | Search-suggestion endpoints for the ten engines, plus `images.weserv.nl` when a pasted icon URL blocks cross-origin loading. |
+| `bookmarks` (optional) | Requested only when the user points a folder at a browser bookmark folder, and only read from. Never requested at install. |
 | Remote code | None. The CSP is `script-src 'self'; object-src 'self'`. |
 | Data collection | None. Declare no collected data. |
 
