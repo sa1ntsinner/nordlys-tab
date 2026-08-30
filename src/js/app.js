@@ -139,6 +139,30 @@ class AuroraApp {
   /* One material at three levels. Someone arriving with the four old numbers
      keeps roughly what they had: whether they had turned the blur off is the
      only distinction the levels can honestly preserve. */
+  /* Linked folders are refreshed on load and whenever the browser's bookmarks
+     change. Nothing here runs, or asks for anything, until a folder is linked. */
+  async followBrowserFolders() {
+    const sync = window.NordlysBookmarks;
+    if (!sync) return;
+    const linked = (this.config.groups || []).some((group) => group.source?.folderId);
+    if (!linked) return;
+
+    const pull = async () => {
+      if (await sync.refresh(this.config)) {
+        this.saveConfig();
+        this.grid?.render();
+        this.settings?.renderBookmarksManager?.();
+      }
+    };
+    await pull();
+    // Debounced: a drag inside the browser's manager fires a burst of events.
+    let pending = null;
+    sync.watch(() => {
+      clearTimeout(pending);
+      pending = setTimeout(pull, 250);
+    });
+  }
+
   applyGlassLevel() {
     document.documentElement.dataset.glass = this.config.glassLevel || "full";
   }
@@ -290,6 +314,7 @@ class AuroraApp {
     this.applyGeometryTokens();
     this.applyHeaderStyle();
     this.applyGlassLevel();
+    this.followBrowserFolders();
     if (this.config.customCss) {
       this.injectCustomCSS(this.config.customCss);
     }

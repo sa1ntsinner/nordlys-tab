@@ -14,6 +14,9 @@
     "favicon",
     "unlimitedStorage"
   ],
+  "optional_permissions": [
+    "bookmarks"
+  ],
   "host_permissions": [
     "https://suggestqueries.google.com/*",
     "https://duckduckgo.com/*",

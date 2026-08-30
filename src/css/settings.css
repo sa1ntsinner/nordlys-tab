@@ -2018,3 +2018,18 @@ html[data-theme="warm-ivory"] .css-docs-list code {
 .custom-engine-note { font-size: var(--nl-text-xs); color: var(--nl-text-tertiary); min-height: 1em; }
 .custom-engine-note[data-state="ok"] { color: var(--nl-status-success); }
 .custom-engine-note[data-state="warn"] { color: var(--nl-status-warning); }
+
+/* A folder whose contents belong to the browser says so, quietly. */
+.bookmark-folder-linked {
+  padding: 2px 7px;
+  border-radius: var(--nl-radius-sm);
+  background: color-mix(in srgb, var(--nl-accent) 14%, transparent);
+  color: var(--nl-text-secondary);
+  font-size: var(--nl-text-2xs);
+  letter-spacing: var(--nl-track-none);
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bookmark-add:disabled { opacity: .45; cursor: default; }
