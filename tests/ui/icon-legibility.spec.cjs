@@ -185,6 +185,8 @@ test('the icon tone can be set from the bookmark editor and survives a reload', 
   await page.keyboard.press('Enter');
   await expect(page.locator('#quick-edit-modal')).toBeVisible();
 
+  // Tone lives under the Appearance disclosure now.
+  await page.locator('.quick-advanced summary').click();
   await page.locator('#quick-tone-select').evaluate(select => {
     select.value = 'dark'; select.dispatchEvent(new Event('change', { bubbles: true }));
   });

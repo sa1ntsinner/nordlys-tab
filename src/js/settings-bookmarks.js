@@ -27,6 +27,10 @@
           item.type = 'button';
           item.className = `ctx-item${entry.danger ? ' danger' : ''}`;
           item.setAttribute('role', 'menuitem');
+          /* The menu takes items out of the tab order when it opens. A submenu
+             builds its items afterwards, so they have to opt in themselves or
+             Tab escapes the menu that is supposed to be holding focus. */
+          item.tabIndex = -1;
           item.textContent = entry.label;
           if (entry.disabled) item.setAttribute('disabled', '');
           item.addEventListener('click', () => {
@@ -59,7 +63,8 @@
       const bookmarkIndex = group.links.indexOf(link); if (bookmarkIndex < 0) return;
       const [removed] = group.links.splice(bookmarkIndex, 1), snapshot = JSON.parse(JSON.stringify(removed));
       this.expanded.add(group); this.save(`${snapshot.name} deleted`); this.render();
-      NordlysUI.showUndoToast({ message: `${snapshot.name} deleted`, actionLabel: 'Undo', onAction: () => {
+      const say = (key, fallback) => (window.I18N ? window.I18N.t(key, { name: snapshot.name }) : fallback);
+      NordlysUI.showUndoToast({ message: say('toast.itemDeleted', `${snapshot.name} deleted`), onAction: () => {
         if (!this.app.config.groups.includes(group)) return;
         group.links.splice(Math.min(bookmarkIndex, group.links.length), 0, snapshot); this.expanded.add(group); this.save(`${snapshot.name} restored`); this.render();
       } });

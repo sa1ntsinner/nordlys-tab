@@ -65,6 +65,7 @@ test('Reduced Motion remains compositionally identical', async ({ nordlysPage })
 test('custom theme studio handles dark and light luminance inputs', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.locator('#gear').click(); await page.locator('#btn-create-custom-theme').click();
+  await page.locator('.theme-advanced summary').click();
   await page.locator('#thm-bg-hex').fill('#080b14'); await page.locator('#thm-text-hex').fill('#f4f7ff');
   await snapshot(page, 'custom-theme-dark-1440.png');
   await page.locator('#thm-bg-hex').fill('#f4f7fb'); await page.locator('#thm-card-hex').fill('#ffffff'); await page.locator('#thm-text-hex').fill('#172033');

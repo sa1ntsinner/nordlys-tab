@@ -146,6 +146,11 @@ class SettingsController {
       slider.addEventListener("input", applyAtmosphere);
       slider.addEventListener("change", () => { applyAtmosphere(); this.app.saveConfig(); });
     }
+    /* Uploading a wallpaper or removing one sets the mode from code rather than
+       from a card, and the picker has to follow: otherwise Wallpaper stays
+       highlighted while Aurora is already running behind it. */
+    this.syncScenePicker = () => { paint(); showRelevant(); };
+
     applyAtmosphere();
     showRelevant();
     paint();
@@ -309,6 +314,8 @@ class SettingsController {
     if (languageSelect) languageSelect.value = cfg.language || "en";
     if (userName) userName.value = cfg.userName || "";
     if (timeFormat) timeFormat.value = cfg.timeFormat || "24h";
+    const headerStyle = document.getElementById("cfg-header-style");
+    if (headerStyle) headerStyle.value = cfg.headerStyle || "full";
     if (showSeconds) showSeconds.checked = !!cfg.showSeconds;
     if (openNewTab) openNewTab.checked = !!cfg.openNewTab;
     if (showSuggestions) showSuggestions.checked = cfg.showSuggestions !== false;
@@ -722,6 +729,84 @@ class SettingsController {
       }
     };
 
+    /* Seven colour wells asked for a designer before they would give you a
+       theme, and the one with an actual correctness requirement — text you can
+       read on the background you picked — was left to taste like the rest.
+       Three colours carry the idea; the other four follow, and the text pair is
+       pushed until it clears WCAG AA rather than merely looking plausible. */
+    const toRgb = (hex) => {
+      const match = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim());
+      if (!match) return [0, 0, 0];
+      const value = parseInt(match[1], 16);
+      return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+    };
+    const toHex = (rgb) => `#${rgb.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("")}`;
+    const channel = (v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    const luminance = ([r, g, b]) => 0.2126 * channel(r / 255) + 0.7152 * channel(g / 255) + 0.0722 * channel(b / 255);
+    const ratio = (a, b) => {
+      const la = luminance(a), lb = luminance(b);
+      return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+    };
+    const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+
+    /* Text has to be readable on the page and on the cards, which the user
+       chooses separately. Walking from a starting colour towards white or black
+       cannot solve that: when the two surfaces straddle the middle — a dark page
+       with light cards — the best answer is neither extreme but a mid tone, and
+       against pure black and pure white even the optimum only reaches 4.58:1.
+       So the whole greyscale is searched and the worst of the two surfaces is
+       what counts. */
+    const RAMP = Array.from({ length: 33 }, (unused, step) => {
+      const value = Math.round((step / 32) * 255);
+      return [value, value, value];
+    });
+    const worstAgainst = (colour, surfaces) => Math.min(...surfaces.map((surface) => ratio(colour, surface)));
+
+    const pickInk = (surfaces, target, wantLight, subdued) => {
+      const qualifying = RAMP.filter((candidate) => worstAgainst(candidate, surfaces) >= target);
+      if (!qualifying.length) {
+        // No colour serves both surfaces. Return the best available and let the
+        // contrast warning say so rather than shipping a quiet failure.
+        return RAMP.reduce((best, candidate) =>
+          worstAgainst(candidate, surfaces) > worstAgainst(best, surfaces) ? candidate : best);
+      }
+      /* Primary text takes the end of the qualifying range that suits the theme,
+         so a dark theme still reads light. Subdued text takes the qualifying
+         colour closest to the bar, which is what makes it subdued while keeping
+         it above AA rather than at the 3:1 meant for large text. */
+      if (subdued) {
+        return qualifying.reduce((best, candidate) =>
+          worstAgainst(candidate, surfaces) < worstAgainst(best, surfaces) ? candidate : best);
+      }
+      return wantLight ? qualifying[qualifying.length - 1] : qualifying[0];
+    };
+
+    const deriveTheme = () => {
+      const bg = toRgb(document.getElementById("thm-bg-hex")?.value || "#0a0f1d");
+      const card = toRgb(document.getElementById("thm-card-hex")?.value || "#111c35");
+      const accent = toRgb(document.getElementById("thm-accent-hex")?.value || "#35d6c0");
+      const surfaces = [bg, card];
+      const wantLight = (luminance(bg) + luminance(card)) / 2 < 0.4;
+
+      const text = pickInk(surfaces, 4.5, wantLight, false);
+      const dim = pickInk(surfaces, 4.5, wantLight, true);
+      // A border is a boundary, not text: 3:1 is the bar that applies to it.
+      const border = mix(card, wantLight ? [255, 255, 255] : [0, 0, 0], wantLight ? 0.16 : 0.24);
+
+      return { border: toHex(border), glow: toHex(accent), text: toHex(text), dim: toHex(dim) };
+    };
+
+    const applyDerived = () => {
+      const derived = deriveTheme();
+      for (const [key, value] of Object.entries(derived)) {
+        const hex = document.getElementById(`thm-${key}-hex`);
+        const well = document.getElementById(`thm-${key}-color`);
+        if (hex) hex.value = value;
+        if (well) well.value = value;
+      }
+      livePreview();
+    };
+
     const bindColorPair = (wellId, hexId) => {
       const well = document.getElementById(wellId);
       const hex = document.getElementById(hexId);
@@ -742,11 +827,21 @@ class SettingsController {
 
     bindColorPair("thm-bg-color", "thm-bg-hex");
     bindColorPair("thm-card-color", "thm-card-hex");
-    bindColorPair("thm-border-color", "thm-border-hex");
     bindColorPair("thm-accent-color", "thm-accent-hex");
+    bindColorPair("thm-border-color", "thm-border-hex");
     bindColorPair("thm-glow-color", "thm-glow-hex");
     bindColorPair("thm-text-color", "thm-text-hex");
     bindColorPair("thm-dim-color", "thm-dim-hex");
+
+    /* Changing one of the three re-derives the four. An edit made inside
+       Fine-tune stands until a base colour moves again, which is the moment it
+       stopped describing that base. */
+    for (const id of ["thm-bg-hex", "thm-card-hex", "thm-accent-hex", "thm-bg-color", "thm-card-color", "thm-accent-color"]) {
+      document.getElementById(id)?.addEventListener("input", (event) => {
+        if (event.target.type === "text" && !/^#[0-9A-F]{6}$/i.test(event.target.value)) return;
+        applyDerived();
+      });
+    }
 
     document.getElementById("thm-save-btn")?.addEventListener("click", () => {
       const name = document.getElementById("thm-name-input")?.value.trim() || `Custom ${this.customThemes.length + 1}`;
@@ -813,6 +908,12 @@ class SettingsController {
       this.app.widgets?.updateClock();
     });
 
+    document.getElementById("cfg-header-style")?.addEventListener("change", (e) => {
+      this.app.config.headerStyle = e.target.value;
+      this.app.applyHeaderStyle();
+      this.app.saveConfig();
+    });
+
     showSeconds?.addEventListener("change", (e) => {
       this.app.config.showSeconds = e.target.checked;
       if (e.target.checked) {
@@ -857,6 +958,7 @@ class SettingsController {
       /* Picking the Wallpaper scene is not the same as having a wallpaper.
          Keying off the mode alone offered "Remove Wallpaper" with nothing to
          remove, on a fresh profile that had never uploaded anything. */
+      this.syncScenePicker?.();
       if (removeBtn) {
         const wantsMedia = cfg.bgMode === "custom-image" || cfg.bgMode === "custom-video";
         let stored = false;

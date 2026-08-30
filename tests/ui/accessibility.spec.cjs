@@ -35,7 +35,7 @@ test('menus, quick edit, and icon picker have no high-impact violations', async 
   await expectNoHighImpactViolations(page, '#tile-ctx-menu');
   await page.keyboard.press('Enter');
   await expectNoHighImpactViolations(page, '#quick-edit-modal');
-  await page.locator('#quick-change-icon-btn').click();
+  await page.locator('#quick-icon-preview').click();
   await expectNoHighImpactViolations(page, '#icon-modal');
 });
 

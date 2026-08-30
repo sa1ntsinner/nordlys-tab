@@ -194,18 +194,20 @@
             </div>
 
             <div class="theme-color-row">
-              <span class="color-label" data-i18n="customTheme.border">Border Stroke</span>
-              <div class="color-picker-wrap">
-                <input type="color" id="thm-border-color" class="color-well" value="#2a3f6d">
-                <input type="text" id="thm-border-hex" class="hex-text" value="#2a3f6d" maxlength="7">
-              </div>
-            </div>
-
-            <div class="theme-color-row">
               <span class="color-label" data-i18n="customTheme.accent">Primary Accent</span>
               <div class="color-picker-wrap">
                 <input type="color" id="thm-accent-color" class="color-well" value="#35d6c0">
                 <input type="text" id="thm-accent-hex" class="hex-text" value="#35d6c0" maxlength="7">
+              </div>
+            </div>
+
+            <details class="theme-advanced">
+              <summary data-i18n="customTheme.advanced">Fine-tune the rest</summary>
+            <div class="theme-color-row">
+              <span class="color-label" data-i18n="customTheme.border">Border Stroke</span>
+              <div class="color-picker-wrap">
+                <input type="color" id="thm-border-color" class="color-well" value="#2a3f6d">
+                <input type="text" id="thm-border-hex" class="hex-text" value="#2a3f6d" maxlength="7">
               </div>
             </div>
 
@@ -232,6 +234,7 @@
                 <input type="text" id="thm-dim-hex" class="hex-text" value="#8ca0c4" maxlength="7">
               </div>
             </div>
+            </details>
 
 
             <div class="row">
@@ -379,6 +382,14 @@
         <div class="row">
           <span data-i18n="general.userName">Your Name</span>
           <input id="cfg-user-name" type="text" class="ipt" placeholder="e.g. Alex" style="width: 140px;">
+        </div>
+        <div class="row">
+          <span data-i18n="general.headerStyle">Header</span>
+          <select id="cfg-header-style" class="ipt">
+            <option value="full" data-i18n="general.headerFull">Clock, date and greeting</option>
+            <option value="compact" data-i18n="general.headerCompact">Clock and date</option>
+            <option value="hidden" data-i18n="general.headerHidden">Nothing</option>
+          </select>
         </div>
         <div class="row">
           <span data-i18n="general.timeFormat">Time Format</span>
@@ -903,28 +914,33 @@
           <input id="quick-url-input" type="url" class="glass-input" placeholder="https://...">
         </div>
 
-        <div style="display: flex; gap: 12px; align-items: center;">
-          <div style="flex: 1;">
-            <label class="quick-label" for="quick-folder-select" data-i18n="modal.folder">Folder</label>
-            <select id="quick-folder-select" class="glass-input" style="cursor: pointer;"></select>
-          </div>
-          <div>
-            <label class="quick-label" for="quick-color-input" data-i18n="modal.colorTint">Color Accent</label>
-            <input type="color" id="quick-color-input" class="link-color-ipt" value="#35d6c0">
-          </div>
-          <div class="quick-field">
-            <label class="quick-label" for="quick-tone-select" data-i18n="modal.iconTone">Icon tone</label>
-            <select id="quick-tone-select" class="glass-input">
-              <option value="auto" data-i18n="tone.auto">Auto</option>
-              <option value="original" data-i18n="tone.original">Keep original</option>
-              <option value="light" data-i18n="tone.light">Light</option>
-              <option value="dark" data-i18n="tone.dark">Dark</option>
-            </select>
-          </div>
+        <div>
+          <label class="quick-label" for="quick-folder-select" data-i18n="modal.folder">Folder</label>
+          <select id="quick-folder-select" class="glass-input" style="cursor: pointer;"></select>
         </div>
 
+        <!-- Name, address and folder are what a bookmark is. How it looks is a
+             separate question, and most edits never ask it. -->
+        <details class="quick-advanced">
+          <summary data-i18n="nav.appearance">Appearance</summary>
+          <div class="quick-advanced-row">
+            <div class="quick-field">
+              <label class="quick-label" for="quick-color-input" data-i18n="modal.colorTint">Color Accent</label>
+              <input type="color" id="quick-color-input" class="link-color-ipt" value="#35d6c0">
+            </div>
+            <div class="quick-field">
+              <label class="quick-label" for="quick-tone-select" data-i18n="modal.iconTone">Icon tone</label>
+              <select id="quick-tone-select" class="glass-input">
+                <option value="auto" data-i18n="tone.auto">Auto</option>
+                <option value="original" data-i18n="tone.original">Keep original</option>
+                <option value="light" data-i18n="tone.light">Light</option>
+                <option value="dark" data-i18n="tone.dark">Dark</option>
+              </select>
+            </div>
+          </div>
+        </details>
+
         <div style="display: flex; gap: 8px; margin-top: 8px;">
-          <button id="quick-change-icon-btn" class="glass-btn" style="flex: 1;" data-i18n="modal.chooseIcon">Choose Icon...</button>
           <button id="quick-save-btn" class="glass-btn accent" style="flex: 1;" data-i18n="modal.saveChanges">Save Changes</button>
         </div>
       </div>
