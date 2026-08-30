@@ -19,6 +19,23 @@
   --nl-status-success: #34d399;
   --nl-status-danger: #fb7185;
   --nl-status-warning: #fbbf24;
+  /* Type. A closed set: if a size is not on this list it is not a decision,
+     it is someone nudging a number until one screen looked right. Seven steps
+     cover the whole product; the clock is the single deliberate exception and
+     scales fluidly because it is the one thing read from across the room. */
+  --nl-text-2xs: 11px;
+  --nl-text-xs: 12px;
+  --nl-text-sm: 13px;
+  --nl-text-md: 14px;
+  --nl-text-lg: 16px;
+  --nl-text-xl: 20px;
+  --nl-text-2xl: 24px;
+  /* Tracking is a function of size, from a table, never per element. Positive
+     tracking belongs to uppercase micro-labels and to nothing else. */
+  --nl-track-tight: -0.01em;
+  --nl-track-none: 0;
+  --nl-track-label: 0.06em;
+  --nl-track-wide: 0.12em;
   --nl-space-1: 4px; --nl-space-2: 8px; --nl-space-3: 12px; --nl-space-4: 16px;
   --nl-space-5: 20px; --nl-space-6: 24px; --nl-space-8: 32px; --nl-space-10: 40px; --nl-space-12: 48px;
   --nl-radius-sm: 10px; --nl-radius-md: 14px; --nl-radius-lg: 18px; --nl-radius-xl: 24px;

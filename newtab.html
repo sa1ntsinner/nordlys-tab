@@ -179,10 +179,10 @@
         <!-- Dynamic Custom Theme Palette Studio & Color Pickers -->
         <div id="custom-theme-editor-card" class="custom-theme-tuning-card" style="display: none; margin-top: 14px;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-            <h4 style="margin: 0; color: var(--accent); font-size: 13.5px; font-weight: 650; display: flex; align-items: center; gap: 6px;">
+            <h4 style="margin: 0; color: var(--accent); font-size: var(--nl-text-md); font-weight: 650; display: flex; align-items: center; gap: 6px;">
               <span data-i18n="customTheme.title">Custom Theme Studio</span>
             </h4>
-            <button id="close-custom-theme-editor" type="button" class="xbtn" style="font-size: 12px; padding: 2px 6px;">✕</button>
+            <button id="close-custom-theme-editor" type="button" class="xbtn" style="font-size: var(--nl-text-xs); padding: 2px 6px;">✕</button>
           </div>
           
           <div class="custom-theme-box">
@@ -289,12 +289,12 @@
           <summary>Advanced glass & geometry</summary>
         <!-- Bookmark & Card Aesthetics Studio -->
         <div id="card-customizer-controls" class="card-customizer-card" style="margin-top: 16px;">
-          <h4 style="margin: 0; color: var(--accent); font-size: 13.5px; font-weight: 650; display: flex; align-items: center; gap: 6px;">
+          <h4 style="margin: 0; color: var(--accent); font-size: var(--nl-text-md); font-weight: 650; display: flex; align-items: center; gap: 6px;">
             <span data-i18n="appearance.cardStudioTitle">Card &amp; Bookmark Aesthetics</span>
           </h4>
 
           <!-- 1. Surface & Glass Section -->
-          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 4px;" data-i18n="appearance.surfaceGlass">Glass</div>
+          <div style="font-size: var(--nl-text-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 4px;" data-i18n="appearance.surfaceGlass">Glass</div>
           <div class="row">
             <span><span data-i18n="appearance.glassBlur">Blur</span> (<b id="lbl-blur">28px</b>)</span>
             <input id="cfg-glass-blur" type="range" class="ipt" min="0" max="60" value="28">
@@ -313,7 +313,7 @@
           </div>
 
           <!-- 2. Geometry & Spacing Section -->
-          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 6px;" data-i18n="appearance.geometry">Geometry</div>
+          <div style="font-size: var(--nl-text-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 6px;" data-i18n="appearance.geometry">Geometry</div>
           <div class="row">
             <span><span data-i18n="appearance.cardRadius">Corner radius</span> (<b id="lbl-radius">24px</b>)</span>
             <input id="cfg-card-radius" type="range" class="ipt" min="6" max="36" value="24">
@@ -336,7 +336,7 @@
           </div>
 
           <!-- 3. Glow & Hover Effects Section -->
-          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 6px;" data-i18n="appearance.cardGlow">Glow</div>
+          <div style="font-size: var(--nl-text-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 6px;" data-i18n="appearance.cardGlow">Glow</div>
           <div class="row">
             <span><span data-i18n="appearance.cardGlow">Glow</span> (<b id="lbl-glow">40%</b>)</span>
             <input id="cfg-card-glow" type="range" class="ipt" min="0" max="100" value="40">
@@ -353,7 +353,7 @@
 
           <!-- Live Interactive Bookmark Card Preview Widget -->
           <div style="margin-top: 6px;">
-            <span style="font-size: 11.5px; color: var(--dim); display: block; margin-bottom: 6px; font-weight: 500;" data-i18n="appearance.livePreviewCard">Preview</span>
+            <span style="font-size: var(--nl-text-xs); color: var(--dim); display: block; margin-bottom: 6px; font-weight: 500;" data-i18n="appearance.livePreviewCard">Preview</span>
             <div class="card-live-preview-box">
               <div id="preview-interactive-card" class="preview-interactive-card">
                 <div id="preview-icon-box" class="preview-icon-box">
@@ -420,7 +420,7 @@
         <div class="row">
           <span>
             <span data-i18n="general.showSuggestions">Web search suggestions</span>
-            <small style="display: block; font-size: 10.5px; color: var(--dim); font-weight: 400; margin-top: 2px;" data-i18n="general.showSuggestionsHint">Sends typed queries to the suggestion service</small>
+            <small style="display: block; font-size: var(--nl-text-2xs); color: var(--dim); font-weight: 400; margin-top: 2px;" data-i18n="general.showSuggestionsHint">Sends typed queries to the suggestion service</small>
           </span>
           <label class="tg"><input id="cfg-show-suggestions" type="checkbox"><i></i></label>
         </div>
@@ -501,7 +501,7 @@
       <!-- 6. Custom CSS Section -->
       <section id="sec-custom-css" class="csec">
         <h3 data-i18n="customCss.title">Live Custom CSS</h3>
-        <p style="font-size: 12px; color: var(--dim); margin-bottom: 8px;" data-i18n="customCss.desc">Write custom CSS rules. Changes apply in real time.</p>
+        <p style="font-size: var(--nl-text-xs); color: var(--dim); margin-bottom: 8px;" data-i18n="customCss.desc">Write custom CSS rules. Changes apply in real time.</p>
         
         <button id="btn-open-css-docs" type="button" class="glass-btn accent" style="margin-bottom: 12px; width: 100%; display: flex; justify-content: center; gap: 8px;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
@@ -588,7 +588,7 @@
 
         <!-- Tab 2: Smart Favicon / High-Res Fetcher -->
         <div id="modal-pane-favicon" class="modal-tab-pane">
-          <label style="display: block; font-size: 12px; color: var(--dim); margin-bottom: 6px;" data-i18n="modal.faviconDesc">Fetch high-resolution favicon automatically from site domain or page URL</label>
+          <label style="display: block; font-size: var(--nl-text-xs); color: var(--dim); margin-bottom: 6px;" data-i18n="modal.faviconDesc">Fetch high-resolution favicon automatically from site domain or page URL</label>
           <div style="display: flex; gap: 8px; margin-bottom: 10px;">
             <input id="favicon-url-input" type="text" class="glass-input" placeholder="https://github.com or domain.com" style="flex: 1;">
             <button id="favicon-fetch-btn" type="button" class="glass-btn accent">Fetch</button>
@@ -606,14 +606,14 @@
 
           <div class="url-preview-box" id="favicon-preview-wrap">
             <div id="favicon-preview-img-box" class="url-preview-square" title="Click to open in Cropper Studio">
-              <span style="font-size: 11px; color: var(--dim);">No icon</span>
+              <span style="font-size: var(--nl-text-2xs); color: var(--dim);">No icon</span>
             </div>
             <div style="flex: 1; min-width: 0;">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                <b id="favicon-domain-name" style="font-size: 13px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Domain.com</b>
-                <span id="favicon-res-badge" class="theme-section-badge" style="font-size: 10px;">128×128</span>
+                <b id="favicon-domain-name" style="font-size: var(--nl-text-sm); color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Domain.com</b>
+                <span id="favicon-res-badge" class="theme-section-badge" style="font-size: var(--nl-text-2xs);">128×128</span>
               </div>
-              <span id="favicon-status" style="font-size: 11.5px; color: var(--dim); display: block; margin-top: 2px;">High-resolution site icon ready</span>
+              <span id="favicon-status" style="font-size: var(--nl-text-xs); color: var(--dim); display: block; margin-top: 2px;">High-resolution site icon ready</span>
               <div id="favicon-actions" style="display: flex; gap: 8px; margin-top: 10px;">
                 <button id="favicon-apply-btn" type="button" class="glass-btn accent" style="flex: 1.2;">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
@@ -634,13 +634,13 @@
           <input type="file" id="icon-file-input" class="hidden-file-input" accept="image/png, image/jpeg, image/svg+xml, image/webp, image/gif">
           <label for="icon-file-input" class="file-drop-zone" id="icon-drop-zone">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 8px; color: var(--accent);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <b style="font-size: 13px; color: var(--ink);">Drag & drop or Click to choose file</b>
-            <span style="font-size: 11px; color: var(--dim); margin-top: 4px;">PNG, SVG, JPG, WebP, GIF (Max 5MB)</span>
+            <b style="font-size: var(--nl-text-sm); color: var(--ink);">Drag & drop or Click to choose file</b>
+            <span style="font-size: var(--nl-text-2xs); color: var(--dim); margin-top: 4px;">PNG, SVG, JPG, WebP, GIF (Max 5MB)</span>
           </label>
           <div id="icon-file-preview-wrap" style="display: none; margin-top: 12px;" class="url-preview-box">
             <div id="icon-file-preview-img-box" class="url-preview-square" title="Click to open Cropper"></div>
             <div style="flex: 1;">
-              <b id="icon-file-name" style="font-size: 12px; color: var(--ink);">image.png</b>
+              <b id="icon-file-name" style="font-size: var(--nl-text-xs); color: var(--ink);">image.png</b>
               <div style="display: flex; gap: 8px; margin-top: 8px;">
                 <button id="icon-file-crop-btn" type="button" class="glass-btn accent" style="flex: 1.2;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>Crop &amp; Adjust Icon</button>
                 <button id="icon-file-apply-btn" type="button" class="glass-btn" style="flex: 1;">Use Full Image</button>
@@ -650,17 +650,17 @@
         </section>
           <section class="custom-source">
             <h4 data-i18n="modal.customUrl">From a web address</h4>
-          <label style="display: block; font-size: 12px; color: var(--dim); margin-bottom: 6px;">Image Web URL (SVG, PNG, JPG, WebP, GIF)</label>
+          <label style="display: block; font-size: var(--nl-text-xs); color: var(--dim); margin-bottom: 6px;">Image Web URL (SVG, PNG, JPG, WebP, GIF)</label>
           <div style="display: flex; gap: 8px; margin-bottom: 12px;">
             <input id="icon-url-input" type="url" class="glass-input" placeholder="https://example.com/icon.png" style="flex: 1;">
             <button id="icon-url-check-btn" type="button" class="glass-btn accent">Preview</button>
           </div>
           <div class="url-preview-box">
             <div id="icon-url-preview-img-box" class="url-preview-square" title="Click to open Cropper">
-              <span style="font-size: 11px; color: var(--dim);">No image</span>
+              <span style="font-size: var(--nl-text-2xs); color: var(--dim);">No image</span>
             </div>
             <div style="flex: 1;">
-              <span id="icon-url-status" style="font-size: 12px; color: var(--dim);">Enter an image URL above to test</span>
+              <span id="icon-url-status" style="font-size: var(--nl-text-xs); color: var(--dim);">Enter an image URL above to test</span>
               <div id="icon-url-actions" style="display: none; gap: 8px; margin-top: 8px;">
                 <button id="icon-url-crop-btn" type="button" class="glass-btn accent" style="flex: 1.2;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>Crop &amp; Adjust Icon</button>
                 <button id="icon-url-apply-btn" type="button" class="glass-btn" style="flex: 1;">Use Full Image</button>
@@ -672,10 +672,10 @@
             <h4 data-i18n="modal.customMonogram">Or just a letter</h4>
           <div style="display: flex; gap: 14px; align-items: center;">
             <div style="flex: 1;">
-              <label style="font-size: 12px; color: var(--dim); display: block; margin-bottom: 4px;">Monogram Text (1-3 chars)</label>
+              <label style="font-size: var(--nl-text-xs); color: var(--dim); display: block; margin-bottom: 4px;">Monogram Text (1-3 chars)</label>
               <input id="monogram-input" type="text" class="glass-input" maxlength="3" value="A">
             </div>
-            <div id="monogram-preview-box" class="url-preview-square" style="width: 54px; height: 54px; font-size: 22px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #6366f1, #35d6c0);">A</div>
+            <div id="monogram-preview-box" class="url-preview-square" style="width: 54px; height: 54px; font-size: var(--nl-text-2xl); font-weight: 700; color: #fff; background: linear-gradient(135deg, #6366f1, #35d6c0);">A</div>
           </div>
           <button id="icon-monogram-apply-btn" type="button" class="glass-btn accent" style="margin-top: 14px; width: 100%;">Use Monogram Icon</button>
         </section>
@@ -685,12 +685,12 @@
         <div id="modal-pane-cropper" class="modal-tab-pane">
           <div class="cropper-top-bar">
             <div class="cropper-title-wrap">
-              <b style="font-size: 13.5px; color: var(--ink); display: flex; align-items: center; gap: 6px;">
+              <b style="font-size: var(--nl-text-md); color: var(--ink); display: flex; align-items: center; gap: 6px;">
                 <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg><span>Icon Cropper Studio</span>
               </b>
-              <span style="font-size: 11px; color: var(--dim);">Drag image to frame the icon • Scroll or slider to zoom</span>
+              <span style="font-size: var(--nl-text-2xs); color: var(--dim);">Drag image to frame the icon • Scroll or slider to zoom</span>
             </div>
-            <button id="cropper-back-btn" type="button" class="glass-btn" style="padding: 4px 10px; font-size: 11.5px;">← Back</button>
+            <button id="cropper-back-btn" type="button" class="glass-btn" style="padding: 4px 10px; font-size: var(--nl-text-xs);">← Back</button>
           </div>
 
           <div class="cropper-workspace">
@@ -721,7 +721,7 @@
               <div class="cropper-slider-block">
                 <div class="cropper-slider-head">
                   <span class="cropper-label">Zoom Level</span>
-                  <b id="cropper-zoom-val" style="font-size: 11.5px; color: var(--accent);">100%</b>
+                  <b id="cropper-zoom-val" style="font-size: var(--nl-text-xs); color: var(--accent);">100%</b>
                 </div>
                 <div style="display: flex; gap: 6px; align-items: center;">
                   <button id="cropper-zoom-out" type="button" class="crop-tool-btn" title="Zoom Out">−</button>

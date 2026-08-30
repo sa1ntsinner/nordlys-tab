@@ -17,7 +17,7 @@
   font-weight: 200;
   font-size: clamp(62px, 12vh, 120px);
   line-height: 0.95;
-  letter-spacing: 0.01em;
+  letter-spacing: var(--nl-track-none);
   font-variant-numeric: tabular-nums;
   background: linear-gradient(180deg, #ffffff 0%, var(--ink) 55%, var(--dim) 100%);
   -webkit-background-clip: text;
@@ -42,7 +42,7 @@
   display: none;
   font-size: 0.26em;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: var(--nl-track-wide);
   text-transform: uppercase;
   vertical-align: super;
   margin-left: 10px;
@@ -61,19 +61,19 @@ body.seconds .sc, body.seconds #ss {
 }
 
 #date {
-  font-size: 11.5px;
+  font-size: var(--nl-text-xs);
   font-weight: 650;
-  letter-spacing: 0.22em;
+  letter-spacing: var(--nl-track-wide);
   text-transform: uppercase;
   color: var(--dim);
   user-select: none;
 }
 
 #greet {
-  font-size: 16px;
+  font-size: var(--nl-text-lg);
   font-weight: 450;
   color: var(--dim);
-  letter-spacing: 0.01em;
+  letter-spacing: var(--nl-track-none);
   user-select: none;
 }
 
@@ -159,7 +159,7 @@ body.seconds .sc, body.seconds #ss {
   outline: 0;
   color: var(--ink);
   font-family: inherit;
-  font-size: 15.5px;
+  font-size: var(--nl-text-lg);
 }
 #q::placeholder {
   color: var(--faint);
@@ -204,7 +204,7 @@ body.seconds .sc, body.seconds #ss {
   align-items: center;
   gap: 12px;
   padding: 10px 18px;
-  font-size: 14px;
+  font-size: var(--nl-text-md);
   color: #c9d6f0;
   cursor: pointer;
   transition: background var(--nl-motion-fast), color var(--nl-motion-fast);
@@ -240,7 +240,7 @@ body.seconds .sc, body.seconds #ss {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11.5px;
+  font-size: var(--nl-text-xs);
 }
 #sugg .hist-text {
   flex: 1;
@@ -260,14 +260,14 @@ body.seconds .sc, body.seconds #ss {
   stroke-linejoin: round;
 }
 #sugg .sugg-badge {
-  font-size: 10px;
+  font-size: var(--nl-text-2xs);
   font-weight: 650;
   padding: 2px 8px;
   border-radius: 9999px;
   margin-left: auto;
   flex-shrink: 0;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--nl-track-label);
 }
 #sugg .sugg-calc-badge {
   background: color-mix(in srgb, var(--accent) 18%, transparent);
@@ -283,7 +283,7 @@ body.seconds .sc, body.seconds #ss {
   border: 0;
   background: transparent;
   color: var(--faint);
-  font-size: 12px;
+  font-size: var(--nl-text-xs);
   padding: 2px 7px;
   border-radius: 6px;
   margin-left: auto;
@@ -447,9 +447,9 @@ body.minimal #board {
   text-decoration: none;
 }
 .cat b {
-  font-size: 10.5px;
+  font-size: var(--nl-text-2xs);
   font-weight: 650;
-  letter-spacing: 0.24em;
+  letter-spacing: var(--nl-track-wide);
   color: var(--dim);
   text-transform: uppercase;
   transition: color var(--nl-motion-control) ease;
@@ -474,7 +474,7 @@ body.minimal #board {
   width: var(--nl-target-min);
   height: var(--nl-target-min);
   border-radius: 7px;
-  font-size: 15px;
+  font-size: var(--nl-text-lg);
   line-height: 24px;
   cursor: grab;
   opacity: 0.35;
@@ -569,7 +569,7 @@ body.minimal #board {
 }
 .grid[data-cols="1"] .tile .lbl {
   max-width: none;
-  font-size: 13px;
+  font-size: var(--nl-text-sm);
   font-weight: 500;
   text-align: left;
 }
@@ -635,7 +635,7 @@ body.minimal #board {
   background: rgba(14, 22, 42, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: #ffffff;
-  font-size: 12px;
+  font-size: var(--nl-text-xs);
   font-weight: 600;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(16px) saturate(1.4);
@@ -674,7 +674,7 @@ body.minimal #board {
   background: rgba(14, 22, 42, 0.9);
   border: 1px solid var(--accent);
   color: #ffffff;
-  font-size: 12px;
+  font-size: var(--nl-text-xs);
   font-weight: 600;
   white-space: nowrap;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 12px var(--accent-glow);
@@ -755,7 +755,7 @@ body.minimal #board {
 
 .lbl {
   max-width: calc(var(--tw) + 16px);
-  font-size: 11.5px;
+  font-size: var(--nl-text-xs);
   font-weight: 450;
   color: var(--dim);
   white-space: nowrap;
@@ -902,9 +902,9 @@ body.hover-none .tile:hover .box {
   background: rgba(255, 255, 255, 0.04);
   color: var(--dim);
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--nl-text-xs);
   font-weight: 500;
-  letter-spacing: -0.01em;
+  letter-spacing: var(--nl-track-tight);
   transition: color var(--nl-motion-control) var(--nl-ease-emphasized), background-color var(--nl-motion-control) var(--nl-ease-emphasized), border-color var(--nl-motion-control) var(--nl-ease-emphasized), opacity var(--nl-motion-control), transform var(--nl-motion-control) var(--nl-ease-emphasized);
   user-select: none;
 }
@@ -942,7 +942,7 @@ body.hover-none .tile:hover .box {
 }
 
 .dockFolderCount {
-  font-size: 10px;
+  font-size: var(--nl-text-2xs);
   font-weight: 600;
   color: var(--faint);
   background: rgba(255, 255, 255, 0.08);
@@ -1031,9 +1031,9 @@ body.hover-none .tile:hover .box {
 
 .ctx-header {
   padding: 4px 10px 6px;
-  font-size: 10px;
+  font-size: var(--nl-text-2xs);
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--nl-track-wide);
   text-transform: uppercase;
   color: var(--accent);
   opacity: 0.9;
@@ -1060,7 +1060,7 @@ body.hover-none .tile:hover .box {
   padding: 8px 12px;
   border-radius: 8px;
   color: var(--ink);
-  font-size: 12.5px;
+  font-size: var(--nl-text-sm);
   font-weight: 500;
   cursor: pointer;
   transition: color var(--nl-motion-fast), background-color var(--nl-motion-fast), opacity var(--nl-motion-fast), transform var(--nl-motion-fast);
@@ -1146,7 +1146,7 @@ body.hover-none .tile:hover .box {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 .quick-modal-head b {
-  font-size: 14.5px;
+  font-size: var(--nl-text-md);
   color: var(--ink);
 }
 
@@ -1177,7 +1177,7 @@ body.hover-none .tile:hover .box {
 
 .quick-label {
   display: block;
-  font-size: 11.5px;
+  font-size: var(--nl-text-xs);
   font-weight: 500;
   color: var(--dim);
   margin-bottom: 4px;
@@ -1223,9 +1223,9 @@ body.hover-none .tile:hover .box {
   backdrop-filter: blur(24px) saturate(1.6);
   -webkit-backdrop-filter: blur(24px) saturate(1.6);
   color: var(--ink);
-  font-size: 13px;
+  font-size: var(--nl-text-sm);
   font-weight: 500;
-  letter-spacing: -0.01em;
+  letter-spacing: var(--nl-track-tight);
   opacity: 0;
   transform: translateY(14px) scale(0.96);
   transition: opacity var(--nl-motion-panel) ease, transform var(--nl-motion-panel) var(--nl-ease-pop);
@@ -1272,11 +1272,11 @@ body.hover-none .tile:hover .box {
   box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.12);
 }
 .confirm-title {
-  font-size: 15.5px;
+  font-size: var(--nl-text-lg);
   color: var(--ink);
 }
 .confirm-message {
-  font-size: 12.5px;
+  font-size: var(--nl-text-sm);
   line-height: 1.5;
   color: var(--dim);
   margin: 2px 0 14px;
@@ -1380,7 +1380,7 @@ body.hover-none .tile:hover .box {
   border: 1px solid var(--nl-border);
   background: color-mix(in srgb, var(--nl-surface-elevated) 80%, transparent);
   color: var(--nl-text-primary);
-  font: inherit; font-size: 12.5px; font-weight: 550;
+  font: inherit; font-size: var(--nl-text-sm); font-weight: 550;
   cursor: pointer; text-align: left;
   transition: border-color var(--nl-motion-control), background-color var(--nl-motion-control);
 }
@@ -1409,13 +1409,13 @@ body.hover-none .tile:hover .box {
 }
 .nl-select-list.open { opacity: 1; transform: none; }
 .nl-select-group {
-  padding: 8px 10px 4px; font-size: 9.5px; font-weight: 700;
-  letter-spacing: .12em; text-transform: uppercase; color: var(--nl-text-tertiary);
+  padding: 8px 10px 4px; font-size: var(--nl-text-2xs); font-weight: 700;
+  letter-spacing: var(--nl-track-wide); text-transform: uppercase; color: var(--nl-text-tertiary);
 }
 .nl-select-option {
   display: flex; align-items: center; min-height: 36px; padding: 0 10px;
   border-radius: var(--nl-radius-sm); color: var(--nl-text-secondary);
-  font-size: 13px; cursor: pointer; white-space: nowrap;
+  font-size: var(--nl-text-sm); cursor: pointer; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
   transition: background-color var(--nl-motion-fast), color var(--nl-motion-fast);
 }
@@ -1445,7 +1445,7 @@ body.hover-none .tile:hover .box {
   border: 1px dashed var(--nl-border-strong);
   background: color-mix(in srgb, var(--nl-surface-card) 34%, transparent);
 }
-.board-empty-text { color: var(--nl-text-secondary); font-size: 13.5px; }
+.board-empty-text { color: var(--nl-text-secondary); font-size: var(--nl-text-md); }
 
 /* A folder title may widen its card — that is how "GAMING & SIM" fits above two
    columns — but only so far. Without a ceiling a 90-character name stretched the
