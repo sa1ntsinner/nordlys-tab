@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Nordlys: Aurora Glass New Tab",
+  "name": "Nordlys",
   "version": "2.2.0",
   "description": "A new tab page with 21 themes, animated canvas scenes, bookmark folders you arrange yourself, and search that does arithmetic.",
   "content_security_policy": {

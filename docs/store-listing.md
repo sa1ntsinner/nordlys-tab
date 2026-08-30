@@ -6,11 +6,16 @@ dashboard in step; when one changes, change the other.
 ## Title
 
 ```
-Nordlys: Aurora Glass New Tab
+Nordlys
 ```
 
-Matches `manifest.json`. Renaming a published item costs recognition, so leave
-it alone unless there is a reason beyond taste.
+There is nothing to paste. The dashboard shows the title read-only and takes it
+from `name` in `manifest.json`, so the way to change it is to change the
+manifest and upload a new package.
+
+The name carries no keyword, which is the deliberate trade: someone browsing for
+"new tab" will not match on the title, and has to match on the summary and
+description instead. Both say it in their first line.
 
 ## Summary (132 characters maximum)
 
@@ -66,10 +71,13 @@ Privacy policy URL: the raw `PRIVACY.md` on GitHub.
 
 ## Artwork
 
-Everything in `docs/store-assets/` is generated from the running extension by
-`tests/ui/__t-store-shots.spec.cjs` and `tests/ui/__t-promo.spec.cjs`, so it
-cannot drift from what the product renders. Both are throwaway specs the gate
-ignores; run them with the sweeps config.
+Run `npm run artwork`. Everything in `docs/store-assets/` and `docs/assets/` is
+generated from the running extension by `tools/artwork/`, so a picture cannot
+claim a feature the code no longer has. It takes a few minutes, most of it
+deliberate canvas warm-up: the aurora needs roughly fourteen seconds before it
+draws ribbons worth showing. The README animations also need `ffmpeg` on PATH.
+
+The generators are not part of `npm test`, since they assert nothing.
 
 | File | Size | Shows |
 | --- | --- | --- |
