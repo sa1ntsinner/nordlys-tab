@@ -61,6 +61,7 @@ class SettingsController {
     this.initIconPickerModal();
     this.initCustomCSSEditor();
     this.initBackupManager();
+    this.initRestorePoint();
     this.initScenePicker();
     this.initTypography();
     // Every native dropdown gets a themed control drawn over it; the element
@@ -2273,6 +2274,43 @@ class SettingsController {
   }
 
   /* ── 10. Backup & Browser Bookmarks Migration ─────────────────── */
+  /* Only visible when there is something to go back to. A restore button with
+     nothing behind it is worse than none: it promises a safety net. */
+  initRestorePoint() {
+    const row = document.getElementById("restore-point-row");
+    const when = document.getElementById("restore-point-when");
+    const button = document.getElementById("cfg-restore-point");
+    if (!row || !button) return;
+
+    const point = this.app.restorePoint();
+    row.hidden = !point;
+    if (!point) return;
+
+    if (when && point.savedAt) {
+      const saved = new Date(point.savedAt);
+      if (!Number.isNaN(saved.getTime())) when.textContent = `(${saved.toLocaleDateString()})`;
+    }
+
+    button.addEventListener("click", async () => {
+      const ok = await confirmDialog({
+        title: this.text("backup.restorePointBtn", "Put those back"),
+        message: this.text("backup.restorePoint", "Settings from before the last update"),
+        confirmText: this.text("backup.restorePointBtn", "Put those back"),
+        cancelText: this.text("confirm.cancel", "Cancel")
+      });
+      if (!ok) return;
+      if (!this.app.useRestorePoint()) return;
+      if (typeof toast === "function") {
+        toast(window.I18N ? window.I18N.t("toast.restorePointUsed") : "Restored", "success");
+      }
+      setTimeout(() => location.reload(), 400);
+    });
+  }
+
+  text(key, fallback) {
+    return (window.I18N ? window.I18N.t(key) : null) || fallback;
+  }
+
   initBackupManager() {
     // Export JSON Backup
     document.getElementById("cfg-export")?.addEventListener("click", () => {

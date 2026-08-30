@@ -100,6 +100,8 @@ const THEME_INLINE_TOKENS = [
 /* Single source of truth for storage keys and theme classification */
 const STORAGE_KEY = "aether_tab_config";
 const LEGACY_STORAGE_KEY = "aurora_tab_config";
+/* The last state that existed before a migration rewrote it. */
+const RESTORE_POINT_KEY = "nordlys_restore_point";
 const LIGHT_THEMES = [
   "porcelain-light", "warm-ivory", "sage-light", "sakura-daylight",
   "solarized-light", "nordic-snow", "lavender-mist", "gruvbox-light",
@@ -171,6 +173,41 @@ class AuroraApp {
     return changed;
   }
 
+  /* Across every product in this category, the complaint that turns a five-star
+     user into an uninstall in one event is losing their setup — and the most
+     common cause is not a crash but an upgrade that migrated something wrongly.
+     Nothing here can promise a migration is correct. It can promise the
+     previous state still exists afterwards. */
+  snapshotBeforeMigration(previous) {
+    try {
+      const snapshot = {
+        savedAt: new Date().toISOString(),
+        version: previous.version || "unknown",
+        config: previous
+      };
+      localStorage.setItem(RESTORE_POINT_KEY, JSON.stringify(snapshot));
+    } catch (error) {
+      /* A snapshot that cannot be written must never stop the app loading. */
+    }
+  }
+
+  restorePoint() {
+    try {
+      const raw = localStorage.getItem(RESTORE_POINT_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  useRestorePoint() {
+    const point = this.restorePoint();
+    if (!point || !point.config) return false;
+    this.config = Object.assign({}, DEFAULT_CONFIG, point.config);
+    this.saveConfig();
+    return true;
+  }
+
   loadConfig() {
     try {
       const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
@@ -178,6 +215,8 @@ class AuroraApp {
         const parsed = JSON.parse(stored);
         const cfg = Object.assign({}, DEFAULT_CONFIG, parsed);
         if (this.normalizeStoredConfig(cfg)) {
+          // Keep what the user had, exactly as it was, before writing over it.
+          this.snapshotBeforeMigration(parsed);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
           if (typeof chrome !== "undefined") chrome.storage?.local?.set?.({ [STORAGE_KEY]: cfg });
         }

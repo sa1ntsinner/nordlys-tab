@@ -528,6 +528,14 @@
       <!-- 7. Data & Backup Section -->
       <section id="sec-backup" class="csec">
         <h3 data-i18n="backup.title">Backup &amp; Migration</h3>
+
+        <!-- Shown only when one exists. An upgrade that migrates something
+             wrongly is the most common way people in this category lose their
+             setup, so the state before the last migration is kept. -->
+        <div class="row restore-point" id="restore-point-row" hidden style="flex-direction: column; align-items: stretch; gap: 8px;">
+          <span><span data-i18n="backup.restorePoint">Settings from before the last update</span> <b id="restore-point-when"></b></span>
+          <button id="cfg-restore-point" class="glass-btn" data-i18n="backup.restorePointBtn">Put those back</button>
+        </div>
         <div style="display: flex; gap: 8px; margin-bottom: 12px;">
           <button id="cfg-export" class="glass-btn" style="flex: 1;" data-i18n="backup.exportJson">Export JSON Config</button>
           <button id="cfg-export-html" class="glass-btn" style="flex: 1;" data-i18n="backup.exportHtml">Export HTML Bookmarks</button>
@@ -963,6 +971,10 @@
     <div class="ctx-item" data-action="quick-edit-folder">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       <span data-i18n="ctx.editFolder">Edit Folder</span>
+    </div>
+    <div class="ctx-item" data-action="open-all">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+      <span data-i18n="ctx.openAll">Open every bookmark</span>
     </div>
     <div class="ctx-item" data-action="add-link">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>

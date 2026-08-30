@@ -419,6 +419,12 @@ class GridController {
           this.render();
           this.app.settings?.renderBookmarksManager();
           this.openQuickEditModal(gIdx, group.links.length - 1);
+        } else if (action === "open-all") {
+          /* What a middle click on a browser bookmark folder does, which is
+             the thing people say they miss most in a start page. Confirmed
+             past a handful, because opening twenty tabs by accident is not
+             something a page should be able to do quietly. */
+          this.openEveryBookmark(group);
         } else if (action === "hide-folder") {
           group.hidden = !group.hidden;
           this.app.saveConfig();
@@ -628,6 +634,26 @@ class GridController {
         window.NordlysUI?.announce?.(say("toast.itemRestored", `${name} restored`));
       }
     });
+  }
+
+  async openEveryBookmark(group) {
+    const links = (group.links || []).filter((link) => link && link.url);
+    if (!links.length) return;
+
+    const t = (key, fallback) => (window.I18N ? window.I18N.t(key, { count: links.length }) : fallback);
+    if (links.length > 5) {
+      const ok = await confirmDialog({
+        title: t("confirm.openAllTitle", `Open ${links.length} tabs?`),
+        message: `${group.label || "Folder"}`,
+        confirmText: t("confirm.openAllConfirm", "Open them"),
+        cancelText: t("confirm.cancel", "Cancel")
+      });
+      if (!ok) return;
+    }
+    for (const link of links) {
+      window.open(link.url, "_blank", "noopener");
+    }
+    window.NordlysUI?.announce?.(t("toast.openedAll", `Opened ${links.length} tabs`));
   }
 
   confirmFolderDelete(group) {
