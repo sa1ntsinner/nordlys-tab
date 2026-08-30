@@ -46,7 +46,7 @@
         <button id="engine-selector" type="button" aria-label="Change search engine">
           <svg viewBox="0 0 24 24"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/></svg>
         </button>
-        <input id="q" type="text" placeholder="Search with Google or enter URL..." autocomplete="off" spellcheck="false">
+        <input id="q" type="text" placeholder="Search or enter URL" data-i18n-placeholder="search.placeholder" autocomplete="off" spellcheck="false">
         <kbd>/</kbd>
       </div>
       <div id="sugg"></div>
@@ -439,16 +439,16 @@
           </select>
           <div class="scene-grid" id="bg-scene-grid" role="radiogroup" aria-label="Background scene"></div>
         </div>
-        <div class="row setting-row">
+        <div class="row setting-row" data-scene-only="procedural">
           <span><span data-i18n="background.motion">Motion</span> (<b id="lbl-bg-motion">100%</b>)</span>
-          <input id="cfg-bg-motion" type="range" class="ipt" min="0" max="150" value="100">
+          <input id="cfg-bg-motion" type="range" class="ipt" min="0" max="100" value="100">
         </div>
-        <div class="row setting-row">
+        <div class="row setting-row" data-scene-only="procedural">
           <span><span data-i18n="background.atmosphere">Atmosphere</span> (<b id="lbl-bg-intensity">100%</b>)</span>
-          <input id="cfg-bg-intensity" type="range" class="ipt" min="15" max="150" value="100">
+          <input id="cfg-bg-intensity" type="range" class="ipt" min="0" max="100" value="100">
         </div>
         
-        <div class="row" style="flex-direction: column; align-items: stretch; gap: 8px;">
+        <div class="row" data-scene-only="media" style="flex-direction: column; align-items: stretch; gap: 8px;">
           <span data-i18n="background.uploadCustom">Upload Custom Wallpaper</span>
           <div class="custom-file-wrap">
             <input id="cfg-custom-media" type="file" class="hidden-file-input" accept="image/*,video/mp4,video/webm">
@@ -460,12 +460,12 @@
           <button id="cfg-remove-media" class="glass-btn danger" style="display: none;" data-i18n="background.removeWallpaper">Remove Wallpaper</button>
         </div>
 
-        <h3 data-i18n="background.wallpaperEffects">Wallpaper Effects</h3>
-        <div class="row">
+        <h3 data-scene-only="media" data-i18n="background.wallpaperEffects">Wallpaper Effects</h3>
+        <div class="row" data-scene-only="image">
           <span><span data-i18n="background.blur">Wallpaper Blur</span> (<b id="lbl-bgblur">0px</b>)</span>
           <input id="cfg-bg-blur" type="range" class="ipt" min="0" max="40" value="0">
         </div>
-        <div class="row">
+        <div class="row" data-scene-only="media">
           <span><span data-i18n="background.dim">Wallpaper Dim Darkness</span> (<b id="lbl-bgdim">0%</b>)</span>
           <input id="cfg-bg-dim" type="range" class="ipt" min="0" max="80" value="0">
         </div>

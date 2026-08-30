@@ -289,7 +289,13 @@ class SearchWidget {
       this.engineBtn.title = window.I18N ? window.I18N.t('search.engineTitle', { engine: engine.name }) : `Search with ${engine.name} (Click to switch)`;
     }
     if (this.input) {
-      this.input.placeholder = window.I18N ? window.I18N.t('search.placeholder', { engine: engine.name }) : `Search with ${engine.name} or enter URL...`;
+      this.input.placeholder = window.I18N ? window.I18N.t('search.placeholder') : 'Search or enter URL';
+      // The placeholder no longer names the engine, so the mark has to.
+      if (this.engineBtn) {
+        this.engineBtn.title = window.I18N
+          ? window.I18N.t('search.engineTitle', { engine: engine.name })
+          : `Search engine: ${engine.name}`;
+      }
     }
   }
 

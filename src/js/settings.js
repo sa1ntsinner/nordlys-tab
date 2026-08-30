@@ -106,7 +106,24 @@ class SettingsController {
       grid.querySelectorAll(".scene-card").forEach((card) => {
         card.setAttribute("aria-checked", String(card.dataset.scene === select.value));
       });
+      showRelevant();
     });
+
+    /* Offering an Upload Wallpaper button while Aurora is running, or a blur
+       slider with nothing to blur, is noise the user has to read and dismiss.
+       Each control declares the scenes it belongs to and the rest step aside. */
+    const SCENE_GROUPS = {
+      procedural: ["aurora", "cosmos", "mesh-gradient", "particles"],
+      media: ["custom-image", "custom-video"],
+      image: ["custom-image"]
+    };
+    const showRelevant = () => {
+      const scene = select.value;
+      for (const node of document.querySelectorAll("#sec-background [data-scene-only]")) {
+        const belongs = SCENE_GROUPS[node.dataset.sceneOnly] || [];
+        node.hidden = !belongs.includes(scene);
+      }
+    };
 
     const applyAtmosphere = () => {
       const motion = Number(document.getElementById("cfg-bg-motion")?.value ?? 100) / 100;
@@ -130,6 +147,7 @@ class SettingsController {
       slider.addEventListener("change", () => { applyAtmosphere(); this.app.saveConfig(); });
     }
     applyAtmosphere();
+    showRelevant();
     paint();
   }
 
@@ -599,13 +617,28 @@ class SettingsController {
 
         card.querySelector(".del-custom-thm-btn")?.addEventListener("click", (e) => {
           e.stopPropagation();
-          this.customThemes = this.customThemes.filter((x) => x.id !== t.id);
+          /* A saved theme is minutes of colour picking and there is no confirm
+             step in front of this button, so losing one to a stray click was
+             unrecoverable. It goes back where it was, in order. */
+          const position = this.customThemes.findIndex((x) => x.id === t.id);
+          if (position < 0) return;
+          const snapshot = JSON.parse(JSON.stringify(this.customThemes[position]));
+          const wasActive = activeTheme === "custom" && activeCustomId === t.id;
+          this.customThemes.splice(position, 1);
           this.saveCustomThemes();
-          if (activeTheme === "custom" && activeCustomId === t.id) {
-            this.app.setTheme("aurora-void");
-          } else {
-            this.renderThemeCards();
-          }
+          if (wasActive) this.app.setTheme("aurora-void"); else this.renderThemeCards();
+
+          const name = snapshot.name || "Theme";
+          const say = (key, fallback) => (window.I18N ? window.I18N.t(key, { name }) : fallback);
+          window.NordlysUI?.showUndoToast({
+            message: say("toast.itemDeleted", `${name} deleted`),
+            onAction: () => {
+              this.customThemes.splice(Math.min(position, this.customThemes.length), 0, snapshot);
+              this.saveCustomThemes();
+              if (wasActive) this.applyCustomTheme(snapshot); else this.renderThemeCards();
+              window.NordlysUI?.announce?.(say("toast.itemRestored", `${name} restored`));
+            }
+          });
         });
 
         customGrid.appendChild(card);
@@ -814,15 +847,24 @@ class SettingsController {
     const lblBlur = document.getElementById("lbl-bgblur");
     const lblDim = document.getElementById("lbl-bgdim");
 
-    const syncControls = () => {
+    const syncControls = async () => {
       const cfg = this.app.config;
       if (bgMode) bgMode.value = cfg.bgMode || "aurora";
       if (blurSlider) blurSlider.value = cfg.bgBlur || 0;
       if (dimSlider) dimSlider.value = cfg.bgDim || 0;
       if (lblBlur) lblBlur.textContent = `${cfg.bgBlur || 0}px`;
       if (lblDim) lblDim.textContent = `${cfg.bgDim || 0}%`;
-      const hasCustom = cfg.bgMode === "custom-image" || cfg.bgMode === "custom-video";
-      if (removeBtn) removeBtn.style.display = hasCustom ? "inline-flex" : "none";
+      /* Picking the Wallpaper scene is not the same as having a wallpaper.
+         Keying off the mode alone offered "Remove Wallpaper" with nothing to
+         remove, on a fresh profile that had never uploaded anything. */
+      if (removeBtn) {
+        const wantsMedia = cfg.bgMode === "custom-image" || cfg.bgMode === "custom-video";
+        let stored = false;
+        if (wantsMedia) {
+          try { stored = Boolean(await MediaVault.getMedia("custom_bg")); } catch (error) { stored = false; }
+        }
+        removeBtn.style.display = stored ? "inline-flex" : "none";
+      }
     };
     this.syncBackgroundControls = syncControls;
     syncControls();
@@ -1925,6 +1967,14 @@ class SettingsController {
   filterIconLibrary(query, cat, highlightIconKey = null) {
     const grid = document.getElementById("modal-icon-grid");
     if (!grid) return;
+
+    /* Picking a library icon keeps the bookmark's own colour, so drawing the
+       grid in plain white showed something the user would never get: YouTube
+       read white here and arrived red on the board. Paint the grid in the
+       colour the choice will actually produce. */
+    const target = this.activeIconTarget;
+    const editing = target ? this.app.config.groups?.[target.gIdx]?.links?.[target.lIdx] : null;
+    grid.style.setProperty("--icon-preview-accent", editing?.color || "var(--nl-text-primary)");
 
     grid.innerHTML = "";
     for (const key in ICONS_DB) {

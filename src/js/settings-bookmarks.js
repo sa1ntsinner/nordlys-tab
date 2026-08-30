@@ -56,7 +56,7 @@
           action(`Rename ${group.label}`, 'Rename', () => { this.renaming.add(group); this.render(); this.root.querySelector(`[data-group-index="${this.app.config.groups.indexOf(group)}"] .bookmark-folder-name-input`)?.focus(); }),
           columns,
           action(`Add bookmark to ${group.label}`, this.text('bookmarks.addBookmark', 'Add bookmark'), () => { (group.links ||= []).push({ name: 'New Bookmark', url: 'https://', color: '#35d6c0', icon: 'globe' }); this.expanded.add(group); this.save('Bookmark added'); this.render(); }),
-          action(`Delete folder ${group.label}`, 'Delete', async () => { const ok = await confirmDialog({ title: 'Delete folder?', message: `Delete ${group.label}?`, danger: true }); if (!ok) return; const index = this.app.config.groups.indexOf(group); if (index >= 0) this.app.config.groups.splice(index, 1); this.save(`${group.label} deleted`); this.render(); })
+          action(`Delete folder ${group.label}`, 'Delete', async () => { const ok = await confirmDialog({ title: 'Delete folder?', message: `Delete ${group.label}?`, danger: true }); if (!ok) return; const index = this.app.config.groups.indexOf(group); if (index < 0) return; this.app.grid.deleteFolderWithUndo(index); })
         );
         const toggle = () => { this.expanded.has(group) ? this.expanded.delete(group) : this.expanded.add(group); this.render(); };
         summary.addEventListener('click', toggle); summary.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggle(); } });

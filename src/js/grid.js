@@ -432,11 +432,7 @@ class GridController {
           this.app.settings?.renderBookmarksManager();
         } else if (action === "delete-folder") {
           this.confirmFolderDelete(group).then((ok) => {
-            if (!ok) return;
-            this.app.config.groups.splice(gIdx, 1);
-            this.app.saveConfig();
-            this.render();
-            this.app.settings?.renderBookmarksManager();
+            if (ok) this.deleteFolderWithUndo(gIdx);
           });
         }
       });
@@ -608,12 +604,35 @@ class GridController {
       const group = this.app.config.groups[gIdx];
       this.confirmFolderDelete(group).then((ok) => {
         if (!ok) return;
-        this.app.config.groups.splice(gIdx, 1);
-        this.app.saveConfig();
-        this.render();
-        this.app.settings?.renderBookmarksManager();
+        this.deleteFolderWithUndo(gIdx);
         this.closeQuickFolderModal();
       });
+    });
+  }
+
+  /* A folder holds a whole set of links, and a confirm dialog only protects
+     against the click you were paying attention to. A single bookmark has had
+     Undo since the redesign; the folder that contains it had none. */
+  deleteFolderWithUndo(gIdx) {
+    const groups = this.app.config.groups;
+    if (!Array.isArray(groups) || gIdx < 0 || gIdx >= groups.length) return;
+    const [removed] = groups.splice(gIdx, 1);
+    const snapshot = JSON.parse(JSON.stringify(removed));
+    const name = snapshot.label || "Folder";
+    const refresh = () => {
+      this.app.saveConfig();
+      this.render();
+      this.app.settings?.renderBookmarksManager();
+    };
+    refresh();
+    const say = (key, fallback) => (window.I18N ? window.I18N.t(key, { name }) : fallback);
+    window.NordlysUI?.showUndoToast({
+      message: say("toast.itemDeleted", `${name} deleted`),
+      onAction: () => {
+        groups.splice(Math.min(gIdx, groups.length), 0, snapshot);
+        refresh();
+        window.NordlysUI?.announce?.(say("toast.itemRestored", `${name} restored`));
+      }
     });
   }
 

@@ -4,7 +4,8 @@
 
 const translations = {
   "en": {
-    "search.placeholder": "Search with {engine} or enter URL...",
+    "search.placeholder": "Search or enter URL",
+    "search.engineTitle": "Search engine: {engine}",
     "search.engineTitle": "Search with {engine} (Click to switch)",
     "search.historyRemoved": "Removed {query} from history",
     "search.suggestionsClosed": "Search suggestions closed",
@@ -185,6 +186,9 @@ const translations = {
     "confirm.deleteFolderTitle": "Delete folder?",
     "confirm.bookmarksInside": "bookmarks inside will be removed too.",
     "toast.copied": "Copied to clipboard",
+    "toast.itemDeleted": "{name} deleted",
+    "toast.itemRestored": "{name} restored",
+    "toast.undo": "Undo",
     "toast.linkCopied": "Link copied to clipboard",
     "toast.themeSaved": "Theme saved & applied",
     "toast.cssApplied": "Custom CSS applied & saved",
@@ -220,7 +224,8 @@ const translations = {
     "appearance.previewBookmark": "Nordlys Studio"
   },
   "ru": {
-    "search.placeholder": "Поиск в {engine} или ввод URL...",
+    "search.placeholder": "Поиск или адрес",
+    "search.engineTitle": "Поисковик: {engine}",
     "search.engineTitle": "Искать через {engine} (клик для смены)",
     "search.historyRemoved": "Запрос {query} удалён из истории",
     "search.suggestionsClosed": "Подсказки поиска закрыты",
@@ -401,6 +406,9 @@ const translations = {
     "confirm.deleteFolderTitle": "Удалить папку?",
     "confirm.bookmarksInside": "закладок внутри также будут удалены.",
     "toast.copied": "Скопировано в буфер обмена",
+    "toast.itemDeleted": "{name} удалён",
+    "toast.itemRestored": "{name} восстановлен",
+    "toast.undo": "Отменить",
     "toast.linkCopied": "Ссылка скопирована",
     "toast.themeSaved": "Тема сохранена и применена",
     "toast.cssApplied": "Custom CSS применён и сохранён",
@@ -436,7 +444,8 @@ const translations = {
     "appearance.previewBookmark": "Nordlys Studio"
   },
   "es": {
-    "search.placeholder": "Buscar con {engine} o escribir URL...",
+    "search.placeholder": "Buscar o escribir URL",
+    "search.engineTitle": "Buscador: {engine}",
     "search.engineTitle": "Buscar con {engine} (Clic para cambiar)",
     "search.historyRemoved": "{query} se eliminó del historial",
     "search.suggestionsClosed": "Sugerencias de búsqueda cerradas",
@@ -617,6 +626,9 @@ const translations = {
     "confirm.deleteFolderTitle": "¿Eliminar carpeta?",
     "confirm.bookmarksInside": "los marcadores incluidos también se eliminarán.",
     "toast.copied": "Copiado al portapapeles",
+    "toast.itemDeleted": "{name} eliminado",
+    "toast.itemRestored": "{name} restaurado",
+    "toast.undo": "Deshacer",
     "toast.linkCopied": "Enlace copiado al portapapeles",
     "toast.themeSaved": "Tema guardado y aplicado",
     "toast.cssApplied": "CSS personalizado aplicado y guardado",
@@ -652,7 +664,8 @@ const translations = {
     "appearance.previewBookmark": "Nordlys Studio"
   },
   "de": {
-    "search.placeholder": "Suche mit {engine} oder URL eingeben...",
+    "search.placeholder": "Suchen oder URL eingeben",
+    "search.engineTitle": "Suchmaschine: {engine}",
     "search.engineTitle": "Mit {engine} suchen (Klicken zum Wechseln)",
     "search.historyRemoved": "{query} aus dem Verlauf entfernt",
     "search.suggestionsClosed": "Suchvorschläge geschlossen",
@@ -833,6 +846,9 @@ const translations = {
     "confirm.deleteFolderTitle": "Ordner löschen?",
     "confirm.bookmarksInside": "enthaltene Lesezeichen werden ebenfalls entfernt.",
     "toast.copied": "In die Zwischenablage kopiert",
+    "toast.itemDeleted": "{name} gelöscht",
+    "toast.itemRestored": "{name} wiederhergestellt",
+    "toast.undo": "Rückgängig",
     "toast.linkCopied": "Link in die Zwischenablage kopiert",
     "toast.themeSaved": "Design gespeichert & angewendet",
     "toast.cssApplied": "Benutzerdefiniertes CSS angewendet & gespeichert",
@@ -868,7 +884,8 @@ const translations = {
     "appearance.previewBookmark": "Nordlys Studio"
   },
   "fr": {
-    "search.placeholder": "Rechercher avec {engine} ou entrer une URL...",
+    "search.placeholder": "Rechercher ou saisir une URL",
+    "search.engineTitle": "Moteur de recherche : {engine}",
     "search.engineTitle": "Rechercher avec {engine} (Cliquer pour changer)",
     "search.historyRemoved": "{query} supprimé de l’historique",
     "search.suggestionsClosed": "Suggestions de recherche fermées",
@@ -1049,6 +1066,9 @@ const translations = {
     "confirm.deleteFolderTitle": "Supprimer le dossier ?",
     "confirm.bookmarksInside": "les favoris contenus seront également supprimés.",
     "toast.copied": "Copié dans le presse-papiers",
+    "toast.itemDeleted": "{name} supprimé",
+    "toast.itemRestored": "{name} restauré",
+    "toast.undo": "Annuler",
     "toast.linkCopied": "Lien copié dans le presse-papiers",
     "toast.themeSaved": "Thème enregistré et appliqué",
     "toast.cssApplied": "CSS personnalisé appliqué et enregistré",
@@ -1084,7 +1104,8 @@ const translations = {
     "appearance.previewBookmark": "Nordlys Studio"
   },
   "ja": {
-    "search.placeholder": "{engine}で検索、またはURLを入力...",
+    "search.placeholder": "検索または URL を入力",
+    "search.engineTitle": "検索エンジン: {engine}",
     "search.engineTitle": "{engine}で検索（クリックして切り替え）",
     "search.historyRemoved": "{query}を履歴から削除しました",
     "search.suggestionsClosed": "検索候補を閉じました",
@@ -1265,6 +1286,9 @@ const translations = {
     "confirm.deleteFolderTitle": "フォルダを削除しますか？",
     "confirm.bookmarksInside": "含まれるブックマークも削除されます。",
     "toast.copied": "クリップボードにコピーしました",
+    "toast.itemDeleted": "{name} を削除しました",
+    "toast.itemRestored": "{name} を元に戻しました",
+    "toast.undo": "元に戻す",
     "toast.linkCopied": "リンクをクリップボードにコピーしました",
     "toast.themeSaved": "テーマを保存して適用しました",
     "toast.cssApplied": "カスタムCSSを適用して保存しました",
@@ -1300,7 +1324,8 @@ const translations = {
     "appearance.previewBookmark": "Nordlys Studio"
   },
   "zh": {
-    "search.placeholder": "在 {engine} 中搜索或输入网址...",
+    "search.placeholder": "搜索或输入网址",
+    "search.engineTitle": "搜索引擎：{engine}",
     "search.engineTitle": "使用 {engine} 搜索（点击切换）",
     "search.historyRemoved": "已从历史记录中删除 {query}",
     "search.suggestionsClosed": "搜索建议已关闭",
@@ -1481,6 +1506,9 @@ const translations = {
     "confirm.deleteFolderTitle": "删除文件夹？",
     "confirm.bookmarksInside": "其中的所有书签也将被一并删除。",
     "toast.copied": "已复制到剪贴板",
+    "toast.itemDeleted": "已删除 {name}",
+    "toast.itemRestored": "已恢复 {name}",
+    "toast.undo": "撤销",
     "toast.linkCopied": "链接已复制到剪贴板",
     "toast.themeSaved": "主题已保存并应用",
     "toast.cssApplied": "自定义 CSS 已保存并生效",
@@ -1516,7 +1544,8 @@ const translations = {
     "appearance.previewBookmark": "Nordlys Studio"
   },
   "tr": {
-    "search.placeholder": "{engine} ile ara veya URL yaz...",
+    "search.placeholder": "Ara veya URL gir",
+    "search.engineTitle": "Arama motoru: {engine}",
     "search.engineTitle": "{engine} ile ara (Değiştirmek için tıkla)",
     "search.historyRemoved": "{query} geçmişten kaldırıldı",
     "search.suggestionsClosed": "Arama önerileri kapatıldı",
@@ -1697,6 +1726,9 @@ const translations = {
     "confirm.deleteFolderTitle": "Klasörü sil?",
     "confirm.bookmarksInside": "içindeki yer işaretleri de silinecektir.",
     "toast.copied": "Panoya kopyalandı",
+    "toast.itemDeleted": "{name} silindi",
+    "toast.itemRestored": "{name} geri alındı",
+    "toast.undo": "Geri al",
     "toast.linkCopied": "Bağlantı panoya kopyalandı",
     "toast.themeSaved": "Tema kaydedildi ve uygulandı",
     "toast.cssApplied": "Özel CSS uygulandı ve kaydedildi",

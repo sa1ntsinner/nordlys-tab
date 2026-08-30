@@ -116,8 +116,9 @@ body.seconds .sc, body.seconds #ss {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 3px;
   padding: 4px;
-  width: var(--nl-target-min);
+  width: calc(var(--nl-target-min) + 8px);
   height: var(--nl-target-min);
   min-width: var(--nl-target-min);
   border-radius: 8px;
@@ -131,6 +132,25 @@ body.seconds .sc, body.seconds #ss {
   width: 19px;
   height: 19px;
   fill: currentColor;
+}
+
+/* Nothing said the engine mark was a button. The chevron keeps its space at all
+   times and only fades in, so revealing it cannot shift the bar. */
+#engine-selector::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  margin-top: -2px;
+  border-right: 1.6px solid currentColor;
+  border-bottom: 1.6px solid currentColor;
+  transform: rotate(45deg);
+  opacity: 0;
+  transition: opacity var(--nl-motion-control) ease;
+}
+#search:hover #engine-selector::after,
+#search:focus-within #engine-selector::after,
+#engine-selector:focus-visible::after {
+  opacity: 0.75;
 }
 
 #q {
@@ -281,12 +301,17 @@ body.seconds .sc, body.seconds #ss {
   color: var(--ink);
 }
 
-/* ── Focus Search Mode (Dim & Blur backdrop behind search) ────── */
+/* ── Focus Search Mode ────────────────────────────────────────── */
+/* The scrim sits at z-index 3 and <main id="page"> at 5, so it can only darken
+   the canvas: it never covers the clock, the board or the dock. Those have to
+   step back on their own, which they do by fading — the blur and the scale
+   they used to apply as well turned the page into coloured smudges and made
+   the whole composition twitch. */
 #dim {
   position: fixed;
   inset: 0;
   z-index: 3;
-  background: rgba(4, 8, 16, 0.48);
+  background: rgba(3, 7, 18, 0.32);
   opacity: 0;
   visibility: hidden;
   backdrop-filter: blur(0px);
@@ -298,8 +323,7 @@ body.seconds .sc, body.seconds #ss {
 body.searching #dim {
   opacity: 1;
   visibility: visible;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(3, 7, 18, 0.5);
   transition: opacity var(--nl-motion-panel) ease, visibility 0s;
   pointer-events: auto;
 }
@@ -314,19 +338,17 @@ body.searching #dim {
 }
 
 body.searching #hero {
-  opacity: 0.22;
-  filter: blur(6px);
-  transform: translateY(-4px);
+  opacity: 0.42;
   pointer-events: none;
 }
 
+/* The bar keeps its width. Growing it on focus moved the caret out from under
+   the cursor that had just clicked it. */
 body.searching #searchwrap {
-  width: min(92vw, 720px);
   z-index: 20;
 }
 
 body.searching #search {
-  animation: pop var(--nl-motion-panel) var(--nl-ease-emphasized);
   border-color: var(--accent);
   background: color-mix(in srgb, var(--card-tint, #141c34) 94%, transparent);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65), 0 0 0 4px var(--accent-glow);
@@ -334,15 +356,12 @@ body.searching #search {
 }
 
 body.searching #board {
-  opacity: 0.15;
-  filter: blur(8px);
-  transform: scale(0.985);
+  opacity: 0.34;
   pointer-events: none;
 }
 
 body.searching #hiddenDock {
-  opacity: 0.15;
-  filter: blur(8px);
+  opacity: 0.28;
   pointer-events: none;
 }
 
