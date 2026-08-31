@@ -78,6 +78,61 @@ Answer the dashboard's justification fields from `PRIVACY.md`:
 | Remote code | None. The CSP is `script-src 'self'; object-src 'self'`. |
 | Data collection | None. Declare no collected data. |
 
+## Permission justifications
+
+The table above is the summary. The dashboard asks for a written justification
+per permission in its own field, and each one has to name the user-visible
+feature that needs it — a reviewer rejects "required for functionality". Paste
+these verbatim.
+
+### `bookmarks` (optional)
+
+```
+Nordlys replaces the new tab page with a grid of bookmark tiles. One feature lets the user point a Nordlys folder at a folder of their own Chrome bookmarks, so the tiles are filled from bookmarks they already have instead of being entered one at a time. Users arriving with hundreds of existing bookmarks otherwise have no way in.
+
+That feature is the only use of the bookmarks API:
+
+- chrome.bookmarks.getTree() - lists the user's folders so they can choose one from a menu.
+- chrome.bookmarks.getChildren(id) - reads the links inside the folder they chose.
+- onCreated / onRemoved / onChanged / onMoved / onChildrenReordered - keeps the displayed copy in step when the user edits that folder in the browser.
+
+The extension never creates, edits, moves or deletes a bookmark. There is no write call to chrome.bookmarks anywhere in the source. The mirror runs one way, from Chrome to the page, so the browser remains the owner of the data.
+
+The permission is declared in optional_permissions rather than permissions, so nothing is requested at install and the extension is fully usable without it. chrome.permissions.request() is called only from the click that links a folder. If the user declines, the folder is left exactly as it was. No bookmark is read before a folder is linked, and the mirrored titles and URLs are written only to local extension storage - nothing is transmitted anywhere.
+```
+
+### `storage`
+
+```
+Stores the user's own configuration on the device: their bookmark folders and tiles, the chosen theme, fonts, layout, background scene and search engine. The extension has no account and no server, so this is the only place a user's setup exists.
+```
+
+### `unlimitedStorage`
+
+```
+Users can set their own image or a looping video as the background. These are kept as blobs in IndexedDB on the device and are routinely larger than the 5 MB default quota - a short 1080p loop exceeds it on its own. Without this permission the feature fails on the files people actually pick. Nothing is uploaded; the file never leaves the machine.
+```
+
+### `favicon`
+
+```
+Bookmark tiles can show a site's icon. This reads Chrome's own local favicon cache through chrome://favicon2 (chrome.runtime.getURL("/_favicon/?pageUrl=...")) so an icon can be drawn for a site the user has already visited without making a network request to a third-party favicon service.
+```
+
+### Host permissions
+
+```
+Eight hosts, each the suggestion endpoint of a search engine the extension offers: suggestqueries.google.com, duckduckgo.com, api.bing.com, search.brave.com, ac.ecosia.org, suggest.yandex.com and en.wikipedia.org. A request goes to exactly one of them - whichever engine the user selected - and carries only what they typed into the search box, so that suggestions can appear below it.
+
+The eighth, images.weserv.nl, is used only when a user pastes their own image URL for a bookmark icon and that server refuses a cross-origin request. The image is fetched through that proxy so the icon can be drawn. It is never used for browsing data and never for a page the user visits.
+```
+
+### Remote code
+
+```
+None. All JavaScript is in the package. The content security policy is "script-src 'self'; object-src 'self'", so the extension cannot load or evaluate remote code even if it tried.
+```
+
 Privacy policy URL: the raw `PRIVACY.md` on GitHub.
 
 ## Artwork
