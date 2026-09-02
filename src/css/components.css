@@ -124,49 +124,22 @@ body.seconds .sc, body.seconds #ss {
   box-shadow: var(--nl-shadow-3), var(--nl-ring);
 }
 
-#engine-selector {
-  border: 0;
-  background: transparent;
-  color: var(--dim);
-  cursor: pointer;
+/* A magnifier, not a button. The mark here used to be the active engine's logo
+   and a switch to cycle through ten of them; the page no longer knows which
+   engine it is talking to, and there is nothing to press. */
+#search-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 4px;
-  width: calc(var(--nl-target-min) + 8px);
+  width: var(--nl-target-min);
   height: var(--nl-target-min);
-  min-width: var(--nl-target-min);
-  border-radius: 8px;
-  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), opacity var(--nl-motion-control), transform var(--nl-motion-control);
+  flex: 0 0 auto;
+  color: var(--dim);
 }
-#engine-selector:hover {
-  color: var(--ink);
-  background: rgba(255, 255, 255, 0.08);
-}
-#engine-selector svg {
+#search-icon svg {
   width: 19px;
   height: 19px;
   fill: currentColor;
-}
-
-/* Nothing said the engine mark was a button. The chevron keeps its space at all
-   times and only fades in, so revealing it cannot shift the bar. */
-#engine-selector::after {
-  content: "";
-  width: 5px;
-  height: 5px;
-  margin-top: -2px;
-  border-right: 1.6px solid currentColor;
-  border-bottom: 1.6px solid currentColor;
-  transform: rotate(45deg);
-  opacity: 0;
-  transition: opacity var(--nl-transition-control);
-}
-#search:hover #engine-selector::after,
-#search:focus-within #engine-selector::after,
-#engine-selector:focus-visible::after {
-  opacity: 0.75;
 }
 
 #q {

@@ -3,7 +3,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 const DEFAULT_CONFIG = {
-  version: "2.2.1",
+  version: "2.2.2",
   theme: "aurora-void",
   colorMode: "dark",
   bgMode: "aurora",
@@ -15,8 +15,6 @@ const DEFAULT_CONFIG = {
   showSeconds: false,
   userName: "",
   openNewTab: false,
-  showSuggestions: true,
-  defaultEngine: "google",
   cardRadius: 24,
   tileSize: 78,
   cardGap: 12,
@@ -200,6 +198,11 @@ class AuroraApp {
       changed = true;
     }
     if (config.gradient !== undefined) { delete config.gradient; changed = true; }
+    /* Search goes through Chrome's own default engine now, so a stored engine
+       choice has nothing to drive. Dropped rather than kept as dead weight. */
+    for (const dead of ["defaultEngine", "customEngineUrl", "showSuggestions"]) {
+      if (config[dead] !== undefined) { delete config[dead]; changed = true; }
+    }
     if (Number(config.tileSize) >= 50 && Number(config.tileSize) < 56) { config.tileSize = 56; changed = true; }
     return changed;
   }
@@ -306,7 +309,7 @@ class AuroraApp {
     if (window.I18N) window.I18N.setLanguage(lang);
 
     window.addEventListener("aurora:languagechange", () => {
-      this.widgets?.updateEngineIcon();
+      this.widgets?.refreshLabels();
       this.widgets?.updateClock();
       this.grid?.render();
       this.settings?.renderBookmarksManager();

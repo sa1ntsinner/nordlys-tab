@@ -25,6 +25,14 @@ const test = base.extend({
         /* A bookmark tree the tests can shape, plus the optional-permission
            dance Chrome requires before any of it is readable. Tests drive both
            through window.__bookmarks. */
+        /* The search box hands its text to Chrome. The shim records the call so a
+           test can see what was sent and where, without a navigation happening. */
+        search: {
+          query(details) {
+            (window.__searches ||= []).push(details);
+            return Promise.resolve();
+          }
+        },
         permissions: {
           contains(request, callback) { callback(Boolean(window.__bookmarks?.granted)); },
           request(request, callback) {

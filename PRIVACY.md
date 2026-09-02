@@ -2,7 +2,7 @@
 
 **Effective Date:** August 16, 2026
 **Last Updated:** August 30, 2026
-**Version:** 2.2.1
+**Version:** 2.2.2
 
 Nordlys ("the extension", "we", or "our") is designed with a strict **Privacy-by-Architecture** principle. Nordlys is a client-side, offline-capable New Tab override extension.
 
@@ -38,7 +38,7 @@ All user preferences, custom themes, custom CSS, bookmarks, and folder layouts a
 
 Nordlys performs **no background network requests**. The only network traffic it can ever generate is triggered directly by you:
 
-1. **Web Search Suggestions (can be turned off):** While you type in the search bar, the query text is sent to the suggestion endpoint of the search engine you selected — exactly like a browser address bar. Depending on your chosen engine, that endpoint is one of: `suggestqueries.google.com` (Google, YouTube, GitHub, Reddit), `duckduckgo.com`, `api.bing.com`, `search.brave.com`, `ac.ecosia.org`, `suggest.yandex.com`, or `en.wikipedia.org`. Disable this anytime in **Settings → General → Web search suggestions**; Nordlys then makes zero suggestion requests.
+1. **Searching:** When you press Enter in the search bar, the text is handed to Chrome through its `chrome.search` API, which sends it to the search engine you have chosen in Chrome's own settings — exactly what the address bar does. Nordlys does not choose the engine, does not know which one answered, and sends nothing while you type. Earlier versions fetched live suggestions from a search engine as you typed; that no longer happens.
 2. **Bookmark Icon Fetch (user-initiated only):** When you paste an image URL in the icon picker, that image is downloaded once (directly, or via the `images.weserv.nl` image proxy when the source blocks cross-origin loading) and stored locally as Base64. Nothing else is sent.
 3. **Smart Favicon Sources (user-initiated only):** The "Smart Favicon" tab of the icon picker loads a site icon from the provider you pick: Google's favicon service (`www.google.com/s2/favicons`), DuckDuckGo's icon service (`icons.duckduckgo.com`), the site's own `/apple-touch-icon.png`, or Chrome's **local** favicon cache (no network at all). Only the domain you typed is included in the request.
 
@@ -54,7 +54,7 @@ In accordance with the Principle of Least Privilege, Nordlys requests only the m
 - **`unlimitedStorage`**: Allows saving custom user wallpaper images and video loops inside client-side IndexedDB without hitting strict browser storage limits.
 - **`favicon`**: Allows displaying website favicons from Chrome's local favicon cache on bookmark tiles.
 - **`bookmarks` (optional, never requested at install)**: Only asked for at the moment you point a folder at one of your browser's bookmark folders, and only used to read that folder's contents so the tiles can mirror it. Nordlys never writes to your browser bookmarks and never sends them anywhere. Revoking it in `chrome://extensions` stops the mirroring; the tiles already on screen stay.
-- **Narrow host permissions**: Only the search-suggestion endpoints listed in section 3 plus `images.weserv.nl`. Nordlys cannot read, alter, or transmit data from web pages you visit.
+- **One host permission**: `images.weserv.nl`, used only for an icon you paste the address of. Nordlys cannot read, alter, or transmit data from web pages you visit.
 - **No `tabs` History Access**: Nordlys does not inspect your browsing history, active tabs, or open URLs.
 
 ---

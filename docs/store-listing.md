@@ -52,11 +52,11 @@ Type is split into three slots: the clock and headings, the interface, and monos
 
 One living scene — the aurora it is named after — your own image or a looping video, stored locally, or a flat theme colour. Motion and Atmosphere dial the aurora from a slow shimmer down to Still, where the scene is painted once and held. If your system asks for reduced motion, that is what you get automatically: the picture, without the movement.
 
-Search covers ten engines with bang shortcuts, or any engine you like by pasting its address with %s where the query goes. It mixes in your own bookmarks and recent searches, and does arithmetic: type 45 * 12 + sqrt(144) and the answer sits above the suggestions.
+The search box uses whichever search engine you have set in Chrome — it does not have one of its own and does not ask you to pick. As you type it offers your own bookmarks, your recent searches, and arithmetic: 45 * 12 + sqrt(144) gets its answer right there, one click to copy. Nothing you type is sent anywhere until you press Enter.
 
 A folder can follow one of your browser's bookmark folders instead of being filled in by hand. It mirrors one way, so the browser keeps the data — which also means an update here cannot lose it. Nordlys asks for permission to read bookmarks at the moment you link a folder, never at install.
 
-No account, no analytics, no telemetry, no remote code. Settings and bookmarks live in local storage, and the only requests are search suggestions from the engine you chose and the favicons you ask for. Export the lot to JSON whenever you want.
+No account, no analytics, no telemetry, no remote code. Settings and bookmarks live in local storage, and the only request the extension makes on its own is for an icon you asked for by pasting its address. Export the lot to JSON whenever you want.
 
 Available in English, Russian, Spanish, German, French, Japanese, Chinese and Turkish.
 
@@ -69,11 +69,12 @@ Answer the dashboard's justification fields from `PRIVACY.md`:
 
 | Field | Answer |
 | --- | --- |
-| Single purpose | Replaces the new tab page with a customisable start page. |
+| Single purpose | Replaces the new tab page with a start page of the user's own bookmarks. Searching from it goes to the search engine already set in Chrome, through chrome.search; the extension has no engine setting of its own. |
 | `storage` | Saves bookmarks, themes and settings on the device. |
 | `unlimitedStorage` | Holds user wallpaper images and video loops in IndexedDB. |
 | `favicon` | Draws site icons from Chrome's local favicon cache. |
-| Host permissions | Search-suggestion endpoints for the ten engines, plus `images.weserv.nl` when a pasted icon URL blocks cross-origin loading. |
+| `search` | Sends what is typed in the search box to the search engine the user has set in Chrome. The extension never chooses the engine. |
+| Host permissions | One host, `images.weserv.nl`, used only when a pasted icon URL blocks cross-origin loading. |
 | `bookmarks` (optional) | Requested only when the user points a folder at a browser bookmark folder, and only read from. Never requested at install. |
 | Remote code | None. The CSP is `script-src 'self'; object-src 'self'`. |
 | Data collection | None. Declare no collected data. |
@@ -116,12 +117,20 @@ Users can set their own image or a looping video as the page background. These a
 Bookmark tiles can show a site's icon. This reads Chrome's own local favicon cache via chrome.runtime.getURL("/_favicon/?pageUrl=..."), so an icon can be drawn for a site the user has already visited without sending that address to a third-party favicon service.
 ```
 
-### Host permissions — 636 chars
+### `search` — 600 chars
 
 ```
-Seven of the eight are search-suggestion endpoints for the engines offered: suggestqueries.google.com, duckduckgo.com, api.bing.com, search.brave.com, ac.ecosia.org, suggest.yandex.com and en.wikipedia.org. One request goes to exactly one of them - whichever engine the user selected - carrying only what they typed in the search box, so suggestions can appear below it.
+The new tab page has a search box. What is typed there is handed to chrome.search.query(), which sends it to the search engine the user has already chosen in Chrome's own settings, in the current tab or a new one according to their preference.
 
-The eighth, images.weserv.nl, is used only when a user pastes their own image URL for a bookmark icon and that server refuses a cross-origin request; the image is fetched through it so the icon can be drawn. It never sees browsing data or any page the user visits.
+That is the permission's only use. The extension has no search engine of its own, no list to choose from, and no setting that changes which engine is used; it never learns which engine answered. A previous version carried its own engine list and was rejected for it. Using this API is how the box respects the user's choice instead of making one for them.
+```
+
+### Host permissions — 528 chars
+
+```
+One host: images.weserv.nl. It is used only when a user pastes their own image URL for a bookmark icon and that server refuses a cross-origin request; the image is fetched through this proxy so the icon can be drawn. It never sees browsing data or any page the user visits, and it is not contacted unless the user pastes such an address.
+
+Previous versions also listed seven search-suggestion endpoints. Those are gone: the box no longer fetches live suggestions, so nothing typed leaves the device until the user presses Enter.
 ```
 
 ### Remote code — 167 chars

@@ -2,116 +2,15 @@
    NORDLYS - WIDGETS (CLOCK, DATE, GREETING, OMNI-SEARCH & CALCULATOR)
    ═══════════════════════════════════════════════════════════════════ */
 
-/* A search box that cannot reach the engine someone actually uses is a search
-   box they route around, and "let me point it somewhere else" is one of the
-   most repeated asks about start pages. One template, one placeholder. */
-const CUSTOM_ENGINE_KEY = "custom";
 
-function customEngine(template) {
-  const url = typeof template === "string" ? template.trim() : "";
-  if (!url || !url.includes("%s")) return null;
-  return {
-    name: (() => {
-      try { return new URL(url.replace("%s", "q")).hostname.replace(/^www\./, ""); }
-      catch (error) { return "Custom"; }
-    })(),
-    // The template carries the query where %s sits, so the usual
-    // "url + encoded query" contract is expressed as a prefix and a suffix.
-    url,
-    custom: true,
-    suggUrl: null,
-    icon: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2c1.7 0 3.3.6 4.6 1.6l-2 2A5 5 0 0 0 12 7a5 5 0 0 0-5 5c0 .9.2 1.7.6 2.4l-2 2A8 8 0 0 1 12 4zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm6.4.6A8 8 0 0 1 12 20a8 8 0 0 1-4.6-1.6l2-2A5 5 0 0 0 12 17a5 5 0 0 0 5-5c0-.9-.2-1.7-.6-2.4l2-2z"/></svg>`
-  };
-}
-
-const SEARCH_ENGINES = {
-  google: {
-    name: "Google",
-    url: "https://www.google.com/search?q=",
-    suggUrl: "https://suggestqueries.google.com/complete/search?client=chrome&q=",
-    icon: `<svg viewBox="0 0 24 24"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/></svg>`
-  },
-  duckduckgo: {
-    name: "DuckDuckGo",
-    url: "https://duckduckgo.com/?q=",
-    suggUrl: "https://duckduckgo.com/ac/?q=",
-    icon: `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.76 4.4c2.81 0 5.09 2.05 5.09 4.58 0 2.25-1.52 4.17-3.66 4.52.12.31.2.65.2 1 0 1.57-1.38 2.85-3.08 2.85-.46 0-.9-.1-1.29-.27-.88.67-2 1.07-3.22 1.07-2.67 0-4.88-1.91-5.18-4.43-.07-.59-.1-1.19-.1-1.81 0-4.14 3.74-7.5 8.35-7.5.96 0 1.88.14 2.75.41-.53-.26-1.13-.41-1.76-.41-1.74 0-3.21.99-3.87 2.41 1.08-.5 2.3-.78 3.6-.78.43 0 .84.03 1.25.1a3.54 3.54 0 0 0-.09-.72c-.2-.73-.62-1.35-1.2-1.79.88-.13 1.77-.2 2.68-.2zm-3.06 4.9a1.05 1.05 0 1 0 0 2.1 1.05 1.05 0 0 0 0-2.1zm5.2 2.68c.67-.38 1.12-1.1 1.12-1.93 0-1.24-1.01-2.25-2.25-2.25-.43 0-.83.12-1.17.33.88.58 1.57 1.45 1.95 2.48.12.44.2.9.23 1.37h.12z"/></svg>`
-  },
-  bing: {
-    name: "Bing",
-    url: "https://www.bing.com/search?q=",
-    suggUrl: "https://api.bing.com/osjson.aspx?query=",
-    icon: `<svg viewBox="0 0 24 24"><path d="M5 3v18l5-2.5V8.5l6.5 2.5L13 13.5l3.5 4.5 4.5-2V7.5L5 3z"/></svg>`
-  },
-  brave: {
-    name: "Brave",
-    url: "https://search.brave.com/search?q=",
-    suggUrl: "https://search.brave.com/api/suggest?q=",
-    icon: `<svg viewBox="0 0 24 24"><path d="M12 2l8 4.5v6c0 5.5-3.5 10.5-8 12-4.5-1.5-8-6.5-8-12v-6L12 2zm0 3.2L6 8.5v4.2c0 4.2 2.6 8 6 9.3 3.4-1.3 6-5.1 6-9.3V8.5L12 5.2z"/></svg>`
-  },
-  ecosia: {
-    name: "Ecosia",
-    url: "https://www.ecosia.org/search?q=",
-    suggUrl: "https://ac.ecosia.org/autocomplete?q=",
-    icon: `<svg viewBox="0 0 24 24"><path d="M12 2C7.5 2 4 5.5 4 10c0 3.3 2 6.1 5 7.3V21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-3.7c3-1.2 5-4 5-7.3 0-4.5-3.5-8-8-8zm1 14.9V20h-2v-3.1c-.33-.07-.66-.17-.97-.3l1.97-6.6 2 6.6c-.32.14-.66.24-1 .3zm3.88-2.67l-2.02-6.72c.74-.6 1.6-1.05 2.58-1.3a6.02 6.02 0 0 1-.56 8.02zM12 4c1.35 0 2.59.45 3.6 1.2-1.13.3-2.15.86-3 1.63a6.05 6.05 0 0 0-3-1.63C10.6 4.45 11.25 4 12 4zM7.56 6.21c.98.25 1.84.7 2.58 1.3l-2.02 6.72a6.02 6.02 0 0 1-.56-8.02z"/></svg>`
-  },
-  yandex: {
-    name: "Yandex",
-    url: "https://yandex.com/search/?text=",
-    suggUrl: "https://suggest.yandex.com/suggest-ff.cgi?part=",
-    icon: `<svg viewBox="0 0 24 24"><path d="M13.2 2H8.3C5.4 2 3.8 3.6 3.8 6.5c0 2.6 1.3 4.2 3.5 4.8L2 22h3.8l4.7-9.5H12V22h3.6V2h-2.4zm-1.2 7.5H8.5c-1.3 0-2-.7-2-1.9 0-1.2.7-1.9 2-1.9H12v3.8z"/></svg>`
-  },
-  youtube: {
-    name: "YouTube",
-    url: "https://www.youtube.com/results?search_query=",
-    suggUrl: "https://suggestqueries.google.com/complete/search?client=chrome&ds=yt&q=",
-    icon: `<svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`
-  },
-  github: {
-    name: "GitHub",
-    url: "https://github.com/search?q=",
-    suggUrl: "https://suggestqueries.google.com/complete/search?client=chrome&q=",
-    icon: `<svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>`
-  },
-  reddit: {
-    name: "Reddit",
-    url: "https://www.reddit.com/search/?q=",
-    suggUrl: "https://suggestqueries.google.com/complete/search?client=chrome&q=",
-    icon: `<svg viewBox="0 0 24 24"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.56 1.25 1.248a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.308.736-.499 1.208-.499.955 0 1.73.774 1.73 1.73 0 .634-.344 1.187-.852 1.483.04.28.06.565.06.853 0 4.18-4.78 7.57-10.68 7.57S3.7 18.23 3.7 14.05c0-.288.02-.573.06-.853-.508-.296-.852-.849-.852-1.483 0-.956.775-1.73 1.73-1.73.472 0 .9.191 1.208.5 1.194-.856 2.85-1.418 4.674-1.488l.947-4.437a.377.377 0 0 1 .45-.296l3.08.647c.18-.387.573-.66 1.013-.66zm-7.618 6.78a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88zm5.216 0a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88zm-5.114 4.542a.37.37 0 0 0-.26.634c.77.77 2.14.97 2.768.97.63 0 1.998-.2 2.768-.97a.37.37 0 0 0-.52-.524c-.55.55-1.63.73-2.248.73-.62 0-1.698-.18-2.248-.73a.366.366 0 0 0-.26-.11z"/></svg>`
-  },
-  wikipedia: {
-    name: "Wikipedia",
-    url: "https://en.wikipedia.org/wiki/Special:Search?search=",
-    suggUrl: "https://en.wikipedia.org/w/api.php?action=opensearch&format=json&origin=*&search=",
-    icon: `<svg viewBox="0 0 24 24"><path d="M12.09 13.34l-2.5-6.9H6.91L2 20.9h3.42l1.32-3.87h4.81l1.32 3.87h2.88l1.32-3.87h4.81l1.32 3.87H22L17.09 6.44h-2.68l-2.32 6.9zm-4.32 1.34l1.41-4.14 1.41 4.14H7.77zm7.45 0l1.41-4.14 1.41 4.14h-2.82z"/></svg>`
-  }
-};
-
-const BANGS = {
-  "!g": "https://www.google.com/search?q=",
-  "!d": "https://duckduckgo.com/?q=",
-  "!ddg": "https://duckduckgo.com/?q=",
-  "!b": "https://www.bing.com/search?q=",
-  "!bing": "https://www.bing.com/search?q=",
-  "!br": "https://search.brave.com/search?q=",
-  "!brave": "https://search.brave.com/search?q=",
-  "!e": "https://www.ecosia.org/search?q=",
-  "!eco": "https://www.ecosia.org/search?q=",
-  "!ya": "https://yandex.com/search/?text=",
-  "!yandex": "https://yandex.com/search/?text=",
-  "!y": "https://www.youtube.com/results?search_query=",
-  "!yt": "https://www.youtube.com/results?search_query=",
-  "!gh": "https://github.com/search?q=",
-  "!github": "https://github.com/search?q=",
-  "!w": "https://en.wikipedia.org/wiki/Special:Search?search=",
-  "!wiki": "https://en.wikipedia.org/wiki/Special:Search?search=",
-  "!r": "https://www.reddit.com/search/?q=",
-  "!reddit": "https://www.reddit.com/search/?q=",
-  "!bsky": "https://bsky.app/search?q=",
-  "!c": "https://chatgpt.com/?q=",
-  "!p": "https://www.perplexity.ai/search?q=",
-  "!a": "https://www.amazon.com/s?k="
-};
+/* Search goes to whichever engine the user has already chosen in Chrome, through
+   the browser's own API. The page does not know which engine that is and does
+   not need to. It used to carry its own table of ten, a bang syntax to switch
+   between them per query, and a template for a custom one — and the store's
+   reviewers read all of that as a second product bolted onto the first: a new
+   tab page that also changes search settings. They are right that it was two
+   things. Choosing a search engine is Chrome's job, and Chrome has a setting
+   for it that this page now honours instead of duplicating. */
 
 const LOCALE_MAP = {
   en: "en-US",
@@ -215,8 +114,6 @@ class SearchWidget {
     this.app = app;
     this.input = document.getElementById("q");
     this.sugg = document.getElementById("sugg");
-    this.engineBtn = document.getElementById("engine-selector");
-    this.activeEngine = this.cfg.defaultEngine || "google";
     this.suggDebounce = null;
     this.selIdx = -1;
     this.queryToken = 0; // guards against out-of-order async suggestion responses
@@ -233,9 +130,7 @@ class SearchWidget {
     this.input.setAttribute("aria-expanded", "false");
     this.sugg?.setAttribute("role", "listbox");
 
-    this.updateEngineIcon();
-
-    this.engineBtn?.addEventListener("click", () => this.cycleEngine());
+    this.refreshLabels();
 
     // Input events
     this.input.addEventListener("input", () => this.onInput());
@@ -282,50 +177,9 @@ class SearchWidget {
     });
   }
 
-  setEngine(engineKey) {
-    // The custom engine is deliberately not in the table: it is built from the
-    // user's own template, so the table cannot be the test of what is valid.
-    if (SEARCH_ENGINES[engineKey] || engineKey === CUSTOM_ENGINE_KEY) {
-      this.activeEngine = engineKey;
-      this.cfg.defaultEngine = engineKey;
-      if (this.app) {
-        this.app.config.defaultEngine = engineKey;
-        this.app.saveConfig();
-      }
-      this.updateEngineIcon();
-    }
-  }
-
-  cycleEngine() {
-    const engines = Object.keys(SEARCH_ENGINES);
-    const idx = engines.indexOf(this.activeEngine);
-    const nextEngine = engines[(idx + 1) % engines.length];
-    this.setEngine(nextEngine);
-
-    const sel = document.getElementById("cfg-default-engine");
-    if (sel) sel.value = nextEngine;
-  }
-
-  /* One place decides which engine is in play, so the icon, the tooltip, the
-     suggestions and the destination cannot disagree about it. */
-  resolveEngine() {
-    if (this.activeEngine === CUSTOM_ENGINE_KEY) {
-      const built = customEngine(this.app?.config?.customEngineUrl);
-      if (built) return built;
-      // A custom engine that is not usable falls back rather than doing nothing.
-      return SEARCH_ENGINES.google;
-    }
-    return SEARCH_ENGINES[this.activeEngine] || SEARCH_ENGINES.google;
-  }
-
-  updateEngineIcon() {
-    const engine = this.resolveEngine();
-    if (this.engineBtn) {
-      this.engineBtn.innerHTML = engine.icon;
-      this.engineBtn.title = window.I18N ? window.I18N.t('search.engineTitle', { engine: engine.name }) : `Search with ${engine.name} (Click to switch)`;
-    }
+  refreshLabels() {
     if (this.input) {
-      this.input.placeholder = window.I18N ? window.I18N.t('search.placeholder') : 'Search or enter URL';
+      this.input.placeholder = window.I18N ? window.I18N.t("search.placeholder") : "Search or enter URL";
     }
   }
 
@@ -375,8 +229,7 @@ class SearchWidget {
       query: "",
       calcResult: null,
       bookmarkMatches: [],
-      historyMatches: recent,
-      webSuggestions: []
+      historyMatches: recent
     });
   }
 
@@ -465,28 +318,6 @@ class SearchWidget {
     const bookmarkMatches = this.findMatchingBookmarks(query);
     const historyMatches = this.getSearchHistory(query);
 
-    let webSuggestions = [];
-    if (this.cfg.showSuggestions !== false) {
-      try {
-        const engine = this.resolveEngine();
-        const suggUrl = engine.suggUrl || SEARCH_ENGINES.google.suggUrl;
-        const res = await fetch(suggUrl + encodeURIComponent(query));
-        const data = await res.json();
-        if (Array.isArray(data) && Array.isArray(data[1])) {
-          // OpenSearch standard format: [query, [suggestions...]]
-          webSuggestions = data[1].slice(0, 5).filter(s => typeof s === "string");
-        } else if (Array.isArray(data) && data[0] && typeof data[0].phrase === "string") {
-          // DuckDuckGo format: [{phrase}, ...]
-          webSuggestions = data.slice(0, 5).map(item => item.phrase);
-        } else if (Array.isArray(data) && typeof data[0] === "string") {
-          webSuggestions = data.slice(0, 5);
-        } else if (data && Array.isArray(data.suggestions)) {
-          // Ecosia format: { suggestions: [...] }
-          webSuggestions = data.suggestions.slice(0, 5).map(s => (typeof s === "string" ? s : s.title || s.phrase || "")).filter(Boolean);
-        }
-      } catch (e) {}
-    }
-
     if (token !== this.queryToken) return;
     if (!this.input.value.trim()) {
       if (document.activeElement === this.input) {
@@ -497,16 +328,15 @@ class SearchWidget {
       return;
     }
 
-    this.renderSuggestions({
-      query,
-      calcResult,
-      bookmarkMatches,
-      historyMatches,
-      webSuggestions
-    });
+    /* Calculator, the user's own tiles, and what they searched before — all of
+       it local. There used to be a fourth source, live suggestions fetched from
+       the chosen engine as you typed. The page no longer knows the engine, and
+       sending every keystroke to a third party was the one thing the privacy
+       page had to add a caveat about. */
+    this.renderSuggestions({ query, calcResult, bookmarkMatches, historyMatches });
   }
 
-  renderSuggestions({ query, calcResult, bookmarkMatches, historyMatches, webSuggestions }) {
+  renderSuggestions({ query, calcResult, bookmarkMatches, historyMatches }) {
     if (!this.sugg) return;
     this.sugg.replaceChildren();
     this.selIdx = -1;
@@ -591,23 +421,6 @@ class SearchWidget {
           this.executeSearch(histItem);
         });
         this.sugg.appendChild(histRow);
-      });
-    }
-
-    // 4. Web Autocomplete Suggestions
-    if (webSuggestions && webSuggestions.length > 0) {
-      webSuggestions.forEach((item) => {
-        const row = document.createElement("div");
-        row.className = "sugg-item sugg-web";
-        row.style.setProperty("--si", itemIndex++);
-        row.innerHTML = `<svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg> <span></span>`;
-        row.querySelector("span").textContent = item;
-        row.addEventListener("mousedown", (e) => {
-          e.preventDefault();
-          this.input.value = item;
-          this.executeSearch(item);
-        });
-        this.sugg.appendChild(row);
       });
     }
 
@@ -710,29 +523,27 @@ class SearchWidget {
       return;
     }
 
-    // Check Bangs
-    for (const b in BANGS) {
-      if (query === b || query.startsWith(b + " ")) {
-        const term = query.slice(b.length).trim();
-        const dest = term ? BANGS[b] + encodeURIComponent(term) : BANGS[b].split("?")[0];
-        if (this.app?.config?.openNewTab) {
-          window.open(dest, "_blank", "noopener,noreferrer");
-        } else {
-          window.location.href = dest;
-        }
-        return;
-      }
-    }
+    this.searchWithBrowser(query);
+  }
 
-    // Default engine search
-    const engine = this.resolveEngine();
-    const dest = engine.custom
-      ? engine.url.replace("%s", encodeURIComponent(query))
-      : engine.url + encodeURIComponent(query);
-    if (this.app?.config?.openNewTab) {
-      window.open(dest, "_blank", "noopener,noreferrer");
-    } else {
-      window.location.href = dest;
+  /* chrome.search.query hands the text to the engine set in Chrome's own
+     settings, in this tab or a new one. There is deliberately no fallback to a
+     hard-coded engine: a page that quietly sends people to Google when the API
+     is missing has made the very choice it is not supposed to make. The API is
+     missing only where the "search" permission is, which is nowhere a user
+     will ever run this. */
+  searchWithBrowser(text) {
+    const api = (typeof chrome !== "undefined" && chrome.search) ? chrome.search : null;
+    if (!api) {
+      NordlysUI.announce(window.I18N ? window.I18N.t("search.unavailable") : "Search is not available here");
+      return;
+    }
+    const disposition = this.app?.config?.openNewTab ? "NEW_TAB" : "CURRENT_TAB";
+    try {
+      const pending = api.query({ text, disposition });
+      if (pending && typeof pending.catch === "function") pending.catch(() => {});
+    } catch (error) {
+      /* Refused, and the page is still here to try again. */
     }
   }
 }
@@ -749,13 +560,7 @@ class WidgetsController {
     this.clock.update();
   }
 
-  updateEngineIcon() {
-    this.search?.updateEngineIcon();
-  }
-
-  /* The search widget decides which engine is in play; the controller is the
-     only thing the rest of the app holds a reference to. */
-  resolveEngine() {
-    return this.search?.resolveEngine();
+  refreshLabels() {
+    this.search?.refreshLabels();
   }
 }

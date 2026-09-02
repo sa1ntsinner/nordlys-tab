@@ -6,7 +6,7 @@ This guide covers the exact manual steps to publish **Nordlys** on **GitHub** an
 
 ## 📋 Pre-Release Summary
 
-- [x] **Extension Architecture**: Manifest V3 compliant, zero external CDN dependencies, fast cold startup, no `<all_urls>` host permission (only allow-listed suggestion/icon hosts for user-triggered features).
+- [x] **Extension Architecture**: Manifest V3 compliant, zero external CDN dependencies, fast cold startup, no `<all_urls>` host permission (one allow-listed icon host, used only when the user pastes an icon address). Search goes through `chrome.search` to the engine set in Chrome; the extension has no engine setting of its own.
 - [x] **Icons Package**: 16x16, 32x32, 48x48, 128x128 PNG icons ready in `icons/`.
 - [x] **Privacy Compliance**: Zero-telemetry `PRIVACY.md` whose "Optional Network Features" section matches the manifest exactly.
 - [x] **UI/UX Polish**: 21 built-in themes (11 dark + 10 light) with per-theme canvas shader palettes, Dark/Light/Auto system mode, custom theme studio with live preview, drag-and-drop folders, context menus everywhere, glass confirm dialogs & toasts, instant calculator with 10 search engines, video/image wallpapers with blur & dim, Netscape HTML bookmarks import/export.
@@ -27,8 +27,8 @@ git push
 Tag a release when publishing a new store version:
 
 ```powershell
-git tag -a v2.2.1 -m "Release v2.2.1"
-git push origin v2.2.1
+git tag -a v2.2.2 -m "Release v2.2.2"
+git push origin v2.2.2
 ```
 
 ---
@@ -39,10 +39,10 @@ Google Chrome Web Store requires a `.zip` archive where `manifest.json` is at th
 
 ### On Windows (PowerShell), from inside the project directory:
 ```powershell
-Compress-Archive -Path manifest.json, newtab.html, PRIVACY.md, README.md, LICENSE, icons, src -DestinationPath nordlys-v2.2.1.zip -Force
+Compress-Archive -Path manifest.json, newtab.html, PRIVACY.md, README.md, LICENSE, icons, src -DestinationPath nordlys-v2.2.2.zip -Force
 ```
 
-This generates `nordlys-v2.2.1.zip` ready for upload.
+This generates `nordlys-v2.2.2.zip` ready for upload.
 
 ---
 
@@ -59,7 +59,7 @@ This generates `nordlys-v2.2.1.zip` ready for upload.
 ## 🏪 Step 4: Fill Store Listing in Developer Dashboard
 
 1. In the [Developer Dashboard](https://chrome.google.com/webstore/devconsole), click **`+ New Item`**.
-2. Upload `nordlys-v2.2.1.zip`.
+2. Upload `nordlys-v2.2.2.zip`.
 
 ### 4.1 Store Listing Details
 - **Title**: `Nordlys — Aesthetic Glass Dashboard` (Max 45 chars)
@@ -83,7 +83,7 @@ Fill in the **Privacy** tab in the Developer Console exactly as follows:
    - `storage`: *"Required to save user preferences, bookmark folders, themes, and custom CSS locally on the device."*
    - `unlimitedStorage`: *"Allows users to save custom high-resolution background wallpapers and video loops locally without hitting quota limits."*
    - `favicon`: *"Allows displaying website favicons from Chrome's local favicon cache on user bookmark tiles."*
-   - Hosts `suggestqueries.google.com`, `duckduckgo.com`, `api.bing.com`, `search.brave.com`, `ac.ecosia.org`, `suggest.yandex.com`, `en.wikipedia.org`: *"Fetches search autocomplete suggestions for the query the user is currently typing, from the engine the user selected. Can be disabled in Settings."*
+   - `search`: *"Sends the text typed in the new tab page's search box to the search engine the user has set in Chrome, via chrome.search.query. The extension has no engine of its own and never chooses one."*
    - Host `images.weserv.nl`: *"Image proxy fallback used only when the user pastes a custom icon URL whose host blocks cross-origin loading."*
 3. **Data Usage**:
    - Select: **"I do not collect or use any user data"**.

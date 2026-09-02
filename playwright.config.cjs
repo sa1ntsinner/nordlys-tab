@@ -7,6 +7,10 @@ module.exports = defineConfig({
      extension whose directory holds any such file. */
   testIgnore: '**/*.sweep.cjs',
   timeout: 30_000, expect: { timeout: 5_000 },
-  fullyParallel: false, workers: 1, reporter: [['list'], ['html', { open: 'never' }]],
+  /* Every test starts its own static server on an ephemeral port, so each one
+     is its own origin with its own localStorage — nothing is shared between
+     them, and running them one at a time was five minutes of waiting for no
+     reason. Visual snapshots are per-test and unaffected by ordering. */
+  fullyParallel: true, workers: process.env.CI ? 2 : 4, reporter: [['list'], ['html', { open: 'never' }]],
   use: { browserName: 'chromium', headless: true, viewport: { width: 1440, height: 900 }, colorScheme: 'dark', reducedMotion: 'no-preference', locale: 'en-US' }
 });
