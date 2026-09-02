@@ -57,7 +57,7 @@ test('no theme can override the chosen glass level', async ({ nordlysPage }) => 
   await chooseGlass(page, 'off');
 
   for (const theme of ['aurora-void', 'porcelain-light', 'gruvbox-dark', 'mint-breeze', 'oled-obsidian']) {
-    await page.evaluate(key => window.Aurora.setTheme(key), theme);
+    await page.evaluate(key => window.Nordlys.setTheme(key), theme);
     await page.waitForTimeout(120);
     expect(blurOf(await cardFilter(page)), `${theme} must respect None`).toBe(0);
   }
@@ -70,7 +70,7 @@ test('the level survives a reload', async ({ nordlysPage }) => {
   await chooseGlass(page, 'subtle');
 
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   await expect(page.locator('html')).toHaveAttribute('data-glass', 'subtle');
   expect(blurOf(await cardFilter(page)), 'and still renders as subtle').toBeGreaterThan(0);
 });
@@ -81,19 +81,19 @@ test('a configuration from the four old sliders lands on the right level', async
   const { page } = nordlysPage;
   for (const [blur, expected] of [[0, 'off'], [10, 'subtle'], [28, 'full'], [48, 'full']]) {
     await page.evaluate(value => {
-      const config = window.Aurora.config;
+      const config = window.Nordlys.config;
       delete config.glassLevel;
       config.glassBlur = value;
       config.glassSaturate = 190;
       config.glassOpacity = 0.7;
       config.glassSheen = 0.45;
-      window.Aurora.saveConfig();
+      window.Nordlys.saveConfig();
     }, blur);
     await page.reload();
-    await page.waitForFunction(() => Boolean(window.Aurora?.grid));
-    expect(await page.evaluate(() => window.Aurora.config.glassLevel), `blur ${blur}`).toBe(expected);
+    await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+    expect(await page.evaluate(() => window.Nordlys.config.glassLevel), `blur ${blur}`).toBe(expected);
     // And the keys it replaced are gone rather than left as litter.
-    expect(await page.evaluate(() => 'glassBlur' in window.Aurora.config)).toBe(false);
+    expect(await page.evaluate(() => 'glassBlur' in window.Nordlys.config)).toBe(false);
   }
 });
 
@@ -102,7 +102,7 @@ test('a configuration from the four old sliders lands on the right level', async
 test('the clock is plain type on every theme', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   for (const theme of ['aurora-void', 'porcelain-light', 'warm-ivory', 'sage-light', 'nordic-snow', 'oled-obsidian']) {
-    await page.evaluate(key => window.Aurora.setTheme(key), theme);
+    await page.evaluate(key => window.Nordlys.setTheme(key), theme);
     await page.waitForTimeout(120);
     const clock = await page.evaluate(() => {
       const style = getComputedStyle(document.getElementById('clock'));
@@ -119,7 +119,7 @@ test('the clock is plain type on every theme', async ({ nordlysPage }) => {
 test('cards are surfaces, not clipped text', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   for (const theme of ['porcelain-light', 'sage-light', 'warm-ivory']) {
-    await page.evaluate(key => window.Aurora.setTheme(key), theme);
+    await page.evaluate(key => window.Nordlys.setTheme(key), theme);
     await page.waitForTimeout(120);
     const card = await page.evaluate(() => {
       const style = getComputedStyle(document.querySelector('#board .card'));

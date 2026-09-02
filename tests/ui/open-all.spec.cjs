@@ -13,14 +13,14 @@ async function openFolderMenu(page, index = 0) {
 test('a small folder opens without ceremony', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.evaluate(() => {
-    window.Aurora.config.groups = [{
+    window.Nordlys.config.groups = [{
       label: 'SHORT', cols: 3, hidden: false, links: [
         { name: 'One', url: 'https://one.test/', icon: 'globe', color: '#7c9cff' },
         { name: 'Two', url: 'https://two.test/', icon: 'globe', color: '#7c9cff' }
       ]
     }];
-    window.Aurora.saveConfig();
-    window.Aurora.grid.render();
+    window.Nordlys.saveConfig();
+    window.Nordlys.grid.render();
     // Count the openings without actually opening anything.
     window.__opened = [];
     window.open = url => { window.__opened.push(url); return null; };
@@ -38,14 +38,14 @@ test('a small folder opens without ceremony', async ({ nordlysPage }) => {
 test('a large folder asks first, and takes no for an answer', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.evaluate(() => {
-    window.Aurora.config.groups = [{
+    window.Nordlys.config.groups = [{
       label: 'MANY', cols: 4, hidden: false,
       links: Array.from({ length: 9 }, (unused, index) => ({
         name: `Link ${index}`, url: `https://many-${index}.test/`, icon: 'globe', color: '#7c9cff'
       }))
     }];
-    window.Aurora.saveConfig();
-    window.Aurora.grid.render();
+    window.Nordlys.saveConfig();
+    window.Nordlys.grid.render();
     window.__opened = [];
     window.open = url => { window.__opened.push(url); return null; };
   });
@@ -65,9 +65,9 @@ test('a large folder asks first, and takes no for an answer', async ({ nordlysPa
 test('an empty folder does nothing at all', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.evaluate(() => {
-    window.Aurora.config.groups = [{ label: 'EMPTY', cols: 3, hidden: false, links: [] }];
-    window.Aurora.saveConfig();
-    window.Aurora.grid.render();
+    window.Nordlys.config.groups = [{ label: 'EMPTY', cols: 3, hidden: false, links: [] }];
+    window.Nordlys.saveConfig();
+    window.Nordlys.grid.render();
     window.__opened = [];
     window.open = url => { window.__opened.push(url); return null; };
   });

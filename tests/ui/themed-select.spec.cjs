@@ -115,7 +115,7 @@ test('font options preview themselves and reach the canvas', async ({ nordlysPag
   const georgia = page.locator('.nl-select-list.open [role="option"]', { hasText: /^Georgia$/ });
   await georgia.click();
   await expect(page.locator('.nl-select-list.open')).toBeHidden();
-  await expect.poll(() => page.evaluate(() => window.Aurora.config.fonts?.display)).toBe('Georgia');
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.fonts?.display)).toBe('Georgia');
   expect(await page.evaluate(() => getComputedStyle(document.getElementById('clock')).fontFamily)).toContain('Georgia');
 });
 

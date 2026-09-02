@@ -23,8 +23,8 @@ test('both bundled faces load and drive the default stacks', async ({ nordlysPag
 test('a chosen family reaches its slot token and survives a reload', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.evaluate(() => {
-    window.Aurora.config.fonts = { display: 'Georgia', interface: 'Arial', mono: 'Consolas' };
-    window.Aurora.saveConfig(); window.Aurora.applyThemeTokens();
+    window.Nordlys.config.fonts = { display: 'Georgia', interface: 'Arial', mono: 'Consolas' };
+    window.Nordlys.saveConfig(); window.Nordlys.applyThemeTokens();
   });
   const applied = () => page.evaluate(() => {
     const root = getComputedStyle(document.documentElement);
@@ -42,7 +42,7 @@ test('a chosen family reaches its slot token and survives a reload', async ({ no
   expect(before.main).toContain('Segoe UI');
 
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   expect(await applied()).toEqual(before);
 });
 

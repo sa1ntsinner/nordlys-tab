@@ -39,10 +39,10 @@ test('the choice survives a reload', async ({ nordlysPage }) => {
   await page.locator('#gear').click();
   await page.locator('#settings-tab-general').click();
   await setHeader(page, 'hidden');
-  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.headerStyle).toBe('hidden');
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.headerStyle).toBe('hidden');
 
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   await expect(page.locator('#hero')).toBeHidden();
   // The board is what remains, and it must still be there.
   await expect(page.locator('#board .tile').first()).toBeVisible();

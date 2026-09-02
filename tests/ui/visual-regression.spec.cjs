@@ -58,7 +58,7 @@ test('menu quick edit and keyboard focus states', async ({ nordlysPage }) => {
 
 test('Reduced Motion remains compositionally identical', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  await page.emulateMedia({ reducedMotion: 'reduce' }); await page.reload(); await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  await page.emulateMedia({ reducedMotion: 'reduce' }); await page.reload(); await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   await snapshot(page, 'canvas-reduced-motion-1440.png');
 });
 

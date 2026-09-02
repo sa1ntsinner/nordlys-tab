@@ -187,17 +187,17 @@ class SearchWidget {
     const q = (query || "").trim();
     if (!q || q.length < 2 || /^https?:\/\//i.test(q)) return;
     try {
-      let history = JSON.parse(localStorage.getItem("aurora_search_history") || "[]");
+      let history = JSON.parse(localStorage.getItem("nordlys_search_history") || "[]");
       history = history.filter(item => item.toLowerCase() !== q.toLowerCase());
       history.unshift(q);
       if (history.length > 15) history = history.slice(0, 15);
-      localStorage.setItem("aurora_search_history", JSON.stringify(history));
+      localStorage.setItem("nordlys_search_history", JSON.stringify(history));
     } catch(e) {}
   }
 
   getSearchHistory(filter = "") {
     try {
-      const history = JSON.parse(localStorage.getItem("aurora_search_history") || "[]");
+      const history = JSON.parse(localStorage.getItem("nordlys_search_history") || "[]");
       if (!filter) return history.slice(0, 5);
       const q = filter.toLowerCase();
       return history.filter(item => item.toLowerCase().includes(q) && item.toLowerCase() !== q).slice(0, 3);
@@ -208,9 +208,9 @@ class SearchWidget {
 
   deleteHistoryItem(itemText) {
     try {
-      let history = JSON.parse(localStorage.getItem("aurora_search_history") || "[]");
+      let history = JSON.parse(localStorage.getItem("nordlys_search_history") || "[]");
       history = history.filter(item => item !== itemText);
-      localStorage.setItem("aurora_search_history", JSON.stringify(history));
+      localStorage.setItem("nordlys_search_history", JSON.stringify(history));
       if (!this.input.value.trim()) {
         this.showRecentHistory();
       } else {

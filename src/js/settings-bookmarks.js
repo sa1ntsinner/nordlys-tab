@@ -1,4 +1,4 @@
-/* Compact bookmark settings editor. AuroraApp remains the storage owner. */
+/* Compact bookmark settings editor. NordlysApp remains the storage owner. */
 (function () {
   class NordlysBookmarkSettings {
     constructor({ app, root, openIconPicker }) {

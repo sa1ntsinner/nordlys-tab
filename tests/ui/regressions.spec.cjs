@@ -19,7 +19,7 @@ test('switching themes faster than the transition settles raises nothing', async
   await page.evaluate(async () => {
     const themes = ['oled-obsidian', 'cyberpunk-neon', 'nordic-snow', 'gruvbox-dark', 'mint-breeze', 'aurora-void'];
     for (const theme of themes) {
-      window.Aurora.setTheme(theme);
+      window.Nordlys.setTheme(theme);
       await new Promise(resolve => setTimeout(resolve, 40));
     }
   });

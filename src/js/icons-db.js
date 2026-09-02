@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   AURORATAB 2.0 - ICON DATABASE & DOMAIN AUTO-RESOLVER
+   NORDLYS - ICON DATABASE & DOMAIN AUTO-RESOLVER
    ═══════════════════════════════════════════════════════════════════ */
 
 const ICONS_DB = {

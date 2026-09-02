@@ -72,8 +72,8 @@ const HOSTILE_LINKS = [
 async function seedHostileBoard(page) {
   await page.addStyleTag({ content: '*,*::before,*::after{animation:none!important;transition:none!important}' });
   await page.evaluate(links => {
-    window.Aurora.config.groups = [{ label: 'LEGIBILITY', cols: 5, hidden: false, links }];
-    window.Aurora.saveConfig(); window.Aurora.grid.render();
+    window.Nordlys.config.groups = [{ label: 'LEGIBILITY', cols: 5, hidden: false, links }];
+    window.Nordlys.saveConfig(); window.Nordlys.grid.render();
     document.getElementById('board').classList.add('board-loaded');
   }, HOSTILE_LINKS);
   await expect(page.locator('#board .tile')).toHaveCount(HOSTILE_LINKS.length);
@@ -96,7 +96,7 @@ test('every icon stays visible against its plate in every built-in theme', async
 
   const invisible = [];
   for (const theme of themes) {
-    await page.evaluate(key => window.Aurora.setTheme(key), theme);
+    await page.evaluate(key => window.Nordlys.setTheme(key), theme);
     await page.waitForTimeout(120);
     const ratios = await plateVisibility(page);
     ratios.forEach((ratio, index) => {
@@ -113,7 +113,7 @@ test('every tile plate renders identically', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await seedHostileBoard(page);
   for (const theme of ['oled-obsidian', 'porcelain-light']) {
-    await page.evaluate(key => window.Aurora.setTheme(key), theme);
+    await page.evaluate(key => window.Nordlys.setTheme(key), theme);
     await page.waitForTimeout(150);
     const surfaces = await page.evaluate(() => [...new Set(
       [...document.querySelectorAll('#board .tile .box')].map(box => getComputedStyle(box).backgroundColor)
@@ -125,7 +125,7 @@ test('every tile plate renders identically', async ({ nordlysPage }) => {
 test('a colourless mark is re-toned; a coloured one never is', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await seedHostileBoard(page);
-  await page.evaluate(() => window.Aurora.setTheme('oled-obsidian'));
+  await page.evaluate(() => window.Nordlys.setTheme('oled-obsidian'));
   await page.waitForTimeout(250);
   const toned = await page.evaluate(() => Object.fromEntries(
     [...document.querySelectorAll('#board .tile')].map(tile => [
@@ -144,12 +144,12 @@ test('a colourless mark is re-toned; a coloured one never is', async ({ nordlysP
 test('the per-bookmark choice overrides the automatic decision', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.evaluate(() => {
-    window.Aurora.config.groups = [{ label: 'TONE', cols: 3, hidden: false, links: [
+    window.Nordlys.config.groups = [{ label: 'TONE', cols: 3, hidden: false, links: [
       { name: 'Auto', url: 'https://a.test/', icon: 'github', color: '#000000' },
       { name: 'Left alone', url: 'https://b.test/', icon: 'github', color: '#000000', tone: 'original' },
       { name: 'Forced dark', url: 'https://c.test/', icon: 'github', color: '#ffffff', tone: 'dark' }
     ] }];
-    window.Aurora.saveConfig(); window.Aurora.grid.render();
+    window.Nordlys.saveConfig(); window.Nordlys.grid.render();
   });
   await page.waitForTimeout(250);
   const toned = await page.evaluate(() => Object.fromEntries(
@@ -166,7 +166,7 @@ test('the per-bookmark choice overrides the automatic decision', async ({ nordly
 test('re-toning never touches a coloured brand icon', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await seedHostileBoard(page);
-  await page.evaluate(() => window.Aurora.setTheme('oled-obsidian'));
+  await page.evaluate(() => window.Nordlys.setTheme('oled-obsidian'));
   await page.waitForTimeout(80);
   const painted = await page.locator('#board .tile').nth(4).locator('.nl-icon').evaluate(node => {
     const target = node.querySelector('svg') || node.querySelector('img');
@@ -191,10 +191,10 @@ test('the icon tone can be set from the bookmark editor and survives a reload', 
     select.value = 'dark'; select.dispatchEvent(new Event('change', { bubbles: true }));
   });
   await page.locator('#quick-save-btn').click();
-  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[0]?.links?.[0]?.tone).toBe('dark');
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.groups?.[0]?.links?.[0]?.tone).toBe('dark');
   await expect(page.locator('#board .tile').first().locator('.nl-icon')).toHaveAttribute('data-icon-tone', 'dark');
 
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   await expect(page.locator('#board .tile').first().locator('.nl-icon')).toHaveAttribute('data-icon-tone', 'dark');
 });

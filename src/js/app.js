@@ -95,8 +95,37 @@ const THEME_INLINE_TOKENS = [
 ];
 
 /* Single source of truth for storage keys and theme classification */
-const STORAGE_KEY = "aether_tab_config";
-const LEGACY_STORAGE_KEY = "aurora_tab_config";
+/* The product is called Nordlys and so is everything it writes. It was not
+   always: the first storage key was "aurora_tab_config", the second
+   "aether_tab_config", and the class names, the global, the event names and
+   the IndexedDB database all carried the earlier name too. Three names for one
+   thing is the surest sign that three different hands built it. Every key an
+   older build wrote is listed here and moved under the new name on first run,
+   so nobody's setup is lost to a rename. */
+const STORAGE_KEY = "nordlys_config";
+const LEGACY_STORAGE_KEYS = ["aether_tab_config", "aurora_tab_config"];
+const LEGACY_LOCAL_KEYS = {
+  "aether_tab_config": STORAGE_KEY,
+  "aurora_tab_config": STORAGE_KEY,
+  "aurora_search_history": "nordlys_search_history",
+  "aurora_language": "nordlys_language",
+  "aurora_drawer_width": "nordlys_drawer_width",
+  "aurora_custom_themes": "nordlys_custom_themes"
+};
+
+/* Runs before anything reads storage. A new key that already exists wins; an
+   old key is copied only into an empty new one, then removed, so the move
+   happens exactly once and a fresh install never sees it at all. */
+function adoptLegacyLocalStorage() {
+  try {
+    for (const [oldKey, newKey] of Object.entries(LEGACY_LOCAL_KEYS)) {
+      const value = localStorage.getItem(oldKey);
+      if (value === null) continue;
+      if (localStorage.getItem(newKey) === null) localStorage.setItem(newKey, value);
+      localStorage.removeItem(oldKey);
+    }
+  } catch (error) { /* storage unavailable: nothing to move, nothing to lose */ }
+}
 /* The last state that existed before a migration rewrote it. */
 const RESTORE_POINT_KEY = "nordlys_restore_point";
 const LIGHT_THEMES = [
@@ -133,8 +162,9 @@ const THEME_MIGRATIONS = {
   "boreal": "boreal-emerald"
 };
 
-class AuroraApp {
+class NordlysApp {
   constructor() {
+    adoptLegacyLocalStorage();
     this.defaultConfig = DEFAULT_CONFIG;
     this.config = this.loadConfig();
     this.mediaObjectUrl = null;
@@ -238,16 +268,21 @@ class AuroraApp {
     const point = this.restorePoint();
     if (!point || !point.config) return false;
     this.config = Object.assign({}, DEFAULT_CONFIG, point.config);
+    this.loadedFromStore = true;
     this.saveConfig();
     return true;
   }
 
   loadConfig() {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
+      const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         const cfg = Object.assign({}, DEFAULT_CONFIG, parsed);
+        /* Remembered for the mirror: only a config this instance loaded or
+           adopted from a store may ever be written there. The defaults it
+           starts on when nothing is stored must not be. */
+        this.loadedFromStore = true;
         if (this.normalizeStoredConfig(cfg)) {
           // Keep what the user had, exactly as it was, before writing over it.
           this.snapshotBeforeMigration(parsed);
@@ -257,6 +292,7 @@ class AuroraApp {
         return cfg;
       }
     } catch (e) {}
+    this.loadedFromStore = false;
     return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
   }
 
@@ -269,46 +305,84 @@ class AuroraApp {
     } catch (e) {}
   }
 
-  /* If localStorage was wiped but chrome.storage still holds a config, restore it. */
+  /* chrome.storage is the page's backup copy, and the only copy left when Chrome
+     clears site data. This is the one place that reads it.
+
+     The rule is about this instance, not about the stores. If this page started
+     on defaults because nothing was stored, then anything real that exists by
+     the time the answer arrives is adopted — from localStorage first, since a
+     second tab may have restored and written it while this request was in
+     flight, and from the mirror otherwise. And the mirror is only ever written
+     with a config that was loaded or adopted from a store. Two earlier versions
+     of this method broke that rule in two ways. One tidied the mirror from a
+     separate call while the live config was still defaults, and wrote defaults
+     over the only copy. The next keyed the adopt decision on whether
+     localStorage was empty at callback time: with two tabs opening at once — an
+     extension update reloads every open new-tab page together — the second
+     tab's callback found localStorage already filled by the first, skipped the
+     adopt, and published its own defaults to the mirror. Both were reproduced
+     in a real Chromium before they shipped. */
   restoreFromChromeStorage() {
-    if (localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY)) return;
     if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) return;
     try {
-      chrome.storage.local.get([STORAGE_KEY, LEGACY_STORAGE_KEY], (data) => {
-        const saved = data && (data[STORAGE_KEY] || data[LEGACY_STORAGE_KEY]);
-        if (saved && saved.groups && !localStorage.getItem(STORAGE_KEY)) {
-          this.config = Object.assign({}, DEFAULT_CONFIG, saved);
-          const migrated = this.normalizeStoredConfig(this.config);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(this.config));
-          if (migrated) chrome.storage.local.set({ [STORAGE_KEY]: this.config });
-          this.applyThemeTokens();
-          this.applyGeometryTokens();
-          this.applyHeaderStyle();
-          this.applyGlassLevel();
-          this.injectCustomCSS(this.config.customCss || "");
-          this.updateBackgroundMode();
-          this.grid?.render();
-          this.widgets?.updateClock();
-          const cssEditor = document.getElementById("css-editor");
-          if (cssEditor) cssEditor.value = this.config.customCss || "";
-          if (typeof toast === "function") {
-            toast(window.I18N ? window.I18N.t("toast.restored") : "Settings restored from browser storage", "success");
+      chrome.storage.local.get([STORAGE_KEY, ...LEGACY_STORAGE_KEYS], (data) => {
+        if (!data) return;
+        const legacyPresent = LEGACY_STORAGE_KEYS.some((key) => data[key] !== undefined);
+        let migrated = false;
+
+        if (!this.loadedFromStore) {
+          let source = null;
+          let fromMirror = false;
+          try {
+            const written = localStorage.getItem(STORAGE_KEY);
+            if (written) source = JSON.parse(written);
+          } catch (e) {}
+          if (!source) {
+            source = data[STORAGE_KEY] || LEGACY_STORAGE_KEYS.map((key) => data[key]).find(Boolean);
+            fromMirror = Boolean(source);
+          }
+          if (source && source.groups) {
+            this.config = Object.assign({}, DEFAULT_CONFIG, source);
+            migrated = this.normalizeStoredConfig(this.config);
+            if (migrated) this.snapshotBeforeMigration(source);
+            this.loadedFromStore = true;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.config));
+            this.applyThemeTokens();
+            this.applyGeometryTokens();
+            this.applyHeaderStyle();
+            this.applyGlassLevel();
+            this.injectCustomCSS(this.config.customCss || "");
+            this.updateBackgroundMode();
+            this.grid?.render();
+            this.widgets?.updateClock();
+            const cssEditor = document.getElementById("css-editor");
+            if (cssEditor) cssEditor.value = this.config.customCss || "";
+            if (fromMirror && typeof toast === "function") {
+              toast(window.I18N ? window.I18N.t("toast.restored") : "Settings restored from browser storage", "success");
+            }
           }
         }
+
+        /* Never with defaults. Rewritten when the mirror carried an old key, and
+           when what came in needed a migration — otherwise the backup keeps a
+           shape the code no longer reads and restores it un-migrated next time. */
+        if (!this.loadedFromStore) return;
+        if (legacyPresent || migrated) chrome.storage.local.set({ [STORAGE_KEY]: this.config });
+        if (legacyPresent) chrome.storage.local.remove(LEGACY_STORAGE_KEYS);
       });
     } catch (e) {}
   }
 
   init() {
     // Initialize I18N (config -> saved pick -> browser language)
-    const savedLang = localStorage.getItem("aurora_language");
+    const savedLang = localStorage.getItem("nordlys_language");
     const supported = window.I18N ? Object.keys(window.I18N.translations) : ["en"];
     const navLang = (navigator.language || "en").slice(0, 2).toLowerCase();
     const lang = this.config.language || savedLang || (supported.includes(navLang) ? navLang : "en");
     this.config.language = lang;
     if (window.I18N) window.I18N.setLanguage(lang);
 
-    window.addEventListener("aurora:languagechange", () => {
+    window.addEventListener("nordlys:languagechange", () => {
       this.widgets?.refreshLabels();
       this.widgets?.updateClock();
       this.grid?.render();
@@ -330,7 +404,7 @@ class AuroraApp {
     }
 
     // 2. Initialize background engine
-    this.bgEngine = new AuroraBackgroundEngine();
+    this.bgEngine = new NordlysBackgroundEngine();
     this.updateBackgroundMode();
 
     // 3. Initialize widgets
@@ -704,8 +778,8 @@ class AuroraApp {
 // Bootstrap immediately with zero event-loop delay
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
-    window.Aurora = new AuroraApp();
+    window.Nordlys = new NordlysApp();
   });
 } else {
-  window.Aurora = new AuroraApp();
+  window.Nordlys = new NordlysApp();
 }

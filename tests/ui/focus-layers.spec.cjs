@@ -56,18 +56,18 @@ test('CSS guide is a contained nested settings dialog and restores its opener', 
 test('editors take initial focus once and never steal it back', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   // A fast keyboard user moves focus the instant the editor opens.
-  await page.evaluate(() => { window.Aurora.grid.openQuickEditModal(0, 0); document.getElementById('quick-save-btn').focus(); });
+  await page.evaluate(() => { window.Nordlys.grid.openQuickEditModal(0, 0); document.getElementById('quick-save-btn').focus(); });
   await page.waitForTimeout(250);
   await expect(page.locator('#quick-save-btn'), 'quick edit stole focus after opening').toBeFocused();
   await page.keyboard.press('Escape');
 
-  await page.evaluate(() => { window.Aurora.grid.openQuickFolderModal(0); document.getElementById('quick-folder-save-btn').focus(); });
+  await page.evaluate(() => { window.Nordlys.grid.openQuickFolderModal(0); document.getElementById('quick-folder-save-btn').focus(); });
   await page.waitForTimeout(250);
   await expect(page.locator('#quick-folder-save-btn'), 'folder edit stole focus after opening').toBeFocused();
   await page.keyboard.press('Escape');
 
   // Left alone, each editor still opens with its text field focused and selected.
-  await page.evaluate(() => window.Aurora.grid.openQuickEditModal(0, 0));
+  await page.evaluate(() => window.Nordlys.grid.openQuickEditModal(0, 0));
   await expect(page.locator('#quick-title-input')).toBeFocused();
   expect(await page.evaluate(() => { const i = document.getElementById('quick-title-input'); return i.value.length > 0 && i.selectionStart === 0 && i.selectionEnd === i.value.length; })).toBe(true);
 });

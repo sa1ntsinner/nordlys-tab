@@ -8,9 +8,9 @@ async function openBackground(page) {
 
 async function chooseBackground(page, mode) {
   await page.evaluate(key => {
-    window.Aurora.config.bgMode = key;
-    window.Aurora.saveConfig();
-    window.Aurora.updateBackgroundMode();
+    window.Nordlys.config.bgMode = key;
+    window.Nordlys.saveConfig();
+    window.Nordlys.updateBackgroundMode();
   }, mode);
   await page.waitForTimeout(300);
 }
@@ -40,7 +40,7 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
   await solid.click();
   await expect(solid).toHaveAttribute('aria-checked', 'true');
   await expect(page.locator('.scene-card[data-scene="aurora"]')).toHaveAttribute('aria-checked', 'false');
-  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.bgMode).toBe('solid');
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.bgMode).toBe('solid');
 });
 
 /* What is offered has been cut twice, both times on measurement rather than
@@ -81,16 +81,16 @@ test('a stored scene that no longer exists migrates to its closest survivor', as
   const { page } = nordlysPage;
   for (const [stored, motion] of [['cosmos', 1], ['particles', 0], ['mesh-gradient', 0], ['gradient', 0]]) {
     await page.evaluate(mode => {
-      window.Aurora.config.bgMode = mode;
-      window.Aurora.config.bgMotion = 1;
-      window.Aurora.saveConfig();
+      window.Nordlys.config.bgMode = mode;
+      window.Nordlys.config.bgMotion = 1;
+      window.Nordlys.saveConfig();
     }, stored);
     await page.reload();
-    await page.waitForFunction(() => Boolean(window.Aurora?.grid));
-    expect(await page.evaluate(() => window.Aurora.config.bgMode), `${stored} should become aurora`).toBe('aurora');
-    expect(await page.evaluate(() => window.Aurora.config.bgMotion),
+    await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+    expect(await page.evaluate(() => window.Nordlys.config.bgMode), `${stored} should become aurora`).toBe('aurora');
+    expect(await page.evaluate(() => window.Nordlys.config.bgMotion),
       `${stored} was ${motion ? 'moving' : 'still'} and should stay that way`).toBe(motion);
-    expect(await page.evaluate(() => 'gradient' in window.Aurora.config),
+    expect(await page.evaluate(() => 'gradient' in window.Nordlys.config),
       'the composition key is not carried forward').toBe(false);
   }
 });
@@ -107,15 +107,15 @@ test('motion and atmosphere reach the canvas engine and persist', async ({ nordl
   await page.locator('#cfg-bg-intensity').dispatchEvent('change');
 
   expect(await page.evaluate(() => ({
-    motion: window.Aurora.bgEngine.motion,
-    intensity: window.Aurora.bgEngine.intensity
+    motion: window.Nordlys.bgEngine.motion,
+    intensity: window.Nordlys.bgEngine.intensity
   }))).toEqual({ motion: 0.4, intensity: 0.55 });
   await expect(page.locator('#lbl-bg-motion')).toHaveText('40%');
   await expect(page.locator('#lbl-bg-intensity')).toHaveText('55%');
 
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.Aurora?.grid));
-  expect(await page.evaluate(() => window.Aurora.config.bgMotion)).toBe(0.4);
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  expect(await page.evaluate(() => window.Nordlys.config.bgMotion)).toBe(0.4);
 });
 
 /* Zero on the motion slider is the state that replaced a whole background mode,
@@ -131,7 +131,7 @@ test('zero motion paints the scene once and then stops', async ({ nordlysPage })
   await expect(page.locator('#lbl-bg-motion')).not.toHaveText('0%');
 
   await page.waitForTimeout(400);
-  expect(await page.evaluate(() => window.Aurora.bgEngine.animId),
+  expect(await page.evaluate(() => window.Nordlys.bgEngine.animId),
     'nothing may be scheduled once the scene is at rest').toBeNull();
 
   // Painted, not blank — the whole point of holding a frame rather than stopping.
@@ -148,7 +148,7 @@ test('zero motion paints the scene once and then stops', async ({ nordlysPage })
   await page.locator('#cfg-bg-motion').fill('100');
   await page.locator('#cfg-bg-motion').dispatchEvent('change');
   await page.waitForTimeout(200);
-  expect(await page.evaluate(() => window.Aurora.bgEngine.animId)).toBeTruthy();
+  expect(await page.evaluate(() => window.Nordlys.bgEngine.animId)).toBeTruthy();
 });
 
 /* "Reduce motion" is not "remove the picture". The loop used to refuse to start
@@ -159,7 +159,7 @@ test('reduced motion holds the scene instead of blanking it', async ({ nordlysPa
   const { page } = nordlysPage;
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.Aurora?.bgEngine));
+  await page.waitForFunction(() => Boolean(window.Nordlys?.bgEngine));
   await page.waitForTimeout(800);
 
   const state = await page.evaluate(() => {
@@ -167,7 +167,7 @@ test('reduced motion holds the scene instead of blanking it', async ({ nordlysPa
     const { data } = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
     let lit = 0;
     for (let i = 3; i < data.length; i += 4 * 97) if (data[i] > 2) lit++;
-    return { lit, scheduled: window.Aurora.bgEngine.animId, mode: window.Aurora.config.bgMode };
+    return { lit, scheduled: window.Nordlys.bgEngine.animId, mode: window.Nordlys.config.bgMode };
   });
   expect(state.mode).toBe('aurora');
   expect(state.lit, 'the aurora is painted for a reduced-motion user too').toBeGreaterThan(100);
@@ -177,7 +177,7 @@ test('reduced motion holds the scene instead of blanking it', async ({ nordlysPa
 test('the atmosphere sliders visibly change what the canvas draws', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   const sample = () => page.evaluate(() => {
-    const engine = window.Aurora.bgEngine;
+    const engine = window.Nordlys.bgEngine;
     engine.render(1);
     const canvas = document.getElementById('bg-canvas');
     const probe = document.createElement('canvas');
@@ -187,9 +187,9 @@ test('the atmosphere sliders visibly change what the canvas draws', async ({ nor
     return [...context.getImageData(0, 0, 24, 24).data].reduce((total, value) => total + value, 0);
   });
 
-  await page.evaluate(() => window.Aurora.bgEngine.setAtmosphere({ intensity: 1.5 }));
+  await page.evaluate(() => window.Nordlys.bgEngine.setAtmosphere({ intensity: 1.5 }));
   const bright = await sample();
-  await page.evaluate(() => window.Aurora.bgEngine.setAtmosphere({ intensity: 0.15 }));
+  await page.evaluate(() => window.Nordlys.bgEngine.setAtmosphere({ intensity: 0.15 }));
   const faint = await sample();
   expect(bright, 'a fainter atmosphere must paint less light').toBeGreaterThan(faint);
 });
@@ -201,8 +201,12 @@ test('the atmosphere sliders visibly change what the canvas draws', async ({ nor
 test('every moving part keeps the pace the slider sets', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   const travelAt = motion => page.evaluate(pace => {
-    const engine = window.Aurora.bgEngine;
-    engine.setAtmosphere({ motion: pace });
+    const engine = window.Nordlys.bgEngine;
+    /* The live loop is stopped for the measurement. It shares the meteor array
+       with this test, and once in a run of many it got a frame in between the
+       two readings — a dice roll this test exists to take out of the picture. */
+    engine.stop();
+    engine.motion = pace;
     // One meteor, placed by hand, so the measurement does not wait on a dice roll.
     engine.meteors = [{ x: 100, y: 100, len: 60, speed: 10, angle: Math.PI / 4, life: 1 }];
     for (let frame = 0; frame < 10; frame++) engine.renderMeteors(0, 1);

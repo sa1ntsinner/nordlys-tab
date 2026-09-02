@@ -17,7 +17,7 @@ test('loads the real unpacked MV3 extension with its derived id and no CSP error
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
     await page.goto('chrome://newtab');
-    await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+    await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
     const match = /^chrome-extension:\/\/([a-p]{32})\/newtab\.html$/.exec(page.url());
     expect(match, `unexpected unpacked URL: ${page.url()}`).not.toBeNull();
     expect(match[1]).toHaveLength(32);

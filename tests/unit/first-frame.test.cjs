@@ -55,7 +55,7 @@ test('the boot script runs before any stylesheet and depends on nothing', () => 
   assert.ok(script < firstSheet, 'boot.js must come before the first stylesheet');
   assert.ok(!/\bdefer\b|\basync\b/.test(markup.slice(script - 80, script + 40)),
     'boot.js must be synchronous, or it no longer beats the first paint');
-  assert.ok(!/window\.(Aurora|NordlysUI|I18N)/.test(boot), 'boot.js must not depend on the app');
+  assert.ok(!/window\.(Nordlys|NordlysUI|I18N)/.test(boot), 'boot.js must not depend on the app');
 });
 
 /* A light theme opening dark is the same defect as a dark theme opening white. */

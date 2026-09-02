@@ -34,7 +34,7 @@ test('bookmark folders are compact accordions with focused editors and explicit 
 
   await act(page, folders.first().locator('.bookmark-summary-row').first(), 'YouTube', 'Move down');
   await expect(folders.first().locator('.bookmark-summary-name').nth(1)).toHaveText('YouTube');
-  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[0]?.links?.[1]?.name).toBe('YouTube');
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.groups?.[0]?.links?.[1]?.name).toBe('YouTube');
 });
 
 test('deletion offers a one-shot Undo that restores the exact location', async ({ nordlysPage }) => {
@@ -46,7 +46,7 @@ test('deletion offers a one-shot Undo that restores the exact location', async (
   await expect(folder.locator('.bookmark-summary-row')).toHaveCount(7);
   await page.getByRole('button', { name: 'Undo' }).click();
   await expect(folder.locator('.bookmark-summary-name').first()).toHaveText('YouTube');
-  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[0]?.links?.[0]?.name).toBe('YouTube');
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.groups?.[0]?.links?.[0]?.name).toBe('YouTube');
 });
 
 test('Undo follows the deleted bookmark folder identity after folders are reordered', async ({ nordlysPage }) => {
@@ -59,7 +59,7 @@ test('Undo follows the deleted bookmark folder identity after folders are reorde
   await page.getByRole('button', { name: 'Undo' }).click();
   const movedFolder = page.locator('.bookmark-folder-accordion').nth(1);
   await expect(movedFolder.locator('.bookmark-summary-name').first()).toHaveText('YouTube');
-  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[1]?.links?.[0]?.name).toBe('YouTube');
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.groups?.[1]?.links?.[0]?.name).toBe('YouTube');
 });
 
 test('a collapsed folder shows its name, its count and one way in', async ({ nordlysPage }) => {
@@ -92,10 +92,10 @@ test('an open folder puts adding a bookmark and its column count in reach', asyn
     select.value = '6';
     select.dispatchEvent(new Event('change', { bubbles: true }));
   });
-  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[0]?.cols).toBe(6);
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.groups?.[0]?.cols).toBe(6);
 
   await folder.getByRole('button', { name: /Add bookmark to/ }).click();
-  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[0]?.links?.at(-1)?.name).toBe('New Bookmark');
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.groups?.[0]?.links?.at(-1)?.name).toBe('New Bookmark');
 });
 
 test('expanded bookmark actions stay grouped within their row', async ({ nordlysPage }) => {
@@ -134,6 +134,6 @@ test('the overflow menu moves a bookmark to another folder from the keyboard', a
   await expect(menu(page).getByRole('menuitem', { name: 'DEV & TECH' })).toBeVisible();
   await page.keyboard.press('Enter');
 
-  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[1]?.links?.at(-1)?.name).toBe('YouTube');
-  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[0]?.links?.some(link => link.name === 'YouTube')).toBe(false);
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.groups?.[1]?.links?.at(-1)?.name).toBe('YouTube');
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.groups?.[0]?.links?.some(link => link.name === 'YouTube')).toBe(false);
 });

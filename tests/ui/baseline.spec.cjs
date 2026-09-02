@@ -8,6 +8,6 @@ test('loads the default canvas without runtime errors', async ({ nordlysPage }) 
 test('persists a changed setting through chrome.storage.local', async ({ nordlysPage }) => {
   await nordlysPage.page.locator('#gear').click();
   await nordlysPage.page.locator('[data-mode="light"]').click();
-  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.colorMode).toBe('light');
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.colorMode).toBe('light');
   expect(nordlysPage.runtimeErrors).toEqual([]);
 });

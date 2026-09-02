@@ -1,4 +1,4 @@
-/* Responsive settings shell. Configuration remains owned by SettingsController/AuroraApp. */
+/* Responsive settings shell. Configuration remains owned by SettingsController/NordlysApp. */
 (function () {
   const groups = [
     { label: 'Customize', key: 'nav.groupCustomize', ids: ['appearance', 'background', 'bookmarks'] },
