@@ -3,7 +3,7 @@
    Time-based (refresh-rate independent), light/dark aware, zero idle cost.
    ═══════════════════════════════════════════════════════════════════ */
 
-class AuroraBackgroundEngine {
+class NordlysBackgroundEngine {
   constructor() {
     this.canvas = document.getElementById("bg-canvas");
     this.ctx = this.canvas ? this.canvas.getContext("2d", { alpha: true, desynchronized: true }) : null;
@@ -409,12 +409,59 @@ class AuroraBackgroundEngine {
 
 /* ── IndexedDB Media Vault ─────────────────────────────────────── */
 const MediaVault = {
-  DB_NAME: "AuroraTab_MediaVault",
+  DB_NAME: "Nordlys_MediaVault",
+  LEGACY_DB_NAME: "AuroraTab_MediaVault",
   STORE: "wallpapers",
 
-  open() {
+  /* A database cannot be renamed, only copied. The first open after the rename
+     looks for the old one, moves every record across and deletes it, so a
+     wallpaper someone chose under the previous build is still theirs. Memoised,
+     because open() is called from several places at startup and the move must
+     happen once. */
+  adoptLegacy() {
+    if (this._adopting) return this._adopting;
+    this._adopting = (async () => {
+      try {
+        if (typeof indexedDB.databases !== "function") return;
+        const names = (await indexedDB.databases()).map((entry) => entry.name);
+        if (!names.includes(this.LEGACY_DB_NAME)) return;
+        const legacy = await this.openNamed(this.LEGACY_DB_NAME);
+        const records = await new Promise((resolve, reject) => {
+          if (!legacy.objectStoreNames.contains(this.STORE)) return resolve([]);
+          const request = legacy.transaction(this.STORE, "readonly").objectStore(this.STORE).getAll();
+          request.onsuccess = () => resolve(request.result || []);
+          request.onerror = () => reject(request.error);
+        });
+        legacy.close();
+        if (records.length) {
+          const db = await this.openNamed(this.DB_NAME);
+          await new Promise((resolve, reject) => {
+            const tx = db.transaction(this.STORE, "readwrite");
+            for (const record of records) tx.objectStore(this.STORE).put(record);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+          });
+          db.close();
+        }
+        await new Promise((resolve) => {
+          const request = indexedDB.deleteDatabase(this.LEGACY_DB_NAME);
+          request.onsuccess = request.onerror = request.onblocked = () => resolve();
+        });
+      } catch (error) {
+        /* The old database stays where it was; the new one starts empty. */
+      }
+    })();
+    return this._adopting;
+  },
+
+  async open() {
+    await this.adoptLegacy();
+    return this.openNamed(this.DB_NAME);
+  },
+
+  openNamed(name) {
     return new Promise((resolve, reject) => {
-      const req = indexedDB.open(this.DB_NAME, 1);
+      const req = indexedDB.open(name, 1);
       req.onupgradeneeded = (e) => {
         const db = e.target.result;
         if (!db.objectStoreNames.contains(this.STORE)) {

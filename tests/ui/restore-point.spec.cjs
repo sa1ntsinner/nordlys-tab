@@ -10,7 +10,7 @@ const { test, expect } = require('../helpers/nordlys-fixture.cjs');
    before it still exists. */
 
 const RESTORE_KEY = 'nordlys_restore_point';
-const CONFIG_KEY = 'aether_tab_config';
+const CONFIG_KEY = 'nordlys_config';
 
 test('a migration keeps what it replaced', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
@@ -30,13 +30,13 @@ test('a migration keeps what it replaced', async ({ nordlysPage }) => {
   }, [CONFIG_KEY, RESTORE_KEY]);
 
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
 
   // The migration ran.
-  expect(await page.evaluate(() => window.Aurora.config.bgMode)).toBe('aurora');
+  expect(await page.evaluate(() => window.Nordlys.config.bgMode)).toBe('aurora');
   // Particles held still, so what replaced it holds still too.
-  expect(await page.evaluate(() => window.Aurora.config.bgMotion)).toBe(0);
-  expect(await page.evaluate(() => window.Aurora.config.glassLevel)).toBe('off');
+  expect(await page.evaluate(() => window.Nordlys.config.bgMotion)).toBe(0);
+  expect(await page.evaluate(() => window.Nordlys.config.glassLevel)).toBe('off');
 
   // And the state it replaced is still there, exactly as it was.
   const point = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), RESTORE_KEY);
@@ -51,7 +51,7 @@ test('a load that migrates nothing leaves no restore point', async ({ nordlysPag
   const { page } = nordlysPage;
   await page.evaluate(key => localStorage.removeItem(key), RESTORE_KEY);
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   // The defaults need no migration, so there is nothing to go back to.
   expect(await page.evaluate(key => localStorage.getItem(key), RESTORE_KEY)).toBeNull();
 });
@@ -61,7 +61,7 @@ test('the offer appears only when there is something behind it', async ({ nordly
 
   await page.evaluate(key => localStorage.removeItem(key), RESTORE_KEY);
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   await page.locator('#gear').click();
   await page.locator('#settings-tab-backup').click();
   await expect(page.locator('#restore-point-row'), 'no net, no promise of one').toBeHidden();
@@ -74,7 +74,7 @@ test('the offer appears only when there is something behind it', async ({ nordly
     }));
   }, [RESTORE_KEY]);
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   await page.locator('#gear').click();
   await page.locator('#settings-tab-backup').click();
   await expect(page.locator('#restore-point-row')).toBeVisible();
@@ -97,13 +97,13 @@ test('taking the offer puts the old settings back', async ({ nordlysPage }) => {
     }));
   }, RESTORE_KEY);
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   await page.locator('#gear').click();
   await page.locator('#settings-tab-backup').click();
   await page.locator('#cfg-restore-point').click();
   await page.getByRole('button', { name: /Put those back/i }).last().click();
 
-  await page.waitForFunction(() => window.Aurora?.config?.groups?.[0]?.label === 'FROM BEFORE', null, { timeout: 5000 });
-  expect(await page.evaluate(() => window.Aurora.config.theme)).toBe('gruvbox-dark');
+  await page.waitForFunction(() => window.Nordlys?.config?.groups?.[0]?.label === 'FROM BEFORE', null, { timeout: 5000 });
+  expect(await page.evaluate(() => window.Nordlys.config.theme)).toBe('gruvbox-dark');
   await expect(page.locator('#board .cat b').first()).toHaveText('FROM BEFORE');
 });

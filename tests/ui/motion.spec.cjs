@@ -52,7 +52,7 @@ test('reduced motion removes scale, blur, parallax, and long animation', async (
   const { page } = nordlysPage;
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   await page.locator('#gear').click();
   const audit = await animationAudit(page);
   for (const animation of audit) {
@@ -70,7 +70,7 @@ test('reduced motion removes scale, blur, parallax, and long animation', async (
 });
 
 test('reduced motion computes no transform, filter, or backdrop blur in interactive states', async ({ nordlysPage }) => {
-  const { page } = nordlysPage; await page.emulateMedia({ reducedMotion: 'reduce' }); await page.reload(); await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  const { page } = nordlysPage; await page.emulateMedia({ reducedMotion: 'reduce' }); await page.reload(); await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   const tile = page.locator('#board .tile').first(); await tile.hover(); await tile.focus(); await page.locator('#gear').hover();
   await page.locator('#gear').click(); await page.locator('#settings-tab-bookmarks').click();
   const folder = page.locator('.bookmark-folder-accordion').first(); await folder.locator('summary').click(); await openIconPicker(page, folder);
@@ -104,7 +104,7 @@ test('reduced motion keeps the press silent', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   await page.locator('#gear').click();
   await page.locator('#settings-tab-backup').click();
   const button = page.locator('#cfg-export');

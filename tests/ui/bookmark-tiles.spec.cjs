@@ -8,8 +8,8 @@ test('uses source-aware icon proportions and restrained interaction states', asy
   expect(svgRect.width / boxRect.width).toBeGreaterThanOrEqual(.62);
   expect(svgRect.width / boxRect.width).toBeLessThanOrEqual(.66);
   await page.evaluate(() => {
-    window.Aurora.config.groups[0].links[0].customImg = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
-    window.Aurora.grid.render();
+    window.Nordlys.config.groups[0].links[0].customImg = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+    window.Nordlys.grid.render();
   });
   const raster = page.locator('.tile').first().locator('.box img');
   const [rasterRect, rasterBox] = await Promise.all([raster.boundingBox(), page.locator('.tile').first().locator('.box').boundingBox()]);

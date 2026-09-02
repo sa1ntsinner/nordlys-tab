@@ -36,11 +36,11 @@ test('regenerate the store artwork', async ({ nordlysPage }) => {
   //    rather than sliced by the bottom edge, and the aurora runs a little
   //    stronger than default so it reads in a still frame.
   await page.evaluate(() => {
-    window.Aurora.config.groups.slice(3).forEach(group => { group.hidden = true; });
-    window.Aurora.config.bgIntensity = 1.4;
-    window.Aurora.saveConfig();
-    window.Aurora.bgEngine?.setAtmosphere({ motion: 1, intensity: 1.4 });
-    window.Aurora.grid.render();
+    window.Nordlys.config.groups.slice(3).forEach(group => { group.hidden = true; });
+    window.Nordlys.config.bgIntensity = 1.4;
+    window.Nordlys.saveConfig();
+    window.Nordlys.bgEngine?.setAtmosphere({ motion: 1, intensity: 1.4 });
+    window.Nordlys.grid.render();
     document.getElementById('board')?.classList.add('board-loaded');
   });
   await settle(page, CANVAS_WARMUP);
@@ -64,13 +64,13 @@ test('regenerate the store artwork', async ({ nordlysPage }) => {
   //    to the gear, and its focus ring would read as an artefact in a still.
   await page.evaluate(() => {
     document.activeElement?.blur();
-    window.Aurora.setTheme('nordic-snow');
+    window.Nordlys.setTheme('nordic-snow');
   });
   await settle(page, CANVAS_WARMUP);
   await shot(page, 'screenshot-4-light.png');
 
   // 5. Search doing arithmetic, with suggestions under it.
-  await page.evaluate(() => window.Aurora.setTheme('aurora-void'));
+  await page.evaluate(() => window.Nordlys.setTheme('aurora-void'));
   await settle(page, CANVAS_WARMUP);
   await page.locator('#q').click();
   await page.locator('#q').fill('45 * 12 + sqrt(144)');

@@ -56,7 +56,7 @@ test('build the promo tiles', async ({ nordlysPage }) => {
     // Capture the canvas alone at the tile's shape.
     await page.setViewportSize({ width: tile.width, height: tile.height });
     await page.evaluate(() => {
-      window.Aurora.bgEngine?.setAtmosphere({ motion: 1, intensity: 1.45 });
+      window.Nordlys.bgEngine?.setAtmosphere({ motion: 1, intensity: 1.45 });
       for (const id of ['board', 'center-stack', 'search', 'gear', 'hiddenDock']) {
         const node = document.getElementById(id);
         if (node) node.style.visibility = 'hidden';
@@ -78,6 +78,6 @@ test('build the promo tiles', async ({ nordlysPage }) => {
     await page.screenshot({ path: path.join(OUT, tile.name) });
     console.log(`  ${tile.name} ${Math.round(fs.statSync(path.join(OUT, tile.name)).size / 1024)}KB`);
     await page.goto(`${origin}/newtab.html`);
-    await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+    await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   }
 });

@@ -71,7 +71,9 @@
   var background = null;
 
   try {
-    raw = localStorage.getItem("aether_tab_config") || localStorage.getItem("aurora_tab_config");
+    // The move to the new key happens a moment later, in app.js; the first
+    // frame just has to find the config wherever the previous build left it.
+    raw = localStorage.getItem("nordlys_config") || localStorage.getItem("aether_tab_config") || localStorage.getItem("aurora_tab_config");
     if (raw) {
       config = JSON.parse(raw);
       var stored = config && config.theme;

@@ -18,7 +18,7 @@ test('the folder resize handle is a single control for pointer and keyboard', as
   await page.keyboard.press('ArrowRight');
   await expect(card.locator('.grid')).toHaveAttribute('data-cols', '5');
   await expect(handle).toHaveAttribute('aria-valuenow', '5');
-  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[0]?.cols).toBe(5);
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.groups?.[0]?.cols).toBe(5);
   await expect(page.locator('#nl-live-region')).toContainText('5 columns');
 
   await page.keyboard.press('Home');

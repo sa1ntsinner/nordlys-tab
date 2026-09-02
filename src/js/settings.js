@@ -228,7 +228,7 @@ class SettingsController {
 
   /* ── 1. Resizable Drawer & Width Presets ──────────────────────── */
   initDrawerResizer() {
-    const savedWidth = localStorage.getItem("aurora_drawer_width");
+    const savedWidth = localStorage.getItem("nordlys_drawer_width");
     if (savedWidth && this.drawer) {
       this.drawer.style.width = savedWidth;
     }
@@ -257,7 +257,7 @@ class SettingsController {
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
         this.resizer.classList.remove("dragging");
-        localStorage.setItem("aurora_drawer_width", this.drawer.style.width);
+        localStorage.setItem("nordlys_drawer_width", this.drawer.style.width);
       });
     }
 
@@ -657,7 +657,7 @@ class SettingsController {
   /* ── 4. Custom Theme Creator Engine ──────────────────────────── */
   loadCustomThemes() {
     try {
-      const raw = localStorage.getItem("aurora_custom_themes");
+      const raw = localStorage.getItem("nordlys_custom_themes");
       return raw ? JSON.parse(raw) : [];
     } catch {
       return [];
@@ -665,7 +665,7 @@ class SettingsController {
   }
 
   saveCustomThemes() {
-    localStorage.setItem("aurora_custom_themes", JSON.stringify(this.customThemes));
+    localStorage.setItem("nordlys_custom_themes", JSON.stringify(this.customThemes));
   }
 
   initCustomThemeBuilder() {
@@ -2383,13 +2383,12 @@ class SettingsController {
         cancelText: t("confirm.cancel", "Cancel")
       }).then(async (ok) => {
         if (!ok) return;
+        // Everything this build writes, and everything any earlier build wrote.
         [
-          "aether_tab_config",
-          "aurora_tab_config",
-          "aurora_custom_themes",
-          "aurora_drawer_width",
-          "aurora_language",
-          "aurora_search_history"
+          "nordlys_config", "nordlys_custom_themes", "nordlys_drawer_width",
+          "nordlys_language", "nordlys_search_history", "nordlys_restore_point",
+          "aether_tab_config", "aurora_tab_config", "aurora_custom_themes",
+          "aurora_drawer_width", "aurora_language", "aurora_search_history"
         ].forEach((key) => localStorage.removeItem(key));
         try { await MediaVault.deleteMedia("custom_bg"); } catch (e) {}
         if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {

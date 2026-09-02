@@ -38,8 +38,8 @@ async function calm(page, wait = 600) {
 
 async function board(page, { intensity = 1.35 } = {}) {
   await page.evaluate(atmosphere => {
-    window.Aurora.bgEngine?.setAtmosphere({ motion: 1, intensity: atmosphere });
-    window.Aurora.grid.render();
+    window.Nordlys.bgEngine?.setAtmosphere({ motion: 1, intensity: atmosphere });
+    window.Nordlys.grid.render();
     document.getElementById('board')?.classList.add('board-loaded');
     document.activeElement?.blur();
   }, intensity);
@@ -51,8 +51,8 @@ test('regenerate the README stills', async ({ nordlysPage }) => {
   // Three folders keep the board whole inside a 720-tall frame.
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.evaluate(() => {
-    window.Aurora.config.groups.slice(3).forEach(group => { group.hidden = true; });
-    window.Aurora.saveConfig();
+    window.Nordlys.config.groups.slice(3).forEach(group => { group.hidden = true; });
+    window.Nordlys.saveConfig();
   });
   await board(page);
 
@@ -81,17 +81,17 @@ test('regenerate the README stills', async ({ nordlysPage }) => {
   // Theme portraits, wider so the whole board fits.
   await page.setViewportSize({ width: 1600, height: 900 });
   await page.evaluate(() => {
-    window.Aurora.config.groups.forEach(group => { group.hidden = false; });
-    window.Aurora.saveConfig();
+    window.Nordlys.config.groups.forEach(group => { group.hidden = false; });
+    window.Nordlys.saveConfig();
   });
   for (const [theme, file] of [['gruvbox-dark', 'theme-gruvbox-dark.png'], ['oled-obsidian', 'theme-oled.png'], ['mint-breeze', 'theme-mint.png']]) {
-    await page.evaluate(key => window.Aurora.setTheme(key), theme);
+    await page.evaluate(key => window.Nordlys.setTheme(key), theme);
     await board(page);
     await calm(page, WARMUP);
     await page.screenshot({ path: path.join(OUT, file) });
     console.log(`  ${file}`);
   }
-  await page.evaluate(() => window.Aurora.setTheme('aurora-void'));
+  await page.evaluate(() => window.Nordlys.setTheme('aurora-void'));
 });
 
 test('capture the README animations', async ({ nordlysPage }) => {
@@ -102,8 +102,8 @@ test('capture the README animations', async ({ nordlysPage }) => {
 
   await page.setViewportSize({ width: 960, height: 540 });
   await page.evaluate(() => {
-    window.Aurora.config.groups.slice(2).forEach(group => { group.hidden = true; });
-    window.Aurora.saveConfig();
+    window.Nordlys.config.groups.slice(2).forEach(group => { group.hidden = true; });
+    window.Nordlys.saveConfig();
   });
   await board(page);
   await calm(page, WARMUP);
@@ -120,7 +120,7 @@ test('capture the README animations', async ({ nordlysPage }) => {
                     'oled-obsidian', 'nordic-snow', 'sakura-daylight', 'peach-sunset', 'mint-breeze'];
   let index = 0;
   for (const theme of carousel) {
-    await page.evaluate(key => window.Aurora.setTheme(key), theme);
+    await page.evaluate(key => window.Nordlys.setTheme(key), theme);
     await board(page);
     await calm(page, 2500);
     // Two identical frames per theme, so each holds on screen.

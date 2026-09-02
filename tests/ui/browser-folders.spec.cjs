@@ -52,8 +52,8 @@ test('a folder can be pointed at a browser folder and fills itself', async ({ no
   await expect(menu.getByRole('menuitem', { name: 'Bookmarks bar / Reading', exact: true })).toBeVisible();
   await menu.getByRole('menuitem', { name: 'Bookmarks bar / Reading', exact: true }).click();
 
-  await expect.poll(() => nordlysPage.storageState.aether_tab_config?.groups?.[0]?.source?.folderId).toBe('10');
-  const links = await page.evaluate(() => window.Aurora.config.groups[0].links);
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.groups?.[0]?.source?.folderId).toBe('10');
+  const links = await page.evaluate(() => window.Nordlys.config.groups[0].links);
   // Two web links; the nested folder and the javascript: entry are left out.
   expect(links.map(link => link.url)).toEqual(['https://article.test/one', 'https://article.test/two']);
   await expect(page.locator('#board .cat b').first()).toBeVisible();
@@ -82,13 +82,13 @@ test('unlinking keeps what was on screen', async ({ nordlysPage }) => {
   let menu = await folderMenu(page);
   await menu.getByRole('menuitem', { name: /Follow a browser folder/ }).click();
   await menu.getByRole('menuitem', { name: 'Bookmarks bar / Reading', exact: true }).click();
-  await expect.poll(() => page.evaluate(() => window.Aurora.config.groups[0].links.length)).toBe(2);
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0].links.length)).toBe(2);
 
   menu = await folderMenu(page);
   await menu.getByRole('menuitem', { name: /Stop following the browser/ }).click();
-  expect(await page.evaluate(() => Boolean(window.Aurora.config.groups[0].source))).toBe(false);
-  expect(await page.evaluate(() => window.Aurora.config.groups[0].links.length)).toBe(2);
-  expect(await page.evaluate(() => 'fromBrowser' in window.Aurora.config.groups[0].links[0])).toBe(false);
+  expect(await page.evaluate(() => Boolean(window.Nordlys.config.groups[0].source))).toBe(false);
+  expect(await page.evaluate(() => window.Nordlys.config.groups[0].links.length)).toBe(2);
+  expect(await page.evaluate(() => 'fromBrowser' in window.Nordlys.config.groups[0].links[0])).toBe(false);
 });
 
 test('nothing is asked for, or read, until a folder is linked', async ({ nordlysPage }) => {
@@ -100,7 +100,7 @@ test('nothing is asked for, or read, until a folder is linked', async ({ nordlys
     window.chrome.permissions.request = (request, callback) => { window.__asked++; return real(request, callback); };
   });
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   await page.waitForTimeout(400);
   expect(await page.evaluate(() => window.__asked || 0), 'a board with no linked folder asks for nothing').toBe(0);
 });
@@ -113,14 +113,14 @@ test('a folder that disappears is reported, not erased', async ({ nordlysPage })
   const menu = await folderMenu(page);
   await menu.getByRole('menuitem', { name: /Follow a browser folder/ }).click();
   await menu.getByRole('menuitem', { name: 'Bookmarks bar / Reading', exact: true }).click();
-  await expect.poll(() => page.evaluate(() => window.Aurora.config.groups[0].links.length)).toBe(2);
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0].links.length)).toBe(2);
 
   // The folder goes away in the browser.
   await page.evaluate(() => { window.__bookmarks.tree = []; });
-  const changed = await page.evaluate(() => window.NordlysBookmarks.refresh(window.Aurora.config));
+  const changed = await page.evaluate(() => window.NordlysBookmarks.refresh(window.Nordlys.config));
   expect(changed).toBe(true);
-  expect(await page.evaluate(() => window.Aurora.config.groups[0].source.missing)).toBe(true);
-  expect(await page.evaluate(() => window.Aurora.config.groups[0].links.length),
+  expect(await page.evaluate(() => window.Nordlys.config.groups[0].source.missing)).toBe(true);
+  expect(await page.evaluate(() => window.Nordlys.config.groups[0].links.length),
     'the bookmarks stay on screen').toBe(2);
 });
 
@@ -128,10 +128,10 @@ test('refusing the permission leaves the folder alone', async ({ nordlysPage }) 
   const { page } = nordlysPage;
   await withBookmarks(page, { granted: false, grantOnRequest: false });
   await openManager(page);
-  const before = await page.evaluate(() => window.Aurora.config.groups[0].links.length);
+  const before = await page.evaluate(() => window.Nordlys.config.groups[0].links.length);
   const menu = await folderMenu(page);
   await menu.getByRole('menuitem', { name: /Follow a browser folder/ }).click();
   await page.waitForTimeout(300);
-  expect(await page.evaluate(() => Boolean(window.Aurora.config.groups[0].source))).toBe(false);
-  expect(await page.evaluate(() => window.Aurora.config.groups[0].links.length)).toBe(before);
+  expect(await page.evaluate(() => Boolean(window.Nordlys.config.groups[0].source))).toBe(false);
+  expect(await page.evaluate(() => window.Nordlys.config.groups[0].links.length)).toBe(before);
 });

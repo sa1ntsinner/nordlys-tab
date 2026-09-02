@@ -23,7 +23,7 @@ test('a search goes to the engine Chrome has, in this tab', async ({ nordlysPage
 
 test('the open-in-new-tab preference applies to searches too', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  await page.evaluate(() => { window.Aurora.config.openNewTab = true; window.Aurora.saveConfig(); });
+  await page.evaluate(() => { window.Nordlys.config.openNewTab = true; window.Nordlys.saveConfig(); });
   await submit(page, 'aurora');
   const sent = await page.evaluate(() => window.__searches || []);
   expect(sent[0]?.disposition).toBe('NEW_TAB');
@@ -92,14 +92,14 @@ test('an old engine choice is dropped on upgrade and the restore point keeps it'
   const { page } = nordlysPage;
   await page.evaluate(() => {
     localStorage.removeItem('nordlys_restore_point');
-    const config = { ...window.Aurora.config, defaultEngine: 'duckduckgo', customEngineUrl: 'https://x.test/?q=%s', showSuggestions: false };
-    localStorage.setItem('aether_tab_config', JSON.stringify(config));
-    window.chrome.storage.local.set({ aether_tab_config: config }, () => {});
+    const config = { ...window.Nordlys.config, defaultEngine: 'duckduckgo', customEngineUrl: 'https://x.test/?q=%s', showSuggestions: false };
+    localStorage.setItem('nordlys_config', JSON.stringify(config));
+    window.chrome.storage.local.set({ nordlys_config: config }, () => {});
   });
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   const after = await page.evaluate(() => ({
-    keys: ['defaultEngine', 'customEngineUrl', 'showSuggestions'].filter(key => key in window.Aurora.config),
+    keys: ['defaultEngine', 'customEngineUrl', 'showSuggestions'].filter(key => key in window.Nordlys.config),
     restored: JSON.parse(localStorage.getItem('nordlys_restore_point') || 'null')?.config?.defaultEngine
   }));
   expect(after.keys, 'nothing about engines survives in the live config').toEqual([]);

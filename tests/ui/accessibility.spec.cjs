@@ -138,8 +138,8 @@ test('every target in the product has a 40px hit area', async ({ nordlysPage }) 
   await page.waitForTimeout(360);
   small.push(...await undersizedTargets(page, 'dock'));
   await page.evaluate(() => {
-    window.Aurora.config.groups = [];
-    window.Aurora.saveConfig(); window.Aurora.grid.render();
+    window.Nordlys.config.groups = [];
+    window.Nordlys.saveConfig(); window.Nordlys.grid.render();
   });
   small.push(...await undersizedTargets(page, 'empty board'));
 

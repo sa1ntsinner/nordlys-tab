@@ -9,10 +9,10 @@ test('search keeps focus in an active-descendant combobox', async ({ nordlysPage
 
 test('Delete removes the active history option and Escape restores the input state with announcements', async ({ nordlysPage }) => {
   const { page } = nordlysPage; const input = page.locator('#q');
-  await page.evaluate(() => localStorage.setItem('aurora_search_history', JSON.stringify(['first query', 'second query'])));
+  await page.evaluate(() => localStorage.setItem('nordlys_search_history', JSON.stringify(['first query', 'second query'])));
   await input.focus(); await expect(page.locator('#sugg [role="option"]')).toHaveCount(2);
   await page.keyboard.press('ArrowDown'); await page.keyboard.press('Delete');
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('aurora_search_history')))).toEqual(['second query']);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('nordlys_search_history')))).toEqual(['second query']);
   await expect(page.locator('#nl-live-region')).toContainText('first query'); await expect(input).toBeFocused();
   await page.keyboard.press('Escape'); await expect(input).toBeFocused(); await expect(input).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('#nl-live-region')).toContainText(/closed/i);

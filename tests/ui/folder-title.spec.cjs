@@ -8,7 +8,7 @@ test('a long folder name widens its card within bounds and then truncates', asyn
   const { page } = nordlysPage;
 
   const widthWith = async label => page.evaluate(name => {
-    window.Aurora.config.groups = [{
+    window.Nordlys.config.groups = [{
       label: name, cols: 3, hidden: false,
       links: [
         { name: 'One', url: 'https://a.test/', icon: 'globe', color: '#7c9cff' },
@@ -16,7 +16,7 @@ test('a long folder name widens its card within bounds and then truncates', asyn
         { name: 'Three', url: 'https://c.test/', icon: 'globe', color: '#7c9cff' }
       ]
     }];
-    window.Aurora.grid.render();
+    window.Nordlys.grid.render();
     document.getElementById('board').classList.add('board-loaded');
     const card = document.querySelector('#board > .card');
     const title = card.querySelector('.cat b');
@@ -37,8 +37,8 @@ test('a long folder name widens its card within bounds and then truncates', asyn
   // Ordinary names must still be readable in full — the bound exists for absurd
   // ones, not to clip every folder on the board.
   const ordinary = await page.evaluate(() => {
-    window.Aurora.config = JSON.parse(JSON.stringify(window.Aurora.defaultConfig));
-    window.Aurora.grid.render();
+    window.Nordlys.config = JSON.parse(JSON.stringify(window.Nordlys.defaultConfig));
+    window.Nordlys.grid.render();
     document.getElementById('board').classList.add('board-loaded');
     return [...document.querySelectorAll('#board > .card .cat b')]
       .filter(node => node.scrollWidth > node.clientWidth + 1)

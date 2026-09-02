@@ -1846,10 +1846,10 @@ window.I18N = {
   setLanguage(lang) {
     this.currentLang = this.translations[lang] ? lang : 'en';
     try {
-      localStorage.setItem('aurora_language', this.currentLang);
+      localStorage.setItem('nordlys_language', this.currentLang);
     } catch(e) {}
     this.applyDOM();
-    window.dispatchEvent(new CustomEvent('aurora:languagechange', { detail: { lang: this.currentLang } }));
+    window.dispatchEvent(new CustomEvent('nordlys:languagechange', { detail: { lang: this.currentLang } }));
   },
 
   applyDOM(root = document) {

@@ -23,7 +23,7 @@ test('all built-in themes retain semantic colors and identical component geometr
   const results = await page.evaluate(idsToCheck => {
     const probe = document.createElement('div'); probe.style.cssText = 'position:fixed;color:var(--nl-text-primary);background:var(--nl-surface-card);border-color:var(--nl-border);outline-color:var(--nl-focus)'; document.body.append(probe);
     const output = idsToCheck.map(id => {
-      window.Aurora.setTheme(id); const css = getComputedStyle(probe), tile = document.querySelector('.tile .box').getBoundingClientRect(), card = document.querySelector('.card').getBoundingClientRect();
+      window.Nordlys.setTheme(id); const css = getComputedStyle(probe), tile = document.querySelector('.tile .box').getBoundingClientRect(), card = document.querySelector('.card').getBoundingClientRect();
       return { id, colors: [css.color, css.backgroundColor, css.borderColor, css.outlineColor], geometry: [Math.round(tile.width), Math.round(tile.height), Math.round(card.style?.borderRadius || 0)] };
     }); probe.remove(); return output;
   }, ids);

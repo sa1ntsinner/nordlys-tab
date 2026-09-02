@@ -18,9 +18,9 @@ async function openCropperWith(page, source) {
     await expect(page.locator('#icon-modal')).toBeVisible();
   }
   await page.evaluate(async src => {
-    await window.Aurora.settings.openCropper(src, 'url');
+    await window.Nordlys.settings.openCropper(src, 'url');
   }, source);
-  await page.waitForFunction(() => Boolean(window.Aurora.settings.cropperImage));
+  await page.waitForFunction(() => Boolean(window.Nordlys.settings.cropperImage));
   await page.waitForTimeout(150);
 }
 
@@ -30,7 +30,7 @@ function fits(state) {
 
 async function cropperState(page) {
   return page.evaluate(() => {
-    const settings = window.Aurora.settings;
+    const settings = window.Nordlys.settings;
     const canvas = document.getElementById('cropper-canvas');
     const slider = document.getElementById('cropper-zoom-slider');
     return {

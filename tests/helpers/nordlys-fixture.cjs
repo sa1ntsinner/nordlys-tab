@@ -68,7 +68,7 @@ const test = base.extend({
         } };
     }, storageState);
     await page.goto(`${server.origin}/newtab.html`);
-    await page.waitForFunction(() => Boolean(window.Aurora?.grid));
+    await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
     await use({ page, storageState, runtimeErrors, origin: server.origin });
     await server.close();
   }

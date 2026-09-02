@@ -95,8 +95,37 @@ const THEME_INLINE_TOKENS = [
 ];
 
 /* Single source of truth for storage keys and theme classification */
-const STORAGE_KEY = "aether_tab_config";
-const LEGACY_STORAGE_KEY = "aurora_tab_config";
+/* The product is called Nordlys and so is everything it writes. It was not
+   always: the first storage key was "aurora_tab_config", the second
+   "aether_tab_config", and the class names, the global, the event names and
+   the IndexedDB database all carried the earlier name too. Three names for one
+   thing is the surest sign that three different hands built it. Every key an
+   older build wrote is listed here and moved under the new name on first run,
+   so nobody's setup is lost to a rename. */
+const STORAGE_KEY = "nordlys_config";
+const LEGACY_STORAGE_KEYS = ["aether_tab_config", "aurora_tab_config"];
+const LEGACY_LOCAL_KEYS = {
+  "aether_tab_config": STORAGE_KEY,
+  "aurora_tab_config": STORAGE_KEY,
+  "aurora_search_history": "nordlys_search_history",
+  "aurora_language": "nordlys_language",
+  "aurora_drawer_width": "nordlys_drawer_width",
+  "aurora_custom_themes": "nordlys_custom_themes"
+};
+
+/* Runs before anything reads storage. A new key that already exists wins; an
+   old key is copied only into an empty new one, then removed, so the move
+   happens exactly once and a fresh install never sees it at all. */
+function adoptLegacyLocalStorage() {
+  try {
+    for (const [oldKey, newKey] of Object.entries(LEGACY_LOCAL_KEYS)) {
+      const value = localStorage.getItem(oldKey);
+      if (value === null) continue;
+      if (localStorage.getItem(newKey) === null) localStorage.setItem(newKey, value);
+      localStorage.removeItem(oldKey);
+    }
+  } catch (error) { /* storage unavailable: nothing to move, nothing to lose */ }
+}
 /* The last state that existed before a migration rewrote it. */
 const RESTORE_POINT_KEY = "nordlys_restore_point";
 const LIGHT_THEMES = [
@@ -133,12 +162,30 @@ const THEME_MIGRATIONS = {
   "boreal": "boreal-emerald"
 };
 
-class AuroraApp {
+class NordlysApp {
   constructor() {
+    adoptLegacyLocalStorage();
     this.defaultConfig = DEFAULT_CONFIG;
     this.config = this.loadConfig();
+    this.adoptLegacyMirror();
     this.mediaObjectUrl = null;
     this.init();
+  }
+
+  /* chrome.storage is the page's backup copy. Moving localStorage across left it
+     alone: nothing on an ordinary load saves, so the backup kept the old key and
+     never gained the new one — which the test for this caught. If the mirror
+     still holds any old name, it gets the current config under the new one and
+     the old entries go. A fresh install has nothing there and skips it. */
+  adoptLegacyMirror() {
+    if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) return;
+    try {
+      chrome.storage.local.get(LEGACY_STORAGE_KEYS, (data) => {
+        if (!data || !LEGACY_STORAGE_KEYS.some((key) => data[key] !== undefined)) return;
+        chrome.storage.local.set({ [STORAGE_KEY]: this.config });
+        chrome.storage.local.remove(LEGACY_STORAGE_KEYS);
+      });
+    } catch (error) { /* the backup is a convenience; the page has already loaded */ }
   }
 
   /* The board is the point of the page; the header is how much context sits
@@ -244,7 +291,7 @@ class AuroraApp {
 
   loadConfig() {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
+      const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         const cfg = Object.assign({}, DEFAULT_CONFIG, parsed);
@@ -271,11 +318,14 @@ class AuroraApp {
 
   /* If localStorage was wiped but chrome.storage still holds a config, restore it. */
   restoreFromChromeStorage() {
-    if (localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY)) return;
+    if (localStorage.getItem(STORAGE_KEY)) return;
     if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) return;
     try {
-      chrome.storage.local.get([STORAGE_KEY, LEGACY_STORAGE_KEY], (data) => {
-        const saved = data && (data[STORAGE_KEY] || data[LEGACY_STORAGE_KEY]);
+      chrome.storage.local.get([STORAGE_KEY, ...LEGACY_STORAGE_KEYS], (data) => {
+        const saved = data && (data[STORAGE_KEY] || LEGACY_STORAGE_KEYS.map(key => data[key]).find(Boolean));
+        // Whatever was saved under an old name is re-saved under the new one below,
+        // and the old entries go, so the mirror carries one key like the page does.
+        if (saved && !data[STORAGE_KEY]) chrome.storage.local.remove(LEGACY_STORAGE_KEYS);
         if (saved && saved.groups && !localStorage.getItem(STORAGE_KEY)) {
           this.config = Object.assign({}, DEFAULT_CONFIG, saved);
           const migrated = this.normalizeStoredConfig(this.config);
@@ -301,14 +351,14 @@ class AuroraApp {
 
   init() {
     // Initialize I18N (config -> saved pick -> browser language)
-    const savedLang = localStorage.getItem("aurora_language");
+    const savedLang = localStorage.getItem("nordlys_language");
     const supported = window.I18N ? Object.keys(window.I18N.translations) : ["en"];
     const navLang = (navigator.language || "en").slice(0, 2).toLowerCase();
     const lang = this.config.language || savedLang || (supported.includes(navLang) ? navLang : "en");
     this.config.language = lang;
     if (window.I18N) window.I18N.setLanguage(lang);
 
-    window.addEventListener("aurora:languagechange", () => {
+    window.addEventListener("nordlys:languagechange", () => {
       this.widgets?.refreshLabels();
       this.widgets?.updateClock();
       this.grid?.render();
@@ -330,7 +380,7 @@ class AuroraApp {
     }
 
     // 2. Initialize background engine
-    this.bgEngine = new AuroraBackgroundEngine();
+    this.bgEngine = new NordlysBackgroundEngine();
     this.updateBackgroundMode();
 
     // 3. Initialize widgets
@@ -704,8 +754,8 @@ class AuroraApp {
 // Bootstrap immediately with zero event-loop delay
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
-    window.Aurora = new AuroraApp();
+    window.Nordlys = new NordlysApp();
   });
 } else {
-  window.Aurora = new AuroraApp();
+  window.Nordlys = new NordlysApp();
 }

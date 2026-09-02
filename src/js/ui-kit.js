@@ -35,7 +35,7 @@ function relativeLuminance(hex) {
 }
 
 /* ── Frosted Toast Notifications ─────────────────────────────────── */
-const AuroraToast = {
+const NordlysToast = {
   dock: null,
 
   ensureDock() {
@@ -84,11 +84,11 @@ const AuroraToast = {
 };
 
 function toast(message, kind = "info", duration) {
-  AuroraToast.show(message, kind, duration);
+  NordlysToast.show(message, kind, duration);
 }
 
 /* ── Glass Confirm Dialog (Promise-based confirm() replacement) ──── */
-const AuroraConfirm = {
+const NordlysConfirm = {
   active: null,
   controller: null,
 
@@ -141,5 +141,5 @@ const AuroraConfirm = {
 };
 
 function confirmDialog(options) {
-  return AuroraConfirm.open(typeof options === "string" ? { message: options } : options);
+  return NordlysConfirm.open(typeof options === "string" ? { message: options } : options);
 }
