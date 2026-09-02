@@ -192,3 +192,51 @@ test('a backup exported by an earlier build imports through the real import path
   expect(after.bgMotion, 'and stays still, as particles was').toBe(0);
   expect(after.engine, 'a removed setting in the backup is dropped').toBe(false);
 });
+
+/* An extension update reloads every open new-tab page at once. Two tabs start
+   with empty localStorage and a mirror holding the old key; the first restores
+   and writes localStorage while the second's request is still in flight. The
+   second used to see localStorage filled, skip the adopt, and publish its own
+   defaults over the backup. Modelled here in one page: the other tab's write is
+   made to land between the request and its answer. */
+test('a second tab arriving during a restore adopts what the first wrote, never its defaults', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const real = { theme: 'gruvbox-dark', groups: [{ label: 'REAL', cols: 3, hidden: false, links: [] }] };
+  await page.evaluate(config => {
+    localStorage.removeItem('nordlys_config');
+    window.chrome.storage.local.remove('nordlys_config', () => {});
+    window.chrome.storage.local.set({ aether_tab_config: config }, () => {});
+  }, real);
+  await page.addInitScript(config => {
+    const original = window.chrome.storage.local.get.bind(window.chrome.storage.local);
+    window.chrome.storage.local.get = (keys, callback) => original(keys, answer => {
+      if (!window.__otherTabWrote && Array.isArray(keys) && keys.includes('nordlys_config')) {
+        window.__otherTabWrote = true;
+        // The first tab got here first: it restored, and wrote localStorage.
+        localStorage.setItem('nordlys_config', JSON.stringify(config));
+      }
+      callback(answer);
+    });
+  }, real);
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0]?.label), 'this tab shows the real board').toBe('REAL');
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.groups?.[0]?.label, 'the mirror holds the real board').toBe('REAL');
+  await expect.poll(() => 'aether_tab_config' in nordlysPage.storageState).toBe(false);
+  expect(JSON.parse(await page.evaluate(() => localStorage.getItem('nordlys_config'))).groups[0].label).toBe('REAL');
+});
+
+/* A fresh install has nothing anywhere. It must not write its defaults into the
+   mirror on the strength of a race it did not win — the mirror is for setups. */
+test('a page that loaded nothing publishes nothing', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => {
+    localStorage.removeItem('nordlys_config');
+    window.chrome.storage.local.clear(() => {});
+  });
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  await page.waitForTimeout(300);
+  expect(Object.keys(nordlysPage.storageState), 'the mirror stays empty').toEqual([]);
+});

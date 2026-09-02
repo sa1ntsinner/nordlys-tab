@@ -17,10 +17,11 @@ const test = base.extend({
       const persist = () => localStorage.setItem('__nordlys_test_storage', JSON.stringify(state));
       const pick = keys => keys == null ? { ...state } : typeof keys === 'string' ? { [keys]: state[keys] } : Array.isArray(keys) ? Object.fromEntries(keys.map(key => [key, state[key]])) : Object.fromEntries(Object.entries(keys).map(([key, fallback]) => [key, state[key] ?? fallback]));
       window.chrome = { storage: { local: {
-        /* Answers on a later tick, as chrome.storage does. A synchronous answer
-           here hid a real ordering bug: two reads issued in sequence resolved in
-           the wrong order in Chrome and the right order in the shim. */
-        get(keys, callback) { setTimeout(() => callback(pick(keys)), 0); },
+        /* Answers on a later tick with what was there when asked, as chrome.storage
+           does. A synchronous answer here hid a real ordering bug, and answering
+           with the state at delivery time hid a second one: a write that lands
+           between the request and the answer is exactly the case that matters. */
+        get(keys, callback) { const answer = pick(keys); setTimeout(() => callback(answer), 0); },
         set(values, callback) { Object.assign(state, values); persist(); window.__nordlysStorageSet(values); callback?.(); },
         remove(keys, callback) { for (const key of Array.isArray(keys) ? keys : [keys]) delete state[key]; persist(); window.__nordlysStorageRemove(keys); callback?.(); },
         clear(callback) { const keys = Object.keys(state); for (const key of keys) delete state[key]; persist(); window.__nordlysStorageRemove(keys); callback?.(); }

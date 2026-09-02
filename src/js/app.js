@@ -268,6 +268,7 @@ class NordlysApp {
     const point = this.restorePoint();
     if (!point || !point.config) return false;
     this.config = Object.assign({}, DEFAULT_CONFIG, point.config);
+    this.loadedFromStore = true;
     this.saveConfig();
     return true;
   }
@@ -278,6 +279,10 @@ class NordlysApp {
       if (stored) {
         const parsed = JSON.parse(stored);
         const cfg = Object.assign({}, DEFAULT_CONFIG, parsed);
+        /* Remembered for the mirror: only a config this instance loaded or
+           adopted from a store may ever be written there. The defaults it
+           starts on when nothing is stored must not be. */
+        this.loadedFromStore = true;
         if (this.normalizeStoredConfig(cfg)) {
           // Keep what the user had, exactly as it was, before writing over it.
           this.snapshotBeforeMigration(parsed);
@@ -287,6 +292,7 @@ class NordlysApp {
         return cfg;
       }
     } catch (e) {}
+    this.loadedFromStore = false;
     return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
   }
 
@@ -300,51 +306,67 @@ class NordlysApp {
   }
 
   /* chrome.storage is the page's backup copy, and the only copy left when Chrome
-     clears site data. This is the one place that reads it, and it does two
-     things in a fixed order: if the page has no config, it takes the mirror's;
-     then, if the mirror still carries any old key, it writes the config that is
-     live now under the new key and removes the old ones.
+     clears site data. This is the one place that reads it.
 
-     The order is the point. A first version did the tidying in a separate call
-     from the constructor, where "the config that is live now" was still the
-     defaults for anyone whose only copy was in the mirror — so it wrote defaults
-     over their backup and deleted the original. The restore that ran a moment
-     later then found nothing to restore. That was confirmed in a real Chromium
-     before it shipped; in the test fixture the storage shim was synchronous and
-     the race did not exist, which is why the test for the move passed. */
+     The rule is about this instance, not about the stores. If this page started
+     on defaults because nothing was stored, then anything real that exists by
+     the time the answer arrives is adopted — from localStorage first, since a
+     second tab may have restored and written it while this request was in
+     flight, and from the mirror otherwise. And the mirror is only ever written
+     with a config that was loaded or adopted from a store. Two earlier versions
+     of this method broke that rule in two ways. One tidied the mirror from a
+     separate call while the live config was still defaults, and wrote defaults
+     over the only copy. The next keyed the adopt decision on whether
+     localStorage was empty at callback time: with two tabs opening at once — an
+     extension update reloads every open new-tab page together — the second
+     tab's callback found localStorage already filled by the first, skipped the
+     adopt, and published its own defaults to the mirror. Both were reproduced
+     in a real Chromium before they shipped. */
   restoreFromChromeStorage() {
     if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) return;
     try {
       chrome.storage.local.get([STORAGE_KEY, ...LEGACY_STORAGE_KEYS], (data) => {
         if (!data) return;
         const legacyPresent = LEGACY_STORAGE_KEYS.some((key) => data[key] !== undefined);
-        const saved = data[STORAGE_KEY] || LEGACY_STORAGE_KEYS.map((key) => data[key]).find(Boolean);
         let migrated = false;
 
-        if (saved && saved.groups && !localStorage.getItem(STORAGE_KEY)) {
-          this.config = Object.assign({}, DEFAULT_CONFIG, saved);
-          migrated = this.normalizeStoredConfig(this.config);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(this.config));
-          this.applyThemeTokens();
-          this.applyGeometryTokens();
-          this.applyHeaderStyle();
-          this.applyGlassLevel();
-          this.injectCustomCSS(this.config.customCss || "");
-          this.updateBackgroundMode();
-          this.grid?.render();
-          this.widgets?.updateClock();
-          const cssEditor = document.getElementById("css-editor");
-          if (cssEditor) cssEditor.value = this.config.customCss || "";
-          if (typeof toast === "function") {
-            toast(window.I18N ? window.I18N.t("toast.restored") : "Settings restored from browser storage", "success");
+        if (!this.loadedFromStore) {
+          let source = null;
+          let fromMirror = false;
+          try {
+            const written = localStorage.getItem(STORAGE_KEY);
+            if (written) source = JSON.parse(written);
+          } catch (e) {}
+          if (!source) {
+            source = data[STORAGE_KEY] || LEGACY_STORAGE_KEYS.map((key) => data[key]).find(Boolean);
+            fromMirror = Boolean(source);
+          }
+          if (source && source.groups) {
+            this.config = Object.assign({}, DEFAULT_CONFIG, source);
+            migrated = this.normalizeStoredConfig(this.config);
+            if (migrated) this.snapshotBeforeMigration(source);
+            this.loadedFromStore = true;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.config));
+            this.applyThemeTokens();
+            this.applyGeometryTokens();
+            this.applyHeaderStyle();
+            this.applyGlassLevel();
+            this.injectCustomCSS(this.config.customCss || "");
+            this.updateBackgroundMode();
+            this.grid?.render();
+            this.widgets?.updateClock();
+            const cssEditor = document.getElementById("css-editor");
+            if (cssEditor) cssEditor.value = this.config.customCss || "";
+            if (fromMirror && typeof toast === "function") {
+              toast(window.I18N ? window.I18N.t("toast.restored") : "Settings restored from browser storage", "success");
+            }
           }
         }
 
-        /* Only once anything above has run: whatever is live is the user's, not
-           the defaults, and that is what the backup must hold. It is rewritten
-           when it carried an old key, and also when the restored config needed
-           a migration — otherwise the backup keeps a shape the code no longer
-           reads, and restores it un-migrated next time. */
+        /* Never with defaults. Rewritten when the mirror carried an old key, and
+           when what came in needed a migration — otherwise the backup keeps a
+           shape the code no longer reads and restores it un-migrated next time. */
+        if (!this.loadedFromStore) return;
         if (legacyPresent || migrated) chrome.storage.local.set({ [STORAGE_KEY]: this.config });
         if (legacyPresent) chrome.storage.local.remove(LEGACY_STORAGE_KEYS);
       });
