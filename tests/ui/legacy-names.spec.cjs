@@ -103,20 +103,92 @@ test('a wallpaper stored under the old database name is still the wallpaper', as
   expect(moved.type).toBe('image/png');
   expect(moved.names, 'the new database exists').toContain('Nordlys_MediaVault');
   expect(moved.names, 'and the old one is gone').not.toContain('AuroraTab_MediaVault');
-  // And the page is actually showing it.
-  expect(await page.evaluate(() => document.documentElement.dataset.bg)).toBe('custom-image');
+  // And the page is actually showing it: the image element got the blob.
+  await expect.poll(() => page.evaluate(() => document.getElementById('bg-media')?.src || '')).toMatch(/^blob:/);
 });
 
-test('the export a previous build wrote imports as it is', async ({ nordlysPage }) => {
+/* The move can fail part way — a blocked delete, a read error — and is retried
+   on the next load. Between the two the user may have chosen a wallpaper, which
+   went into the new database. The retry must not put the old one back over it. */
+test('a retried move never puts an old wallpaper over a newer one', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  /* An export is the bare config object and always was, so a backup taken under
-     any earlier name has nothing in it to rename. */
-  const restored = await page.evaluate(() => {
-    const backup = JSON.stringify({ version: '2.1.0', theme: 'nordic-snow', groups: [{ label: 'FROM BACKUP', cols: 2, hidden: false, links: [] }] });
-    const parsed = JSON.parse(backup);
-    return { hasGroups: Array.isArray(parsed.groups), label: parsed.groups[0].label, keyNamesInside: Object.keys(parsed).filter(key => /aurora|aether|nordlys/.test(key)) };
+  await page.evaluate(async () => {
+    const openWith = name => new Promise((resolve, reject) => {
+      const request = indexedDB.open(name, 1);
+      request.onupgradeneeded = event => event.target.result.createObjectStore('wallpapers', { keyPath: 'id' });
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const put = (db, record) => new Promise((resolve, reject) => {
+      const tx = db.transaction('wallpapers', 'readwrite');
+      tx.objectStore('wallpapers').put(record);
+      tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
+    });
+    for (const name of ['Nordlys_MediaVault', 'AuroraTab_MediaVault']) {
+      await new Promise(resolve => { const r = indexedDB.deleteDatabase(name); r.onsuccess = r.onerror = r.onblocked = () => resolve(); });
+    }
+    const legacy = await openWith('AuroraTab_MediaVault');
+    await put(legacy, { id: 'custom_bg', blob: new Blob(['OLD'], { type: 'image/png' }), type: 'image/png', timestamp: 1 });
+    legacy.close();
+    const current = await openWith('Nordlys_MediaVault');
+    await put(current, { id: 'custom_bg', blob: new Blob(['NEWER'], { type: 'image/jpeg' }), type: 'image/jpeg', timestamp: 2 });
+    current.close();
   });
-  expect(restored.hasGroups).toBe(true);
-  expect(restored.label).toBe('FROM BACKUP');
-  expect(restored.keyNamesInside, 'a backup names no storage key').toEqual([]);
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+
+  const kept = await page.evaluate(async () => {
+    const blob = await MediaVault.getMedia('custom_bg');
+    const names = (await indexedDB.databases()).map(entry => entry.name);
+    return { type: blob?.type, text: blob ? await blob.text() : null, names };
+  });
+  expect(kept.text, 'the newer wallpaper is the one that stays').toBe('NEWER');
+  expect(kept.type).toBe('image/jpeg');
+  expect(kept.names, 'and the old database is still cleaned up').not.toContain('AuroraTab_MediaVault');
+});
+
+/* Chrome clears an extension's localStorage with "clear site data", and the
+   chrome.storage mirror is then the only copy of a setup. A first version of
+   the rename wrote defaults over that copy and deleted the original — the
+   restore that ran afterwards had nothing left to restore. */
+test('a setup that survives only in the mirror is restored, and the mirror keeps it', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => {
+    const keepsake = { theme: 'gruvbox-dark', groups: [{ label: 'ONLY COPY', cols: 3, hidden: false, links: [] }] };
+    localStorage.removeItem('nordlys_config');
+    window.chrome.storage.local.remove('nordlys_config', () => {});
+    window.chrome.storage.local.set({ aether_tab_config: keepsake }, () => {});
+  });
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0]?.label), 'the page shows the only copy').toBe('ONLY COPY');
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.groups?.[0]?.label, 'the mirror holds it under the new key').toBe('ONLY COPY');
+  await expect.poll(() => 'aether_tab_config' in nordlysPage.storageState, 'and not under the old one').toBe(false);
+  expect(JSON.parse(await page.evaluate(() => localStorage.getItem('nordlys_config'))).groups[0].label).toBe('ONLY COPY');
+});
+
+/* A backup is the bare config object and always was, so one saved under any
+   earlier build has nothing in it to rename — but it may carry settings that no
+   longer exist, and those go through the same migrations a stored config does. */
+test('a backup exported by an earlier build imports through the real import path', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.locator('#gear').click();
+  await page.getByRole('tab', { name: 'Backup' }).click();
+  const backup = { version: '2.1.0', theme: 'nordic-snow', defaultEngine: 'duckduckgo', bgMode: 'particles',
+    groups: [{ label: 'FROM BACKUP', cols: 2, hidden: false, links: [] }] };
+  const loaded = page.waitForEvent('load');
+  await page.locator('#cfg-import-universal').setInputFiles({ name: 'nordlys-backup-2026-01-01.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) });
+  await loaded;
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  const after = await page.evaluate(() => ({
+    label: window.Nordlys.config.groups[0]?.label, theme: window.Nordlys.config.theme,
+    bgMode: window.Nordlys.config.bgMode, bgMotion: window.Nordlys.config.bgMotion,
+    engine: 'defaultEngine' in window.Nordlys.config
+  }));
+  expect(after.label).toBe('FROM BACKUP');
+  expect(after.theme).toBe('nordic-snow');
+  expect(after.bgMode, 'a removed scene in the backup lands on its survivor').toBe('aurora');
+  expect(after.bgMotion, 'and stays still, as particles was').toBe(0);
+  expect(after.engine, 'a removed setting in the backup is dropped').toBe(false);
 });

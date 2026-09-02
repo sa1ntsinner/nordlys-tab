@@ -167,25 +167,8 @@ class NordlysApp {
     adoptLegacyLocalStorage();
     this.defaultConfig = DEFAULT_CONFIG;
     this.config = this.loadConfig();
-    this.adoptLegacyMirror();
     this.mediaObjectUrl = null;
     this.init();
-  }
-
-  /* chrome.storage is the page's backup copy. Moving localStorage across left it
-     alone: nothing on an ordinary load saves, so the backup kept the old key and
-     never gained the new one — which the test for this caught. If the mirror
-     still holds any old name, it gets the current config under the new one and
-     the old entries go. A fresh install has nothing there and skips it. */
-  adoptLegacyMirror() {
-    if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) return;
-    try {
-      chrome.storage.local.get(LEGACY_STORAGE_KEYS, (data) => {
-        if (!data || !LEGACY_STORAGE_KEYS.some((key) => data[key] !== undefined)) return;
-        chrome.storage.local.set({ [STORAGE_KEY]: this.config });
-        chrome.storage.local.remove(LEGACY_STORAGE_KEYS);
-      });
-    } catch (error) { /* the backup is a convenience; the page has already loaded */ }
   }
 
   /* The board is the point of the page; the header is how much context sits
@@ -316,21 +299,32 @@ class NordlysApp {
     } catch (e) {}
   }
 
-  /* If localStorage was wiped but chrome.storage still holds a config, restore it. */
+  /* chrome.storage is the page's backup copy, and the only copy left when Chrome
+     clears site data. This is the one place that reads it, and it does two
+     things in a fixed order: if the page has no config, it takes the mirror's;
+     then, if the mirror still carries any old key, it writes the config that is
+     live now under the new key and removes the old ones.
+
+     The order is the point. A first version did the tidying in a separate call
+     from the constructor, where "the config that is live now" was still the
+     defaults for anyone whose only copy was in the mirror — so it wrote defaults
+     over their backup and deleted the original. The restore that ran a moment
+     later then found nothing to restore. That was confirmed in a real Chromium
+     before it shipped; in the test fixture the storage shim was synchronous and
+     the race did not exist, which is why the test for the move passed. */
   restoreFromChromeStorage() {
-    if (localStorage.getItem(STORAGE_KEY)) return;
     if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) return;
     try {
       chrome.storage.local.get([STORAGE_KEY, ...LEGACY_STORAGE_KEYS], (data) => {
-        const saved = data && (data[STORAGE_KEY] || LEGACY_STORAGE_KEYS.map(key => data[key]).find(Boolean));
-        // Whatever was saved under an old name is re-saved under the new one below,
-        // and the old entries go, so the mirror carries one key like the page does.
-        if (saved && !data[STORAGE_KEY]) chrome.storage.local.remove(LEGACY_STORAGE_KEYS);
+        if (!data) return;
+        const legacyPresent = LEGACY_STORAGE_KEYS.some((key) => data[key] !== undefined);
+        const saved = data[STORAGE_KEY] || LEGACY_STORAGE_KEYS.map((key) => data[key]).find(Boolean);
+        let migrated = false;
+
         if (saved && saved.groups && !localStorage.getItem(STORAGE_KEY)) {
           this.config = Object.assign({}, DEFAULT_CONFIG, saved);
-          const migrated = this.normalizeStoredConfig(this.config);
+          migrated = this.normalizeStoredConfig(this.config);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(this.config));
-          if (migrated) chrome.storage.local.set({ [STORAGE_KEY]: this.config });
           this.applyThemeTokens();
           this.applyGeometryTokens();
           this.applyHeaderStyle();
@@ -345,6 +339,14 @@ class NordlysApp {
             toast(window.I18N ? window.I18N.t("toast.restored") : "Settings restored from browser storage", "success");
           }
         }
+
+        /* Only once anything above has run: whatever is live is the user's, not
+           the defaults, and that is what the backup must hold. It is rewritten
+           when it carried an old key, and also when the restored config needed
+           a migration — otherwise the backup keeps a shape the code no longer
+           reads, and restores it un-migrated next time. */
+        if (legacyPresent || migrated) chrome.storage.local.set({ [STORAGE_KEY]: this.config });
+        if (legacyPresent) chrome.storage.local.remove(LEGACY_STORAGE_KEYS);
       });
     } catch (e) {}
   }

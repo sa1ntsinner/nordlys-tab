@@ -437,7 +437,16 @@ const MediaVault = {
           const db = await this.openNamed(this.DB_NAME);
           await new Promise((resolve, reject) => {
             const tx = db.transaction(this.STORE, "readwrite");
-            for (const record of records) tx.objectStore(this.STORE).put(record);
+            const store = tx.objectStore(this.STORE);
+            for (const record of records) {
+              /* add(), not put(). If a first attempt at this move failed part
+                 way and the user has since chosen a wallpaper, the new database
+                 holds the newer record and the old one must lose. add() refuses
+                 a duplicate key; the refusal is swallowed per record so the
+                 transaction carries on with the rest. */
+              const request = store.add(record);
+              request.onerror = (event) => { event.preventDefault(); event.stopPropagation(); };
+            }
             tx.oncomplete = () => resolve();
             tx.onerror = () => reject(tx.error);
           });
