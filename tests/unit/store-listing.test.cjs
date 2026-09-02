@@ -36,3 +36,29 @@ test('the summary fits the 132 characters the store allows', () => {
   assert.ok(summary, 'the listing has no summary block');
   assert.ok(summary[1].length <= 132, `summary is ${summary[1].length} characters`);
 });
+
+/* The listing says its Summary is the manifest description. That was true once
+   and then quietly was not — the manifest moved on and the listing kept an
+   older sentence that still advertised "animated canvas scenes". */
+test('the summary is the manifest description, word for word', () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'manifest.json'), 'utf8'));
+  const summary = LISTING.match(/## Summary \(132 characters maximum\)\n\n```\n([\s\S]*?)\n```/)[1];
+  assert.strictEqual(summary, manifest.description);
+});
+
+/* The rejection that cost a release cited one sentence of one field. The words
+   that name a competing search product must not appear in anything that is
+   pasted into the dashboard, except in a sentence saying they are gone. */
+test('the dashboard copy never offers a search engine', () => {
+  const blocks = [...LISTING.matchAll(/```\n([\s\S]*?)\n```/g)].map(match => match[1]);
+  const offenders = [];
+  for (const block of blocks) {
+    for (const line of block.split('\n')) {
+      if (/(search engine|engine)s? (you|they) (chose|pick|select)|multi-engine|ten engines|bang shortcut|%s where/i.test(line)
+          && !/no longer|used to|previous version|gone|removed|never|does not have|has no/i.test(line)) {
+        offenders.push(line.trim().slice(0, 90));
+      }
+    }
+  }
+  assert.deepStrictEqual(offenders, [], `dashboard copy offers an engine:\n${offenders.join('\n')}`);
+});

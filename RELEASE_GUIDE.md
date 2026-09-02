@@ -9,7 +9,7 @@ This guide covers the exact manual steps to publish **Nordlys** on **GitHub** an
 - [x] **Extension Architecture**: Manifest V3 compliant, zero external CDN dependencies, fast cold startup, no `<all_urls>` host permission (one allow-listed icon host, used only when the user pastes an icon address). Search goes through `chrome.search` to the engine set in Chrome; the extension has no engine setting of its own.
 - [x] **Icons Package**: 16x16, 32x32, 48x48, 128x128 PNG icons ready in `icons/`.
 - [x] **Privacy Compliance**: Zero-telemetry `PRIVACY.md` whose "Optional Network Features" section matches the manifest exactly.
-- [x] **UI/UX Polish**: 21 built-in themes (11 dark + 10 light) with per-theme canvas shader palettes, Dark/Light/Auto system mode, custom theme studio with live preview, drag-and-drop folders, context menus everywhere, glass confirm dialogs & toasts, instant calculator with 10 search engines, video/image wallpapers with blur & dim, Netscape HTML bookmarks import/export.
+- [x] **UI/UX Polish**: 21 built-in themes (11 dark + 10 light) with per-theme canvas shader palettes, Dark/Light/Auto system mode, custom theme studio with live preview, drag-and-drop folders, context menus everywhere, glass confirm dialogs & toasts, a calculator in the search box (search itself goes to the engine set in Chrome), video/image wallpapers with blur & dim, Netscape HTML bookmarks import/export.
 - [x] **License**: MIT `LICENSE` file included.
 
 ---
@@ -62,8 +62,7 @@ This generates `nordlys-v2.2.2.zip` ready for upload.
 2. Upload `nordlys-v2.2.2.zip`.
 
 ### 4.1 Store Listing Details
-- **Title**: `Nordlys — Aesthetic Glass Dashboard` (Max 45 chars)
-- **Summary**: `Fast, beautiful new tab: 21 glass themes, live aurora shaders, smart bookmarks, multi-engine search, and full offline privacy.` (Max 132 chars)
+- **Title**, **Summary**, **Description** and every **permission justification**: paste from `docs/store-listing.md`, which is the single source for the listing. This guide used to carry its own copies; they drifted, and one of them still advertised "multi-engine search" after the store had rejected the extension for exactly that. Do not retype them here.
 - **Category**: **Productivity** or **Lifestyle / Personalization**.
 - **Primary Language**: `English (United States)` or `Russian`.
 

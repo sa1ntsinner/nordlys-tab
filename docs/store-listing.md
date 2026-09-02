@@ -26,10 +26,10 @@ description instead. Both say it in their first line.
 ## Summary (132 characters maximum)
 
 ```
-A new tab page with 21 themes, animated canvas scenes, bookmark folders you arrange yourself, and search that does arithmetic.
+A new tab page with 21 themes, a living aurora, bookmark folders you arrange yourself, and a search box that does arithmetic.
 ```
 
-126 characters. Identical to the `description` field in `manifest.json`.
+125 characters. Identical to the `description` field in `manifest.json`, and a unit test keeps it so.
 
 ## Category
 
@@ -99,10 +99,10 @@ Nothing is written: there is no create, update, move or remove call anywhere in 
 It is in optional_permissions, so nothing is asked at install and the extension works fully without it. permissions.request() runs only from the click that links a folder; declining changes nothing. Mirrored titles and URLs go only to local extension storage and are never transmitted.
 ```
 
-### `storage` — 248 chars
+### `storage` — 233 chars
 
 ```
-Stores the user's own configuration on the device: their bookmark folders and tiles, and the theme, fonts, layout, background and search engine they chose. The extension has no account and no server, so this is the only place a user's setup exists.
+Stores the user's own configuration on the device: their bookmark folders and tiles, and the theme, fonts, layout and background they chose. The extension has no account and no server, so this is the only place a user's setup exists.
 ```
 
 ### `unlimitedStorage` — 336 chars
