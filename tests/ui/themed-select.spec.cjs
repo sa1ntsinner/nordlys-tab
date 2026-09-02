@@ -59,9 +59,9 @@ test('the themed list commits with the keyboard and returns focus to its trigger
 
 test('escape closes the list without changing the value', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  await openSettings(page, 'general');
-  const select = page.locator('#cfg-default-engine');
-  const trigger = page.locator('#cfg-default-engine + .nl-select');
+  await openSettings(page, 'appearance');
+  const select = page.locator('#cfg-font-display');
+  const trigger = page.locator('#cfg-font-display + .nl-select');
   const before = await select.inputValue();
 
   await trigger.click();
@@ -79,16 +79,28 @@ test('escape closes the list without changing the value', async ({ nordlysPage }
 
 test('typing jumps to a matching option', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  await openSettings(page, 'general');
-  await page.locator('#cfg-default-engine + .nl-select').click();
-  await expect(page.locator('.nl-select-list.open')).toBeVisible();
+  await openSettings(page, 'appearance');
+  await page.locator('#cfg-font-display + .nl-select').click();
+  const list = page.locator('.nl-select-list.open');
+  await expect(list).toBeVisible();
   /* The list takes focus a frame after it opens. Typing into the gap sends the
      keys somewhere else, which is a flake under load rather than a bug — but a
      suite that fails at random is a suite people stop reading. */
   await expect.poll(() => page.evaluate(() => document.activeElement?.getAttribute('role'))).toBe('option');
-  await page.keyboard.type('wi');
-  const focused = await page.evaluate(() => document.activeElement?.textContent?.trim().toLowerCase());
-  expect(focused?.startsWith('wi'), `type-ahead landed on "${focused}"`).toBe(true);
+
+  /* The font list is whatever is installed, so the target is chosen from what
+     is actually there: an option that is not already focused and whose first two
+     letters no other option shares. */
+  const target = await page.evaluate(() => {
+    const labels = [...document.querySelectorAll('.nl-select-list.open [role="option"]')].map(node => node.textContent.trim());
+    const focused = document.activeElement?.textContent?.trim();
+    return labels.find(label => label !== focused
+      && labels.filter(other => other.slice(0, 2).toLowerCase() === label.slice(0, 2).toLowerCase()).length === 1);
+  });
+  expect(target, 'the list has an option with a unique two-letter prefix').toBeTruthy();
+  await page.keyboard.type(target.slice(0, 2).toLowerCase());
+  const focused = await page.evaluate(() => document.activeElement?.textContent?.trim());
+  expect(focused, `type-ahead landed on "${focused}"`).toBe(target);
 });
 
 test('font options preview themselves and reach the canvas', async ({ nordlysPage }) => {
@@ -113,18 +125,24 @@ test('font options preview themselves and reach the canvas', async ({ nordlysPag
    anything below the fold — shut the list and restored the previous value. */
 test('reaching a row below the fold does not close the list', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  await openSettings(page, 'general');
-  await page.locator('#cfg-default-engine + .nl-select').click();
+  await openSettings(page, 'appearance');
+  await page.locator('#cfg-font-display + .nl-select').click();
   const list = page.locator('.nl-select-list.open');
   await expect(list).toBeVisible();
-  const last = (await list.locator('[role="option"]').last().textContent()).trim();
+  const rows = list.locator('[role="option"]');
+  expect(await rows.count(), 'a list long enough to scroll').toBeGreaterThan(6);
+  const last = (await rows.last().textContent()).trim();
 
   await page.keyboard.press('End');
   await expect(list, 'the list survives being scrolled to its last row').toBeVisible();
   expect(await page.evaluate(() => document.activeElement?.textContent?.trim())).toBe(last);
 
-  // And the value it commits is the one the walk actually reached.
+  /* The very last row of this list is not a font but the offer to load the
+     device's fonts, which asks a question rather than committing a value. One
+     step up is the last real font, and that is what the walk should commit. */
+  await page.keyboard.press('ArrowUp');
+  const reached = await page.evaluate(() => document.activeElement?.dataset.value);
   await page.keyboard.press('Enter');
   await expect(list).toBeHidden();
-  expect(await page.locator('#cfg-default-engine').inputValue()).toBe('wikipedia');
+  expect(await page.locator('#cfg-font-display').inputValue()).toBe(reached);
 });

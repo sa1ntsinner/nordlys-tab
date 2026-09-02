@@ -23,7 +23,6 @@ test('the canvas can be operated from the keyboard alone', async ({ nordlysPage 
 
   const wanted = {
     'the search field': item => item === 'q',
-    'the search engine switch': item => /engine/i.test(item),
     'a bookmark tile': item => /tile/.test(item),
     'the folder drag handle': item => /Drag folder/i.test(item),
     'the folder fold control': item => /hide this folder/i.test(item),

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Nordlys",
-  "version": "2.2.1",
-  "description": "A new tab page with 21 themes, a living aurora, still gradients, bookmark folders you arrange, and search that does arithmetic.",
+  "version": "2.2.2",
+  "description": "A new tab page with 21 themes, a living aurora, bookmark folders you arrange yourself, and a search box that does arithmetic.",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   },
@@ -12,19 +12,13 @@
   "permissions": [
     "storage",
     "favicon",
-    "unlimitedStorage"
+    "unlimitedStorage",
+    "search"
   ],
   "optional_permissions": [
     "bookmarks"
   ],
   "host_permissions": [
-    "https://suggestqueries.google.com/*",
-    "https://duckduckgo.com/*",
-    "https://api.bing.com/*",
-    "https://search.brave.com/*",
-    "https://ac.ecosia.org/*",
-    "https://suggest.yandex.com/*",
-    "https://en.wikipedia.org/*",
     "https://images.weserv.nl/*"
   ],
   "icons": {

@@ -52,9 +52,9 @@
     <!-- Omni-Search Bar & Suggestions -->
     <section id="searchwrap">
       <div id="search">
-        <button id="engine-selector" type="button" aria-label="Change search engine">
-          <svg viewBox="0 0 24 24"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/></svg>
-        </button>
+        <span id="search-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        </span>
         <input id="q" type="text" placeholder="Search or enter URL" data-i18n-placeholder="search.placeholder" autocomplete="off" spellcheck="false">
         <kbd>/</kbd>
       </div>
@@ -409,36 +409,7 @@
           <span data-i18n="general.openNewTab">Open bookmarks in new tab</span>
           <label class="tg"><input id="cfg-open-newtab" type="checkbox"><i></i></label>
         </div>
-        <div class="row">
-          <span>
-            <span data-i18n="general.showSuggestions">Web search suggestions</span>
-            <small style="display: block; font-size: var(--nl-text-2xs); color: var(--dim); font-weight: 400; margin-top: 2px;" data-i18n="general.showSuggestionsHint">Sends typed queries to the suggestion service</small>
-          </span>
-          <label class="tg"><input id="cfg-show-suggestions" type="checkbox"><i></i></label>
-        </div>
 
-        <h3 data-i18n="general.defaultEngine">Default Search Engine</h3>
-        <div class="row">
-          <span data-i18n="general.defaultEngine">Default Search Engine</span>
-          <select id="cfg-default-engine" class="ipt">
-            <option value="custom" data-i18n="general.engineCustom">Custom…</option>
-            <option value="google">Google</option>
-            <option value="duckduckgo">DuckDuckGo</option>
-            <option value="bing">Bing</option>
-            <option value="brave">Brave</option>
-            <option value="ecosia">Ecosia</option>
-            <option value="yandex">Yandex</option>
-            <option value="youtube">YouTube</option>
-            <option value="github">GitHub</option>
-            <option value="reddit">Reddit</option>
-            <option value="wikipedia">Wikipedia</option>
-          </select>
-        </div>
-        <div class="row" id="custom-engine-row" hidden style="flex-direction: column; align-items: stretch; gap: 6px;">
-          <label class="quick-label" for="cfg-custom-engine" data-i18n="general.engineTemplate">Search URL, with %s where the query goes</label>
-          <input id="cfg-custom-engine" type="url" class="ipt" placeholder="https://example.com/search?q=%s" spellcheck="false">
-          <span id="custom-engine-note" class="custom-engine-note" role="status"></span>
-        </div>
       </section>
 
       <!-- 4. Background Section -->

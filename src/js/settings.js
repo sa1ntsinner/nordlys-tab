@@ -317,8 +317,6 @@ class SettingsController {
     const timeFormat = document.getElementById("cfg-time-format");
     const showSeconds = document.getElementById("cfg-show-seconds");
     const openNewTab = document.getElementById("cfg-open-newtab");
-    const showSuggestions = document.getElementById("cfg-show-suggestions");
-    const defaultEngine = document.getElementById("cfg-default-engine");
     const languageSelect = document.getElementById("cfg-language-select");
 
     if (languageSelect) languageSelect.value = cfg.language || "en";
@@ -328,8 +326,6 @@ class SettingsController {
     if (headerStyle) headerStyle.value = cfg.headerStyle || "full";
     if (showSeconds) showSeconds.checked = !!cfg.showSeconds;
     if (openNewTab) openNewTab.checked = !!cfg.openNewTab;
-    if (showSuggestions) showSuggestions.checked = cfg.showSuggestions !== false;
-    if (defaultEngine) defaultEngine.value = cfg.defaultEngine || "google";
 
     // Aesthetics Sliders & Selects
     const glassLevel = document.getElementById("cfg-glass-level");
@@ -839,10 +835,6 @@ class SettingsController {
     const timeFormat = document.getElementById("cfg-time-format");
     const showSeconds = document.getElementById("cfg-show-seconds");
     const openNewTab = document.getElementById("cfg-open-newtab");
-    const showSuggestions = document.getElementById("cfg-show-suggestions");
-    const defaultEngine = document.getElementById("cfg-default-engine");
-
-    if (defaultEngine) defaultEngine.value = this.app.config.defaultEngine || "google";
     if (languageSelect) languageSelect.value = this.app.config.language || "en";
 
     languageSelect?.addEventListener("change", (e) => {
@@ -864,13 +856,6 @@ class SettingsController {
     userName?.addEventListener("input", (e) => saveName(e.target.value));
     userName?.addEventListener("change", (e) => saveName(e.target.value));
     userName?.addEventListener("keyup", (e) => saveName(e.target.value));
-
-    defaultEngine?.addEventListener("change", (e) => {
-      const eng = e.target.value;
-      this.app.config.defaultEngine = eng;
-      this.app.saveConfig();
-      this.app.widgets?.search?.setEngine(eng);
-    });
 
     timeFormat?.addEventListener("change", (e) => {
       this.app.config.timeFormat = e.target.value;
@@ -901,45 +886,6 @@ class SettingsController {
       this.app.grid?.render();
     });
 
-    /* A template without a %s has nowhere to put the query. Saying so beside the
-       field beats letting the search silently fall back to Google. */
-    const customEngine = document.getElementById("cfg-custom-engine");
-    const customRow = document.getElementById("custom-engine-row");
-    const customNote = document.getElementById("custom-engine-note");
-    const showCustomEngine = () => {
-      if (customRow) customRow.hidden = this.app.config.defaultEngine !== "custom";
-    };
-    const checkTemplate = () => {
-      if (!customNote) return;
-      const value = (this.app.config.customEngineUrl || "").trim();
-      if (!value) { customNote.textContent = ""; customNote.dataset.state = ""; return; }
-      const usable = value.includes("%s") && /^https?:\/\//i.test(value);
-      customNote.dataset.state = usable ? "ok" : "warn";
-      customNote.textContent = usable
-        ? (window.I18N ? window.I18N.t("general.engineReady") : "Ready")
-        : (window.I18N ? window.I18N.t("general.engineNeedsPlaceholder") : "The address needs %s where the query goes");
-    };
-    if (customEngine) {
-      customEngine.value = this.app.config.customEngineUrl || "";
-      customEngine.addEventListener("input", (e) => {
-        this.app.config.customEngineUrl = e.target.value;
-        this.app.saveConfig();
-        checkTemplate();
-        this.app.widgets?.updateEngineIcon?.();
-      });
-    }
-    showCustomEngine();
-    checkTemplate();
-
-    defaultEngine?.addEventListener("change", () => {
-      showCustomEngine();
-      checkTemplate();
-    });
-
-    showSuggestions?.addEventListener("change", (e) => {
-      this.app.config.showSuggestions = e.target.checked;
-      this.app.saveConfig();
-    });
   }
 
   /* ── 6. Multi-Shader Background Engine Settings ───────────────── */

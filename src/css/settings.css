@@ -1879,11 +1879,6 @@ input[type="range"].ipt:focus-visible {
   text-transform: uppercase;
 }
 
-/* Says whether the template can work, beside the field where it is typed. */
-.custom-engine-note { font-size: var(--nl-text-xs); color: var(--nl-text-tertiary); min-height: 1em; }
-.custom-engine-note[data-state="ok"] { color: var(--nl-status-success); }
-.custom-engine-note[data-state="warn"] { color: var(--nl-status-warning); }
-
 /* A folder whose contents belong to the browser says so, quietly. */
 .bookmark-folder-linked {
   padding: 2px 7px;
