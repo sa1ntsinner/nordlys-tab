@@ -2355,13 +2355,20 @@ class SettingsController {
           } else {
             // JSON Format
             const imported = JSON.parse(text);
-            if (imported && (imported.groups || imported.theme)) {
-              this.app.config = Object.assign({}, DEFAULT_CONFIG, imported);
-              this.app.saveConfig();
-              location.reload();
-            } else if (typeof toast === "function") {
-              toast(window.I18N ? window.I18N.t("toast.importInvalid") : "Invalid JSON configuration structure", "danger");
+            /* Checked in full before anything is written. The old test was "has a
+               groups or a theme key", which let {"groups": {}} through — saved,
+               and then a page that failed on every open. The reasons are shown,
+               and the setup being replaced is kept in the restore point. */
+            const verdict = window.NordlysConfigSchema.validateConfig(imported);
+            if (!verdict.ok) {
+              const label = window.I18N ? window.I18N.t("toast.importInvalid") : "Invalid JSON configuration structure";
+              if (typeof toast === "function") toast(`${label}: ${verdict.errors.slice(0, 3).join("; ")}`, "danger", 7000);
+              return;
             }
+            this.app.snapshotBeforeMigration(this.app.config);
+            this.app.config = Object.assign({}, DEFAULT_CONFIG, imported);
+            this.app.saveConfig();
+            location.reload();
           }
         } catch (err) {
           if (typeof toast === "function") {
