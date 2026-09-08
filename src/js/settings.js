@@ -35,7 +35,10 @@ class SettingsController {
       root: document.getElementById("cfg-groups-editor"),
       openIconPicker: (gIdx, lIdx, opener) => this.openIconModal(gIdx, lIdx, opener)
     });
-    this.iconPicker = new NordlysIconPicker({ dialogRoot: this.modal });
+    this.iconPicker = new NordlysIconPicker({
+      dialogRoot: this.modal,
+      onSelect: (tab) => { if (tab === "favicon") this.refreshFaviconPreview?.(); }
+    });
     document.getElementById("gear")?.addEventListener("click", () => this.open());
     
     this.initDrawerResizer();
@@ -1251,7 +1254,11 @@ class SettingsController {
     const favApplyBtn = document.getElementById("favicon-apply-btn");
     const favCropBtn = document.getElementById("favicon-crop-btn");
     const favSourceChips = document.querySelectorAll("[data-fav-source]");
-    this.currentFaviconSource = "google";
+    /* The browser's own favicon cache is the default source. It is local, it
+       already holds every site the person has visited — which is every site
+       they would bookmark — and asking it sends nothing anywhere. A remote
+       provider is contacted only when its chip is pressed. */
+    this.currentFaviconSource = "chrome";
     this.currentFetchedFaviconUrl = null;
 
     const buildFaviconUrl = (rawUrl, provider) => {
@@ -1267,15 +1274,16 @@ class SettingsController {
             return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`;
           case "duckduckgo":
             return `https://icons.duckduckgo.com/ip3/${encodeURIComponent(host)}.ico`;
-          case "chrome":
-            if (typeof chrome !== "undefined" && chrome.runtime?.getURL) {
-              return chrome.runtime.getURL(`/_favicon/?pageUrl=${encodeURIComponent(parsed.origin)}&size=64`);
-            }
-            return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`;
           case "direct":
             return `${parsed.origin}/apple-touch-icon.png`;
+          case "chrome":
           default:
-            return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`;
+            /* Root-relative on purpose. The page is served from the extension's
+               own origin, so this resolves there without chrome.runtime.getURL,
+               and — unlike the absolute chrome-extension://<id>/ form — it
+               still resolves after a reinstall or on another profile, where
+               the id differs. */
+            return `/_favicon/?pageUrl=${encodeURIComponent(parsed.origin)}&size=64`;
         }
       } catch (e) {
         return null;
@@ -1283,7 +1291,7 @@ class SettingsController {
     };
 
     const fetchAndDisplayFavicon = async (customProvider = null) => {
-      const provider = customProvider || this.currentFaviconSource || "google";
+      const provider = customProvider || this.currentFaviconSource || "chrome";
       const rawUrl = favUrlInput?.value.trim();
       if (!rawUrl) return;
 
@@ -1296,7 +1304,8 @@ class SettingsController {
         if (favDomainName) favDomainName.textContent = rawUrl;
       }
 
-      if (favStatus) favStatus.textContent = "Fetching high-resolution icon...";
+      const say = (key, fallback) => (window.I18N ? window.I18N.t(key) : fallback);
+      if (favStatus) favStatus.textContent = provider === "chrome" ? say("picker.faviconLocal", "From your browser's own cache") : say("picker.faviconFetching", "Fetching…");
       const resolvedFavUrl = buildFaviconUrl(rawUrl, provider);
       if (!resolvedFavUrl) {
         if (favStatus) favStatus.textContent = "Invalid site URL or domain.";
@@ -1309,24 +1318,21 @@ class SettingsController {
         const img = document.createElement("img");
         img.alt = "Favicon";
         img.style.cssText = "width: 100%; height: 100%; object-fit: contain; cursor: pointer;";
-        // Fallback to the DuckDuckGo icon service for the *target* host
+        /* A miss stays a miss. This used to fall back to DuckDuckGo on its
+           own, which meant a failed local lookup became a network request the
+           person never asked for. Now it says so, and the chips are right
+           there. */
         img.addEventListener("error", () => {
-          try {
-            let d = rawUrl;
-            if (!/^https?:\/\//i.test(d)) d = `https://${d}`;
-            const host = new URL(d).hostname;
-            const fallbackUrl = `https://icons.duckduckgo.com/ip3/${host}.ico`;
-            if (img.src !== fallbackUrl) {
-              img.src = fallbackUrl;
-              this.currentFetchedFaviconUrl = fallbackUrl;
-            }
-          } catch (e) {}
+          if (favStatus) favStatus.textContent = say("picker.faviconMissing", "No icon found here. Try another source.");
+          this.currentFetchedFaviconUrl = null;
+        }, { once: true });
+        img.addEventListener("load", () => {
+          if (favStatus && provider !== "chrome") favStatus.textContent = say("picker.faviconReady", "Icon ready");
         }, { once: true });
         img.src = resolvedFavUrl;
         favImgBox.appendChild(img);
-        favImgBox.onclick = () => this.openCropper(this.currentFetchedFaviconUrl, "favicon");
+        favImgBox.onclick = () => this.currentFetchedFaviconUrl && this.openCropper(this.currentFetchedFaviconUrl, "favicon");
       }
-      if (favStatus) favStatus.textContent = "High-resolution icon ready!";
     };
 
     favFetchBtn?.addEventListener("click", () => fetchAndDisplayFavicon());
@@ -1340,10 +1346,17 @@ class SettingsController {
     favSourceChips.forEach((chip) => {
       chip.addEventListener("click", () => {
         favSourceChips.forEach((c) => c.classList.toggle("active", c === chip));
-        this.currentFaviconSource = chip.dataset.favSource || "google";
+        this.currentFaviconSource = chip.dataset.favSource || "chrome";
         fetchAndDisplayFavicon(this.currentFaviconSource);
       });
     });
+    /* Loaded when the website-icon tab is opened, not when the picker is. */
+    this.refreshFaviconPreview = () => fetchAndDisplayFavicon();
+    this.resetFaviconSource = () => {
+      this.currentFaviconSource = "chrome";
+      this.currentFetchedFaviconUrl = null;
+      favSourceChips.forEach((c) => c.classList.toggle("active", c.dataset.favSource === "chrome"));
+    };
 
     favApplyBtn?.addEventListener("click", () => {
       const url = this.currentFetchedFaviconUrl || buildFaviconUrl(favUrlInput?.value.trim(), this.currentFaviconSource);
@@ -1905,28 +1918,25 @@ class SettingsController {
       titleEl.textContent = `Choose Icon for "${link.name || 'Bookmark'}"`;
     }
 
-    // 2. Pre-fill Tab 2 Smart Favicon
+    /* 2. The website-icon pane is prepared, not loaded. Opening the picker used
+       to build a Google favicon URL and fetch it at once, before the person had
+       chosen anything — they might have wanted the built-in icon and never
+       looked at this tab. The image is requested when the tab is opened, from
+       the browser's own cache unless another source is chosen. */
     const favUrlInput = document.getElementById("favicon-url-input");
     const favDomainName = document.getElementById("favicon-domain-name");
     const favImgBox = document.getElementById("favicon-preview-img-box");
     const favStatus = document.getElementById("favicon-status");
+    this.resetFaviconSource?.();
     if (favUrlInput) {
       favUrlInput.value = link.url || "";
-      if (link.url && /^https?:\/\//i.test(link.url)) {
-        try {
-          const host = new URL(link.url).hostname;
-          if (favDomainName) favDomainName.textContent = host;
-          const favUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`;
-          this.currentFetchedFaviconUrl = favUrl;
-          if (favImgBox) {
-            this.setPreviewImage(favImgBox, favUrl, () => this.openCropper(favUrl, "favicon"));
-          }
-          if (favStatus) favStatus.textContent = "High-resolution icon ready!";
-        } catch(e) {}
-      } else {
-        if (favImgBox) favImgBox.innerHTML = `<span style="font-size: 11px; color: var(--dim);">No icon</span>`;
-        if (favStatus) favStatus.textContent = "Enter site URL or domain above";
-      }
+      let host = "";
+      try { if (link.url && /^https?:\/\//i.test(link.url)) host = new URL(link.url).hostname; } catch (e) {}
+      if (favDomainName) favDomainName.textContent = host || (link.url || "");
+      if (favImgBox) favImgBox.replaceChildren();
+      if (favStatus) favStatus.textContent = host
+        ? (window.I18N ? window.I18N.t("picker.faviconLocal") : "From your browser's own cache")
+        : (window.I18N ? window.I18N.t("picker.faviconNeedsUrl") : "Enter the site address above");
     }
 
     // 3. Reset and Pre-fill URL Tab
@@ -2000,7 +2010,9 @@ class SettingsController {
     // 8. Reset Search Filter and Render Library
     const searchIpt = document.getElementById("icon-search");
     if (searchIpt) searchIpt.value = "";
-    document.querySelectorAll(".icon-chip").forEach((c, idx) => c.classList.toggle("active", idx === 0));
+    // Only the library's category chips: the source chips on the website-icon
+    // pane share the class and keep their own selection.
+    document.querySelectorAll(".icon-chip:not([data-fav-source])").forEach((c, idx) => c.classList.toggle("active", idx === 0));
     this.filterIconLibrary("", "all", link.icon);
 
     this.iconPicker.open(link, opener);
