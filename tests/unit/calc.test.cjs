@@ -12,8 +12,8 @@ const source = fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'js', 'ca
 test('the evaluator never reaches for eval or new Function', () => {
   // The header comment explains why those are absent; only code is judged.
   const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-  assert.doesNotMatch(code, /new\s+Function/);
-  assert.doesNotMatch(code, /eval\s*\(/);
+  assert.doesNotMatch(code, /\bnew\s+Function\b/);
+  assert.doesNotMatch(code, /\beval\s*\(/);
 });
 
 const answers = [
@@ -29,6 +29,13 @@ const answers = [
   ['200 * 15%', 30],
   ['50%', 0.5],
   ['10 x 10', 100],
+  ['2x3', 6],
+  ['10x10', 100],
+  ['(2+1)x3', 9],
+  ['2X3', 6],
+  ['1e', null],                   // exponent notation is not read; not 1·e either
+  ['3e-2', null],
+  ['xx', null],
   ['3 × 4 ÷ 2', 6],
   ['2pi', 2 * Math.PI],
   ['2(3+4)', 14],

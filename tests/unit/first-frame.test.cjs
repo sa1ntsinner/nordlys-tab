@@ -20,7 +20,7 @@ function themeBackgrounds() {
 }
 
 function bootBackgrounds() {
-  const table = /var BASE = \{([\s\S]*?)\};/.exec(boot);
+  const table = /const BASE = \{([\s\S]*?)\};/.exec(boot);
   assert.ok(table, 'boot.js should declare a BASE table');
   const found = new Map();
   for (const entry of table[1].matchAll(/"([a-z-]+)":\s*"([^"]+)"/g)) {
@@ -60,7 +60,7 @@ test('the boot script runs before any stylesheet and depends on nothing', () => 
 
 /* A light theme opening dark is the same defect as a dark theme opening white. */
 test('every light theme is listed as light in the first frame', () => {
-  const list = /var LIGHT = \[([\s\S]*?)\];/.exec(boot);
+  const list = /const LIGHT = \[([\s\S]*?)\];/.exec(boot);
   assert.ok(list, 'boot.js should declare a LIGHT list');
   const declared = [...list[1].matchAll(/"([a-z-]+)"/g)].map(entry => entry[1]).sort();
   const app = fs.readFileSync(path.join(ROOT, 'src', 'js', 'app.js'), 'utf8');

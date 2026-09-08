@@ -6,15 +6,20 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "npm run test:syntax && npm run test:unit && npm run test:ui",
+    "lint": "eslint .",
+    "test": "npm run lint && npm run test:syntax && npm run test:unit && npm run test:ui",
     "test:syntax": "node tests/helpers/check-js-syntax.cjs",
     "test:unit": "node --test tests/unit/*.test.cjs",
     "test:ui": "playwright test",
     "test:ui:update": "playwright test --update-snapshots=all",
-    "artwork": "playwright test --config=tools/artwork/playwright.config.cjs"
+    "artwork": "playwright test --config=tools/artwork/playwright.config.cjs",
+    "package": "node tools/package.cjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
-    "@playwright/test": "1.62.1"
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.62.1",
+    "eslint": "^10.10.0",
+    "globals": "^17.12.0"
   }
 }

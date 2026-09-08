@@ -1,8 +1,8 @@
 # Privacy Policy for Nordlys
 
 **Effective Date:** August 16, 2026
-**Last Updated:** September 2, 2026
-**Version:** 2.2.2
+**Last Updated:** September 8, 2026
+**Version:** 2.2.3
 
 Nordlys ("the extension", "we", or "our") is designed with a strict **Privacy-by-Architecture** principle. Nordlys is a client-side, offline-capable New Tab override extension.
 

@@ -38,9 +38,12 @@
   // The same bounds the grid enforces on its resize handle.
   const COLUMNS = { min: 1, max: 8 };
 
-  /* A URL that runs code instead of opening a page is never a bookmark. */
+  /* A URL that runs code instead of opening a page is never a bookmark. The
+     browser's parser strips tabs and newlines from a scheme before it looks at
+     it, so "java\nscript:" is "javascript:" — the same folding happens here. */
   function isForbiddenUrl(url) {
-    return /^\s*(javascript|data|vbscript):/i.test(url);
+    const folded = Array.from(String(url)).filter((char) => char.charCodeAt(0) > 0x20).join("");
+    return /^(javascript|data|vbscript):/i.test(folded);
   }
 
   function validateGroup(group, index, errors) {

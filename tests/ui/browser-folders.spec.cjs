@@ -54,7 +54,7 @@ test('a folder can be pointed at a browser folder and fills itself', async ({ no
   await withBookmarks(page);
   await openManager(page);
 
-  let menu = await folderMenu(page);
+  const menu = await folderMenu(page);
   await menu.getByRole('menuitem', { name: /Follow a browser folder/ }).click();
   // The picker lists folders by path, so two folders named the same are apart.
   await expect(menu.getByRole('menuitem', { name: 'Bookmarks bar / Reading', exact: true })).toBeVisible();

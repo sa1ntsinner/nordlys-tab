@@ -95,7 +95,7 @@ class ClockWidget {
     // Time-based greeting
     if (this.elGreet) {
       const curH = now.getHours();
-      let salute = window.I18N ? window.I18N.t('greeting.day') : "Good day";
+      let salute;
       if (curH >= 5 && curH < 12) salute = window.I18N ? window.I18N.t('greeting.morning') : "Good morning";
       else if (curH >= 12 && curH < 17) salute = window.I18N ? window.I18N.t('greeting.afternoon') : "Good afternoon";
       else if (curH >= 17 && curH < 22) salute = window.I18N ? window.I18N.t('greeting.evening') : "Good evening";

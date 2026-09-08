@@ -70,3 +70,29 @@ test('a stored config with groups that is not a list still starts the page', asy
   const point = await page.evaluate(() => JSON.parse(localStorage.getItem('nordlys_restore_point') || 'null'));
   expect(point, 'what was stored is kept for inspection').toBeTruthy();
 });
+
+/* There is one restore-point slot. An import took a snapshot of the setup being
+   replaced — and then, if the imported file needed a migration, the reload took
+   a second snapshot of the imported file over it. Every export from 2.1.0 to
+   2.2.1 needs a migration, so the files people actually import were exactly the
+   ones that lost the setup they replaced. */
+test('importing a file that needs migrating still keeps the setup it replaced', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => {
+    localStorage.removeItem('nordlys_restore_point');
+    window.Nordlys.config.groups[0].label = 'MY REAL SETUP';
+    window.Nordlys.saveConfig();
+  });
+  const loaded = page.waitForEvent('load');
+  // A 2.2.1-era export: glass sliders and an engine choice that no longer exist.
+  await importFile(page, 'old-backup.json', JSON.stringify({
+    version: '2.2.1', theme: 'liquid-glass', glassBlur: 0, defaultEngine: 'duckduckgo', bgMode: 'particles',
+    groups: [{ label: 'FROM FILE', cols: 2, hidden: false, links: [] }]
+  }));
+  await loaded;
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  expect(await page.evaluate(() => window.Nordlys.config.groups[0].label)).toBe('FROM FILE');
+  expect(await page.evaluate(() => window.Nordlys.config.theme), 'the import arrived migrated').toBe('frosted-glass');
+  const point = await page.evaluate(() => JSON.parse(localStorage.getItem('nordlys_restore_point') || 'null'));
+  expect(point?.config?.groups?.[0]?.label, 'the setup being replaced is the one kept').toBe('MY REAL SETUP');
+});

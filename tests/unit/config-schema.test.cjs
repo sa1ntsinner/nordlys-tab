@@ -46,7 +46,7 @@ test('a bookmark without a text url is refused', () => {
 });
 
 test('a url that would run code is refused', () => {
-  for (const url of ['javascript:alert(1)', ' JavaScript:void(0)', 'data:text/html,hi']) {
+  for (const url of ['javascript:alert(1)', ' JavaScript:void(0)', 'data:text/html,hi', 'java\nscript:alert(1)', '\tjavascript:x', 'j\u0000avascript:x']) {
     const result = validateConfig({ groups: [{ links: [{ url }] }] });
     assert.equal(result.ok, false, url);
     assert.match(result.errors[0], /must open a page/);

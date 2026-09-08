@@ -1021,7 +1021,7 @@ class SettingsController {
           <input type="text" class="group-label-input" value="${esc(group.label || '')}" placeholder="${esc(folderPlaceholder)}">
           <div style="display: flex; gap: 5px; align-items: center;">
             <select class="cols-select" title="Columns">
-              ${[1,2,3,4,5,6,7,8].map(c => `<option value="${c}" ${group.cols == c ? 'selected' : ''}>${c} Cols</option>`).join('')}
+              ${[1,2,3,4,5,6,7,8].map(c => `<option value="${c}" ${Number(group.cols) === c ? 'selected' : ''}>${c} Cols</option>`).join('')}
             </select>
             <button class="move-btn btn-group-toggle-vis" title="${group.hidden ? 'Show folder on board' : 'Hide folder to tray'}">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1996,13 +1996,11 @@ class SettingsController {
       this.previewCtx.clearRect(0, 0, this.previewCanvas.width, this.previewCanvas.height);
     }
 
-    // 7. Intelligent Tab Selection
-    const modalTabs = document.querySelectorAll(".icon-tab-btn");
-    const modalPanes = document.querySelectorAll(".modal-tab-pane");
-    
+    // 7. Which tab opens first
     // A pasted URL, an uploaded file and a monogram share one pane now, so
     // whichever of them the bookmark is already using lands in the same place.
-    const defaultTab = (link.customImg || link.monogram) ? "custom" : "library";
+    const kind = window.NordlysIcons.classifyIcon(link);
+    const defaultTab = kind === "favicon" ? "favicon" : (link.customImg || link.monogram) ? "custom" : "library";
 
     this.iconPicker.select(defaultTab);
     this.activeModalTab = defaultTab;
@@ -2319,11 +2317,11 @@ class SettingsController {
               folderHeaders.forEach((h3) => {
                 const folderTitle = h3.textContent.trim() || "Imported Folder";
                 const links = [];
-                let next = h3.parentElement?.querySelector("dl, DL") || h3.nextElementSibling;
+                const next = h3.parentElement?.querySelector("dl, DL") || h3.nextElementSibling;
                 if (next && next.tagName.toLowerCase() === "dl") {
                   next.querySelectorAll("a, A").forEach((a) => {
                     const url = a.getAttribute("href") || a.href;
-                    if (url && !url.startsWith("javascript:")) {
+                    if (url && !window.NordlysConfigSchema.isForbiddenUrl(url)) {
                       const name = a.textContent.trim() || url;
                       links.push({ name, url, color: "#38bdf8" });
                     }
@@ -2343,7 +2341,7 @@ class SettingsController {
               const links = [];
               dom.querySelectorAll("a, A").forEach((a) => {
                 const url = a.getAttribute("href") || a.href;
-                if (url && !url.startsWith("javascript:")) {
+                if (url && !window.NordlysConfigSchema.isForbiddenUrl(url)) {
                   links.push({ name: a.textContent.trim() || url, url, color: "#38bdf8" });
                 }
               });
@@ -2377,8 +2375,17 @@ class SettingsController {
               if (typeof toast === "function") toast(`${label}: ${verdict.errors.slice(0, 3).join("; ")}`, "danger", 7000);
               return;
             }
+            /* Brought up to the current shape here, before it is written. There
+               is one restore-point slot. If the file still needed a migration on
+               the next load, that load would take a second snapshot — of the
+               imported file — over the one taken here of the setup being
+               replaced, and the user's own setup would exist nowhere. Every
+               export from 2.1.0 to 2.2.1 needs a migration. */
+            const incoming = Object.assign({}, DEFAULT_CONFIG, imported);
+            window.NordlysConfigSchema.repairConfig(incoming);
+            this.app.normalizeStoredConfig(incoming);
             this.app.snapshotBeforeMigration(this.app.config);
-            this.app.config = Object.assign({}, DEFAULT_CONFIG, imported);
+            this.app.config = incoming;
             this.app.saveConfig();
             location.reload();
           }
