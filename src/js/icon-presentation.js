@@ -1,19 +1,23 @@
 /* Source-aware icon sizing and contrast treatment shared by canvas and previews. */
 (function () {
-  function classifyIcon(source = {}) {
+  /* What kind of art the tile shows. An icon the resolver found from the
+     bookmark's address is as built-in as one written on the bookmark: imported
+     and browser-mirrored bookmarks never carry a key, and they used to fall to
+     a monogram while the vector for their site sat unused. */
+  function classifyIcon(source = {}, metadata = null) {
     if (source.monogram) return 'monogram';
     if (source.customImg) {
       const url = String(source.customImg);
       return /(?:_favicon|favicons\?|duckduckgo\.com\/ip3|apple-touch-icon)/i.test(url) ? 'favicon' : 'raster';
     }
-    return source.icon ? 'builtin' : 'monogram';
+    return (source.icon || metadata?.p) ? 'builtin' : 'monogram';
   }
   function clampScale(value) {
     const number = Number(value);
     return Number.isFinite(number) ? Math.min(1.12, Math.max(.88, number)) : 1;
   }
   function resolvePresentation({ source = {}, key = source.icon, metadata = {}, isLight = false } = {}) {
-    const kind = classifyIcon(source);
+    const kind = classifyIcon(source, metadata);
     const tone = metadata.monochrome ? (isLight ? 'dark' : 'light') : 'brand';
     return { kind, key, source, metadata, opticalScale: clampScale(metadata.opticalScale), tone, accent: source.color || 'var(--nl-text-primary)', def: metadata.p ? metadata : null };
   }

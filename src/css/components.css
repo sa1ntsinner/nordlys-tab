@@ -1108,6 +1108,23 @@ body.hover-none .tile:hover .box {
 .ctx-item.danger svg {
   color: var(--nl-status-danger);
 }
+/* A filter field at the top of a long menu. Same height as an item, so the list
+   below does not jump when it appears. */
+.ctx-filter {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--nl-border);
+  border-radius: var(--nl-radius-sm);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 60%, transparent);
+  color: var(--nl-text-primary);
+  font: inherit;
+  font-size: var(--nl-text-sm);
+}
+.ctx-filter:focus-visible { outline: none; box-shadow: var(--nl-ring); }
+
 .ctx-item.danger:hover {
   /* This forced white ink on a translucent red, which on a light menu is white
      on pale pink. The tint carries the warning; the ink stays readable. */

@@ -182,7 +182,7 @@ class NordlysApp {
     const sync = window.NordlysBookmarks;
     if (!sync) return;
     const linked = (this.config.groups || []).some((group) => group.source?.folderId);
-    if (!linked) return;
+    if (!linked) { this.stopFollowingBrowser(); return; }
 
     const pull = async () => {
       if (await sync.refresh(this.config)) {
@@ -192,12 +192,22 @@ class NordlysApp {
       }
     };
     await pull();
+    /* Called again whenever a folder is linked or unlinked, so the first folder
+       linked in a session is watched from that moment rather than from the next
+       open — which is when it used to start. One watch is enough for any
+       number of folders. */
+    if (this.unwatchBrowser) return;
     // Debounced: a drag inside the browser's manager fires a burst of events.
     let pending = null;
-    sync.watch(() => {
+    this.unwatchBrowser = sync.watch(() => {
       clearTimeout(pending);
       pending = setTimeout(pull, 250);
     });
+  }
+
+  stopFollowingBrowser() {
+    this.unwatchBrowser?.();
+    this.unwatchBrowser = null;
   }
 
   applyGlassLevel() {
@@ -268,6 +278,7 @@ class NordlysApp {
     const point = this.restorePoint();
     if (!point || !point.config) return false;
     this.config = Object.assign({}, DEFAULT_CONFIG, point.config);
+    window.NordlysConfigSchema?.repairConfig(this.config);
     this.loadedFromStore = true;
     this.saveConfig();
     return true;
@@ -283,7 +294,11 @@ class NordlysApp {
            adopted from a store may ever be written there. The defaults it
            starts on when nothing is stored must not be. */
         this.loadedFromStore = true;
-        if (this.normalizeStoredConfig(cfg)) {
+        /* Shapes that would crash the page — groups that is not a list — are
+           coerced first, so the migrations below never meet them. Whatever was
+           stored is kept before it is written over. */
+        const repaired = Boolean(window.NordlysConfigSchema?.repairConfig(cfg));
+        if (this.normalizeStoredConfig(cfg) || repaired) {
           // Keep what the user had, exactly as it was, before writing over it.
           this.snapshotBeforeMigration(parsed);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
@@ -343,7 +358,8 @@ class NordlysApp {
           }
           if (source && source.groups) {
             this.config = Object.assign({}, DEFAULT_CONFIG, source);
-            migrated = this.normalizeStoredConfig(this.config);
+            const repaired = Boolean(window.NordlysConfigSchema?.repairConfig(this.config));
+            migrated = this.normalizeStoredConfig(this.config) || repaired;
             if (migrated) this.snapshotBeforeMigration(source);
             this.loadedFromStore = true;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(this.config));

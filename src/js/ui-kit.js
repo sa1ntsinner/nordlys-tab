@@ -126,16 +126,21 @@ const NordlysConfirm = {
     return new Promise((resolve) => {
       const onOk = () => this.finish(true);
       const onCancel = () => this.finish(false);
-      const onKey = (e) => {
-        if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); this.finish(true); }
-      };
+      /* Enter is not handled here at all. A focused button already activates on
+         Enter, and that is the only correct meaning of the key in a dialog: it
+         answers with whichever button the person is on. An earlier version
+         intercepted Enter and confirmed regardless of focus, so a keyboard user
+         who had moved to Cancel and pressed Enter deleted the folder anyway.
+         Escape is handled by the layer stack, like every other dialog. */
+      const onKey = () => {};
 
       this.active = { resolve, backdrop, okBtn, cancelBtn, onOk, onCancel, onKey };
       okBtn.addEventListener("click", onOk);
       cancelBtn.addEventListener("click", onCancel);
-      backdrop.addEventListener("keydown", onKey);
-      this.controller.open(document.activeElement);
-      okBtn.focus({ preventScroll: true });
+      /* Focus starts on the safe answer when the action destroys something, so
+         that a reflexive Enter cannot do harm; a dialog that only asks "continue?"
+         may start on its confirm button. */
+      this.controller.open(document.activeElement, danger ? cancelBtn : okBtn);
     });
   }
 };

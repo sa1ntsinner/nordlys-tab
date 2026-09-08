@@ -1,8 +1,8 @@
 /* Accessible lifecycle and shared preview for the existing multi-source picker. */
 (function () {
   class NordlysIconPicker {
-    constructor({ dialogRoot }) {
-      this.root = dialogRoot; const title = dialogRoot.querySelector('.modal-head b'); if (title) title.id = 'icon-picker-title';
+    constructor({ dialogRoot, onSelect = null }) {
+      this.root = dialogRoot; this.onSelect = onSelect; const title = dialogRoot.querySelector('.modal-head b'); if (title) title.id = 'icon-picker-title';
       dialogRoot.setAttribute('aria-labelledby', 'icon-picker-title'); this.dialog = new NordlysUI.DialogController(dialogRoot, { closeOnBackdrop: true });
       const tabs = dialogRoot.querySelector('.icon-modal-tabs'); if (tabs) this.tabs = new NordlysUI.RovingTabs(tabs, { onSelect: id => this.select(id) });
       dialogRoot.querySelectorAll('.icon-tab-btn').forEach(tab => { tab.setAttribute('aria-controls', `modal-pane-${tab.dataset.tab}`); tab.setAttribute('aria-selected', String(tab.classList.contains('active'))); });
@@ -20,7 +20,12 @@
       tile.append(box, label); card.append(tile); preview.append(card);
       this.root.querySelector('.modal-body')?.prepend(preview);
     }
-    select(id) { this.root.querySelectorAll('.icon-tab-btn').forEach(tab => { const active = tab.dataset.tab === id; tab.classList.toggle('active', active); tab.setAttribute('aria-selected', String(active)); }); this.root.querySelectorAll('.modal-tab-pane').forEach(pane => pane.classList.toggle('active', pane.id === `modal-pane-${id}`)); }
+    select(id) {
+      this.root.querySelectorAll('.icon-tab-btn').forEach(tab => { const active = tab.dataset.tab === id; tab.classList.toggle('active', active); tab.setAttribute('aria-selected', String(active)); });
+      this.root.querySelectorAll('.modal-tab-pane').forEach(pane => pane.classList.toggle('active', pane.id === `modal-pane-${id}`));
+      // Work that belongs to one pane — a network request, say — waits for it.
+      this.onSelect?.(id);
+    }
     open(currentIcon, opener) {
       const preview = this.root.querySelector('#icon-live-preview'); const label = preview?.querySelector('.lbl'); const box = preview?.querySelector('.box');
       if (label) label.textContent = currentIcon?.name || 'Bookmark';

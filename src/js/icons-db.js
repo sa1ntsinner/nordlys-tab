@@ -114,23 +114,52 @@ const DOMAIN_MAP = {
 };
 
 /* ── Smart Icon Resolver ───────────────────────────────────────── */
+
+/* Second-level labels that belong to the public suffix rather than to a brand:
+   google.co.uk is Google, amazon.com.au is Amazon. Kept short on purpose — it
+   only has to cover the hosts people actually bookmark. */
+const SECOND_LEVEL_SUFFIXES = new Set(["co", "com", "org", "net", "ac", "gov", "edu", "ne", "or", "go", "gob", "nom", "ltd", "sch"]);
+
+/* Two shapes of entry in DOMAIN_MAP:
+   - "mail.google."  — open: these labels, then any public suffix
+   - "claude.ai"     — closed: exactly this registrable domain, or a subdomain
+
+   Matching is by whole labels, so a brand's name inside somebody else's domain
+   is not that brand: github.example.org is not GitHub, notx.com is not X. The
+   longest matching entry wins, so mail.google.com is Gmail and not Google. The
+   first version of this walked the map in insertion order and tested
+   host.includes(prefix); "google." came first and claimed Gmail, Drive and
+   Gemini before their own entries were reached. */
+function domainMatches(hostLabels, entry) {
+  const open = entry.endsWith(".");
+  const entryLabels = entry.replace(/\.$/, "").split(".");
+  for (let start = 0; start + entryLabels.length <= hostLabels.length; start++) {
+    if (!entryLabels.every((label, index) => hostLabels[start + index] === label)) continue;
+    const rest = hostLabels.slice(start + entryLabels.length);
+    if (!open) return rest.length === 0;
+    if (rest.length === 1) return true;
+    if (rest.length === 2 && SECOND_LEVEL_SUFFIXES.has(rest[0])) return true;
+  }
+  return false;
+}
+
 function resolveIcon(url, fallbackKey) {
   if (fallbackKey && ICONS_DB[fallbackKey]) {
     return ICONS_DB[fallbackKey];
   }
   if (!url) return null;
-  
-  try {
-    const host = new URL(url).hostname.toLowerCase();
-    for (const prefix in DOMAIN_MAP) {
-      if (host.includes(prefix)) {
-        const key = DOMAIN_MAP[prefix];
-        return ICONS_DB[key] || null;
-      }
-    }
-  } catch (e) {}
-  
-  return null;
+
+  let host;
+  try { host = new URL(url).hostname.toLowerCase(); } catch (e) { return null; }
+  const labels = host.split(".").filter(Boolean);
+  if (labels[0] === "www") labels.shift();
+
+  let best = null;
+  for (const entry in DOMAIN_MAP) {
+    if (!domainMatches(labels, entry)) continue;
+    if (!best || entry.length > best.length) best = entry;
+  }
+  return best ? (ICONS_DB[DOMAIN_MAP[best]] || null) : null;
 }
 
 /* ── Procedural Deterministic Monogram Generator ────────────────── */
@@ -140,4 +169,9 @@ function getDeterministicHue(str) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
   return Math.abs(hash % 360);
+}
+
+/* For the unit tests, which run under Node; the page reads these as globals. */
+if (typeof module === "object" && module.exports) {
+  module.exports = { resolveIcon, ICONS_DB, DOMAIN_MAP };
 }

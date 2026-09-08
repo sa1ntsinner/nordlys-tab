@@ -1081,6 +1081,16 @@ class GridController {
       return;
     }
 
+    /* A folder that follows the browser owns nothing of its own: a tile dropped
+       into it would vanish on the next refresh, a tile dragged out of it comes
+       back, and its order is the browser's. All three are refused, out loud. */
+    if (sourceGroup.source?.folderId || targetGroup.source?.folderId) {
+      this.clearDropHighlights();
+      const message = window.I18N ? window.I18N.t("bookmarks.linkedNoDrop") : "This folder follows the browser. Add the bookmark there instead.";
+      if (typeof toast === "function") toast(message, "danger", 2800); else NordlysUI.announce(message);
+      return;
+    }
+
     const hoveredTile = e.target.closest(".tile");
     let targetLIdx = targetGroup.links.length;
 

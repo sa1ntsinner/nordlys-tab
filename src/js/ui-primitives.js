@@ -156,6 +156,9 @@
       if (wasHidden) { this.root.hidden = true; this.root.style.removeProperty('visibility'); }
     }
     onKey(event) {
+      // A filter field inside the menu owns its own typing; only the arrows
+      // hand focus over to the items.
+      if (event.target instanceof HTMLInputElement && event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
       const items = this.items(); let index = items.indexOf(document.activeElement);
       if (event.key === 'ArrowDown') index = (index + 1) % items.length;
       else if (event.key === 'ArrowUp') index = (index - 1 + items.length) % items.length;

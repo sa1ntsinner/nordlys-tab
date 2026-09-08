@@ -244,54 +244,12 @@ class SearchWidget {
     this.suggDebounce = setTimeout(() => this.processQuery(val), 120);
   }
 
+  /* Arithmetic lives in calc.js, a hand-written evaluator. The version that
+     used to be here constructed a function from the typed string, which the
+     extension's CSP forbids; it worked in the test fixture and did nothing in
+     the real product. */
   tryCalculate(query) {
-    const raw = query.trim();
-    if (!raw) return null;
-
-    // Handle "X% of Y" or "X% * Y" -> (X/100)*Y
-    const pctMatch = raw.match(/^([\d\.]+)\s*%\s*(?:of|\*)\s*([\d\.]+)$/i);
-    if (pctMatch) {
-      const p = parseFloat(pctMatch[1]);
-      const total = parseFloat(pctMatch[2]);
-      if (!isNaN(p) && !isNaN(total)) {
-        const ans = (p / 100) * total;
-        const rounded = Math.round(ans * 1e10) / 1e10;
-        return `${raw} = ${rounded}`;
-      }
-    }
-
-    // Replace unicode / alternate math symbols
-    let clean = raw
-      .replace(/\s+/g, "")
-      .replace(/×/g, "*")
-      .replace(/÷/g, "/")
-      .replace(/π/gi, "Math.PI")
-      .replace(/(?<=[\d\)])x(?=[\d\(])/gi, "*");
-
-    // Common scientific functions support
-    const funcs = ["sin", "cos", "tan", "sqrt", "cbrt", "abs", "log", "log2", "log10", "floor", "ceil", "round"];
-    for (const fn of funcs) {
-      const reg = new RegExp(`(?<!Math\\.)${fn}\\(`, "gi");
-      clean = clean.replace(reg, `Math.${fn}(`);
-    }
-    clean = clean.replace(/(?<!Math\.)pi\b/gi, "Math.PI");
-    clean = clean.replace(/(?<!Math\.)e\b/gi, "Math.E");
-
-    const expr = clean.replace(/\^/g, "**").replace(/%/g, "*0.01");
-    const isMathString = /^([0-9\.\+\-\*\/\(\)\,\s]|Math\.(PI|E|sin|cos|tan|sqrt|cbrt|abs|log|log2|log10|floor|ceil|round)\()+$/.test(expr);
-
-    if (isMathString && /[\+\-\*\/\%]|Math\./.test(expr) && /\d|Math\./.test(expr)) {
-      try {
-        const fn = new Function(`return (${expr})`);
-        const res = fn();
-        if (typeof res === "number" && !isNaN(res) && isFinite(res)) {
-          const rounded = Math.round(res * 1e10) / 1e10;
-          return `${raw} = ${rounded}`;
-        }
-      } catch (e) {}
-    }
-
-    return null;
+    return window.NordlysCalc ? window.NordlysCalc.describe(query) : null;
   }
 
   findMatchingBookmarks(query) {

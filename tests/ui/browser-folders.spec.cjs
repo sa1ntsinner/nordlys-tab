@@ -35,6 +35,14 @@ async function openManager(page) {
   await page.getByRole('tab', { name: 'Bookmarks' }).click();
 }
 
+/* Choosing a folder for a group that already holds bookmarks asks first,
+   because the browser's list replaces them. The tests answer yes. */
+async function chooseFolder(page, menu, name) {
+  await menu.getByRole('menuitem', { name, exact: true }).click();
+  const dialog = page.getByRole('alertdialog');
+  if (await dialog.isVisible().catch(() => false)) await dialog.getByRole('button', { name: 'Follow' }).click();
+}
+
 async function folderMenu(page, index = 0) {
   await page.locator('.bookmark-folder-accordion').nth(index)
     .locator('.bookmark-folder-head').getByRole('button', { name: /More actions for/ }).click();
@@ -50,7 +58,7 @@ test('a folder can be pointed at a browser folder and fills itself', async ({ no
   await menu.getByRole('menuitem', { name: /Follow a browser folder/ }).click();
   // The picker lists folders by path, so two folders named the same are apart.
   await expect(menu.getByRole('menuitem', { name: 'Bookmarks bar / Reading', exact: true })).toBeVisible();
-  await menu.getByRole('menuitem', { name: 'Bookmarks bar / Reading', exact: true }).click();
+  await chooseFolder(page, menu, 'Bookmarks bar / Reading');
 
   await expect.poll(() => nordlysPage.storageState.nordlys_config?.groups?.[0]?.source?.folderId).toBe('10');
   const links = await page.evaluate(() => window.Nordlys.config.groups[0].links);
@@ -65,7 +73,7 @@ test('a linked folder says whose bookmarks these are and does not offer to add',
   await openManager(page);
   const menu = await folderMenu(page);
   await menu.getByRole('menuitem', { name: /Follow a browser folder/ }).click();
-  await menu.getByRole('menuitem', { name: 'Bookmarks bar / Work', exact: true }).click();
+  await chooseFolder(page, menu, 'Bookmarks bar / Work');
 
   const folder = page.locator('.bookmark-folder-accordion').first();
   await expect(folder.locator('.bookmark-folder-linked')).toHaveText('Work');
@@ -81,7 +89,7 @@ test('unlinking keeps what was on screen', async ({ nordlysPage }) => {
   await openManager(page);
   let menu = await folderMenu(page);
   await menu.getByRole('menuitem', { name: /Follow a browser folder/ }).click();
-  await menu.getByRole('menuitem', { name: 'Bookmarks bar / Reading', exact: true }).click();
+  await chooseFolder(page, menu, 'Bookmarks bar / Reading');
   await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0].links.length)).toBe(2);
 
   menu = await folderMenu(page);
@@ -112,7 +120,7 @@ test('a folder that disappears is reported, not erased', async ({ nordlysPage })
   await openManager(page);
   const menu = await folderMenu(page);
   await menu.getByRole('menuitem', { name: /Follow a browser folder/ }).click();
-  await menu.getByRole('menuitem', { name: 'Bookmarks bar / Reading', exact: true }).click();
+  await chooseFolder(page, menu, 'Bookmarks bar / Reading');
   await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0].links.length)).toBe(2);
 
   // The folder goes away in the browser.
@@ -134,4 +142,93 @@ test('refusing the permission leaves the folder alone', async ({ nordlysPage }) 
   await page.waitForTimeout(300);
   expect(await page.evaluate(() => Boolean(window.Nordlys.config.groups[0].source))).toBe(false);
   expect(await page.evaluate(() => window.Nordlys.config.groups[0].links.length)).toBe(before);
+});
+
+/* Following a browser folder is a promise that the folder shows what the
+   browser has. That promise was only half kept: the watch that carries browser
+   changes into the page was started at load, so the first folder linked in a
+   session was never watched until the next open. */
+test('the first folder linked in a session is watched from that moment', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await withBookmarks(page);
+  await openManager(page);
+  const menu = await folderMenu(page);
+  await menu.getByRole('menuitem', { name: /Follow a browser folder/ }).click();
+  await chooseFolder(page, menu, 'Bookmarks bar / Reading');
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0].links.length)).toBe(2);
+
+  expect(await page.evaluate(() => (window.__bookmarks.listeners || []).length), 'a listener is registered without a reload').toBeGreaterThan(0);
+
+  // The browser gains a bookmark; the page notices.
+  await page.evaluate(() => {
+    window.__bookmarks.tree[0].children[0].children[0].children.push({ id: '105', title: 'Third', url: 'https://article.test/three' });
+    (window.__bookmarks.listeners || []).forEach(listener => listener());
+  });
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0].links.length), 'the change arrives').toBe(3);
+});
+
+/* A folder that follows the browser cannot also take local edits: anything
+   added here vanishes on the next refresh, which is loss dressed up as a save.
+   The button already refused; the menu and the drop target did not. */
+test('every way of adding to a linked folder is closed, not just the button', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await withBookmarks(page);
+  await openManager(page);
+  let menu = await folderMenu(page);
+  await menu.getByRole('menuitem', { name: /Follow a browser folder/ }).click();
+  await chooseFolder(page, menu, 'Bookmarks bar / Reading');
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0].links.length)).toBe(2);
+
+  // The folder's own menu.
+  menu = await folderMenu(page);
+  await expect(menu.getByRole('menuitem', { name: 'Add bookmark' })).toBeDisabled();
+  await page.keyboard.press('Escape');
+
+  // Moving a bookmark from another folder: the linked one is not offered.
+  const second = page.locator('.bookmark-folder-accordion').nth(1);
+  await second.locator('summary').click();
+  await second.locator('.bookmark-summary-row').first().getByRole('button', { name: /More actions for/ }).click();
+  await page.locator('.nl-overflow-menu').getByRole('menuitem', { name: 'Move to folder' }).click();
+  const targets = await page.locator('.nl-overflow-menu [role="menuitem"]').allTextContents();
+  const linkedLabel = await page.evaluate(() => window.Nordlys.config.groups[0].label);
+  expect(targets, 'a folder that follows the browser is not a destination').not.toContain(linkedLabel);
+  await page.keyboard.press('Escape');
+
+  // Dropping a tile onto the board's linked card is refused too.
+  const outcome = await page.evaluate(() => {
+    const grid = window.Nordlys.grid;
+    const before = window.Nordlys.config.groups.map(group => group.links.length);
+    grid.dragTile = { gIdx: 1, lIdx: 0 };
+    const card = document.querySelectorAll('#board .card')[0];
+    const event = { preventDefault() {}, stopPropagation() {}, target: card.querySelector('.grid') || card };
+    grid.onGridDrop(event, card.querySelector('.grid'), 0);
+    return { before, after: window.Nordlys.config.groups.map(group => group.links.length) };
+  });
+  expect(outcome.after, 'nothing moved').toEqual(outcome.before);
+});
+
+/* The folder picker cut the list at forty and said nothing. People with large
+   bookmark trees are the ones this feature exists for. */
+test('the folder picker lists every folder and narrows as you type', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const many = Array.from({ length: 60 }, (_, index) => ({ id: `f${index}`, title: index === 41 ? 'Reading list' : `Folder ${index}`, children: [] }));
+  await withBookmarks(page, { tree: [{ id: '0', title: '', children: [{ id: '1', title: 'Bookmarks bar', children: many }] }] });
+  await openManager(page);
+  const menu = await folderMenu(page);
+  await menu.getByRole('menuitem', { name: /Follow a browser folder/ }).click();
+
+  // Sixty folders plus the bar that holds them: every one is offered.
+  await expect(menu.getByRole('menuitem')).toHaveCount(61);
+  const filter = menu.getByRole('searchbox');
+  await expect(filter).toBeFocused();
+  await filter.fill('reading');
+  await expect(menu.getByRole('menuitem')).toHaveCount(1);
+  await expect(menu.getByRole('menuitem', { name: 'Bookmarks bar / Reading list' })).toBeVisible();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  // The folder has bookmarks of its own, so the replacement is confirmed first.
+  const dialog = page.getByRole('alertdialog');
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Follow' }).click();
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.groups?.[0]?.source?.folderId).toBe('f41');
 });
