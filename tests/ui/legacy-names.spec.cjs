@@ -6,11 +6,6 @@ const { test, expect } = require('../helpers/nordlys-fixture.cjs');
    any of that would be the one failure this category never forgives — losing
    someone's setup — so the move has to be automatic, complete, and once. */
 
-const PIXEL = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
-  'base64'
-);
-
 test('every key an older build wrote is found under its new name, once', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.evaluate(() => {

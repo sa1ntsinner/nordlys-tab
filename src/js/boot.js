@@ -23,7 +23,7 @@
 (function () {
   "use strict";
 
-  var BASE = {
+  const BASE = {
     "aurora-void": "#060a14",
     "frosted-glass": "#0b1220",
     "cyberpunk-neon": "#08060e",
@@ -47,7 +47,7 @@
     "mint-breeze": "#f0fdf4"
   };
 
-  var LIGHT = [
+  const LIGHT = [
     "porcelain-light", "warm-ivory", "sage-light", "sakura-daylight",
     "solarized-light", "nordic-snow", "lavender-mist", "gruvbox-light",
     "peach-sunset", "mint-breeze"
@@ -55,7 +55,7 @@
 
   /* Theme keys from earlier releases. A stored key we do not recognise would
      fall back to the default and produce the flash this file prevents. */
-  var RENAMED = {
+  const RENAMED = {
     "liquid-glass": "frosted-glass",
     "liquid-tahoe": "frosted-glass",
     "sakura-blossom": "sakura-daylight",
@@ -64,11 +64,11 @@
     "boreal": "boreal-emerald"
   };
 
-  var root = document.documentElement;
-  var theme = "aurora-void";
-  var raw = null;
-  var config = null;
-  var background = null;
+  const root = document.documentElement;
+  let theme = "aurora-void";
+  let raw;
+  let config = null;
+  let background = null;
 
   try {
     // The move to the new key happens a moment later, in app.js; the first
@@ -76,7 +76,7 @@
     raw = localStorage.getItem("nordlys_config") || localStorage.getItem("aether_tab_config") || localStorage.getItem("aurora_tab_config");
     if (raw) {
       config = JSON.parse(raw);
-      var stored = config && config.theme;
+      let stored = config && config.theme;
       if (typeof stored === "string") {
         if (RENAMED[stored]) stored = RENAMED[stored];
         if (stored === "custom" && config.customTheme && typeof config.customTheme.bg === "string") {
@@ -95,7 +95,7 @@
 
   if (!background) background = BASE[theme] || BASE["aurora-void"];
   try {
-    var mode = (config && config.bgMode) || "aurora";
+    let mode = (config && config.bgMode) || "aurora";
     /* The scenes that were removed resolve to their survivor on first load, so
        the very first frame never carries a mode that no longer exists. The full
        migration in app.js runs a moment later and also restores the stillness

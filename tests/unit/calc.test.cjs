@@ -12,8 +12,8 @@ const source = fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'js', 'ca
 test('the evaluator never reaches for eval or new Function', () => {
   // The header comment explains why those are absent; only code is judged.
   const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-  assert.doesNotMatch(code, /new\s+Function/);
-  assert.doesNotMatch(code, /eval\s*\(/);
+  assert.doesNotMatch(code, /\bnew\s+Function\b/);
+  assert.doesNotMatch(code, /\beval\s*\(/);
 });
 
 const answers = [

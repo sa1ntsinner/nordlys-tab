@@ -194,7 +194,7 @@ class GridController {
     resizeHandle.setAttribute("aria-valuenow", String(group.cols || 4));
     resizeHandle.addEventListener("keydown", (event) => {
       const step = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 };
-      let next = null;
+      let next;
       if (event.key in step) next = (group.cols || 4) + step[event.key];
       else if (event.key === "Home") next = MIN_COLUMNS;
       else if (event.key === "End") next = MAX_COLUMNS;

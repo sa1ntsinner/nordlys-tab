@@ -1021,7 +1021,7 @@ class SettingsController {
           <input type="text" class="group-label-input" value="${esc(group.label || '')}" placeholder="${esc(folderPlaceholder)}">
           <div style="display: flex; gap: 5px; align-items: center;">
             <select class="cols-select" title="Columns">
-              ${[1,2,3,4,5,6,7,8].map(c => `<option value="${c}" ${group.cols == c ? 'selected' : ''}>${c} Cols</option>`).join('')}
+              ${[1,2,3,4,5,6,7,8].map(c => `<option value="${c}" ${Number(group.cols) === c ? 'selected' : ''}>${c} Cols</option>`).join('')}
             </select>
             <button class="move-btn btn-group-toggle-vis" title="${group.hidden ? 'Show folder on board' : 'Hide folder to tray'}">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1996,10 +1996,7 @@ class SettingsController {
       this.previewCtx.clearRect(0, 0, this.previewCanvas.width, this.previewCanvas.height);
     }
 
-    // 7. Intelligent Tab Selection
-    const modalTabs = document.querySelectorAll(".icon-tab-btn");
-    const modalPanes = document.querySelectorAll(".modal-tab-pane");
-    
+    // 7. Which tab opens first
     // A pasted URL, an uploaded file and a monogram share one pane now, so
     // whichever of them the bookmark is already using lands in the same place.
     const defaultTab = (link.customImg || link.monogram) ? "custom" : "library";
@@ -2319,7 +2316,7 @@ class SettingsController {
               folderHeaders.forEach((h3) => {
                 const folderTitle = h3.textContent.trim() || "Imported Folder";
                 const links = [];
-                let next = h3.parentElement?.querySelector("dl, DL") || h3.nextElementSibling;
+                const next = h3.parentElement?.querySelector("dl, DL") || h3.nextElementSibling;
                 if (next && next.tagName.toLowerCase() === "dl") {
                   next.querySelectorAll("a, A").forEach((a) => {
                     const url = a.getAttribute("href") || a.href;

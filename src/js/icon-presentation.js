@@ -75,7 +75,6 @@
     context.fillStyle = colour; context.fillRect(0, 0, 1, 1);
     return [...context.getImageData(0, 0, 1, 1).data];
   }
-  function colourLuminance(colour) { const [r, g, b] = paint(colour, '#000'); return luminanceOf(r, g, b); }
 
   /* Composite the plate over its ancestors until the stack is opaque, so a
      translucent plate is judged by what the eye receives, not by its own alpha. */

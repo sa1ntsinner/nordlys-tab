@@ -292,7 +292,7 @@ class NordlysBackgroundEngine {
   renderStars() {
     const light = this.lightMode;
     this.ctx.fillStyle = light ? "rgba(60, 80, 130, 0.75)" : "rgba(225, 240, 255, 0.75)";
-    for (let s of this.stars) {
+    for (const s of this.stars) {
       const a = s.alpha + Math.sin(this.t * 1.8 + s.phase) * 0.2;
       this.ctx.globalAlpha = Math.max(0.05, Math.min(0.85, a));
       this.ctx.beginPath();
@@ -334,7 +334,7 @@ class NordlysBackgroundEngine {
 
     const light = this.lightMode;
     for (let i = this.meteors.length - 1; i >= 0; i--) {
-      let m = this.meteors[i];
+      const m = this.meteors[i];
       m.x += Math.cos(m.angle) * m.speed * dt * pace;
       m.y += Math.sin(m.angle) * m.speed * dt * pace;
       m.life -= 0.028 * dt * pace;
