@@ -221,7 +221,9 @@ class GridController {
     a.style.setProperty("--j", lIdx);
     a.dataset.groupIdx = gIdx;
     a.dataset.linkIdx = lIdx;
-    a.draggable = true;
+    // A folder that follows the browser owns its order and its contents; the
+    // refusal at the drop target still stands, this just stops the drag earlier.
+    a.draggable = !this.app.config.groups[gIdx]?.source?.folderId;
 
     // Render Box & Icon
     const box = document.createElement("div");
@@ -643,6 +645,8 @@ class GridController {
     const t = (key, fallback) => (window.I18N ? window.I18N.t(key, { count: links.length }) : fallback);
     if (links.length > 5) {
       const ok = await confirmDialog({
+        // Opening tabs is not destructive; the confirm button may take focus.
+        danger: false,
         title: t("confirm.openAllTitle", `Open ${links.length} tabs?`),
         message: `${group.label || "Folder"}`,
         confirmText: t("confirm.openAllConfirm", "Open them"),

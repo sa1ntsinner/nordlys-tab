@@ -104,7 +104,7 @@ const DOMAIN_MAP = {
   "amazon.": "amazon", "amzn.to": "amazon",
   "wikipedia.org": "wikipedia",
   "deep-ml.": "brain", "kaggle.": "brain",
-  "moodle.": "school", "boss.tu": "school", "coursera.": "school",
+  "moodle.*": "school", "boss.tu-dortmund.": "school", "coursera.": "school",
   "usevia.app": "keyboard", "monkeytype.": "keyboard",
   "gg.deals": "tag", "csfloat.": "crosshair",
   "lowfuelmotorsport.": "flag", "racecontrol.": "steering",
@@ -119,9 +119,11 @@ const DOMAIN_MAP = {
    only has to cover the hosts people actually bookmark. */
 const SECOND_LEVEL_SUFFIXES = new Set(["co", "com", "org", "net", "ac", "gov", "edu", "ne", "or", "go", "gob", "nom", "ltd", "sch"]);
 
-/* Two shapes of entry in DOMAIN_MAP:
+/* Three shapes of entry in DOMAIN_MAP:
    - "mail.google."  — open: these labels, then any public suffix
    - "claude.ai"     — closed: exactly this registrable domain, or a subdomain
+   - "moodle.*"      — leading: the host's first label, whatever follows — for
+                       software that every institution hosts under its own domain
 
    Matching is by whole labels, so a brand's name inside somebody else's domain
    is not that brand: github.example.org is not GitHub, notx.com is not X. The
@@ -130,6 +132,7 @@ const SECOND_LEVEL_SUFFIXES = new Set(["co", "com", "org", "net", "ac", "gov", "
    host.includes(prefix); "google." came first and claimed Gmail, Drive and
    Gemini before their own entries were reached. */
 function domainMatches(hostLabels, entry) {
+  if (entry.endsWith(".*")) return hostLabels[0] === entry.slice(0, -2);
   const open = entry.endsWith(".");
   const entryLabels = entry.replace(/\.$/, "").split(".");
   for (let start = 0; start + entryLabels.length <= hostLabels.length; start++) {

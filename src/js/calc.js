@@ -56,8 +56,20 @@
         continue;
       }
       if (/[a-z]/i.test(char)) {
+        /* "2x3" and "10x10": an x between a value and a digit or bracket is the
+           multiplication sign people type, not the start of a word. */
+        const previous = tokens[tokens.length - 1];
+        const afterValue = previous && (previous.type === "number" || previous.type === "constant" || (previous.type === "op" && previous.value === ")"));
+        if (/[xX]/.test(char) && afterValue && /[\d(.]/.test(source[at + 1] || "")) {
+          tokens.push({ type: "op", value: "*" });
+          at++;
+          continue;
+        }
         const match = /^[a-z][a-z0-9]*/i.exec(source.slice(at));
         const word = match[0].toLowerCase();
+        /* "1e", "3e-2": a digit glued to an e is exponent notation, which this
+           does not read — better no answer than 3·e−2 offered as one. */
+        if (word === "e" && at > 0 && /\d/.test(source[at - 1])) return null;
         if (word === "x") tokens.push({ type: "op", value: "*" });
         else if (word in FUNCTIONS) tokens.push({ type: "function", value: word });
         else if (word in CONSTANTS) tokens.push({ type: "constant", value: word });

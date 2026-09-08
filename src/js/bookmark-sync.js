@@ -127,9 +127,11 @@
         } catch (error) {
           /* A folder the user deleted in the browser. Keep what is on screen
              and mark it, rather than emptying the group under them. */
-          if (!group.source.missing) { group.source.missing = true; changed = true; }
+          if (group.source && !group.source.missing) { group.source.missing = true; changed = true; }
           continue;
         }
+        // "Stop following" may have landed while the read was in flight.
+        if (!group.source?.folderId) continue;
         if (group.source.missing) { group.source.missing = false; changed = true; }
         if (JSON.stringify(links) !== JSON.stringify(group.links || [])) {
           group.links = links;

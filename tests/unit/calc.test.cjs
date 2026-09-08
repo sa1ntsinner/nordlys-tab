@@ -29,6 +29,13 @@ const answers = [
   ['200 * 15%', 30],
   ['50%', 0.5],
   ['10 x 10', 100],
+  ['2x3', 6],
+  ['10x10', 100],
+  ['(2+1)x3', 9],
+  ['2X3', 6],
+  ['1e', null],                   // exponent notation is not read; not 1·e either
+  ['3e-2', null],
+  ['xx', null],
   ['3 × 4 ÷ 2', 6],
   ['2pi', 2 * Math.PI],
   ['2(3+4)', 14],

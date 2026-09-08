@@ -111,10 +111,10 @@ Stores the user's own configuration on the device: their bookmark folders and ti
 Users can set their own image or a looping video as the page background. These are held as blobs in IndexedDB on the device and routinely exceed the 5 MB default quota - a short 1080p loop passes it on its own - so without this the feature fails on the files people actually pick. Nothing is uploaded; the file never leaves the machine.
 ```
 
-### `favicon` — 262 chars
+### `favicon` — 327 chars
 
 ```
-Bookmark tiles can show a site's icon. This reads Chrome's own local favicon cache via chrome.runtime.getURL("/_favicon/?pageUrl=..."), so an icon can be drawn for a site the user has already visited without sending that address to a third-party favicon service.
+Bookmark tiles can show a site's icon. This reads Chrome's own local favicon cache at the extension's /_favicon/ path, so an icon can be drawn for a site the user has already visited without sending that address to a third-party favicon service. Remote favicon providers are contacted only when the user explicitly chooses one.
 ```
 
 ### `search` — 600 chars

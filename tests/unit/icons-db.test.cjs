@@ -49,3 +49,13 @@ test('addresses that are not URLs resolve to nothing, quietly', () => {
   assert.equal(resolveIcon(''), null);
   assert.equal(resolveIcon(undefined), null);
 });
+
+/* Software every institution hosts under its own domain: the brand is the first
+   label, whatever follows. moodle.tu-dortmund.de is Moodle. */
+test('a leading-label entry matches the first label under any domain', () => {
+  assert.equal(iconFor('https://moodle.tu-dortmund.de/my/'), 'school');
+  assert.equal(iconFor('https://moodle.example.ac.uk/'), 'school');
+  assert.equal(iconFor('https://boss.tu-dortmund.de/'), 'school');
+  assert.equal(iconFor('https://notmoodle.com/'), null);
+  assert.equal(iconFor('https://example.com/moodle'), null);
+});

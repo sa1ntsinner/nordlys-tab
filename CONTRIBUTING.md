@@ -34,7 +34,7 @@ npm test
 | `npm run lint` | ESLint: undefined names, unused variables, `==`, `var` | seconds |
 | `npm run test:syntax` | every script parses | seconds |
 | `npm run test:unit` | pure logic under Node: the calculator, the config schema, the icon resolver, the design-token rules, the store-listing limits | seconds |
-| `npm run test:ui` | Playwright, 4 workers | about 1.5 minutes |
+| `npm run test:ui` | Playwright, 4 workers, including the real-extension tests | two to three minutes |
 
 The UI suite has two kinds of test, and the difference matters.
 

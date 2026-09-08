@@ -31,7 +31,7 @@ const files = INCLUDE.flatMap(name => {
   if (!existsSync(full)) fail(`${name} is missing`);
   return statSync(full).isDirectory() ? walk(full) : [full];
 });
-const underscored = files.filter(file => /(^|[\\/])_[^\\/]*$/.test(relative(ROOT, file)));
+const underscored = files.filter(file => relative(ROOT, file).split(/[\\/]/).some(segment => segment.startsWith('_')));
 if (underscored.length) fail(`files Chrome will refuse to load:\n  ${underscored.map(f => relative(ROOT, f)).join('\n  ')}`);
 
 for (const doc of ['RELEASE_GUIDE.md', 'docs/CHROME_STORE_GUIDE.md']) {
