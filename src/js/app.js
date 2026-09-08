@@ -182,7 +182,7 @@ class NordlysApp {
     const sync = window.NordlysBookmarks;
     if (!sync) return;
     const linked = (this.config.groups || []).some((group) => group.source?.folderId);
-    if (!linked) return;
+    if (!linked) { this.stopFollowingBrowser(); return; }
 
     const pull = async () => {
       if (await sync.refresh(this.config)) {
@@ -192,12 +192,22 @@ class NordlysApp {
       }
     };
     await pull();
+    /* Called again whenever a folder is linked or unlinked, so the first folder
+       linked in a session is watched from that moment rather than from the next
+       open — which is when it used to start. One watch is enough for any
+       number of folders. */
+    if (this.unwatchBrowser) return;
     // Debounced: a drag inside the browser's manager fires a burst of events.
     let pending = null;
-    sync.watch(() => {
+    this.unwatchBrowser = sync.watch(() => {
       clearTimeout(pending);
       pending = setTimeout(pull, 250);
     });
+  }
+
+  stopFollowingBrowser() {
+    this.unwatchBrowser?.();
+    this.unwatchBrowser = null;
   }
 
   applyGlassLevel() {

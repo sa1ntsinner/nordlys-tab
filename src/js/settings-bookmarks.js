@@ -18,10 +18,24 @@
       this._overflow = new NordlysUI.MenuController(root);
       return this._overflow;
     }
-    openOverflow(button, entries) {
+    openOverflow(button, entries, { filterable = false, filterLabel = 'Filter' } = {}) {
       const menu = this.overflow();
+      /* A long list — every folder in a large bookmark tree — gets a filter
+         field at the top instead of being cut off. The picker used to stop at
+         forty and say nothing, and people with large trees are the ones this
+         feature exists for. */
+      let filter = null;
+      if (filterable) {
+        filter = document.createElement('input');
+        filter.type = 'search'; filter.className = 'ctx-filter'; filter.setAttribute('role', 'searchbox');
+        filter.placeholder = filterLabel; filter.setAttribute('aria-label', filterLabel); filter.autocomplete = 'off';
+      }
       const fill = list => {
-        menu.root.replaceChildren();
+        /* Only the items are rebuilt. Replacing the whole menu would detach the
+           filter field mid-keystroke and drop focus onto the page, which is why
+           an earlier version stopped answering the keyboard after one letter. */
+        menu.root.querySelectorAll('[role="menuitem"]').forEach(item => item.remove());
+        if (filter && !filter.isConnected) menu.root.append(filter);
         for (const entry of list) {
           const item = document.createElement('button');
           item.type = 'button';
@@ -43,8 +57,15 @@
         }
       };
       fill(entries);
+      if (filter) {
+        filter.addEventListener('input', () => {
+          const needle = filter.value.trim().toLowerCase();
+          fill(needle ? entries.filter(entry => entry.label.toLowerCase().includes(needle)) : entries);
+        });
+      }
       const box = button.getBoundingClientRect();
       menu.open(button, { x: box.right - 210, y: box.bottom + 6 });
+      if (filter) filter.focus({ preventScroll: true });
     }
     save(message) { this.app.saveConfig(); this.app.grid?.render(); if (message) NordlysUI.announce(message); }
     moveFolder(folder, delta) {
@@ -56,6 +77,7 @@
       links.splice(bookmarkIndex, 1); links.splice(target, 0, link); this.expanded.add(group); this.save(`${link.name} moved to position ${target + 1}`); this.render();
     }
     transferBookmark(group, link, destination) {
+      if (destination?.source?.folderId || group.source?.folderId) return;
       const sourceIndex = group.links.indexOf(link); if (sourceIndex < 0 || !destination || destination === group) return;
       group.links.splice(sourceIndex, 1); (destination.links ||= []).push(link); this.expanded.add(destination); this.save(`${link.name} moved to ${destination.label}`); this.render();
     }
@@ -85,6 +107,7 @@
         for (const link of group.links || []) delete link.fromBrowser;
         this.save(`${group.label} no longer follows the browser`);
         this.render();
+        this.app.followBrowserFolders?.();
         return;
       }
 
@@ -104,20 +127,39 @@
       }
 
       const button = this.root.querySelector(`[data-group-index="${this.app.config.groups.indexOf(group)}"] .bookmark-overflow`);
-      this.openOverflow(button || document.body, folders.slice(0, 40).map((folder) => ({
+      this.openOverflow(button || document.body, folders.map((folder) => ({
         label: folder.path,
         run: async () => {
-          group.source = { type: 'browser', folderId: folder.id, title: folder.title };
-          try {
-            group.links = await sync.linksIn(folder.id);
-          } catch (error) {
-            group.links = [];
+          /* The folder's own bookmarks are replaced by the browser's. When there
+             are any, that is said first, and the state before is kept. */
+          const own = (group.links || []).length;
+          if (own > 0) {
+            const ok = await confirmDialog({
+              title: this.text('bookmarks.linkReplaceTitle', 'Replace this folder\'s bookmarks?'),
+              message: (window.I18N ? window.I18N.t('bookmarks.linkReplaceMessage', { count: own, folder: folder.title }) : `Following "${folder.title}" replaces the ${own} bookmarks here. The previous state is kept in the restore point.`),
+              confirmText: this.text('bookmarks.linkConfirm', 'Follow'),
+              danger: true
+            });
+            if (!ok) return;
+            this.app.snapshotBeforeMigration?.(this.app.config);
           }
+          // Read first: a folder that cannot be read is not linked, and nothing
+          // that was on screen is touched.
+          let links;
+          try {
+            links = await sync.linksIn(folder.id);
+          } catch (error) {
+            NordlysUI.announce(this.text('bookmarks.linkUnavailable', 'Browser bookmarks are not available'));
+            return;
+          }
+          group.source = { type: 'browser', folderId: folder.id, title: folder.title };
+          group.links = links;
           this.save(`${group.label} follows ${folder.title}`);
           this.render();
           this.app.grid?.render();
+          this.app.followBrowserFolders?.();
         }
-      })));
+      })), { filterable: true, filterLabel: this.text('bookmarks.filterFolders', 'Filter folders') });
     }
 
     render() {
@@ -169,7 +211,7 @@
 
         const folderMenu = button(`More actions for ${group.label}`, '⋯', node => this.openOverflow(node, [
           { label: this.text('bookmarks.rename', 'Rename'), run: () => { this.renaming.add(group); this.render(); this.root.querySelector(`[data-group-index="${this.app.config.groups.indexOf(group)}"] .bookmark-folder-name-input`)?.focus(); } },
-          { label: this.text('bookmarks.addBookmark', 'Add bookmark'), run: addBookmark },
+          { label: this.text('bookmarks.addBookmark', 'Add bookmark'), disabled: Boolean(group.source?.folderId), run: addBookmark },
           { label: group.hidden ? this.text('bookmarks.showOnBoard', 'Show on the board') : this.text('bookmarks.hideFromBoard', 'Hide from the board'), run: () => { group.hidden = !group.hidden; this.save(`${group.label} ${group.hidden ? 'hidden' : 'shown'}`); this.render(); } },
           { label: this.text('bookmarks.moveUp', 'Move up'), disabled: groupIndex === 0, run: () => this.moveFolder(group, -1) },
           { label: this.text('bookmarks.moveDown', 'Move down'), disabled: groupIndex === groups.length - 1, run: () => this.moveFolder(group, 1) },
@@ -242,8 +284,12 @@
             { label: this.text('ctx.editBookmark', 'Edit'), run: () => { editor.hidden = false; titleInput.focus(); } },
             { label: this.text('bookmarks.moveUp', 'Move up'), disabled: bookmarkIndex === 0, run: () => this.moveBookmark(group, link, -1) },
             { label: this.text('bookmarks.moveDown', 'Move down'), disabled: bookmarkIndex === group.links.length - 1, run: () => this.moveBookmark(group, link, 1) },
-            { label: this.text('bookmarks.moveTo', 'Move to folder'), disabled: groups.length < 2, submenu: () => groups
-                .filter(candidate => candidate !== group)
+            /* A folder that follows the browser is not a destination: anything
+               moved into it would vanish on the next refresh. */
+            { label: this.text('bookmarks.moveTo', 'Move to folder'),
+              disabled: groups.filter(candidate => candidate !== group && !candidate.source?.folderId).length === 0,
+              submenu: () => groups
+                .filter(candidate => candidate !== group && !candidate.source?.folderId)
                 .map(candidate => ({ label: candidate.label || 'Folder', run: () => this.transferBookmark(group, link, candidate) })) },
             { label: this.text('ctx.deleteBookmark', 'Delete'), danger: true, run: () => this.removeWithUndo({ group, link }) }
           ]), { className: 'bookmark-compact-action bookmark-overflow' });
