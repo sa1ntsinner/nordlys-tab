@@ -1,0 +1,491 @@
+/* Nordlys product polish
+   ----------------------
+   This final layer deliberately owns composition and finish while the files
+   before it continue to own behaviour. Keeping the pass isolated makes the
+   visual direction easy to review and prevents a redesign from disturbing the
+   extension's storage, accessibility, or interaction contracts. */
+
+:root {
+  --nl-polish-surface: color-mix(in srgb, var(--nl-surface-card) 72%, transparent);
+  --nl-polish-surface-solid: color-mix(in srgb, var(--nl-surface-card) 94%, var(--nl-canvas));
+  --nl-polish-hairline: color-mix(in srgb, var(--nl-text-primary) 10%, transparent);
+  --nl-polish-hairline-hover: color-mix(in srgb, var(--nl-text-primary) 18%, transparent);
+  --nl-polish-accent-soft: color-mix(in srgb, var(--nl-accent) 13%, transparent);
+  --nl-polish-shadow: var(--nl-shadow-2);
+}
+
+/* Canvas composition */
+#page {
+  justify-content: flex-start;
+  gap: 24px;
+  padding: clamp(64px, 9vh, 104px) 24px 72px;
+}
+
+#hero {
+  gap: 5px;
+}
+
+#clock {
+  min-width: 6ch;
+  font-size: clamp(68px, 8.5vw, 96px);
+  font-weight: 300;
+  line-height: .92;
+  letter-spacing: var(--nl-track-tight);
+  text-shadow: var(--nl-shadow-2);
+}
+
+#clock .colon:not(.sc) {
+  display: inline-block;
+  margin-inline: .025em;
+  opacity: .48;
+  transform: translateY(-.045em);
+}
+
+#date {
+  margin-top: 8px;
+  font-size: var(--nl-text-2xs);
+  font-weight: 650;
+  letter-spacing: var(--nl-track-wide);
+  color: color-mix(in srgb, var(--nl-text-secondary) 88%, transparent);
+}
+
+#greet {
+  font-size: var(--nl-text-md);
+  color: var(--nl-text-tertiary);
+}
+
+/* Search is the primary action, not another glass card. */
+#searchwrap {
+  width: min(88vw, 620px);
+  margin-top: 10px;
+}
+
+#search {
+  height: 56px;
+  gap: 10px;
+  padding-inline: 14px;
+  border-radius: var(--nl-radius-lg);
+  border-color: var(--nl-polish-hairline);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 74%, transparent);
+  box-shadow: var(--nl-shadow-2);
+  backdrop-filter: blur(18px) saturate(125%);
+  -webkit-backdrop-filter: blur(18px) saturate(125%);
+}
+
+#search:hover {
+  border-color: var(--nl-polish-hairline-hover);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 82%, transparent);
+}
+
+#search:focus-within,
+body.searching #search {
+  border-color: color-mix(in srgb, var(--nl-accent) 72%, var(--nl-border));
+  background: var(--nl-polish-surface-solid);
+  box-shadow: var(--nl-shadow-3), 0 0 0 3px var(--nl-polish-accent-soft);
+}
+
+#search-icon {
+  width: 32px;
+  height: 40px;
+}
+
+#search-icon svg {
+  width: 18px;
+  height: 18px;
+  opacity: .82;
+}
+
+#q {
+  font-size: var(--nl-text-md);
+}
+
+#search kbd {
+  min-width: 24px;
+  padding: 5px 6px;
+  text-align: center;
+  color: var(--nl-text-tertiary);
+  border-color: var(--nl-polish-hairline);
+  background: color-mix(in srgb, var(--nl-text-primary) 4%, transparent);
+}
+
+#sugg {
+  top: calc(100% + 10px);
+  padding: 6px;
+  border-radius: var(--nl-radius-lg);
+  border-color: var(--nl-polish-hairline);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 96%, transparent);
+  box-shadow: var(--nl-shadow-3);
+}
+
+#sugg > div {
+  min-height: 46px;
+  padding: 8px 12px;
+  border-radius: var(--nl-radius-sm);
+}
+
+#sugg div.sel,
+#sugg div:hover {
+  background: var(--nl-polish-accent-soft);
+}
+
+/* Bookmark board */
+#board {
+  width: min(94vw, 1400px);
+  gap: 14px;
+}
+
+.card {
+  gap: 14px;
+  padding: 14px 16px 16px;
+  border-radius: var(--nl-radius-lg);
+  border-color: var(--nl-polish-hairline);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--nl-surface-card) 64%, transparent),
+    color-mix(in srgb, var(--nl-surface-card-deep) 76%, transparent)
+  );
+  box-shadow: var(--nl-polish-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate, 122%));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate, 122%));
+}
+
+.card:hover {
+  border-color: var(--nl-polish-hairline-hover);
+  box-shadow: var(--nl-shadow-2);
+}
+
+.cat {
+  min-height: 28px;
+  gap: 9px;
+  padding-inline: 4px 0;
+}
+
+.cat s {
+  width: 5px;
+  height: 5px;
+  box-shadow: none;
+}
+
+.cat b {
+  font-size: var(--nl-text-2xs);
+  letter-spacing: var(--nl-track-label);
+  color: var(--nl-text-secondary);
+}
+
+.cat i {
+  opacity: .52;
+}
+
+.grid {
+  gap: 12px 10px;
+}
+
+.tile {
+  gap: 8px;
+}
+
+.box {
+  border-radius: var(--nl-radius-md);
+  border-color: var(--nl-polish-hairline);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 56%, transparent);
+  box-shadow: var(--nl-shadow-1);
+  transition: transform var(--nl-transition-control), box-shadow var(--nl-transition-control), border-color var(--nl-transition-fast), background-color var(--nl-transition-fast);
+}
+
+.tile:hover .box,
+.tile:focus-visible .box,
+body.hover-lift .tile:hover .box,
+body.hover-scale .tile:hover .box,
+body.hover-glow .tile:hover .box {
+  border-color: color-mix(in srgb, var(--icon-accent, var(--nl-accent)) 40%, var(--nl-polish-hairline));
+  background: color-mix(in srgb, var(--nl-surface-elevated) 72%, transparent);
+  box-shadow: var(--nl-shadow-2), 0 0 0 3px color-mix(in srgb, var(--icon-accent, var(--nl-accent)) 9%, transparent);
+  transform: translateY(-2px);
+}
+
+.lbl {
+  font-size: var(--nl-text-xs);
+  font-weight: 450;
+  color: var(--nl-text-tertiary);
+}
+
+.tile:hover .lbl,
+.tile:focus-visible .lbl {
+  color: var(--nl-text-primary);
+}
+
+#hiddenDock {
+  border-color: var(--nl-polish-hairline);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 70%, transparent);
+  box-shadow: var(--nl-shadow-2);
+}
+
+#gear {
+  right: 20px;
+  bottom: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--nl-radius-md);
+  border-color: var(--nl-polish-hairline);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 76%, transparent);
+  color: var(--nl-text-secondary);
+  box-shadow: var(--nl-shadow-2);
+  backdrop-filter: blur(16px) saturate(125%);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+}
+
+#gear:hover {
+  color: var(--nl-text-primary);
+  border-color: color-mix(in srgb, var(--nl-accent) 44%, var(--nl-border));
+  background: var(--nl-polish-surface-solid);
+  box-shadow: var(--nl-shadow-2), 0 0 0 3px var(--nl-polish-accent-soft);
+}
+
+/* Settings becomes a composed workspace: a calm rail beside one readable
+   content column. The background is intentionally opaque enough that custom
+   wallpapers cannot compromise control contrast. */
+#cfg {
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 98%, var(--nl-canvas));
+  border-left-color: var(--nl-polish-hairline);
+}
+
+.chead {
+  min-height: 72px;
+  padding: 14px 20px;
+  border-bottom-color: var(--nl-polish-hairline);
+  background: transparent;
+}
+
+.chead b {
+  font-family: var(--font-display);
+  font-size: var(--nl-text-xl);
+  font-weight: 600;
+  letter-spacing: var(--nl-track-tight);
+}
+
+#cfgx {
+  border-radius: var(--nl-radius-sm);
+  border-color: var(--nl-polish-hairline);
+  background: color-mix(in srgb, var(--nl-text-primary) 4%, transparent);
+}
+
+.settings-layout {
+  grid-template-columns: 176px minmax(0, 1fr);
+}
+
+.ctabs {
+  gap: 20px;
+  padding: 20px 12px;
+  border-right-color: var(--nl-polish-hairline);
+  background: color-mix(in srgb, var(--nl-canvas) 22%, transparent);
+}
+
+.settings-nav-group {
+  gap: 5px;
+}
+
+.settings-nav-label {
+  padding: 0 12px 6px;
+  font-size: var(--nl-text-2xs);
+  letter-spacing: var(--nl-track-label);
+  color: var(--nl-text-secondary);
+}
+
+.ctab {
+  min-height: 42px;
+  padding-inline: 12px;
+  border-radius: var(--nl-radius-sm);
+  color: var(--nl-text-secondary);
+}
+
+.ctab:hover {
+  color: var(--nl-text-primary);
+  background: color-mix(in srgb, var(--nl-text-primary) 5%, transparent);
+}
+
+.ctab.active {
+  color: var(--nl-text-primary);
+  background: var(--nl-polish-accent-soft);
+}
+
+.ctab.active::before {
+  inset-block: 10px;
+  width: 2px;
+}
+
+.cbody {
+  gap: 24px;
+  padding: 24px 28px 40px;
+  scrollbar-gutter: stable;
+}
+
+.csec {
+  gap: 18px;
+}
+
+.csec h3 {
+  margin-top: 8px;
+  color: var(--nl-text-secondary);
+  font-size: var(--nl-text-sm);
+}
+
+.csec h3::after {
+  background: var(--nl-polish-hairline);
+}
+
+.color-mode-segmented {
+  padding: 4px;
+  border-color: var(--nl-polish-hairline);
+  border-radius: var(--nl-radius-md);
+  background: color-mix(in srgb, var(--nl-canvas) 34%, transparent);
+}
+
+.mode-btn {
+  border-radius: var(--nl-radius-sm);
+}
+
+.mode-btn.active {
+  color: var(--nl-text-primary);
+  background: color-mix(in srgb, var(--nl-accent) 20%, var(--nl-surface-elevated));
+  box-shadow: var(--nl-shadow-1);
+}
+
+.theme-grid {
+  gap: 10px;
+}
+
+.theme-card {
+  min-height: 94px;
+  padding: 10px;
+  border-color: var(--nl-polish-hairline);
+  border-radius: var(--nl-radius-md);
+  background: color-mix(in srgb, var(--nl-surface-card) 42%, transparent);
+}
+
+.theme-card:hover {
+  border-color: var(--nl-polish-hairline-hover);
+  background: color-mix(in srgb, var(--nl-surface-card) 68%, transparent);
+}
+
+.theme-card.active,
+.theme-card[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--nl-accent) 72%, var(--nl-border));
+  background: var(--nl-polish-accent-soft);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--nl-accent) 10%, transparent);
+}
+
+.theme-preview {
+  border-radius: var(--nl-radius-sm);
+}
+
+.card-customizer-card,
+.custom-theme-tuning-card,
+.advanced-settings,
+.bookmark-folder-accordion {
+  border-color: var(--nl-polish-hairline);
+  background: color-mix(in srgb, var(--nl-surface-card) 46%, transparent);
+  box-shadow: none;
+}
+
+.setting-row {
+  min-height: 60px;
+  border-color: color-mix(in srgb, var(--nl-border) 64%, transparent);
+}
+
+.ipt,
+.nl-select,
+#cfg textarea {
+  border-color: var(--nl-polish-hairline);
+  background: color-mix(in srgb, var(--nl-canvas) 46%, transparent);
+  color: var(--nl-text-primary);
+}
+
+.ipt:focus,
+.nl-select:focus-visible,
+#cfg textarea:focus {
+  border-color: var(--nl-accent);
+  background: var(--nl-polish-surface-solid);
+  box-shadow: 0 0 0 3px var(--nl-polish-accent-soft);
+}
+
+/* Dialogs, menus and toasts share the same final level of elevation. */
+:where(.quick-modal, .confirm-modal, .icon-picker-modal, .ctx-menu, .nl-select-popover) {
+  border-color: var(--nl-polish-hairline);
+  background: var(--nl-polish-surface-solid);
+  box-shadow: var(--nl-shadow-3);
+}
+
+@media (max-height: 820px) {
+  #page {
+    gap: 18px;
+    padding-top: 28px;
+    padding-bottom: 40px;
+  }
+
+  #clock {
+    font-size: clamp(58px, 10vh, 76px);
+  }
+
+  #searchwrap {
+    margin-top: 4px;
+  }
+}
+
+@media (max-width: 759px) {
+  #page {
+    gap: 20px;
+    padding: 48px 14px 76px;
+  }
+
+  #clock {
+    min-width: 0;
+    font-size: clamp(58px, 20vw, 76px);
+  }
+
+  #searchwrap {
+    width: min(92vw, 620px);
+  }
+
+  #board {
+    width: 100%;
+  }
+
+  .card {
+    padding-inline: 14px;
+  }
+
+  .settings-layout {
+    display: flex;
+  }
+
+  .ctabs {
+    gap: 8px;
+    padding: 8px 14px 10px;
+    background: transparent;
+  }
+
+  .cbody {
+    padding: 20px 16px 32px;
+  }
+}
+
+@media (max-width: 420px) {
+  #page {
+    padding-inline: 10px;
+  }
+
+  #search {
+    height: 52px;
+  }
+
+  #gear {
+    right: 14px;
+    bottom: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #clock .colon {
+    transform: none;
+  }
+}
