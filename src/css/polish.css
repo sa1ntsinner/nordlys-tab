@@ -11,7 +11,6 @@
   --nl-polish-hairline: color-mix(in srgb, var(--nl-text-primary) 10%, transparent);
   --nl-polish-hairline-hover: color-mix(in srgb, var(--nl-text-primary) 18%, transparent);
   --nl-polish-accent-soft: color-mix(in srgb, var(--nl-accent) 13%, transparent);
-  --nl-polish-shadow: var(--nl-shadow-2);
 }
 
 /* Canvas composition */
@@ -46,6 +45,7 @@
   font-size: var(--nl-text-2xs);
   font-weight: 650;
   letter-spacing: var(--nl-track-wide);
+  text-transform: none;
   color: color-mix(in srgb, var(--nl-text-secondary) 88%, transparent);
 }
 
@@ -141,17 +141,17 @@ body.searching #search {
   border-color: var(--nl-polish-hairline);
   background: linear-gradient(
     145deg,
-    color-mix(in srgb, var(--nl-surface-card) 64%, transparent),
-    color-mix(in srgb, var(--nl-surface-card-deep) 76%, transparent)
+    color-mix(in srgb, var(--nl-surface-card) 52%, transparent),
+    color-mix(in srgb, var(--nl-surface-card-deep) 64%, transparent)
   );
-  box-shadow: var(--nl-polish-shadow);
+  box-shadow: var(--nl-shadow-1);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate, 122%));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate, 122%));
 }
 
 .card:hover {
   border-color: var(--nl-polish-hairline-hover);
-  box-shadow: var(--nl-shadow-2);
+  box-shadow: var(--nl-shadow-1);
 }
 
 .cat {
@@ -167,13 +167,14 @@ body.searching #search {
 }
 
 .cat b {
-  font-size: var(--nl-text-2xs);
-  letter-spacing: var(--nl-track-label);
+  font-size: var(--nl-text-xs);
+  letter-spacing: var(--nl-track-none);
   color: var(--nl-text-secondary);
+  text-transform: none;
 }
 
 .cat i {
-  opacity: .52;
+  display: none;
 }
 
 .grid {
@@ -287,8 +288,9 @@ body.hover-glow .tile:hover .box {
 .settings-nav-label {
   padding: 0 12px 6px;
   font-size: var(--nl-text-2xs);
-  letter-spacing: var(--nl-track-label);
+  letter-spacing: var(--nl-track-none);
   color: var(--nl-text-secondary);
+  text-transform: none;
 }
 
 .ctab {
@@ -330,7 +332,14 @@ body.hover-glow .tile:hover .box {
 }
 
 .csec h3::after {
-  background: var(--nl-polish-hairline);
+  display: none;
+}
+
+.settings-group-label,
+.ctx-header,
+.nl-select-group {
+  letter-spacing: var(--nl-track-none);
+  text-transform: none;
 }
 
 .color-mode-segmented {

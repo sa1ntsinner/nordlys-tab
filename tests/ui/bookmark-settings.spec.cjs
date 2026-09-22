@@ -55,7 +55,7 @@ test('Undo follows the deleted bookmark folder identity after folders are reorde
   const first = page.locator('.bookmark-folder-accordion').first();
   await first.locator('summary').click();
   await act(page, first.locator('.bookmark-summary-row').first(), 'YouTube', 'Delete');
-  await act(page, page.locator('.bookmark-folder-accordion').first().locator('.bookmark-folder-head'), 'DAILY', 'Move down');
+  await act(page, page.locator('.bookmark-folder-accordion').first().locator('.bookmark-folder-head'), 'Daily', 'Move down');
   await page.getByRole('button', { name: 'Undo' }).click();
   const movedFolder = page.locator('.bookmark-folder-accordion').nth(1);
   await expect(movedFolder.locator('.bookmark-summary-name').first()).toHaveText('YouTube');
@@ -73,7 +73,7 @@ test('a collapsed folder shows its name, its count and one way in', async ({ nor
   const controls = await folder.locator('.bookmark-folder-head button:visible, .bookmark-folder-head select:visible').count();
   expect(controls, 'a collapsed folder should carry one button').toBe(1);
 
-  await act(page, folder.locator('.bookmark-folder-head'), 'DAILY', 'Rename');
+  await act(page, folder.locator('.bookmark-folder-head'), 'Daily', 'Rename');
   const name = folder.getByRole('textbox', { name: /Folder name/ });
   await name.fill('Daily');
   await name.press('Enter');
@@ -131,7 +131,7 @@ test('the overflow menu moves a bookmark to another folder from the keyboard', a
   await expect(menu(page)).toBeVisible();
   await menu(page).getByRole('menuitem', { name: 'Move to folder' }).click();
   // The same menu now lists the other folders, and focus is already on one.
-  await expect(menu(page).getByRole('menuitem', { name: 'DEV & TECH' })).toBeVisible();
+  await expect(menu(page).getByRole('menuitem', { name: 'Dev & tech' })).toBeVisible();
   await page.keyboard.press('Enter');
 
   await expect.poll(() => nordlysPage.storageState.nordlys_config?.groups?.[1]?.links?.at(-1)?.name).toBe('YouTube');
