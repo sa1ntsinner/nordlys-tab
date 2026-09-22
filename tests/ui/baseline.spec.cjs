@@ -1,7 +1,7 @@
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
 test('loads the default canvas without runtime errors', async ({ nordlysPage }) => {
   await expect(nordlysPage.page.locator('#page')).toBeVisible();
-  await expect(nordlysPage.page.locator('#board > .card')).toHaveCount(5);
+  await expect(nordlysPage.page.locator('#board .card')).toHaveCount(5);
   await expect(nordlysPage.page.locator('#board .tile')).toHaveCount(22);
   expect(nordlysPage.runtimeErrors).toEqual([]);
 });

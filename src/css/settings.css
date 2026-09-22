@@ -193,7 +193,7 @@ body.resizing-drawer #cfg {
   font-size: var(--nl-text-sm);
   font-weight: 650;
   letter-spacing: var(--nl-track-none);
-  color: #94a3b8;
+  color: var(--nl-text-secondary);
   margin-top: 4px;
   display: flex;
   align-items: center;
@@ -212,16 +212,22 @@ body.resizing-drawer #cfg {
   justify-content: space-between;
   gap: 14px;
 }
-.row span {
+/* The row's own label, not every span inside the row. As `.row span` it also
+   reached into the controls — a themed select's value, a file button's
+   caption — and painted them the label colour, which in light themes was the
+   near-white of the dark ones: 1.02 to one, measured. */
+.row > span {
   font-size: var(--nl-text-md);
-  color: #f1f5f9;
+  color: var(--nl-text-primary);
   font-weight: 450;
 }
-.row span small {
-  color: #94a3b8;
+.row > span small {
+  color: var(--nl-text-secondary);
 }
+/* A line of explanation under a setting's name, inside the same label. */
+.row > span .setting-note-inline { display: block; margin-top: 2px; font-size: var(--nl-text-xs); line-height: 1.4; max-width: 44ch; }
 .row b {
-  color: var(--accent);
+  color: var(--nl-accent-text);
   font-weight: 600;
 }
 
@@ -231,7 +237,7 @@ body.resizing-drawer #cfg {
   border-radius: 10px;
   background: rgba(14, 22, 42, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #f1f5f9;
+  color: var(--nl-text-primary);
   font-family: inherit;
   font-size: var(--nl-text-sm);
   outline: none;
@@ -252,8 +258,8 @@ select.ipt {
   padding-right: 30px;
 }
 select.ipt option {
-  background: #0e162a;
-  color: #f1f5f9;
+  background: var(--nl-surface-card-deep);
+  color: var(--nl-text-primary);
 }
 
 input[type="range"].ipt {
@@ -343,7 +349,7 @@ input[type="range"].ipt:focus-visible {
   border-radius: 8px;
   border: 0;
   background: transparent;
-  color: #94a3b8;
+  color: var(--nl-text-secondary);
   font-family: inherit;
   font-size: var(--nl-text-sm);
   font-weight: 550;
@@ -351,7 +357,7 @@ input[type="range"].ipt:focus-visible {
   transition: color var(--nl-transition-control), background-color var(--nl-transition-control), border-color var(--nl-motion-control), transform var(--nl-transition-control);
 }
 .mode-btn:hover {
-  color: #f1f5f9;
+  color: var(--nl-text-primary);
   background: rgba(255, 255, 255, 0.06);
 }
 .light-ui .mode-btn {
@@ -385,7 +391,7 @@ input[type="range"].ipt:focus-visible {
   font-size: var(--nl-text-sm);
   font-weight: 650;
   letter-spacing: var(--nl-track-none);
-  color: #94a3b8;
+  color: var(--nl-text-secondary);
   display: flex;
   align-items: center;
   gap: 7px;
@@ -399,7 +405,7 @@ input[type="range"].ipt:focus-visible {
   padding: 1.5px 7px;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.08);
-  color: #cbd5e1;
+  color: var(--nl-text-secondary);
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 .light-ui .theme-section-badge {
@@ -461,7 +467,7 @@ input[type="range"].ipt:focus-visible {
 .theme-card b {
   font-size: var(--nl-text-xs);
   font-weight: 600;
-  color: #f1f5f9;
+  color: var(--nl-text-primary);
   text-align: center;
 }
 .light-ui .theme-card b {
@@ -491,7 +497,7 @@ input[type="range"].ipt:focus-visible {
 .light-ui .card-customizer-card h4,
 .light-ui .liquid-glass-tuning-card h4,
 .light-ui .custom-theme-tuning-card h4 {
-  color: var(--accent);
+  color: var(--nl-accent-text);
 }
 .light-ui .card-customizer-card div[data-i18n] {
   color: #475569;
@@ -504,7 +510,7 @@ input[type="range"].ipt:focus-visible {
 .light-ui .card-customizer-card .row b,
 .light-ui .liquid-glass-tuning-card .row b,
 .light-ui .custom-theme-tuning-card .row b {
-  color: var(--accent);
+  color: var(--nl-accent-text);
   font-weight: 650;
 }
 .light-ui .card-customizer-card .ipt,
@@ -612,14 +618,14 @@ input[type="range"].ipt:focus-visible {
 .preview-card-title {
   font-size: var(--nl-text-sm);
   font-weight: 650;
-  color: #f1f5f9;
+  color: var(--nl-text-primary);
 }
 .light-ui .preview-card-title {
   color: #0f172a;
 }
 .preview-card-sub {
   font-size: var(--nl-text-2xs);
-  color: #94a3b8;
+  color: var(--nl-text-secondary);
 }
 .light-ui .preview-card-sub {
   color: #64748b;
@@ -699,7 +705,7 @@ input[type="range"].ipt:focus-visible {
 .color-label {
   font-size: var(--nl-text-sm);
   font-weight: 500;
-  color: #f1f5f9;
+  color: var(--nl-text-primary);
 }
 .color-picker-wrap {
   display: flex;
@@ -727,7 +733,7 @@ input[type="range"].ipt:focus-visible {
   width: 68px;
   background: transparent;
   border: 0;
-  color: #f1f5f9;
+  color: var(--nl-text-primary);
   font-family: var(--font-mono);
   font-size: var(--nl-text-xs);
   font-weight: 600;
@@ -924,6 +930,18 @@ input[type="range"].ipt:focus-visible {
   border-color: rgba(255, 255, 255, 0.25);
   transform: translateY(-1px);
 }
+/* Secondary actions in the panel are quiet. The add slot is dashed like the
+   place a new folder will go; the guide is an ordinary button with its icon. */
+.glass-btn.add-slot {
+  width: 100%;
+  margin-top: 14px;
+  border-style: dashed;
+  background: transparent;
+  color: var(--nl-accent-text);
+  font-weight: 600;
+}
+.glass-btn.add-slot:hover { background: color-mix(in srgb, var(--nl-accent) 10%, transparent); border-color: var(--nl-accent); }
+.css-guide-btn { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .glass-btn.accent {
   background: var(--accent);
   border-color: var(--accent);
@@ -934,13 +952,16 @@ input[type="range"].ipt:focus-visible {
 .glass-btn.accent:hover {
   filter: brightness(1.1);
 }
+/* One rule for every theme: the status token already has a light and a dark
+   value, so the colour follows the theme and the weight never changes with
+   it. The light copy of this rule was a bolder red, which moved the button. */
 .glass-btn.danger {
-  color: #f87171;
-  background: rgba(239, 68, 68, 0.12);
-  border-color: rgba(239, 68, 68, 0.25);
+  color: var(--nl-status-danger);
+  background: color-mix(in srgb, var(--nl-status-danger) 10%, transparent);
+  border-color: color-mix(in srgb, var(--nl-status-danger) 32%, transparent);
 }
 .glass-btn.danger:hover {
-  background: rgba(239, 68, 68, 0.25);
+  background: color-mix(in srgb, var(--nl-status-danger) 18%, transparent);
 }
 
 /* Custom Styled File Input */
@@ -1086,7 +1107,7 @@ input[type="range"].ipt:focus-visible {
   color: var(--ink);
 }
 .icon-tab-btn.active {
-  color: var(--accent);
+  color: var(--nl-accent-text);
   border-bottom-color: var(--accent);
   background: rgba(124, 156, 255, 0.08);
 }
@@ -1144,7 +1165,7 @@ input[type="range"].ipt:focus-visible {
 }
 .icon-chip.active {
   background: var(--accent);
-  color: #060c1a;
+  color: var(--nl-on-accent);
   font-weight: 600;
 }
 
@@ -1243,6 +1264,8 @@ input[type="range"].ipt:focus-visible {
   background: rgba(14, 24, 52, 0.6);
   border-color: var(--accent);
 }
+.file-drop-hint { margin-top: 4px; color: var(--nl-text-secondary); font-size: var(--nl-text-2xs); }
+.file-drop-hint.refused { color: var(--nl-status-danger); font-weight: 600; }
 .file-drop-zone.drag-over {
   background: rgba(124, 156, 255, 0.18);
   border-color: var(--accent);
@@ -1437,7 +1460,7 @@ input[type="range"].ipt:focus-visible {
 }
 .crop-tool-btn:hover {
   background: rgba(255, 255, 255, 0.18);
-  color: var(--accent);
+  color: var(--nl-accent-text);
 }
 
 .cropper-tools-row {
@@ -1531,7 +1554,7 @@ input[type="range"].ipt:focus-visible {
   background: rgba(255, 255, 255, 0.1);
   padding: 2px 6px;
   border-radius: 4px;
-  color: var(--accent);
+  color: var(--nl-accent-text);
   font-family: var(--font-mono);
   font-size: var(--nl-text-xs);
 }
@@ -1609,17 +1632,6 @@ input[type="range"].ipt:focus-visible {
   box-shadow: var(--nl-shadow-1);
 }
 
-.light-ui .glass-btn.danger {
-  color: #dc2626;
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.3);
-  font-weight: 600;
-}
-.light-ui .glass-btn.danger:hover {
-  background: rgba(239, 68, 68, 0.18);
-  color: #b91c1c;
-}
-
 .light-ui .css-preset-btn {
   background: rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(0, 0, 0, 0.12);
@@ -1645,7 +1657,7 @@ input[type="range"].ipt:focus-visible {
 .light-ui .css-docs-list code {
   background: rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(0, 0, 0, 0.08);
-  color: var(--accent);
+  color: var(--nl-accent-text);
 }
 
 /* ── Responsive Settings Drawer ───────────────────────────────── */
@@ -1695,6 +1707,16 @@ input[type="range"].ipt:focus-visible {
 #cfg :where(button, select, [role="button"]) { min-width: var(--nl-target-min); }
 #cfg input[type="range"] { height: var(--nl-target-min); margin-block: 0; }
 
+/* Between the sheet and the desktop drawer the 600px floor used to leave
+   whatever was over — 160px at 760, half a search field and a column of cut
+   tiles — which read as a layout that had broken. Here the drawer takes the
+   width and leaves one steady 96px band of the page: a backdrop, and a place
+   to click to close, rather than a sliver of content. */
+@media (min-width: 760px) and (max-width: 1023px) {
+  #cfg { width: calc(100vw - 96px) !important; min-width: 0 !important; max-width: none !important; }
+  #cfg-resizer { display: none; }
+}
+
 @media (max-width: 759px) {
   #cfg { width: 100vw !important; min-width: 0 !important; max-width: 100vw !important; }
   #cfg-resizer { display: none; }
@@ -1713,6 +1735,7 @@ input[type="range"].ipt:focus-visible {
 .appearance-shared-preview { position: sticky; top: -20px; z-index: var(--nl-z-raised); padding: 8px 0 12px; background: linear-gradient(var(--nl-surface-card-deep) 72%, transparent); }
 .appearance-preview-card { width: 100%; min-height: 116px; padding: 16px; align-items: center; justify-content: center; }
 .appearance-preview-card .tile { cursor: default; }
+.appearance-preview-row { display: flex; justify-content: center; gap: var(--grid-gap, 14px); }
 .appearance-shared-preview .nl-icon { --icon-accent: var(--nl-text-primary); }
 .advanced-settings { border: 1px solid var(--nl-border); border-radius: var(--nl-radius-md); overflow: clip; }
 .advanced-settings > summary { min-height: 44px; display: flex; align-items: center; padding: 0 14px; cursor: pointer; color: var(--nl-text-primary); font-weight: 600; }
@@ -1774,8 +1797,18 @@ input[type="range"].ipt:focus-visible {
 }
 
 /* ── Background scenes ──────────────────────────────────────────────
-   A shown choice instead of a list of engine names. Each preview is drawn from
-   the active theme's shader colours, so the cards belong to the palette. */
+   A shown choice instead of a list of engine names. The generative thumbnails
+   are stills of the real scenes in the resolved palette, so a chosen colour
+   mood — or one still being mixed — reaches the previews as it reaches the
+   sky. */
+.scene-block-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.look-share { margin-top: 16px; }
+.look-actions, .look-paste-row, .look-decide-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.look-paste-label { display: block; margin-top: 4px; color: var(--nl-text-secondary); font-size: var(--nl-text-xs); }
+.look-paste-row .ipt { flex: 1 1 220px; min-width: 0; font-family: var(--font-mono); font-size: var(--nl-text-xs); }
+.look-status { min-height: 1.4em; margin: 0; color: var(--nl-text-secondary); font-size: var(--nl-text-xs); }
+.look-status.refused { color: var(--nl-status-danger); }
+.look-decide { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--nl-accent); border-radius: var(--nl-radius-md); background: color-mix(in srgb, var(--nl-accent) 8%, transparent); color: var(--nl-text-primary); font-size: var(--nl-text-sm); }
 .scene-grid { display: grid; gap: 10px; }
 .atmosphere-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .personal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -1788,43 +1821,14 @@ input[type="range"].ipt:focus-visible {
 .scene-card:hover { border-color: var(--nl-border-strong); color: var(--nl-text-primary); transform: translateY(-1px); }
 .scene-card[aria-checked="true"] { border-color: var(--nl-accent); color: var(--nl-text-primary); }
 .scene-preview {
-  display: block; aspect-ratio: 16 / 10; border-radius: var(--nl-radius-sm); overflow: hidden;
+  position: relative; display: block; aspect-ratio: 16 / 10; border-radius: var(--nl-radius-sm); overflow: hidden;
   background: var(--nl-canvas-gradient);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--nl-text-primary) 8%, transparent);
 }
-.scene-preview[data-scene="aurora"] {
-  background:
-    radial-gradient(80% 60% at 30% 110%, color-mix(in srgb, var(--shader-1, #35d6c0) 70%, transparent), transparent 70%),
-    radial-gradient(70% 50% at 75% 100%, color-mix(in srgb, var(--shader-2, #5b6cff) 60%, transparent), transparent 68%),
-    var(--nl-canvas);
-}
-.scene-preview[data-scene="halo"] {
-  background:
-    radial-gradient(circle at 70% 38%, transparent 0 17%, color-mix(in srgb, var(--shader-1) 36%, transparent) 17.5% 18%, transparent 18.5% 25%, color-mix(in srgb, var(--shader-2) 24%, transparent) 25.5% 26%, transparent 26.5%),
-    radial-gradient(circle at 70% 38%, color-mix(in srgb, var(--shader-2) 18%, transparent), transparent 52%),
-    var(--nl-canvas);
-}
-.scene-preview[data-scene="drift"] {
-  background:
-    repeating-radial-gradient(ellipse 130% 48% at 30% 120%, transparent 0 11%, color-mix(in srgb, var(--shader-1) 30%, transparent) 11.4% 11.8%, transparent 12.2% 17%),
-    linear-gradient(145deg, color-mix(in srgb, var(--shader-3) 12%, transparent), transparent 56%),
-    var(--nl-canvas);
-}
-.scene-preview[data-scene="horizon"] {
-  background:
-    linear-gradient(90deg, transparent 8%, color-mix(in srgb, var(--shader-1) 48%, transparent) 50%, transparent 92%) 0 76% / 100% 1px no-repeat,
-    radial-gradient(80% 48% at 50% 92%, color-mix(in srgb, var(--shader-2) 42%, transparent), transparent 72%),
-    var(--nl-canvas);
-}
+/* The six generative previews are stills painted by the scene engine itself
+   (paintStill in background.js) onto this canvas, over the theme's own sky. */
+.scene-still { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .scene-preview[data-scene="solid"] { background: var(--nl-canvas); }
-/* The still field, shown as the composition currently chosen would look. */
-.scene-preview[data-scene="gradient"] {
-  background:
-    radial-gradient(58% 62% at 26% 34%, color-mix(in srgb, var(--shader-1) 40%, transparent), transparent 70%),
-    radial-gradient(54% 58% at 78% 26%, color-mix(in srgb, var(--shader-3) 36%, transparent), transparent 72%),
-    radial-gradient(70% 66% at 62% 86%, color-mix(in srgb, var(--shader-2) 32%, transparent), transparent 74%),
-    var(--nl-canvas);
-}
 /* These two slots have nothing to preview until the user supplies a file. The
    placeholder stripes that stood here read as a broken texture and looked the
    same for both; a picture and a play mark say what each slot takes. */
@@ -1873,11 +1877,61 @@ input[type="range"].ipt:focus-visible {
   border-color: color-mix(in srgb, var(--nl-accent) 70%, transparent);
   background: color-mix(in srgb, var(--nl-accent) 10%, transparent); color: var(--nl-text-primary);
 }
-.palette-chip i { width: 18px; height: 18px; border-radius: 50%; background: var(--nl-canvas-gradient); box-shadow: inset 0 0 0 1px color-mix(in srgb, white 16%, transparent); }
+.palette-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 14ch; }
+.palette-chip i { width: 18px; height: 18px; flex: none; border-radius: 50%; background: var(--nl-canvas-gradient); box-shadow: inset 0 0 0 1px color-mix(in srgb, white 16%, transparent); }
+/* Theme keeps the theme's own colours: it is the one chip that must not follow
+   whatever mood happens to be selected. */
+.palette-chip[data-palette="theme"] i { background: conic-gradient(from 215deg, var(--shader-1, #35d6c0), var(--shader-2, #5b6cff), var(--shader-3, #9d4edd), var(--shader-1, #35d6c0)); }
 .palette-chip[data-palette="polar"] i { background: conic-gradient(from 215deg, #68e1d1, #6ea8fe, #9d8cff, #68e1d1); }
 .palette-chip[data-palette="violet"] i { background: conic-gradient(from 215deg, #8be9fd, #8b7cff, #cf78ff, #8be9fd); }
 .palette-chip[data-palette="ember"] i { background: conic-gradient(from 215deg, #ffd166, #f48c6b, #b86bff, #ffd166); }
 .palette-chip[data-palette="mono"] i { background: conic-gradient(from 215deg, #dbeafe, #94a3b8, #64748b, #dbeafe); }
+
+/* Making a mood, changing one and removing one are plain text actions beside
+   the row rather than controls nested inside the radios. */
+.palette-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: -2px; }
+.palette-action {
+  min-height: var(--nl-target-min); padding: 0 8px;
+  border: 1px solid transparent; border-radius: var(--nl-radius-sm);
+  background: transparent; color: var(--nl-accent-text);
+  font: inherit; font-size: var(--nl-text-sm); cursor: pointer;
+  transition: background-color var(--nl-motion-control), border-color var(--nl-motion-control);
+}
+.palette-action:hover { background: color-mix(in srgb, var(--nl-accent) 12%, transparent); }
+.palette-action.danger { color: var(--nl-status-danger); }
+.palette-action.danger:hover { background: color-mix(in srgb, var(--nl-status-danger) 14%, transparent); }
+.palette-action[hidden] { display: none; }
+
+.palette-editor {
+  display: grid; gap: 12px; padding: 14px;
+  border: 1px solid var(--nl-border); border-radius: var(--nl-radius-md);
+  background: color-mix(in srgb, var(--nl-surface-card) 46%, transparent);
+}
+.palette-editor[hidden] { display: none; }
+.palette-editor-bar {
+  display: block; height: 46px; border-radius: var(--nl-radius-sm);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--nl-text-primary) 12%, transparent);
+}
+.palette-editor-hint { margin: 0; color: var(--nl-text-secondary); font-size: var(--nl-text-xs); line-height: 1.5; }
+.palette-editor-field { display: grid; gap: 6px; }
+.palette-editor-field label { color: var(--nl-text-secondary); font-size: var(--nl-text-xs); }
+.palette-editor-colors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.palette-color {
+  display: flex; align-items: center; gap: 8px; min-width: 0; padding: 5px 8px 5px 5px;
+  border: 1px solid var(--nl-border); border-radius: var(--nl-radius-sm);
+  background: color-mix(in srgb, var(--nl-canvas) 42%, transparent);
+}
+.palette-color .color-well { flex: none; width: 34px; min-width: 34px; height: 34px; min-height: 34px; }
+.palette-color .hex-text { width: 100%; min-width: 0; }
+.palette-editor-error { margin: 0; color: var(--nl-status-warning); font-size: var(--nl-text-xs); line-height: 1.5; }
+.palette-helpers { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; color: var(--nl-text-secondary); font-size: var(--nl-text-xs); }
+.palette-editor-error:empty { display: none; }
+.palette-editor-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+
+@media (max-width: 560px) {
+  .palette-editor-colors { grid-template-columns: 1fr; }
+  .palette-editor-actions .glass-btn { flex: 1 1 auto; justify-content: center; }
+}
 
 /* Hit areas — see the matching block in components.css. */
 .icon-tab-btn { min-height: var(--nl-target-min); }
@@ -1955,3 +2009,260 @@ input[type="range"].ipt:focus-visible {
   white-space: nowrap;
 }
 .bookmark-add:disabled { opacity: .45; cursor: default; }
+
+/* ── Support ────────────────────────────────────────────────────────────
+   The one section that asks the user for something, so it deliberately
+   borrows the drawer's existing vocabulary and adds no colour, no badge
+   and no motion of its own. A donation surface that looks special is one
+   step from a donation surface that pleads. */
+.support-intro {
+  margin: 0;
+  max-width: 56ch;
+  color: var(--nl-text-secondary);
+  font-size: var(--nl-text-sm);
+  line-height: 1.55;
+}
+.support-give { display: flex; flex-direction: column; gap: 10px; }
+/* The same primary button every other section uses, at the same weight. */
+.support-coffee { width: 100%; min-height: var(--nl-target-min); text-decoration: none; }
+/* Secondary, not tertiary: the faint token measures 4.05:1 at 12px, and a hint
+   nobody can read is decoration with a word count. */
+/* The Backup panel's note about what the export file can and cannot carry is
+   the same kind of sentence at the same weight, so it is the same rule. */
+.support-hint,
+.backup-note {
+  margin: 0;
+  color: var(--nl-text-secondary);
+  font-size: var(--nl-text-xs);
+  line-height: 1.5;
+}
+.backup-note { margin-bottom: 14px; }
+/* No verified account means a sentence, never a control that goes nowhere. */
+.support-unavailable {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px dashed var(--nl-border);
+  border-radius: var(--nl-radius-md);
+  color: var(--nl-text-secondary);
+  font-size: var(--nl-text-sm);
+  line-height: 1.5;
+}
+
+/* One collapsed panel, used twice: the wallets and the shortcut legend. */
+.support-disclosure {
+  border: 1px solid var(--nl-border);
+  border-radius: var(--nl-radius-md);
+  background: color-mix(in srgb, var(--nl-surface-card) 55%, transparent);
+  overflow: clip;
+}
+.support-disclosure-summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  cursor: pointer;
+  color: var(--nl-text-primary);
+  font-size: var(--nl-text-sm);
+  font-weight: 600;
+  list-style: none;
+}
+.support-disclosure-summary::-webkit-details-marker { display: none; }
+.support-chevron {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-right: 1.8px solid var(--nl-text-tertiary);
+  border-bottom: 1.8px solid var(--nl-text-tertiary);
+  transform: rotate(-45deg);
+  transition: transform var(--nl-transition-enter);
+}
+.support-disclosure[open] .support-chevron { transform: rotate(45deg) translate(-1px, -2px); }
+
+.support-wallet-list {
+  margin: 0;
+  padding: 0 14px 14px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.support-wallet {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 6px 10px;
+}
+.support-wallet-name {
+  grid-column: 1 / -1;
+  color: var(--nl-text-secondary);
+  font-size: var(--nl-text-2xs);
+  font-weight: 650;
+  letter-spacing: var(--nl-track-wide);
+  text-transform: uppercase;
+}
+/* An address is 42 characters of nothing you can hyphenate. It wraps rather
+   than running off the edge of a phone-width sheet. */
+.support-wallet-address {
+  min-width: 0;
+  color: var(--nl-text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--nl-text-xs);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.support-copy { flex: none; min-height: var(--nl-target-min); }
+.support-copy.copied {
+  color: var(--nl-status-success);
+  border-color: color-mix(in srgb, var(--nl-status-success) 40%, transparent);
+}
+
+.support-actions { display: flex; flex-direction: column; gap: 4px; }
+.support-action {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) 14px;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--nl-radius-md);
+  color: var(--nl-text-primary);
+  text-decoration: none;
+  transition: background-color var(--nl-transition-control), border-color var(--nl-transition-control);
+}
+.support-action:hover {
+  background: color-mix(in srgb, var(--nl-text-primary) 6%, transparent);
+  border-color: var(--nl-border);
+}
+.support-action-icon,
+.support-action-out {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.support-action-icon { width: 18px; height: 18px; flex: none; opacity: .82; }
+.support-action-out { width: 14px; height: 14px; flex: none; color: var(--nl-text-tertiary); }
+.support-action-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.support-action-label { font-size: var(--nl-text-md); font-weight: 500; }
+.support-action-hint {
+  color: var(--nl-text-secondary);
+  font-size: var(--nl-text-xs);
+  line-height: 1.45;
+}
+
+/* ── About ──────────────────────────────────────────────────────────────
+   Secondary to the ask above it and drawn that way: one line of text, one
+   collapsed list, no surface of its own. */
+.support-about { display: flex; flex-direction: column; gap: 6px; }
+.support-about-line {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 14px;
+  color: var(--nl-text-secondary);
+  font-size: var(--nl-text-xs);
+}
+.support-version { font-family: var(--font-mono); }
+/* Text-sized to the eye, 40px to the finger: the hit area contract applies to
+   a quiet link in an About line exactly as it does to a primary button. */
+.support-about-link {
+  min-height: var(--nl-target-min);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--nl-text-secondary);
+  text-decoration: none;
+}
+.support-about-link:hover { color: var(--nl-text-primary); }
+.support-about-link:hover .support-about-link-label { text-decoration: underline; }
+.support-about-link .support-action-icon { width: 14px; height: 14px; }
+
+.support-shortcut-list {
+  margin: 0;
+  padding: 0 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* Keys and meaning on one line where there is room, and the meaning wrapping
+   under the keys where there is not — no breakpoint needed. */
+.support-shortcut {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+.support-shortcut-keys {
+  flex: none;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.support-shortcut-what {
+  flex: 1 1 150px;
+  min-width: 0;
+  margin: 0;
+  color: var(--nl-text-secondary);
+  font-size: var(--nl-text-xs);
+  line-height: 1.45;
+}
+.support-shortcut-or { color: var(--nl-text-tertiary); font-size: var(--nl-text-xs); }
+.support-shortcut kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  padding: 3px 6px;
+  border: 1px solid var(--nl-border);
+  border-radius: var(--nl-radius-sm);
+  background: color-mix(in srgb, var(--nl-text-primary) 6%, transparent);
+  color: var(--nl-text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--nl-text-2xs);
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* Bookmarks → On the board: the two layouts as the same pair of choices the
+   arrangement bar offers, each with the line that says what it does, and the
+   way onto the board to arrange it. */
+.board-layout-block { display: grid; gap: 10px; margin-bottom: 18px; }
+.board-layout-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.board-layout-option {
+  display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 10px; row-gap: 3px;
+  padding: 11px 12px; border-radius: var(--nl-radius-md);
+  border: 1px solid var(--nl-border); background: transparent; cursor: pointer;
+  color: var(--nl-text-secondary); font: inherit; text-align: start;
+  transition: border-color var(--nl-motion-control), color var(--nl-motion-control), background-color var(--nl-motion-control);
+}
+.board-layout-option .layout-glyph { grid-row: span 2; width: 30px; height: 20px; color: var(--nl-text-secondary); }
+.board-layout-option:hover { border-color: var(--nl-border-strong); color: var(--nl-text-primary); }
+.board-layout-option[aria-checked="true"] {
+  border-color: var(--nl-accent);
+  background: color-mix(in srgb, var(--nl-accent) 7%, transparent);
+  color: var(--nl-text-primary);
+}
+.board-layout-option[aria-checked="true"] .layout-glyph { color: var(--nl-accent-text); }
+.board-layout-name { font-size: var(--nl-text-sm); font-weight: 650; color: var(--nl-text-primary); }
+.board-layout-note { font-size: var(--nl-text-xs); line-height: 1.4; color: var(--nl-text-secondary); }
+.board-layout-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.board-rows-state { flex: 1 1 14ch; min-width: 0; font-size: var(--nl-text-xs); line-height: 1.4; color: var(--nl-text-secondary); }
+.board-arrange-btn { min-height: var(--nl-target-min); padding-inline: 16px; }
+@media (max-width: 420px) {
+  .board-layout-options { grid-template-columns: 1fr; }
+}
+
+/* Following the time of day: the switch sits with the moods it lights, and
+   says what the sun is doing now. */
+.daylight-block { display: grid; gap: 4px; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--nl-border); }
+.daylight-row { margin: 0; }
+.daylight-note { margin: 0; font-size: var(--nl-text-xs); line-height: 1.45; color: var(--nl-text-secondary); }
+.daylight-block .palette-action { justify-self: start; margin-left: -8px; }
+.daylight-block .palette-action:disabled { opacity: 0.55; cursor: progress; }

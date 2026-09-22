@@ -36,7 +36,7 @@ test('no message key leaks to the screen in any locale', async ({ nordlysPage })
       select.value = value; select.dispatchEvent(new Event('change', { bubbles: true }));
     }, locale);
     await page.waitForTimeout(60);
-    for (const section of ['appearance', 'background', 'bookmarks', 'general', 'custom-css', 'backup']) {
+    for (const section of ['appearance', 'background', 'bookmarks', 'general', 'support', 'custom-css', 'backup']) {
       await page.locator(`#settings-tab-${section}`).click();
       // Compare against the real key list rather than a shape: text like
       // "nordlys.app" is a domain in the preview card, not an unresolved key.
@@ -51,4 +51,43 @@ test('no message key leaks to the screen in any locale', async ({ nordlysPage })
     }
   }
   expect([...new Set(leaked)]).toEqual([]);
+});
+
+/* Tooltips, accessible names and placeholders are text too — a screen reader
+   speaks them and a hover shows them — and most of them stayed English in
+   every locale. In German and Russian none may still equal its English self,
+   except what is the same in every language: addresses, code, names. */
+test('titles, accessible names and placeholders are translated, not only the visible text', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const read = () => page.evaluate(() => {
+    const out = {};
+    for (const node of document.querySelectorAll('[id][title], [id][aria-label], [id][placeholder]')) {
+      for (const attribute of ['title', 'aria-label', 'placeholder']) {
+        const value = node.getAttribute(attribute);
+        if (value && /[A-Za-z]/.test(value)) out[`#${node.id} ${attribute}`] = value;
+      }
+    }
+    return out;
+  });
+  const english = await read();
+  expect(Object.keys(english).length).toBeGreaterThan(20);
+  const universal = value => /:\/\/|^[\w.-]+\.[a-z]{2,}(\/|$)|^https?:|^#|^[\d\s.,:%×x-]+$/i.test(value) || /^(Nordlys|CSS|JSON|URL)$/.test(value)
+    // Brand names given as examples, and a look's code prefix, read the same in every language.
+    || /^GitHub, Figma, Spotify…$/.test(value) || value.startsWith('nordlys-look:');
+  // Words that are the same word in the target language.
+  const cognates = { de: new Set(['Name']) };
+  for (const locale of ['de', 'ru']) {
+    await page.evaluate(value => window.I18N.setLanguage ? window.I18N.setLanguage(value) : null, locale);
+    await page.locator('#gear').click();
+    await page.locator('#cfg-language-select').evaluate((select, value) => {
+      select.value = value; select.dispatchEvent(new Event('change', { bubbles: true }));
+    }, locale);
+    await page.waitForTimeout(80);
+    const translated = await read();
+    const untranslated = Object.entries(english)
+      .filter(([where, value]) => translated[where] === value && !universal(value) && !cognates[locale]?.has(value))
+      .map(([where, value]) => `${where}: ${value}`);
+    expect(untranslated, `${locale} still English`).toEqual([]);
+    await page.keyboard.press('Escape');
+  }
 });

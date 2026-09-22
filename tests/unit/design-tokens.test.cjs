@@ -292,7 +292,16 @@ test('no id is declared twice at the top level of a stylesheet', () => {
           // Only whole-rule id selectors: "#cfg", "#cfg, #dim" — not "#cfg .row",
           // which is a different element and legitimately has rules of its own.
           if (cleaned && !cleaned.startsWith('@')) {
-            for (const part of cleaned.split(',').map(text => text.trim())) {
+            // Split on the commas between selectors, not the ones inside :is().
+            const parts = [];
+            let nesting = 0, current = '';
+            for (const char of cleaned) {
+              if (char === '(') nesting++;
+              if (char === ')') nesting--;
+              if (char === ',' && nesting === 0) { parts.push(current); current = ''; } else current += char;
+            }
+            parts.push(current);
+            for (const part of parts.map(text => text.trim())) {
               if (!/^#[\w-]+$/.test(part)) continue;
               if (seen.has(part)) offenders.push(`${sheet.name}: ${part} declared again`);
               else seen.set(part, true);

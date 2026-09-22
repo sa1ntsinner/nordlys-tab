@@ -1,7 +1,8 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { validateConfig, normalizeImportConfig, repairConfig } = require('../../src/js/config-schema.js');
+const schema = require('../../src/js/config-schema.js');
+const { validateConfig, normalizeImportConfig, repairConfig } = schema;
 
 const good = () => ({
   version: '2.2.3', theme: 'aurora-void', tileSize: 56, showSeconds: false,
@@ -102,4 +103,28 @@ test('repair leaves a sound config untouched and says nothing changed', () => {
   const before = JSON.stringify(config);
   assert.equal(repairConfig(config), false);
   assert.equal(JSON.stringify(config), before);
+});
+
+/* The corner slider was drawn over by a fixed 18px radius until the board
+   learned layouts, so an old config's untouched 24 is migrated to the 18 its
+   folders always showed — and only an old config's. */
+test('an untouched corner radius from before layouts becomes the radius it showed', () => {
+  const old = { cardRadius: 24, groups: [] };
+  assert.equal(schema.migrateRaw(old), true);
+  assert.equal(old.cardRadius, 18);
+  const chosen = { cardRadius: 30, groups: [] };
+  assert.equal(schema.migrateRaw(chosen), false);
+  assert.equal(chosen.cardRadius, 30);
+  const current = { cardRadius: 24, boardLayout: 'natural', groups: [] };
+  assert.equal(schema.migrateRaw(current), false, 'a config that knows layouts chose its 24');
+  assert.equal(current.cardRadius, 24);
+});
+
+test('rows and layouts are validated like every other field', () => {
+  assert.equal(schema.validateConfig({ boardLayout: 'fitted', groups: [{ label: 'A', row: 2, links: [] }] }).ok, true);
+  assert.deepEqual(schema.validateConfig({ boardLayout: 'grid', groups: [] }).errors, ['boardLayout should be "natural" or "fitted"']);
+  assert.match(schema.validateConfig({ groups: [{ label: 'A', row: -1 }] }).errors[0], /row should be a whole number/);
+  const stored = { boardLayout: 'masonry', groups: [] };
+  assert.equal(schema.repairConfig(stored), true);
+  assert.equal(stored.boardLayout, 'natural');
 });

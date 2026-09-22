@@ -29,21 +29,33 @@ async function launchExtension() {
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
 
-  await page.goto('chrome://newtab');
-  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   // The page reports its own CSP violations; recorded from inside so a blocked
-  // eval shows up as a fact rather than as a missing result.
-  await page.evaluate(() => {
+  // eval shows up as a fact rather than as a missing result. Re-armed after a
+  // reload, which throws the listener away with the document.
+  const watchPolicy = () => page.evaluate(() => {
     window.__cspViolations = [];
     document.addEventListener('securitypolicyviolation', event => {
       window.__cspViolations.push({ directive: event.violatedDirective, blocked: event.blockedURI, line: event.lineNumber });
     });
   });
 
+  await page.goto('chrome://newtab');
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  await watchPolicy();
+
   return {
     context, page, errors, cspViolations,
     extensionUrl: page.url(),
     async violations() { return page.evaluate(() => window.__cspViolations || []); },
+    /* The product ships an empty board, so a test that needs a folder to act on
+       puts one there itself — through the extension's real storage, which is
+       the point of running the real extension at all. */
+    async installBoard(board) {
+      await page.evaluate(stored => localStorage.setItem('nordlys_config', JSON.stringify(stored)), board);
+      await page.reload();
+      await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+      await watchPolicy();
+    },
     async close() {
       await context.close();
       rmSync(profile, { recursive: true, force: true });

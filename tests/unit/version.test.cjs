@@ -15,6 +15,17 @@ test('the manifest and the running config report the same version', () => {
   assert.strictEqual(app, manifest, 'src/js/app.js and manifest.json disagree');
 });
 
+/* The About block in Support prints the version on screen. It has to read the
+   one the product already carries — the installed manifest, or the running
+   app's default config. A third copy typed into the section is a third thing to
+   remember on release day, and the one users read. */
+test('the support section prints the version without keeping a copy of it', () => {
+  const version = JSON.parse(read('manifest.json')).version;
+  const source = read('src/js/settings-support.js');
+  assert.ok(!source.includes(version), `settings-support.js hard-codes ${version}`);
+  assert.match(source, /getManifest|defaultConfig/, 'the About block reads the version from nowhere');
+});
+
 test('the version is a plain three-part number Chrome will accept', () => {
   const manifest = JSON.parse(read('manifest.json')).version;
   assert.match(manifest, /^\d+\.\d+\.\d+$/, `not a store-acceptable version: ${manifest}`);

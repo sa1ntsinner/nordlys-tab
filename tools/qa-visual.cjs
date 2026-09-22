@@ -2,6 +2,7 @@ const { chromium } = require('@playwright/test');
 const { mkdir, writeFile } = require('node:fs/promises');
 const { resolve } = require('node:path');
 const { startStaticServer } = require('../tests/helpers/static-server.cjs');
+const { DEMO_BOARD } = require('../tests/helpers/demo-board.cjs');
 
 /* Hoisted out of main so the failure path can close them too. Leaking a headless
    browser is not a quiet mistake: the shell keeps rasterising through swiftshader
@@ -106,9 +107,31 @@ async function main() {
     };
   }, label));
 
+  /* First, the page as it actually arrives: nothing in storage, so this is the
+     invitation a new install opens on. Shot at both ends of the range, because
+     the whole point of the empty state is that it has to carry the page on its
+     own — there is no board behind it to fall back on. Captured before anything
+     else touches storage, since it can only be seen once. */
+  await inspect('first-run');
+  await shot('00-first-run');
+  await page.setViewportSize({ width: 320, height: 568 });
+  await inspect('first-run-320');
+  await shot('00-first-run-320');
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  /* From here the sweep needs tiles to open menus on and icons to pick, so it
+     installs the same test board the UI specs use. It is a fixture, never a
+     product default — see tests/helpers/demo-board.cjs. */
+  await page.evaluate(board => {
+    window.Nordlys.config.groups = board.groups;
+    window.Nordlys.saveConfig();
+    window.Nordlys.grid.render();
+    window.Nordlys.settings.renderBookmarksManager();
+  }, DEMO_BOARD);
+
   await shot('01-main');
   await page.locator('#gear').click();
-  const tabs = ['appearance', 'background', 'bookmarks', 'general', 'custom-css', 'backup'];
+  const tabs = ['appearance', 'background', 'bookmarks', 'general', 'support', 'custom-css', 'backup'];
   for (const id of tabs) {
     await page.locator(`#settings-tab-${id}`).click();
     await inspect(`settings-${id}`);
@@ -127,6 +150,16 @@ async function main() {
   const tile = page.locator('#board .tile').first();
   await tile.focus();
   await page.keyboard.press('Shift+F10');
+  /* The menu opens on a later tick and then fades in. Shooting straight after
+     the keypress caught it at opacity 0, and the sweep's own screenshot was
+     read for months as "Shift+F10 does nothing". Wait for the transition to
+     have finished, not merely for the element to exist. */
+  await page.locator('#tile-ctx-menu').waitFor({ state: 'visible' });
+  await page.waitForFunction(() => {
+    const menu = document.getElementById('tile-ctx-menu');
+    const style = menu && getComputedStyle(menu);
+    return Boolean(style) && style.visibility === 'visible' && Number(style.opacity) === 1 && style.transform === 'none';
+  });
   await shot('04-context-menu');
   await page.keyboard.press('Enter');
   await page.locator('#quick-icon-preview').click();
@@ -153,7 +186,64 @@ async function main() {
   await inspect('mobile-background');
   await shot('09-mobile-background');
 
-  const report = { errors, checks, passed: errors.length === 0 && checks.every(check => check.viewportOverflow <= 1 && check.clippedControls === 0 && check.unnamedButtons === 0) };
+  /* Support last, and clipped to the drawer. The section itself never moves,
+     but the aurora behind the glass does and its star field is seeded at
+     random, so a full-page shot of it differs from run to run for reasons that
+     have nothing to do with this panel. Stilling the atmosphere at a fixed
+     phase and framing only #cfg leaves two shots that are comparable between
+     runs -- and doing it here means nothing captured earlier saw a frozen sky.
+     The shortcut legend is opened first: a collapsed disclosure photographs as
+     a single row, which is the one thing these shots are not for. */
+  const stillAtmosphere = () => page.evaluate(() => {
+    const engine = window.Nordlys?.bgEngine;
+    if (!engine) return;
+    engine.setAtmosphere({ motion: 0 });
+    engine.t = 0;
+    engine.repaint();
+  });
+  const drawerShot = name => page.locator('#cfg').screenshot({ path: resolve(output, `${name}.png`) });
+  const openSupport = async () => {
+    await page.locator('#settings-tab-support').click();
+    await page.locator('#sec-support').waitFor({ state: 'visible' });
+    // The section renders once, so the legend is still open on the second visit.
+    const legend = page.locator('.support-shortcuts');
+    if (!await legend.evaluate(node => node.open)) await page.locator('.support-shortcuts > summary').click();
+    const lastRow = page.locator('.support-shortcut').last();
+    await lastRow.waitFor({ state: 'visible' });
+    // At 320px the legend sits below the fold, and a shot of the empty space
+    // above it proves nothing about how five key rows wrap into 320 pixels.
+    await lastRow.scrollIntoViewIfNeeded();
+  };
+
+  await stillAtmosphere();
+  await openSupport();
+  await inspect('mobile-support');
+  await drawerShot('10-mobile-support');
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openSupport();
+  await inspect('support');
+  await drawerShot('11-support');
+
+  /* The Backup panel with both recovery rows showing at once. It is the one
+     state a person only ever reaches just after doing something destructive, so
+     it is also the one nobody looks at until it matters — the rows, the note
+     about what the export file cannot carry, and the danger zone together. */
+  await page.evaluate(() => {
+    const point = cause => JSON.stringify({
+      savedAt: new Date().toISOString(), cause, version: '2.2.3',
+      config: { theme: 'aurora-void', groups: [] }
+    });
+    localStorage.setItem('nordlys_restore_point', point('migration'));
+    localStorage.setItem('nordlys_undo_point', point('reset'));
+    window.Nordlys.settings.renderRecoveryRows();
+  });
+  await page.locator('#settings-tab-backup').click();
+  await page.locator('#undo-point-row').waitFor({ state: 'visible' });
+  await inspect('backup-recovery');
+  await drawerShot('12-backup-recovery');
+
+  const report ={ errors, checks, passed: errors.length === 0 && checks.every(check => check.viewportOverflow <= 1 && check.clippedControls === 0 && check.unnamedButtons === 0) };
   await writeFile(resolve(output, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
   await browser.close();
   await server.close();

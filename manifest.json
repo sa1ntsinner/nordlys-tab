@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Nordlys",
   "version": "2.2.3",
-  "description": "A new tab page with 21 themes, a living aurora, bookmark folders you arrange yourself, and a search box that does arithmetic.",
+  "description": "A new tab page with 21 themes, six living skies you can recolour, folders you arrange, and a search box that does arithmetic.",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   },
@@ -35,17 +35,5 @@
       "128": "icons/icon128.png"
     },
     "default_title": "Nordlys"
-  },
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "_favicon/*",
-        "icons/*",
-        "src/*"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
-    }
-  ]
+  }
 }

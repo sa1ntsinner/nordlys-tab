@@ -1,0 +1,232 @@
+{
+  "version": "2.0.0",
+  "theme": "oled-obsidian",
+  "colorMode": "dark",
+  "bgMode": "aurora",
+  "glassLevel": "subtle",
+  "headerStyle": "full",
+  "bgBlur": 0,
+  "bgDim": 0,
+  "timeFormat": "24h",
+  "showSeconds": false,
+  "userName": "Sample",
+  "openNewTab": false,
+  "cardRadius": "18",
+  "tileSize": "72",
+  "cardGap": 10,
+  "cardGlow": 30,
+  "hoverEffect": "lift",
+  "iconShape": "squircle",
+  "customCss": "",
+  "groups": [
+    {
+      "id": "g_170000000000",
+      "label": "Watch",
+      "cols": 3,
+      "hidden": false,
+      "links": [
+        {
+          "name": "Alpha",
+          "url": "https://alpha.example/",
+          "color": "#ff6b6b",
+          "customImg": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        },
+        {
+          "name": "Beta",
+          "url": "https://beta.example/",
+          "color": "#38bdf8",
+          "customImg": "data:image/x-icon;base64,AAABAAEAAQEAAAEAIAAwAAAAFgAAACgAAAABAAAAAgAAAAEAIAAAAAAABAAAABILAAASCwAAAAAAAAAAAAAAAAAAAAAAAA=="
+        },
+        {
+          "name": "Gamma",
+          "url": "https://gamma.example/",
+          "color": "#f8f9fa",
+          "icon": "globe"
+        }
+      ]
+    },
+    {
+      "id": "g_170000000001",
+      "label": "Studies",
+      "cols": 2,
+      "hidden": false,
+      "links": [
+        {
+          "name": "Delta",
+          "url": "https://delta.example/",
+          "color": "#84cc16",
+          "customImg": "data:image/svg+xml,%3c?xml%20version=%221.0%22%20encoding=%22UTF-8%22?%3e%3csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%3e%3ccircle%20cx=%2212%22%20cy=%2212%22%20r=%2210%22%20fill=%22%2379bd03%22/%3e%3c/svg%3e"
+        },
+        {
+          "name": "Epsilon",
+          "url": "https://epsilon.example/",
+          "color": "#f97316",
+          "icon": "school"
+        }
+      ]
+    },
+    {
+      "id": "g_170000000002",
+      "label": "AI",
+      "cols": 3,
+      "hidden": false,
+      "links": [
+        {
+          "name": "Zeta",
+          "url": "https://zeta.example/",
+          "color": "#10a37f",
+          "customImg": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q=="
+        },
+        {
+          "name": "Eta",
+          "url": "https://eta.example/",
+          "color": "#8ab4f8",
+          "customImg": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        },
+        {
+          "name": "Theta",
+          "url": "https://theta.example/",
+          "color": "#22b8cd",
+          "monogram": "Th"
+        }
+      ]
+    },
+    {
+      "id": "g_170000000003",
+      "label": "Work",
+      "cols": 2,
+      "hidden": false,
+      "links": [
+        {
+          "name": "Iota",
+          "url": "https://iota.example/",
+          "color": "#9aa5b1",
+          "customImg": "data:image/x-icon;base64,AAABAAEAAQEAAAEAIAAwAAAAFgAAACgAAAABAAAAAgAAAAEAIAAAAAAABAAAABILAAASCwAAAAAAAAAAAAAAAAAAAAAAAA=="
+        },
+        {
+          "name": "Kappa",
+          "url": "https://kappa.example/",
+          "color": "#d946ef",
+          "icon": "briefcase"
+        }
+      ]
+    },
+    {
+      "id": "g_170000000004",
+      "label": "Gaming",
+      "cols": 3,
+      "hidden": false,
+      "links": [
+        {
+          "name": "Lambda",
+          "url": "https://lambda.example/",
+          "color": "#66c0f4",
+          "customImg": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        },
+        {
+          "name": "Mu",
+          "url": "https://mu.example/",
+          "color": "#a855f7",
+          "customImg": "data:image/svg+xml,%3c?xml%20version=%221.0%22%20encoding=%22UTF-8%22?%3e%3csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%3e%3ccircle%20cx=%2212%22%20cy=%2212%22%20r=%2210%22%20fill=%22%2379bd03%22/%3e%3c/svg%3e"
+        },
+        {
+          "name": "Nu",
+          "url": "https://nu.example/",
+          "color": "#ef4444",
+          "icon": "flag"
+        }
+      ]
+    },
+    {
+      "id": "g_170000000005",
+      "label": "Read",
+      "cols": 2,
+      "hidden": false,
+      "links": [
+        {
+          "name": "Xi",
+          "url": "https://xi.example/",
+          "color": "#06b6d4",
+          "customImg": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q=="
+        },
+        {
+          "name": "Omicron",
+          "url": "https://omicron.example/",
+          "color": "#facc15",
+          "icon": "book"
+        }
+      ]
+    },
+    {
+      "id": "g_170000000006",
+      "label": "SHOPPING",
+      "cols": 2,
+      "hidden": false,
+      "links": [
+        {
+          "name": "Pi",
+          "url": "https://pi.example/",
+          "color": "#ff4747",
+          "customImg": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        },
+        {
+          "name": "Rho",
+          "url": "https://rho.example/",
+          "color": "#86efac",
+          "icon": "bag"
+        }
+      ]
+    },
+    {
+      "id": "g_170000000007",
+      "label": "Misc",
+      "cols": 2,
+      "hidden": false,
+      "links": [
+        {
+          "name": "Sigma",
+          "url": "https://sigma.example/",
+          "color": "#7c9cff",
+          "customImg": "data:image/x-icon;base64,AAABAAEAAQEAAAEAIAAwAAAAFgAAACgAAAABAAAAAgAAAAEAIAAAAAAABAAAABILAAASCwAAAAAAAAAAAAAAAAAAAAAAAA=="
+        },
+        {
+          "name": "Tau",
+          "url": "https://tau.example/",
+          "color": "#35d6c0",
+          "monogram": "Ta"
+        }
+      ]
+    },
+    {
+      "id": "g_170000000008",
+      "label": "Coding",
+      "cols": 3,
+      "hidden": false,
+      "links": [
+        {
+          "name": "Upsilon",
+          "url": "https://upsilon.example/",
+          "color": "#9aa5b1",
+          "customImg": "data:image/svg+xml,%3c?xml%20version=%221.0%22%20encoding=%22UTF-8%22?%3e%3csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%3e%3ccircle%20cx=%2212%22%20cy=%2212%22%20r=%2210%22%20fill=%22%2379bd03%22/%3e%3c/svg%3e"
+        },
+        {
+          "name": "Phi",
+          "url": "https://phi.example/",
+          "color": "#ffa116",
+          "customImg": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        },
+        {
+          "name": "Chi",
+          "url": "https://chi.example/",
+          "color": "#4d96ff",
+          "icon": "code"
+        }
+      ]
+    }
+  ],
+  "language": "en",
+  "lastDarkTheme": "oled-obsidian",
+  "lastLightTheme": "nordic-snow",
+  "bgMotion": 1,
+  "bgIntensity": 1
+}

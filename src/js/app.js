@@ -8,6 +8,17 @@ const DEFAULT_CONFIG = {
   colorMode: "dark",
   bgMode: "aurora",
   bgPalette: "theme",
+  /* What the sky is scattered from. Zero is the authored composition; the
+     shuffle button stores any other whole number, and a backup carries it. */
+  bgSeed: 0,
+  // Solid glass, a quieter sky, stronger text; the system can ask for it too.
+  highLegibility: false,
+  /* The light of every atmosphere follows the sun where the person is,
+     worked out from the time zone. Off until somebody turns it on. */
+  bgDaylight: false,
+  // Halo draws tonight's moon, worked out from the date alone.
+  bgRealSky: true,
+  bgPalettes: [],
   bgMotion: 1,
   bgIntensity: 1,
   glassLevel: "full",
@@ -18,79 +29,42 @@ const DEFAULT_CONFIG = {
   showSeconds: false,
   userName: "",
   openNewTab: false,
-  cardRadius: 24,
+  cardRadius: 18,
   tileSize: 78,
   cardGap: 12,
+  /* How folders share a row: "natural" keeps each at its own size, "fitted"
+     runs every row edge to edge with folders of one height. Which folders
+     share a row is each folder's own `row`, absent until somebody arranges. */
+  boardLayout: "natural",
   cardGlow: 40,
   hoverEffect: "lift",
   iconShape: "squircle",
   customCss: "",
-  groups: [
-    {
-      label: "Daily",
-      cols: 4,
-      hidden: false,
-      links: [
-        { name: "YouTube", url: "https://www.youtube.com/", color: "#ff6b6b", icon: "youtube" },
-        { name: "Notion", url: "https://www.notion.so/", color: "#f8f9fa", icon: "notion" },
-        { name: "ChatGPT", url: "https://chatgpt.com/", color: "#10a37f", icon: "openai" },
-        { name: "Reddit", url: "https://www.reddit.com/", color: "#ff8c42", icon: "reddit" },
-        { name: "DeepL", url: "https://www.deepl.com/translator", color: "#4d96ff", icon: "deepl" },
-        { name: "Spotify", url: "https://open.spotify.com/", color: "#1db954", icon: "spotify" },
-        { name: "Telegram", url: "https://web.telegram.org/a/", color: "#29b6f6", icon: "telegram" },
-        { name: "Netflix", url: "https://www.netflix.com/", color: "#e50914", icon: "netflix" }
-      ]
-    },
-    {
-      label: "Dev & tech",
-      cols: 3,
-      hidden: false,
-      links: [
-        { name: "GitHub", url: "https://github.com/", color: "#9aa5b1", icon: "github" },
-        { name: "LeetCode", url: "https://leetcode.com/", color: "#ffa116", icon: "leetcode" },
-        { name: "Gemini", url: "https://gemini.google.com/app", color: "#8ab4f8", icon: "gemini" },
-        { name: "Perplexity", url: "https://www.perplexity.ai/", color: "#22b8cd", icon: "perplexity" },
-        { name: "Deep-ML", url: "https://www.deep-ml.com/", color: "#d946ef", icon: "brain" },
-        { name: "VIA Keymap", url: "https://usevia.app/", color: "#06b6d4", icon: "keyboard" }
-      ]
-    },
-    {
-      label: "Studies",
-      cols: 2,
-      hidden: false,
-      links: [
-        { name: "Moodle", url: "https://moodle.tu-dortmund.de/my/", color: "#f97316", icon: "school" },
-        { name: "BOSS TU", url: "https://www.boss.tu-dortmund.de/", color: "#84cc16", icon: "school" }
-      ]
-    },
-    {
-      label: "Gaming & sim",
-      cols: 2,
-      hidden: false,
-      links: [
-        { name: "Steam", url: "https://store.steampowered.com/", color: "#66c0f4", icon: "steam" },
-        { name: "GG.deals", url: "https://gg.deals/", color: "#a855f7", icon: "tag" },
-        { name: "LFM Sim", url: "https://lowfuelmotorsport.com/", color: "#ef4444", icon: "flag" },
-        { name: "RaceControl", url: "https://game.racecontrol.gg/", color: "#38bdf8", icon: "steering" }
-      ]
-    },
-    {
-      label: "Shopping",
-      cols: 2,
-      hidden: false,
-      links: [
-        { name: "AliExpress", url: "https://www.aliexpress.com/", color: "#ff4747", icon: "bag" },
-        { name: "Kleinanzeigen", url: "https://www.kleinanzeigen.de/", color: "#86efac", icon: "bag" }
-      ]
-    }
-  ]
+  /* Empty, and it has to stay empty.
+
+     Until 2.2.4 this shipped the author's own board — five folders, twenty-two
+     links, two of them the student portals of one German university — so every
+     install anywhere opened on a stranger's day and had to be cleared before it
+     could be used. The product's promise is that it shows nothing you did not
+     put there; the first ninety seconds were the one place it broke that
+     promise, and a sample link behind a button would break it just the same.
+
+     What a new user meets instead is the board's own empty state
+     (GridController.createEmptyState), which names the two ways in: make a
+     folder, or bring the bookmarks you already have.
+
+     This only ever reaches someone with nothing in storage. loadConfig() merges
+     it under whatever is stored, so an existing board keeps every folder it
+     had — tests/ui/first-run.spec.cjs holds both halves of that.
+     tests/unit/default-config.test.cjs fails the build if a URL comes back. */
+  groups: []
 };
 
 /* Inline CSS custom properties a custom theme may set — cleared on preset switch */
 const THEME_INLINE_TOKENS = [
   "--void", "--void-gradient", "--glass", "--glass-border", "--frost",
   "--card-tint", "--card-tint-deep",
-  "--accent", "--accent-glow", "--nl-on-accent", "--ink", "--dim", "--faint",
+  "--accent", "--accent-ink", "--accent-glow", "--nl-on-accent", "--ink", "--dim", "--faint",
   "--font-main", "--font-display",
   "--shader-1", "--shader-2", "--shader-3",
   // Legacy aliases kept for older user Custom CSS
@@ -129,8 +103,41 @@ function adoptLegacyLocalStorage() {
     }
   } catch (error) { /* storage unavailable: nothing to move, nothing to lose */ }
 }
-/* The last state that existed before a migration rewrote it. */
+/* Two recovery slots, two questions, one level deep.
+
+   RESTORE_POINT_KEY answers "what was here before Nordlys changed it" — a
+   migration on load, or an import. UNDO_POINT_KEY answers "what was here before
+   I replaced everything" — a reset, or a restore. They are separate because
+   neither may quietly spend the other: reset used to clear the restore point,
+   which is how the most destructive action in the product came to delete its
+   own safety net.
+
+   Taking a step back consumes the undo slot and writes nothing new, so there is
+   no chain of snapshots growing behind a person who keeps pressing undo, and
+   never more than two copies of a config in storage. */
 const RESTORE_POINT_KEY = "nordlys_restore_point";
+const UNDO_POINT_KEY = "nordlys_undo_point";
+/* A wallpaper is far too large to sit inside a snapshot, so a reset moves it to
+   this one slot in the media vault instead of deleting it. One slot, overwritten
+   by the next reset. */
+const UNDO_MEDIA_ID = "nordlys_undo_bg";
+
+/* Durable state that lives beside the config rather than inside it. A snapshot
+   of "everything a reset removes" is only true if it holds these too. */
+const SIDE_STORAGE = {
+  customThemes: { key: "nordlys_custom_themes", json: true },
+  drawerWidth: { key: "nordlys_drawer_width", json: false },
+  language: { key: "nordlys_language", json: false },
+  searchHistory: { key: "nordlys_search_history", json: true }
+};
+
+/* Everything this build writes, and everything any earlier build wrote — the
+   list a reset clears. The two recovery slots are deliberately not in it. */
+const OWNED_LOCAL_KEYS = [
+  STORAGE_KEY, ...Object.values(SIDE_STORAGE).map((entry) => entry.key),
+  "aether_tab_config", "aurora_tab_config", "aurora_custom_themes",
+  "aurora_drawer_width", "aurora_language", "aurora_search_history"
+];
 const LIGHT_THEMES = [
   "porcelain-light", "warm-ivory", "sage-light", "sakura-daylight",
   "solarized-light", "nordic-snow", "lavender-mist", "gruvbox-light",
@@ -217,8 +224,264 @@ class NordlysApp {
     document.documentElement.dataset.glass = this.config.glassLevel || "full";
   }
 
+  /* High legibility is on when the person switches it on, or when the system
+     asks for more contrast; the system's asking is followed live. */
+  get highLegibility() {
+    return Boolean(this.config.highLegibility) || Boolean(this.contrastQuery?.matches);
+  }
+
+  applyLegibility() {
+    if (!this.contrastQuery && window.matchMedia) {
+      this.contrastQuery = window.matchMedia("(prefers-contrast: more)");
+      this.contrastQuery.addEventListener?.("change", () => {
+        this.applyLegibility();
+        if (this.bgEngine) this.updateBackgroundMode();
+      });
+    }
+    document.documentElement.dataset.legibility = this.highLegibility ? "high" : "standard";
+    this.queueQuietZones?.();
+  }
+
   applyHeaderStyle() {
     document.body.dataset.header = this.config.headerStyle || "full";
+    this.queueQuietZones?.();
+  }
+
+  /* ── Quiet zones ──────────────────────────────────────────────────
+     The engine keeps the sky readable under the text that sits straight on
+     it (see setQuietZones in background.js). This side says where that text
+     is and what colour it is, measured from the live page — so a compact
+     header, a wrapped date, a narrow window or a new font all send what is
+     actually there. Colours are read only once transitions have settled: a
+     theme change read one frame in reports the old theme's ink. */
+  initQuietZones() {
+    const settled = () => window.NordlysUI?.settled?.() ?? Promise.resolve();
+    this.queueQuietZones = () => {
+      if (this.quietQueued) return;
+      this.quietQueued = true;
+      requestAnimationFrame(() => settled().then(() => {
+        this.quietQueued = false;
+        this.sendQuietZones();
+      }));
+    };
+    if (typeof ResizeObserver === "function") {
+      const observer = new ResizeObserver(() => this.queueQuietZones());
+      for (const id of ["hero", "searchwrap"]) {
+        const node = document.getElementById(id);
+        if (node) observer.observe(node);
+      }
+    }
+    document.fonts?.ready.then(() => this.queueQuietZones());
+    this.queueQuietZones();
+  }
+
+  sendQuietZones() {
+    const engine = this.bgEngine;
+    if (!engine?.setQuietZones) return;
+    // A wallpaper hides the canvas; it is measured instead of quietened.
+    if (this.config.bgMode === "custom-image" || this.config.bgMode === "custom-video") {
+      this.measureWallpaper();
+      return;
+    }
+    const zones = this.textZones();
+    const signature = JSON.stringify(zones.map((zone) => [Math.round(zone.x), Math.round(zone.y), Math.round(zone.w), Math.round(zone.h), zone.inks, zone.cover, zone.ground]));
+    if (signature === this.quietSignature) return;
+    this.quietSignature = signature;
+    engine.setQuietZones(zones);
+  }
+
+  /* Where text sits over the background and what colour it is: the hero, the
+     search field, and — for a wallpaper, which sits behind the folders too —
+     every folder, with the glass between it and the picture. */
+  textZones({ cards = false } = {}) {
+    /* Read by painting: computed colours arrive as rgb(), but also as oklch()
+       and color(srgb …) once a colour-mix is involved, and a parser that knew
+       only rgb() dropped those zones without a word. */
+    const well = this.quietWell || (this.quietWell = document.createElement("canvas").getContext("2d", { willReadFrequently: true }));
+    const rgba = (value) => {
+      if (!value || value === "transparent") return null;
+      well.canvas.width = well.canvas.height = 1;
+      well.clearRect(0, 0, 1, 1);
+      well.fillStyle = "#000";
+      well.fillStyle = value;
+      well.fillRect(0, 0, 1, 1);
+      const [r, g, b, a] = well.getImageData(0, 0, 1, 1).data;
+      return a ? [r, g, b, a / 255] : null;
+    };
+    const shown = (node) => node && node.getClientRects().length && getComputedStyle(node).visibility !== "hidden";
+    const range = document.createRange();
+    const zones = [];
+    // The clock is large text and needs 3:1; the date and greeting need 4.5.
+    // Each target carries a margin, because the solver sees a downscaled sky.
+    // High legibility holds them to AAA instead: 4.5 and 7.
+    const high = document.documentElement.dataset.legibility === "high";
+    const [large, body] = high ? [4.8, 7.3] : [3.3, 4.8];
+    for (const [id, target] of [["clock", large], ["date", body], ["greet", body]]) {
+      const node = document.getElementById(id);
+      if (!shown(node)) continue;
+      range.selectNodeContents(node);
+      const box = range.getBoundingClientRect();
+      const ink = rgba(getComputedStyle(node).color);
+      if (!box.width || !box.height || !ink) continue;
+      const inks = [[ink.slice(0, 3), target, ink[3]]];
+      // The colon is set quieter than the digits and gives out first.
+      const colon = node.querySelector(".colon");
+      if (colon) inks.push([ink.slice(0, 3), target, ink[3] * Number(getComputedStyle(colon).opacity)]);
+      const pad = Math.min(24, box.height * 0.3);
+      zones.push({ id, x: box.left - pad, y: box.top - pad / 2, w: box.width + pad * 2, h: box.height + pad, inks });
+    }
+    const search = document.getElementById("search");
+    const field = document.getElementById("q");
+    if (shown(search) && field) {
+      const box = search.getBoundingClientRect();
+      const hint = rgba(getComputedStyle(field, "::placeholder").color);
+      const cover = rgba(getComputedStyle(search).backgroundColor);
+      if (hint) zones.push({ id: "search", x: box.left, y: box.top, w: box.width, h: box.height, inks: [[hint.slice(0, 3), body, hint[3]]], cover: cover && cover[3] > 0 ? cover : null });
+    }
+    /* The page under each zone, as the theme paints it: the flat --void was
+       darker than most themes' own glows, so the text was judged against a
+       page that is not there. Five points of the zone, and the one that is
+       hardest on its ink — the lightest under light text, the darkest under
+       dark — so a glow's edge crossing the zone is not averaged away. */
+    const page = getComputedStyle(document.body);
+    const lum = window.NordlysColour?.luminance;
+    for (const zone of zones) {
+      if (!window.NordlysColour?.backgroundAt || !lum) break;
+      const points = [[0.5, 0.5], [0, 0], [1, 0], [0, 1], [1, 1]].map(([fx, fy]) =>
+        window.NordlysColour.backgroundAt(page.backgroundImage, page.backgroundColor, zone.x + zone.w * fx, zone.y + zone.h * fy, innerWidth, innerHeight));
+      const ink = lum(zone.inks[0][0]);
+      const sorted = points.sort((a, b) => lum(a) - lum(b));
+      zone.ground = ink > lum(sorted[2]) ? sorted[sorted.length - 1] : sorted[0];
+    }
+    if (cards) {
+      for (const card of document.querySelectorAll("#board .card")) {
+        const box = card.getBoundingClientRect();
+        const style = getComputedStyle(card);
+        const glass = window.NordlysIcons?.gradientAverage?.(style.backgroundImage) || style.backgroundColor;
+        const label = card.querySelector(".lbl");
+        const ink = label ? rgba(getComputedStyle(label).color) : null;
+        const cover = rgba(glass);
+        if (ink) zones.push({ card, x: box.left, y: box.top, w: box.width, h: box.height, inks: [[ink.slice(0, 3), body, ink[3]]], cover: cover && cover[3] > 0 ? cover : null });
+      }
+    }
+    return zones;
+  }
+
+  /* ── Clear sky for a wallpaper ──────────────────────────────────────
+     A photo is not something the engine paints, so the quiet zones cannot
+     reach it — but it can be measured all the same. The picture is sampled as
+     the stylesheet shows it, and each place text sits gets exactly what it
+     needs and no more: a soft shade behind the clock, the date, the greeting
+     and the search field, and a more solid glass on a folder whose patch of
+     the picture is bright or busy. Everywhere else the photo is left as it
+     is — dimming the whole picture to rescue the words made a snowfield grey.
+     The Dim slider still dims the whole of it, as a choice. */
+  measureWallpaper() {
+    const image = document.getElementById("bg-media");
+    const video = document.getElementById("bg-video");
+    const source = image?.classList.contains("active") && image.complete && image.naturalWidth ? image
+      : (video?.classList.contains("active") && video.readyState >= 2 ? video : null);
+    const width = source ? (source.naturalWidth || source.videoWidth) : 0;
+    const height = source ? (source.naturalHeight || source.videoHeight) : 0;
+    const layer = this.scrimLayer();
+    if (!source || !width || !height) {
+      layer.replaceChildren();
+      for (const card of document.querySelectorAll("#board .card")) card.style.removeProperty("--card-solid");
+      document.getElementById("search")?.style.removeProperty("--search-solid");
+      return;
+    }
+    // object-fit: cover — the part of the picture the viewport actually shows.
+    const scale = Math.max(innerWidth / width, innerHeight / height);
+    const sw = 96, sh = Math.max(24, Math.round((96 * innerHeight) / innerWidth));
+    const well = this.wallpaperWell || (this.wallpaperWell = document.createElement("canvas").getContext("2d", { willReadFrequently: true }));
+    well.canvas.width = sw;
+    well.canvas.height = sh;
+    try {
+      well.drawImage(source, (width - innerWidth / scale) / 2, (height - innerHeight / scale) / 2, innerWidth / scale, innerHeight / scale, 0, 0, sw, sh);
+    } catch {
+      return;
+    }
+    const { data } = well.getImageData(0, 0, sw, sh);
+    // The picture as it is on screen, after the dim the person chose.
+    const chosen = Math.max(0, Math.min(0.8, (this.config.bgDim || 0) / 100));
+    const paint = (value) => {
+      well.canvas.width = well.canvas.height = 1;
+      well.fillStyle = value;
+      well.fillRect(0, 0, 1, 1);
+      return [...well.getImageData(0, 0, 1, 1).data].slice(0, 3);
+    };
+    const shade = paint(getComputedStyle(document.getElementById("bg-dimmer") || document.body).backgroundColor || "#02040a");
+    const pixelsIn = (zone) => {
+      const pixels = [];
+      const x0 = Math.max(0, Math.floor((zone.x / innerWidth) * sw)), x1 = Math.min(sw, Math.ceil(((zone.x + zone.w) / innerWidth) * sw));
+      const y0 = Math.max(0, Math.floor((zone.y / innerHeight) * sh)), y1 = Math.min(sh, Math.ceil(((zone.y + zone.h) / innerHeight) * sh));
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+        const i = (y * sw + x) * 4;
+        pixels.push([0, 1, 2].map((c) => data[i + c] * (1 - chosen) + shade[c] * chosen).concat(1));
+      }
+      return pixels;
+    };
+    const zones = this.textZones({ cards: true });
+    const scrims = [];
+    /* The clock, the date and the greeting are one shade, not three: three
+       read as smudges. It is as strong as the hardest of them needs. */
+    const hero = zones.filter((zone) => ["clock", "date", "greet"].includes(zone.id));
+    const alone = zones.filter((zone) => zone.id === "search");
+    if (hero.length) {
+      const need = Math.max(...hero.map((zone) => NordlysBackgroundEngine.quietAlpha(pixelsIn(zone), shade, { ...zone, most: 0.85 })));
+      const left = Math.min(...hero.map((zone) => zone.x)), top = Math.min(...hero.map((zone) => zone.y));
+      const right = Math.max(...hero.map((zone) => zone.x + zone.w)), bottom = Math.max(...hero.map((zone) => zone.y + zone.h));
+      if (need > 0.01) scrims.push({ zone: { x: left, y: top, w: right - left, h: bottom - top }, need });
+    }
+    this.paintScrims(layer, scrims, shade);
+    /* A folder's glass, made as solid as its patch of the picture needs. Its
+       words get more headroom than the rest: the icon plates cast shadows on
+       the top of every name, and the vignette above the board darkens the
+       edges of a light theme — neither of which the solver sees. */
+    const headroom = this.isLightTheme() ? 1.5 : 0.8;
+    for (const zone of zones.filter((entry) => entry.card)) {
+      const tint = paint(getComputedStyle(document.documentElement).getPropertyValue("--card-tint").trim() || "#0f1c32");
+      const inks = zone.inks.map(([colour, target, alpha]) => [colour, target + headroom, alpha]);
+      const need = NordlysBackgroundEngine.quietAlpha(pixelsIn(zone), tint, { inks, most: 0.97 });
+      if (need > 0.01) zone.card.style.setProperty("--card-solid", need.toFixed(3));
+      else zone.card.style.removeProperty("--card-solid");
+    }
+    // The search field is glass, like a folder: it gets more solid, not a shade.
+    const search = document.getElementById("search");
+    const deep = paint(getComputedStyle(document.documentElement).getPropertyValue("--card-tint-deep").trim() || "#070d18");
+    for (const zone of alone) {
+      const inks = zone.inks.map(([colour, target, alpha]) => [colour, target + headroom * 0.6, alpha]);
+      const need = NordlysBackgroundEngine.quietAlpha(pixelsIn(zone), deep, { inks, most: 0.97 });
+      if (need > 0.01) search?.style.setProperty("--search-solid", need.toFixed(3));
+      else search?.style.removeProperty("--search-solid");
+    }
+  }
+
+  scrimLayer() {
+    let layer = document.getElementById("wallpaper-scrims");
+    if (!layer) {
+      layer = document.createElement("div");
+      layer.id = "wallpaper-scrims";
+      layer.setAttribute("aria-hidden", "true");
+      document.getElementById("bg-container")?.append(layer);
+    }
+    return layer;
+  }
+
+  /* The shade for the hero is the one a lock screen uses: the whole width of
+     the picture, full strength from the top down to just past the words, then
+     gone over a short fall. An ellipse or a blob around the words read as
+     a smudge on the photo; a band from the top reads as evening. */
+  paintScrims(layer, scrims, [r, g, b]) {
+    layer.replaceChildren(...scrims.map(({ zone, need }) => {
+      const scrim = document.createElement("span");
+      const solid = Math.round(zone.y + zone.h + 12);
+      const fade = solid + 220;
+      const colour = `rgba(${r}, ${g}, ${b}, ${need.toFixed(3)})`;
+      scrim.className = "wallpaper-scrim";
+      scrim.style.cssText = `left:0;top:0;width:100%;height:${fade}px;background:linear-gradient(to bottom, ${colour} 0, ${colour} ${solid}px, rgba(${r}, ${g}, ${b}, 0) ${fade}px)`;
+      return scrim;
+    }));
   }
 
   normalizeStoredConfig(config) {
@@ -255,36 +518,106 @@ class NordlysApp {
      common cause is not a crash but an upgrade that migrated something wrongly.
      Nothing here can promise a migration is correct. It can promise the
      previous state still exists afterwards. */
-  snapshotBeforeMigration(previous) {
+  snapshotBeforeMigration(previous, cause = "migration") {
+    /* A snapshot that cannot be written must never stop the app loading, so the
+       answer is reported rather than thrown. The callers that are about to
+       destroy something on purpose check it; the load path does not. */
+    return this.writeSnapshot(RESTORE_POINT_KEY, {
+      savedAt: new Date().toISOString(),
+      cause,
+      version: previous.version || "unknown",
+      config: previous
+    });
+  }
+
+  /* Everything a reset removes, in one object: the config, and the stores that
+     live beside it. Deep-copied, because the caller is about to change the
+     originals. */
+  captureRecoveryBundle(cause) {
+    const bundle = {
+      savedAt: new Date().toISOString(),
+      cause,
+      version: this.config?.version || "unknown",
+      config: JSON.parse(JSON.stringify(this.config || {}))
+    };
+    for (const [field, entry] of Object.entries(SIDE_STORAGE)) {
+      try {
+        const raw = localStorage.getItem(entry.key);
+        if (raw === null) continue;
+        bundle[field] = entry.json ? JSON.parse(raw) : raw;
+      } catch (error) { /* an unreadable store is one this snapshot cannot promise */ }
+    }
+    return bundle;
+  }
+
+  writeSnapshot(key, bundle) {
     try {
-      const snapshot = {
-        savedAt: new Date().toISOString(),
-        version: previous.version || "unknown",
-        config: previous
-      };
-      localStorage.setItem(RESTORE_POINT_KEY, JSON.stringify(snapshot));
+      localStorage.setItem(key, JSON.stringify(bundle));
+      return true;
     } catch (error) {
-      /* A snapshot that cannot be written must never stop the app loading. */
+      return false;
     }
   }
 
-  restorePoint() {
+  readSnapshot(key) {
     try {
-      const raw = localStorage.getItem(RESTORE_POINT_KEY);
+      const raw = localStorage.getItem(key);
       return raw ? JSON.parse(raw) : null;
     } catch (error) {
       return null;
     }
   }
 
-  useRestorePoint() {
-    const point = this.restorePoint();
-    if (!point || !point.config) return false;
-    this.config = Object.assign({}, DEFAULT_CONFIG, point.config);
+  clearSnapshot(key) {
+    try { localStorage.removeItem(key); } catch (error) { /* nothing to clear */ }
+  }
+
+  restorePoint() { return this.readSnapshot(RESTORE_POINT_KEY); }
+  undoPoint() { return this.readSnapshot(UNDO_POINT_KEY); }
+
+  /* Puts a bundle back: the config, then every store it carries. A field the
+     bundle does not carry is removed rather than left behind, because "put it
+     back the way it was" is a whole answer or it is a misleading one. */
+  applyRecoveryBundle(bundle) {
+    if (!bundle || !bundle.config) return false;
+    const previous = this.config;
+    this.config = Object.assign({}, DEFAULT_CONFIG, bundle.config);
     window.NordlysConfigSchema?.repairConfig(this.config);
+    /* If it will not persist, nothing has happened: the page keeps the config
+       it had rather than showing one that the next reload will contradict. */
+    if (!this.saveConfig()) { this.config = previous; return false; }
     this.loadedFromStore = true;
-    this.saveConfig();
+    for (const [field, entry] of Object.entries(SIDE_STORAGE)) {
+      try {
+        if (bundle[field] === undefined) { localStorage.removeItem(entry.key); continue; }
+        localStorage.setItem(entry.key, entry.json ? JSON.stringify(bundle[field]) : String(bundle[field]));
+      } catch (error) { /* the config landed; a side store that will not take is not worth failing for */ }
+    }
+    const language = this.config.language || bundle.language;
+    if (language && window.I18N && window.I18N.currentLang !== language) window.I18N.setLanguage(language);
+    this.applyLoadedConfig();
+    this.settings?.adoptRestoredStores?.();
     return true;
+  }
+
+  /* Everything on the page that reads the config, repainted where it stands.
+     Used when a config arrives after the first paint — from the browser-storage
+     mirror, and from a restore. A reload would do the same job, and is what
+     restore used to do, but it also throws away the seconds in which somebody
+     can say "no, put that back". */
+  applyLoadedConfig() {
+    this.applyThemeTokens();
+    this.applyGeometryTokens();
+    this.applyHeaderStyle();
+    this.applyGlassLevel();
+    this.injectCustomCSS(this.config.customCss || "");
+    this.updateBackgroundMode();
+    this.grid?.render();
+    this.widgets?.updateClock();
+    const cssEditor = document.getElementById("css-editor");
+    if (cssEditor) cssEditor.value = this.config.customCss || "";
+    this.settings?.syncFormValues?.();
+    this.settings?.renderBookmarksManager?.();
   }
 
   loadConfig() {
@@ -292,6 +625,9 @@ class NordlysApp {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
+        // What was stored, kept exactly as it was in case anything below changes it.
+        const original = JSON.parse(stored);
+        const aged = Boolean(window.NordlysConfigSchema?.migrateRaw(parsed));
         const cfg = Object.assign({}, DEFAULT_CONFIG, parsed);
         /* Remembered for the mirror: only a config this instance loaded or
            adopted from a store may ever be written there. The defaults it
@@ -301,11 +637,20 @@ class NordlysApp {
            coerced first, so the migrations below never meet them. Whatever was
            stored is kept before it is written over. */
         const repaired = Boolean(window.NordlysConfigSchema?.repairConfig(cfg));
-        if (this.normalizeStoredConfig(cfg) || repaired) {
+        if (this.normalizeStoredConfig(cfg) || repaired || aged) {
           // Keep what the user had, exactly as it was, before writing over it.
-          this.snapshotBeforeMigration(parsed);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
-          if (typeof chrome !== "undefined") chrome.storage?.local?.set?.({ [STORAGE_KEY]: cfg });
+          this.snapshotBeforeMigration(original);
+          /* Its own try, and this is the whole reason for it. A board carrying
+             embedded icons runs to megabytes; with a snapshot of the same size
+             beside it, the rewrite is what meets the quota. When that throw
+             reached the outer catch, this method returned DEFAULT_CONFIG — an
+             empty board — while the real one sat untouched in storage one line
+             away. The migrated shape is held in memory either way; storage
+             simply keeps the older shape until there is room for the new one. */
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+            if (typeof chrome !== "undefined") chrome.storage?.local?.set?.({ [STORAGE_KEY]: cfg });
+          } catch (error) { /* held in memory; storage keeps what it already had */ }
         }
         return cfg;
       }
@@ -314,13 +659,44 @@ class NordlysApp {
     return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
   }
 
+  /* Answers whether the write landed. Almost every caller is an edit small
+     enough that it always does and ignores the answer; the paths that are about
+     to reload the page, or to destroy something, check it — a swallowed
+     QuotaExceededError followed by a reload looks exactly like "nothing
+     happened", which is the worst way for a product to lose something. */
   saveConfig() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.config));
       if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.set({ [STORAGE_KEY]: this.config });
+        chrome.storage.local.set({ [STORAGE_KEY]: this.config }, () => {
+          if (chrome.runtime?.lastError) this.reportSaveFailure();
+        });
       }
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      this.reportSaveFailure();
+      return false;
+    }
+  }
+
+  /* A change that is not saved is gone on the next new tab, and nearly every
+     caller of saveConfig carries on as if it had worked. So a failure is said
+     once — not once per keystroke — with the way out attached: a backup file
+     does not depend on the storage that has just refused. */
+  reportSaveFailure() {
+    const now = Date.now();
+    if (now - (this.lastSaveWarning || 0) < 60000) return;
+    this.lastSaveWarning = now;
+    const say = (key, fallback) => {
+      const value = window.I18N?.t(key);
+      return value && value !== key ? value : fallback;
+    };
+    window.NordlysUI?.showUndoToast?.({
+      message: say("toast.saveFailed", "There is not enough room in storage to save that."),
+      actionLabel: say("toast.exportBackup", "Export a backup"),
+      duration: 12000,
+      onAction: () => document.getElementById("cfg-export")?.click()
+    });
   }
 
   /* chrome.storage is the page's backup copy, and the only copy left when Chrome
@@ -360,22 +736,20 @@ class NordlysApp {
             fromMirror = Boolean(source);
           }
           if (source && source.groups) {
+            const original = JSON.parse(JSON.stringify(source));
+            const aged = Boolean(window.NordlysConfigSchema?.migrateRaw(source));
             this.config = Object.assign({}, DEFAULT_CONFIG, source);
             const repaired = Boolean(window.NordlysConfigSchema?.repairConfig(this.config));
-            migrated = this.normalizeStoredConfig(this.config) || repaired;
+            migrated = this.normalizeStoredConfig(this.config) || repaired || aged;
+            source = original;
             if (migrated) this.snapshotBeforeMigration(source);
             this.loadedFromStore = true;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.config));
-            this.applyThemeTokens();
-            this.applyGeometryTokens();
-            this.applyHeaderStyle();
-            this.applyGlassLevel();
-            this.injectCustomCSS(this.config.customCss || "");
-            this.updateBackgroundMode();
-            this.grid?.render();
-            this.widgets?.updateClock();
-            const cssEditor = document.getElementById("css-editor");
-            if (cssEditor) cssEditor.value = this.config.customCss || "";
+            /* Same reason as loadConfig: a write that will not fit must not
+               take the repaint down with it and leave a blank board in front
+               of a config that is perfectly intact. */
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.config)); }
+            catch (error) { /* held in memory; the mirror below still has it */ }
+            this.applyLoadedConfig();
             if (fromMirror && typeof toast === "function") {
               toast(window.I18N ? window.I18N.t("toast.restored") : "Settings restored from browser storage", "success");
             }
@@ -417,6 +791,7 @@ class NordlysApp {
     this.applyGeometryTokens();
     this.applyHeaderStyle();
     this.applyGlassLevel();
+    this.applyLegibility();
     this.followBrowserFolders();
     if (this.config.customCss) {
       this.injectCustomCSS(this.config.customCss);
@@ -433,6 +808,7 @@ class NordlysApp {
 
     // 4. Render Grid
     this.grid.render();
+    this.initQuietZones();
 
     // 5. Global Keyboard Shortcuts & Lifecycle
     this.initGlobalShortcuts();
@@ -545,10 +921,15 @@ class NordlysApp {
 
     // Fonts ride the same path as the palette so one call settles the whole look.
     window.NordlysType?.apply(this.config, root);
+    // A new face can cut a name short, or give it back its room.
+    requestAnimationFrame(() => this.grid?.relayout?.());
 
     // Icon plates are chosen against the theme they were measured on, so a new
     // palette invalidates every one of them.
     window.NordlysIcons?.refreshIconContrast();
+
+    // New inks for the text the engine keeps readable.
+    this.queueQuietZones?.();
   }
 
   initColorModeListener() {
@@ -599,6 +980,24 @@ class NordlysApp {
     const blackContrast = (accentLuminance + 0.05) / 0.05;
     const whiteContrast = 1.05 / (accentLuminance + 0.05);
     set("--nl-on-accent", blackContrast >= whiteContrast ? "#000000" : "#ffffff");
+    /* The accent as ink, for the places it is a word rather than a fill: taken
+       toward the theme's own text colour until it reads on the page and on the
+       card. A mid-tone accent is a fine fill and an unreadable word. */
+    const contrast = (a, b) => {
+      const [light, dark] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
+      return (light + 0.05) / (dark + 0.05);
+    };
+    const toward = (from, to, t) => {
+      const a = hexToRgb(from), b = hexToRgb(to);
+      if (!a || !b) return from;
+      const mix = (x, y) => Math.round(x + (y - x) * t).toString(16).padStart(2, "0");
+      return `#${mix(a.r, b.r)}${mix(a.g, b.g)}${mix(a.b, b.b)}`;
+    };
+    let accentInk = ct.accent;
+    for (let step = 1; step <= 20 && Math.min(contrast(accentInk, ct.bg), contrast(accentInk, ct.card)) < 4.5; step++) {
+      accentInk = toward(ct.accent, ct.text, step / 20);
+    }
+    set("--accent-ink", accentInk);
     set("--ink", ct.text);
     set("--dim", ct.dim);
     set("--faint", ct.dim);
@@ -689,23 +1088,34 @@ class NordlysApp {
         return;
       }
 
-      // 3. Alt+1 .. Alt+9 -> Launch bookmarks from first visible folder
+      // 3. Alt+1 .. Alt+9 -> the first nine tiles on the board, in reading order
       if (e.altKey && !e.ctrlKey && !e.metaKey && !isInput && e.code.startsWith("Digit")) {
         const digit = parseInt(e.code.replace("Digit", ""), 10);
-        if (digit >= 1 && digit <= 9) {
-          const visibleGroup = (this.config.groups || []).find(g => !g.hidden && g.links && g.links.length > 0);
-          if (visibleGroup && visibleGroup.links[digit - 1]) {
-            e.preventDefault();
-            const link = visibleGroup.links[digit - 1];
-            if (this.config.openNewTab) {
-              window.open(link.url, "_blank", "noopener,noreferrer");
-            } else {
-              window.location.href = link.url;
-            }
-          }
+        const tile = digit >= 1 && digit <= 9 ? document.querySelector(`#board .tile[data-shortcut="${digit}"]`) : null;
+        if (tile) {
+          e.preventDefault();
+          this.showShortcutNumbers(false);
+          // The tile's own click, so the chord opens exactly what a click would.
+          tile.click();
         }
       }
     });
+
+    /* Hold Alt for a moment and the numbers appear on the tiles they open. The
+       moment is there so that Alt+Tab and every other chord never flash them. */
+    let altTimer = null;
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Alt" || e.repeat) return;
+      clearTimeout(altTimer);
+      altTimer = setTimeout(() => this.showShortcutNumbers(true), 350);
+    });
+    const release = () => { clearTimeout(altTimer); this.showShortcutNumbers(false); };
+    document.addEventListener("keyup", (e) => { if (e.key === "Alt") release(); });
+    window.addEventListener("blur", release);
+  }
+
+  showShortcutNumbers(show) {
+    document.body.classList.toggle("alt-held", Boolean(show));
   }
 
   initVisibilityListener() {
@@ -740,6 +1150,10 @@ class NordlysApp {
     const video = document.getElementById("bg-video");
 
     const clearMedia = () => {
+      clearInterval(this.wallpaperTimer);
+      this.scrimLayer().replaceChildren();
+      for (const card of document.querySelectorAll("#board .card")) card.style.removeProperty("--card-solid");
+      document.getElementById("search")?.style.removeProperty("--search-solid");
       if (media) {
         media.classList.remove("active");
         media.removeAttribute("src");
@@ -761,12 +1175,20 @@ class NordlysApp {
     // The chosen background, for the rules that need to know which one it is.
     document.documentElement.dataset.bg = bgMode;
 
-    if (["aurora", "halo", "drift", "horizon"].includes(bgMode)) {
+    if (NORDLYS_GENERATIVE_SCENES.has(bgMode)) {
       if (canvas) canvas.style.display = "block";
       clearMedia();
+      // Before the mood, or a mood the user mixed themselves is a name the
+      // engine has never heard of and quietly declines.
+      this.bgEngine.setPalettes(this.config.bgPalettes);
+      this.bgEngine.setSeed(this.config.bgSeed ?? 0);
+      this.bgEngine.realSky = this.config.bgRealSky !== false;
+      this.bgEngine.moonCache = null;
+      if (this.bgEngine.daylight !== Boolean(this.config.bgDaylight)) this.bgEngine.setDaylight(this.config.bgDaylight);
       this.bgEngine.setAtmosphere({
         motion: this.config.bgMotion ?? 1,
-        intensity: this.config.bgIntensity ?? 1,
+        // High legibility keeps the sky at a whisper, whatever the slider says.
+        intensity: this.highLegibility ? Math.min(0.6, this.config.bgIntensity ?? 1) : (this.config.bgIntensity ?? 1),
         palette: this.config.bgPalette || "theme"
       });
       this.bgEngine.setMode(bgMode);
@@ -781,11 +1203,17 @@ class NordlysApp {
         this.mediaObjectUrl = url;
 
         const isVideo = bgMode === "custom-video" || (blob.type || "").startsWith("video/");
+        const measure = () => this.queueQuietZones?.();
         if (isVideo && video) {
           video.src = url;
           video.classList.add("active");
+          video.addEventListener("loadeddata", measure, { once: true });
           video.play().catch(() => {});
+          // A video's picture moves; it is looked at again every few seconds.
+          clearInterval(this.wallpaperTimer);
+          this.wallpaperTimer = setInterval(() => { if (!document.hidden) this.measureWallpaper(); }, 6000);
         } else if (media) {
+          media.addEventListener("load", measure, { once: true });
           media.src = url;
           media.classList.add("active");
         }

@@ -4,6 +4,123 @@ All user-visible changes, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow the
 Chrome Web Store's rule that they only ever go up.
 
+## [Unreleased]
+
+### Added
+
+- **Six authored skies.** Nordlys, Halo, Silk, Frost, Contour and Fjord, each a
+  different kind of picture. Halo is a moon inside its ice ring, with moondogs,
+  a tangent arc and cirrostratus drifting through; Silk walks threads through a
+  slow current, with a sheen that crosses the weave; Frost grows fern ice in
+  from the corners and edges and leaves the middle of the page clear; Contour
+  is a survey map — hills and hollows that wander slowly, drawn in contour
+  lines with a heavier index line every fifth, clear on the darkest theme.
+- **Colour moods you mix yourself.** Three colours and a name, with the sky
+  following your picks while you choose; edit or remove them later, with undo.
+- **The scene thumbnails are the sky.** Each preview is painted by the scene
+  itself, in the mood you have chosen — including one you are still mixing.
+- **A sky that stays yours.** The stars, threads and frost are scattered from a
+  stored seed, so a new tab is the same sky. *Shuffle this sky* makes another;
+  one undo brings the last one back. Backups carry it.
+- **High legibility.** Solid glass, a quieter sky and stronger text, from a
+  switch in Appearance or automatically when the system asks for more contrast.
+  Forced colours hide the painted sky.
+- **Hold Alt to see which bookmarks Alt+1 to Alt+9 open.** The shortcut now
+  reaches the first nine tiles on the whole board, not only the first folder.
+- **The board is a command line.** Type `>` in search: `theme nord`, `sky
+  frost`, `mood ember`, `move YouTube to Daily`, `new folder Reading`,
+  `rename`, `hide`, `show`, `shuffle`, `settings`. The page shows the result
+  before Enter keeps it, with one undo; a bare `>` lists them all. The verbs
+  work in all eight languages, and in English everywhere.
+- **Share a look.** Copy your theme, sky, mood, fonts and the shape of the
+  board as one line of text — never your bookmarks, name, wallpaper or custom
+  CSS — and save a picture of it. Paste someone else's to try it on; nothing
+  is saved until you keep it.
+- **Halo shows tonight's moon**, worked out from the date alone, with the lit
+  side the way your hemisphere sees it. It can be held full instead.
+- **Bring your browser's bookmarks.** A new board offers the bookmarks bar and
+  its folders in one click, as folders that follow the browser from then on.
+- **The board from the keyboard.** Each folder is one Tab stop; the arrow keys
+  walk its tiles by where they sit, Alt+Shift+Arrow moves a bookmark, and a
+  skip link goes straight to the board.
+- **Moods from harmonies or from your wallpaper.** Start a mood from
+  neighbouring hues, a three-way split of your first colour, or the three
+  colours your wallpaper is mostly made of.
+- **Arrange the board.** Rows are yours now: drag a folder into a gap, or
+  between two rows to start a new one, and the board shows exactly where it
+  will land before you let go. *Fitted* runs every row edge to edge with
+  folders of one height; *Tidy up* puts folders of a similar height side by
+  side in one click. Open it from a folder's grip, the board's menu,
+  Settings → Bookmarks or `> arrange`; everything in it works from the keyboard
+  and has Undo, and Done leaves one more undo for the whole session.
+- **Bookmarks slide into place.** Dragging a bookmark makes room for it as it
+  passes through a folder and into another, and it settles where it lands.
+  While arranging, folders and bookmarks can be moved on a touch screen too.
+- **The sky can follow the time of day.** One switch beside the colour moods
+  lights every atmosphere by where the sun is in your time zone — a warm glow at
+  sunrise and sunset, a pale calm sky by day, a cool blue hour, stars at night.
+  *Watch a day go by* plays the next twenty-four hours in fourteen seconds.
+  Nothing is sent anywhere; the place is your time zone's city.
+
+### Changed
+
+- **Rows that wrap come out even.** A board too wide for one row used to fill
+  the first and leave a stub; the rows are now as close in width as the window
+  allows. Nothing is reordered — only where the rows break.
+- **The text over the sky is judged against the page it is really on.** The
+  measure behind the clock, the date and the greeting used the theme's flat
+  background colour, while most themes lay a glow or a lighter base over it
+  near the top; and on a line as thin as the date, the softening it is applied
+  with gave the words only part of what was measured. Both are fixed, and a
+  sweep of every theme, sky, mood and time of day finds no text under AA.
+- **Spacing and Corner radius do what they say.** Both sliders in Appearance →
+  Advanced were drawn over by fixed values and moved nothing on the board;
+  Spacing now opens up the tiles and the folders together.
+- **A wallpaper is measured too.** Behind the clock a bright photo gets a soft
+  shade from the top, like a lock screen, and a folder over a bright or busy
+  patch gets more solid glass — each exactly as much as its words need, and
+  the rest of the photo is left as it is.
+- **Settings between 760 and 1023 pixels wide** leave one steady band of the
+  page instead of a sliver of half a search field.
+- **Text stays readable on every sky, and it is measured.** The engine measures
+  the sky behind the clock, the date, the greeting and the search field after
+  every scene it paints, and takes back exactly as much as the text needs. The
+  text colours of eleven themes, the accent-as-text of all ten light themes and
+  the status colours of light themes were raised to clear WCAG AA on their own
+  surfaces; the first measured sweep found 7,058 of 31,753 text runs under AA.
+- **A theme never moves anything.** Light themes no longer set heavier weights,
+  so switching theme — or Auto at dusk — no longer reflows the board.
+- **Folders are as tall as their tiles**, rather than stretched to the tallest
+  folder in the row.
+- **The Appearance preview shows your own first bookmarks** instead of an
+  invented one.
+- **Quieter secondary actions in Settings.** *Add Folder* and the CSS guide are
+  no longer the brightest things in the panel.
+- **Every button uses Nordlys's own typefaces**; the browser's default face had
+  been reaching buttons all over the panel.
+- **The sky paints at thirty frames a second, fifteen when idle**, at the same
+  pace as before, so the glass above it re-blurs far less often.
+
+### Fixed
+
+- **Settings labels were nearly invisible in all ten light themes.** They were
+  hard-coded near-white.
+- **Frosted Glass showed Aurora Void's colours.** Its own were declared but
+  lost on load order.
+- **A save the browser refuses is said**, once, with a way to export a backup,
+  instead of being lost in silence.
+- **An icon address that gives no image says so**, and a file over 5 MB is
+  refused with the reason instead of "Image loaded successfully!".
+- **A pale library glyph is shown in a readable shade of its own colour**, and
+  monochrome marks are toned for the theme being switched to, not the old one.
+- **Tooltips, accessible names, placeholders and announcements are translated**
+  in all eight languages.
+
+### Privacy
+
+- **Nothing is web-accessible any more.** Websites could load files from the
+  extension to learn that it was installed; favicons never needed that.
+
 ## [2.2.3] — 2026-09-08
 
 ### Fixed

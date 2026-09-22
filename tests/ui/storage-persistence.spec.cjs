@@ -1,11 +1,15 @@
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
 
+/* The mirror as the only copy left, which is what Chrome clearing site data
+   leaves behind: localStorage is emptied first so the page has to adopt what it
+   finds in chrome.storage rather than reading its own. */
 test('current and legacy storage survive reload and storage.clear resets both', async ({ nordlysPage }) => {
   const { page, storageState } = nordlysPage;
   await page.evaluate(() => chrome.storage.local.set({
     nordlys_config: { ...window.Nordlys.defaultConfig, colorMode: 'light', customCss: '.card { opacity: .91; }' },
     nordlys_legacy_config: { migratedTheme: 'aurora-void' }
   }));
+  await page.evaluate(() => localStorage.removeItem('nordlys_config'));
   await page.reload(); await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   await expect(page.locator('html')).toHaveAttribute('data-color-mode', 'light');
   await expect.poll(() => page.locator('#user-custom-css').evaluate(element => element.textContent)).toBe('.card { opacity: .91; }');
@@ -17,6 +21,8 @@ test('current and legacy storage survive reload and storage.clear resets both', 
 test('stored 50-55px tile sizes migrate once to the supported 56px floor', async ({ nordlysPage }) => {
   const { page, storageState } = nordlysPage;
   await page.evaluate(() => chrome.storage.local.set({ nordlys_config: { ...window.Nordlys.defaultConfig, tileSize: 52 } }));
+  // Again the mirror on its own, so the migration runs on what is adopted.
+  await page.evaluate(() => localStorage.removeItem('nordlys_config'));
   await page.reload(); await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   await expect.poll(() => storageState.nordlys_config?.tileSize).toBe(56);
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--tw').trim())).toContain('56px');
@@ -46,4 +52,31 @@ test('reset clears current, legacy, and auxiliary persisted settings before relo
   const resetDialog = page.getByRole('alertdialog', { name: /Reset everything/i }); await expect(resetDialog).toBeVisible();
   const navigation = page.waitForEvent('load'); await resetDialog.getByRole('button', { name: 'Reset' }).click(); await navigation; await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   expect(storageState).toEqual({}); expect(await page.evaluate(() => localStorage.getItem('nordlys_custom_themes'))).toBeNull();
+});
+
+/* A save that fails used to fail in silence: saveConfig returned false and
+   nearly every caller carried on, so the change was simply gone on the next
+   new tab. Now it is said — once, not per keystroke — with a way out that does
+   not depend on the storage that refused. */
+test('a save the browser refuses is said once, with a backup offered', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => {
+    const setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (key === 'nordlys_config') throw new DOMException('full', 'QuotaExceededError');
+      return setItem.call(this, key, value);
+    };
+  });
+  await page.evaluate(() => { window.Nordlys.config.showSeconds = true; window.Nordlys.saveConfig(); });
+  const warning = page.locator('#toast-dock .toast', { hasText: 'not enough room' });
+  await expect(warning).toHaveCount(1);
+  await expect(warning.locator('.toast-action')).toHaveText('Export a backup');
+  // A second refusal a moment later does not stack another notice.
+  await page.evaluate(() => { window.Nordlys.config.showSeconds = false; window.Nordlys.saveConfig(); });
+  await page.waitForTimeout(200);
+  await expect(warning).toHaveCount(1);
+  // And the way out is real: it starts the backup download.
+  const download = page.waitForEvent('download');
+  await warning.locator('.toast-action').click();
+  expect((await download).suggestedFilename()).toMatch(/\.json$/);
 });
