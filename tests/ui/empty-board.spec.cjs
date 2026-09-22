@@ -12,11 +12,13 @@ test('an emptied board offers the way back', async ({ nordlysPage }) => {
   const empty = page.locator('#board .board-empty');
   await expect(empty, 'an empty board must say so').toBeVisible();
 
-  const add = empty.getByRole('button');
+  // Deleting the last folder lands on the same invitation a new install opens
+  // on, so both ways in are offered here too; this is the one that starts clean.
+  const add = page.locator('#board-empty-create');
   await expect(add).toBeVisible();
   await add.click();
 
-  await expect(page.locator('#board > .card')).toHaveCount(1);
+  await expect(page.locator('#board .card')).toHaveCount(1);
   await expect.poll(() => nordlysPage.storageState.nordlys_config?.groups?.length).toBe(1);
   await expect(empty, 'the prompt clears once there is something to show').toHaveCount(0);
 });

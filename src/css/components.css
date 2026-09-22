@@ -65,7 +65,7 @@
   vertical-align: super;
   margin-left: 10px;
   opacity: 0.88;
-  color: var(--accent);
+  color: var(--nl-accent-text);
   background: color-mix(in srgb, var(--accent) 16%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
   padding: 3px 9px;
@@ -153,8 +153,8 @@ body.seconds .sc, body.seconds #ss {
   font-size: var(--nl-text-lg);
 }
 #q::placeholder {
-  color: var(--faint);
-  opacity: 0.9;
+  color: var(--nl-text-tertiary);
+  opacity: 1;
 }
 
 #search kbd {
@@ -164,7 +164,8 @@ body.seconds .sc, body.seconds #ss {
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 6px;
   padding: 4px 7px;
-  opacity: 0.8;
+  /* A hint, and still text: full strength at rest, gone once you are typing. */
+  opacity: 1;
   transition: opacity var(--nl-motion-control);
 }
 #search:focus-within kbd {
@@ -213,7 +214,7 @@ body.seconds .sc, body.seconds #ss {
 #sugg .sugg-calc .calc-val {
   font-family: var(--font-mono);
   font-weight: 600;
-  color: var(--accent);
+  color: var(--nl-accent-text);
 }
 #sugg .bm-info {
   display: flex;
@@ -225,12 +226,16 @@ body.seconds .sc, body.seconds #ss {
   color: var(--ink);
   font-weight: 550;
 }
+/* The address is quieter than the name by tier, not by opacity: an inline 0.6
+   on top of the secondary colour measured 2.8 to one in Solarized Light. */
 #sugg .bm-url {
   max-width: 45%;
+  margin-left: 6px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--nl-text-xs);
+  color: var(--nl-text-secondary);
 }
 #sugg .hist-text {
   flex: 1;
@@ -262,7 +267,7 @@ body.seconds .sc, body.seconds #ss {
 #sugg .sugg-calc-badge {
   background: color-mix(in srgb, var(--accent) 18%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
-  color: var(--accent);
+  color: var(--nl-accent-text);
 }
 #sugg .sugg-folder-badge {
   background: rgba(255, 255, 255, 0.08);
@@ -283,7 +288,7 @@ body.seconds .sc, body.seconds #ss {
 }
 #sugg .sugg-del-btn:hover {
   opacity: 1;
-  color: #f87171;
+  color: var(--nl-status-danger);
   background: rgba(239, 68, 68, 0.18);
 }
 #sugg div.sel, #sugg div:hover {
@@ -354,15 +359,63 @@ body.searching #hiddenDock {
 }
 
 /* ── Board & Card Containers ──────────────────────────────────── */
+/* The board is a stack of rows and a row is one or more lines of folders
+   (grid.js flowRows decides where a line breaks). One gap everywhere: between
+   rows, between the lines of a row, and between folders on a line — it follows
+   the Spacing setting, a step wider than the gap between tiles. */
 #board {
+  --board-gap: calc(var(--grid-gap, 12px) + 4px);
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
   align-items: stretch;
-  gap: 16px;
+  gap: var(--board-gap);
   width: min(96vw, 1480px);
   contain: layout style;
   transition: opacity var(--nl-transition-control);
+}
+.board-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--board-gap);
+}
+.board-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--board-gap);
+}
+/* Spans the board and has no height: what grid.js watches for a new width. */
+.board-width-probe {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+/* Measuring: every folder at the width its own columns give it. */
+#board.is-measuring .board-line > .card { flex-grow: 0 !important; max-width: none !important; }
+
+/* Fitted: each line runs edge to edge and its folders share one height. The
+   room left on a line is shared out by columns, so a four-column folder gains
+   twice what a two-column one does and tiles keep one rhythm along the line.
+   There is no ceiling on the stretch — an edge that stops short is exactly
+   what Fitted is chosen to avoid — so the tiles are what hold back instead:
+   past a comfortable spacing they gather in the middle of their folder. */
+#board[data-layout="fitted"]:not(.is-measuring) .board-line { align-items: stretch; }
+#board[data-layout="fitted"]:not(.is-measuring) .board-line > .card { flex: var(--span, 2) 1 var(--natural-w, auto); }
+/* The tiles spread with the folder, each centred in its share of the width,
+   and a folder with fewer tiles than columns spreads the tiles it has. Past a
+   comfortable spacing they stop spreading and gather in the middle, so one
+   small folder alone on a wide line is a banner, not four scattered icons. No
+   transition on the tracks: measuring swaps them for a moment, and an eased
+   swap is read back half-way through. */
+#board[data-layout="fitted"] .grid { transition: none; }
+#board[data-layout="fitted"]:not(.is-measuring) .grid:not([data-cols="1"]),
+.drag-lift[data-layout="fitted"] .grid:not([data-cols="1"]) {
+  grid-template-columns: repeat(var(--cols-used, 2), minmax(var(--tw), calc(var(--tw) * 1.7)));
+  justify-content: center;
+  justify-items: center;
 }
 
 body.minimal #board {
@@ -576,6 +629,281 @@ body.minimal #board {
 .grid[data-cols="7"] { grid-template-columns: repeat(7, var(--tw)); }
 .grid[data-cols="8"] { grid-template-columns: repeat(8, var(--tw)); }
 
+/* ── Moving folders and bookmarks ───────────────────────────── */
+/* The copy in hand. It is fixed to the window and follows the pointer; the
+   lift itself is a little scale and tilt on the copy, which let go of both
+   as it lands. */
+body.board-dragging,
+body.board-dragging * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+.drag-lift {
+  position: fixed;
+  z-index: var(--nl-z-overlay);
+  margin: 0;
+  pointer-events: none;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.drag-lift > .card,
+.drag-lift > .grid {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+.drag-lift > .card {
+  box-shadow: var(--nl-shadow-3);
+  scale: 1.02;
+  rotate: -0.6deg;
+  transition: scale var(--nl-transition-control), rotate var(--nl-transition-control);
+}
+.drag-lift > .grid { display: block; }
+.drag-lift .tile { width: 100%; }
+.drag-lift .tile .box {
+  box-shadow: var(--nl-shadow-3);
+  scale: 1.08;
+  transition: scale var(--nl-transition-control);
+}
+.drag-lift.is-landing > .card,
+.drag-lift.is-landing .tile .box { scale: 1; rotate: 0deg; }
+
+/* Where the thing in hand came from, or where it is about to go: the same
+   outline for both, dashed, with nothing inside. */
+.card.drag-source {
+  background: transparent;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--nl-accent) 50%, transparent);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.card.drag-source > * { visibility: hidden; }
+.card.drag-source.drag-source-home { border-color: var(--nl-accent); }
+.tile.drag-source > * { visibility: hidden; }
+.tile.drag-source::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  translate: -50% 0;
+  width: var(--tw);
+  aspect-ratio: 1;
+  border-radius: var(--tile-radius);
+  border: 1.5px dashed color-mix(in srgb, var(--nl-accent) 65%, transparent);
+  background: color-mix(in srgb, var(--nl-accent) 8%, transparent);
+}
+.grid[data-cols="1"] .tile.drag-source::before {
+  inset: 0;
+  width: auto;
+  aspect-ratio: auto;
+  translate: none;
+  border-radius: calc(var(--tile-radius) * 0.75);
+}
+/* The real thing waits, unseen, for its copy to land on it. */
+.drag-landing { visibility: hidden; }
+/* A folder that follows the browser cannot take a bookmark from the board. */
+.card.drop-refused {
+  border-style: dashed;
+  border-color: var(--nl-status-danger);
+}
+
+/* Where a folder will land: a bar in the gap between two folders, or across
+   the gap between two rows with the words for it. */
+.board-marker {
+  position: fixed;
+  /* Over the copy in hand: the line runs through the point it will land. */
+  z-index: var(--nl-z-menu);
+  border-radius: 999px;
+  background: var(--nl-accent);
+  box-shadow: var(--nl-shadow-1);
+  pointer-events: none;
+  transition: left var(--nl-transition-fast), top var(--nl-transition-fast), width var(--nl-transition-fast), height var(--nl-transition-fast);
+}
+.board-marker[hidden] { display: none; }
+.board-marker-label { display: none; }
+.board-marker.is-row .board-marker-label {
+  display: block;
+  position: absolute;
+  /* Beside the pointer, just above the line: the folder in hand hangs below
+     the point it was picked up by, so this is the one place it never covers. */
+  left: var(--label-x, 50%);
+  bottom: 10px;
+  translate: -50% 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--nl-accent);
+  color: var(--nl-on-accent);
+  font-size: var(--nl-text-xs);
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: var(--nl-shadow-1);
+}
+
+/* Forced colours paint every background the same: the marker and the hole
+   keep the system's highlight so the landing is still shown. */
+@media (forced-colors: active) {
+  .board-marker,
+  .board-marker.is-row .board-marker-label { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+  .card.drag-source,
+  .tile.drag-source::before { border-color: Highlight; }
+  body.arranging .board-row { outline-color: CanvasText; }
+}
+
+/* ── Arranging ────────────────────────────────────────────────── */
+/* The bar: the few choices that shape the board, over a line that says what
+   the one under the pointer does. Fixed to the bottom of the window, above the
+   board and below every menu and dialog that can open over it. */
+.arrange-bar {
+  position: fixed;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  translate: -50% 0;
+  z-index: var(--nl-z-float);
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  pointer-events: none;
+  animation: arrangeBarIn var(--nl-transition-enter) both;
+}
+.arrange-bar[hidden] { display: none; }
+@keyframes arrangeBarIn {
+  from { opacity: 0; translate: -50% 14px; }
+  to { opacity: 1; translate: -50% 0; }
+}
+.arrange-hint {
+  margin: 0;
+  max-width: 68ch;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--nl-surface-card) 86%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  color: var(--nl-text-secondary);
+  font-size: var(--nl-text-xs);
+  line-height: 1.45;
+  text-align: center;
+}
+.arrange-controls {
+  pointer-events: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px;
+  border-radius: var(--nl-radius-xl);
+  border: 1px solid var(--nl-border);
+  background: color-mix(in srgb, var(--nl-surface-elevated) 92%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+  box-shadow: var(--nl-shadow-3);
+}
+.arrange-title {
+  padding-inline: 10px 4px;
+  color: var(--nl-text-primary);
+  font-size: var(--nl-text-sm);
+  font-weight: 650;
+  white-space: nowrap;
+}
+.arrange-layouts {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--nl-radius-md);
+  background: color-mix(in srgb, var(--nl-text-primary) 7%, transparent);
+}
+.arrange-layout,
+.arrange-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: var(--nl-target-min);
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--nl-radius-sm);
+  background: transparent;
+  color: var(--nl-text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), box-shadow var(--nl-motion-control);
+}
+.arrange-layout { min-height: calc(var(--nl-target-min) - 6px); }
+.arrange-layout[aria-checked="true"] {
+  background: var(--nl-surface-card);
+  color: var(--nl-text-primary);
+  box-shadow: var(--nl-shadow-1);
+}
+.arrange-layout:hover,
+.arrange-action:hover:not(:disabled) {
+  color: var(--nl-text-primary);
+  background-color: color-mix(in srgb, var(--nl-text-primary) 8%, transparent);
+}
+.arrange-layout[aria-checked="true"]:hover { background-color: var(--nl-surface-card); }
+.arrange-action:disabled { opacity: 0.45; cursor: default; }
+.arrange-action[hidden] { display: none; }
+.layout-glyph { width: 24px; height: 16px; flex: none; fill: currentColor; }
+.arrange-action svg { width: 16px; height: 16px; flex: none; }
+.arrange-divider { align-self: stretch; width: 1px; margin: 6px 2px; background: var(--nl-border); }
+.arrange-done { min-height: var(--nl-target-min); padding-inline: 18px; }
+
+/* The page while arranging: the clock and search step back, the rows show
+   their outline, and every folder wears its handle and its edge. */
+body.arranging #hero,
+body.arranging #searchwrap {
+  opacity: 0.28;
+  pointer-events: none;
+  transition: opacity var(--nl-transition-panel);
+}
+body.arranging #page { padding-bottom: 150px; }
+body.arranging #board { gap: calc(var(--board-gap) * 2 + 10px); }
+body.arranging .board-row {
+  border-radius: calc(var(--nl-radius-lg) + 9px);
+  outline: 1px dashed color-mix(in srgb, var(--nl-text-primary) 24%, transparent);
+  outline-offset: 9px;
+}
+body.arranging #board .card { cursor: grab; }
+body.arranging #board .tile { cursor: grab; }
+body.arranging #board .card,
+body.arranging #board .tile { touch-action: none; }
+body.arranging #board .card .groupGrip,
+body.arranging #board .card .foldBtn,
+body.arranging #board .card-resize-handle { opacity: 1; }
+body.arranging #board .card .groupGrip { color: var(--nl-text-primary); }
+/* While arranging, the width handle is a pill on the folder's right edge —
+   what the hint calls its edge — with the same 40px to aim at. */
+body.arranging #board .card-resize-handle {
+  top: 50%;
+  bottom: auto;
+  right: calc(var(--nl-target-min) / -2);
+  translate: 0 -50%;
+  width: var(--nl-target-min);
+  height: 56px;
+  border-radius: 0;
+  cursor: ew-resize;
+}
+body.arranging #board .card-resize-handle::after {
+  top: 8px;
+  bottom: 8px;
+  right: auto;
+  left: 50%;
+  translate: -50% 0;
+  width: 10px;
+  height: auto;
+  border: 1px solid var(--nl-border-strong);
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, transparent 3px, var(--nl-text-secondary) 3px, var(--nl-text-secondary) 4px, transparent 4px, transparent 5px, var(--nl-text-secondary) 5px, var(--nl-text-secondary) 6px, transparent 6px) center / 100% 45% no-repeat,
+    var(--nl-surface-elevated);
+  box-shadow: var(--nl-shadow-1);
+}
+body.arranging #board .card-resize-handle:hover::after,
+body.arranging #board .card.is-resizing .card-resize-handle::after { border-color: var(--nl-accent); }
+
 /* ── Folder Resize Handle & Indicator ─────────────────────────── */
 .card-resize-handle {
   position: absolute;
@@ -698,6 +1026,58 @@ body.minimal #board {
   gap: 7px;
   text-decoration: none;
   position: relative;
+}
+
+/* ── The board as a command line ──────────────────────────────────
+   While a command is being typed the page stays in view behind a lighter
+   dim, so a previewed theme or sky can be judged, and the folder or bookmark
+   a command would act on is lifted above the rest. */
+body.searching.commanding #dim { background: rgba(3, 7, 18, 0.12); }
+.light-ui body.searching.commanding #dim { background: rgba(255, 255, 255, 0.1); }
+#board.command-preview .card:not(.command-target):not(:has(.command-target)) { opacity: 0.45; }
+#board.command-preview .tile:not(.command-target) { opacity: 0.55; }
+#board .command-target { outline: 2px solid var(--nl-accent); outline-offset: 4px; border-radius: var(--nl-radius-lg); }
+#board .tile.command-target { opacity: 1; border-radius: var(--nl-radius-md); }
+.sugg-command .sugg-command-mark { width: 18px; flex: none; color: var(--nl-accent-text); font: 700 var(--nl-text-md) / 1 var(--font-mono); text-align: center; }
+.sugg-command .sugg-command-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sugg-command-help .sugg-command-text strong { font-family: var(--font-mono); font-size: var(--nl-text-sm); font-weight: 600; color: var(--nl-text-primary); }
+.sugg-command-help .sugg-command-text small { color: var(--nl-text-secondary); font-size: var(--nl-text-xs); }
+
+/* The first stop for a keyboard: straight past the clock and search to the
+   board. Out of sight until it is focused. */
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: var(--nl-z-toast);
+  padding: 10px 16px;
+  border-radius: var(--nl-radius-sm);
+  background: var(--nl-accent);
+  color: var(--nl-on-accent);
+  font-weight: 650;
+  text-decoration: none;
+  transform: translateY(-160%);
+}
+.skip-link:focus-visible { transform: none; }
+
+/* Alt held: each of the first nine tiles shows the digit that opens it. */
+body.alt-held .tile[data-shortcut]::after {
+  content: attr(data-shortcut);
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  translate: -50% 0;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--nl-radius-sm);
+  background: var(--nl-accent);
+  color: var(--nl-on-accent);
+  font: 700 var(--nl-text-2xs) / 1 var(--font-mono);
+  box-shadow: var(--nl-shadow-1);
+  pointer-events: none;
 }
 
 
@@ -1055,8 +1435,7 @@ body.hover-none .tile:hover .box {
   font-weight: 700;
   letter-spacing: var(--nl-track-wide);
   text-transform: uppercase;
-  color: var(--accent);
-  opacity: 0.9;
+  color: var(--nl-accent-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1277,13 +1656,41 @@ body.hover-none .tile:hover .box {
   flex: none;
 }
 .toast-info svg { color: var(--accent); }
-.toast-success svg { color: #34d399; }
-.toast-danger svg { color: #f87171; }
+.toast-success svg { color: var(--nl-status-success); }
+.toast-danger svg { color: var(--nl-status-danger); }
 .toast span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* The undo control. It had no style at all — a user-agent button inside a
+   designed pill — and, because the dock takes no pointer events so a notice
+   never blocks the board behind it, it could not be clicked either: the one
+   button in the product that takes a deletion back was unreachable by mouse.
+   It re-enables pointer events for itself alone, and it never shrinks, so a
+   long bookmark name ellipsises the sentence and not the way out of it. */
+.toast-action {
+  flex: none;
+  margin: -4px -8px -4px 2px;
+  padding: 5px 13px;
+  border-radius: 9999px;
+  border: 1px solid var(--nl-border-strong);
+  background: rgba(255, 255, 255, .07);
+  color: var(--nl-accent-text);
+  font: inherit;
+  font-weight: 650;
+  letter-spacing: var(--nl-track-tight);
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background var(--nl-transition-control), border-color var(--nl-transition-control);
+}
+.toast-action:hover {
+  background: rgba(255, 255, 255, .14);
+  border-color: var(--accent);
+}
+.toast-action:active { transform: translateY(1px); }
 
 /* ── Glass Confirm Dialog ─────────────────────────────────────── */
 .confirm-backdrop {
@@ -1302,8 +1709,8 @@ body.hover-none .tile:hover .box {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  color: #f87171;
-  background: rgba(239, 68, 68, 0.14);
+  color: var(--nl-status-danger);
+  background: color-mix(in srgb, var(--nl-status-danger) 14%, transparent);
   border: 1px solid rgba(239, 68, 68, 0.3);
   margin-bottom: 8px;
   box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.12);
@@ -1327,14 +1734,16 @@ body.hover-none .tile:hover .box {
 .confirm-actions .glass-btn {
   flex: 1;
 }
+/* White on red needs a deep red: on #ef4444 it was 3.8 to one. */
 .confirm-ok.danger {
-  background: #ef4444;
-  border-color: #ef4444;
+  background: #dc2626;
+  border-color: #dc2626;
   color: #ffffff;
   font-weight: 600;
 }
 .confirm-ok.danger:hover {
-  background: #dc2626;
+  background: #b91c1c;
+  border-color: #b91c1c;
 }
 
 /* ── Accessibility & Selection Polish ─────────────────────────── */
@@ -1381,7 +1790,7 @@ body.hover-none .tile:hover .box {
 @media (max-width: 480px) {
   #page { padding-inline: 10px; align-items: stretch; }
   #hero, #searchwrap, #board { align-self: center; }
-  #board { width: 100%; gap: 12px; }
+  #board { width: 100%; --board-gap: 12px; }
   .card { width: 100%; padding-inline: 12px; }
   .grid[data-cols] { grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); justify-items: center; }
 }
@@ -1475,14 +1884,55 @@ body.hover-none .tile:hover .box {
    looked clickable and was not. */
 #search #q { align-self: stretch; }
 
+/* ── The empty board ────────────────────────────────────────────────
+   This is what a new install opens on, so it is the first thing the product
+   ever says. It is not an error and it is not a drop zone: the dashed outline
+   it used to wear is what an upload target looks like, and a new user reading
+   it as "something failed to load" is the opposite of the intent.
+
+   So the atmosphere behind it stays the subject and this is only enough
+   surface to hold a line of type and two ways in — the same glass, radius and
+   border as a folder card, at a lower opacity, with the display face doing the
+   talking. It has to read the same after the last folder is deleted, which is
+   the other way to arrive here. */
 .board-empty {
-  display: grid; justify-items: center; gap: 14px;
-  padding: 42px 28px; margin: 0 auto;
+  display: grid;
+  justify-items: center;
+  gap: var(--nl-space-3);
+  max-width: min(46ch, 100%);
+  padding: var(--nl-space-10) var(--nl-space-6);
+  margin: 0 auto;
+  text-align: center;
   border-radius: var(--nl-radius-xl);
-  border: 1px dashed var(--nl-border-strong);
-  background: color-mix(in srgb, var(--nl-surface-card) 34%, transparent);
+  border: 1px solid var(--nl-border);
+  background: color-mix(in srgb, var(--nl-surface-card) 26%, transparent);
+  backdrop-filter: blur(14px);
 }
-.board-empty-text { color: var(--nl-text-secondary); font-size: var(--nl-text-md); }
+.board-empty-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--nl-text-2xl);
+  font-weight: 600;
+  letter-spacing: var(--nl-track-tight);
+  color: var(--nl-text-primary);
+}
+.board-empty-text {
+  margin: 0;
+  max-width: 40ch;
+  color: var(--nl-text-secondary);
+  font-size: var(--nl-text-md);
+  line-height: 1.55;
+}
+/* Wrapping rather than shrinking: at 320px two buttons stack, and each keeps
+   the 40px the rest of the product keeps. */
+.board-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--nl-space-2);
+  margin-top: var(--nl-space-1);
+}
+.board-empty-actions .glass-btn { padding-inline: var(--nl-space-5); }
 
 /* A folder title may widen its card — that is how "GAMING & SIM" fits above two
    columns — but only so far. Without a ceiling a 90-character name stretched the

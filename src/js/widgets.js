@@ -108,6 +108,22 @@ class ClockWidget {
 }
 
 /* ── Omni-Search Bar & Smart Suggestion Controller ─────────────── */
+/* Each command's aliases and its line in the help, spelled out so every
+   message key can be found by searching for it. */
+const COMMAND_KEYS = {
+  theme: ["command.verb.theme", "command.help.theme"],
+  sky: ["command.verb.sky", "command.help.sky"],
+  mood: ["command.verb.mood", "command.help.mood"],
+  shuffle: ["command.verb.shuffle", "command.help.shuffle"],
+  arrange: ["command.verb.arrange", "command.help.arrange"],
+  newFolder: ["command.verb.newFolder", "command.help.newFolder"],
+  rename: ["command.verb.rename", "command.help.rename"],
+  hide: ["command.verb.hide", "command.help.hide"],
+  show: ["command.verb.show", "command.help.show"],
+  move: ["command.verb.move", "command.help.move"],
+  settings: ["command.verb.settings", "command.help.settings"]
+};
+
 class SearchWidget {
   constructor(cfg, app) {
     this.cfg = cfg;
@@ -148,6 +164,7 @@ class SearchWidget {
       setTimeout(() => {
         if (!document.activeElement || !document.activeElement.closest("#searchwrap")) {
           document.body.classList.remove("searching");
+          this.endCommandMode();
           this.closeSuggestions();
         }
       }, 180);
@@ -271,6 +288,11 @@ class SearchWidget {
   }
 
   async processQuery(query) {
+    if (query.startsWith(">")) {
+      this.processCommand(query.slice(1));
+      return;
+    }
+    this.endCommandMode();
     const token = ++this.queryToken;
     const calcResult = this.tryCalculate(query);
     const bookmarkMatches = this.findMatchingBookmarks(query);
@@ -335,7 +357,7 @@ class SearchWidget {
           <svg viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
           <span class="bm-info">
             <strong class="bm-name"></strong>
-            <small class="bm-url" style="opacity:0.6;margin-left:6px;"></small>
+            <small class="bm-url"></small>
           </span>
           <span class="sugg-badge sugg-folder-badge"></span>
         `;
@@ -395,6 +417,259 @@ class SearchWidget {
     }
   }
 
+  /* ── The board as a command line ─────────────────────────────────
+     A leading ">" reads the rest as an instruction (commands.js). The
+     candidate under the cursor is shown before it is chosen — a theme, a sky
+     or a mood on the page itself, a folder or a bookmark lifted on the board —
+     Enter keeps it, with one undo, and Escape puts everything back. */
+  commandWorld() {
+    const app = this.app;
+    const text = (node) => node?.textContent.trim() || "";
+    const groups = app.config.groups || [];
+    return {
+      themes: [...document.querySelectorAll(".theme-card[data-theme]")].map((card) => ({ key: card.dataset.theme, name: text(card.querySelector("b")) || card.dataset.theme })),
+      scenes: [...document.querySelectorAll("#bg-scene-picker .scene-card[data-scene]")].filter((card) => card.dataset.scene !== "custom-image" && card.dataset.scene !== "custom-video").map((card) => ({ key: card.dataset.scene, name: text(card.querySelector(".scene-name")) || card.dataset.scene })),
+      moods: [...document.querySelectorAll("#bg-palette-grid [data-palette]")].map((chip) => ({ key: chip.dataset.palette, name: text(chip.querySelector("span")) || chip.dataset.palette })),
+      folders: groups.map((group, index) => ({ key: index, name: group.label || "", hidden: Boolean(group.hidden) })),
+      bookmarks: groups.flatMap((group, g) => (group.links || []).map((link, l) => ({ key: `${g}:${l}`, name: link.name || link.url || "", folder: g }))),
+      tabs: [...document.querySelectorAll(".ctabs .ctab[data-tab]")].map((tab) => ({ key: tab.dataset.tab, name: text(tab) }))
+    };
+  }
+
+  commandLocale() {
+    const t = (key) => {
+      const value = window.I18N?.t(key);
+      return value && value !== key ? value.split("|").map((part) => part.trim()).filter(Boolean) : [];
+    };
+    const verbs = {};
+    for (const [verb, [aliases]] of Object.entries(COMMAND_KEYS)) verbs[verb] = t(aliases);
+    return { verbs, joiners: t("command.joiners") };
+  }
+
+  say(key, fallback, params) {
+    const value = window.I18N?.t(key, params || {});
+    return value && value !== key ? value : fallback;
+  }
+
+  // What a candidate would do, in a line.
+  describeCommand(candidate) {
+    const name = candidate.target?.name;
+    switch (candidate.kind) {
+      case "theme": return this.say("command.doTheme", `Theme: ${name}`, { name });
+      case "sky": return this.say("command.doSky", `Sky: ${name}`, { name });
+      case "mood": return this.say("command.doMood", `Colour mood: ${name}`, { name });
+      case "shuffle": return this.say("command.doShuffle", "Shuffle this sky");
+      case "arrange": return this.say("command.doArrange", "Arrange folders");
+      case "newFolder": return this.say("command.doNewFolder", `New folder: ${candidate.name}`, { name: candidate.name });
+      case "rename": return candidate.name ? this.say("command.doRename", `Rename ${name} to ${candidate.name}`, { name, to: candidate.name }) : this.say("command.renameHow", `Rename ${name} to …`, { name });
+      case "hide": return this.say("command.doHide", `Hide ${name}`, { name });
+      case "show": return this.say("command.doShow", `Show ${name}`, { name });
+      case "move": return this.say("command.doMove", `Move ${name} to ${candidate.folder.name}`, { name, folder: candidate.folder.name });
+      case "settings": return name ? this.say("command.doSettingsTab", `Open settings: ${name}`, { name }) : this.say("command.doSettings", "Open settings");
+      default: return "";
+    }
+  }
+
+  // Every verb, with an example of it, for a bare ">".
+  commandHelp() {
+    return [
+      ["theme", "theme nord"], ["sky", "sky frost"], ["mood", "mood ember"], ["shuffle", "shuffle"],
+      ["arrange", "arrange"], ["newFolder", "new folder Reading"], ["rename", "rename Daily to Morning"], ["hide", "hide Shopping"],
+      ["show", "show Shopping"], ["move", "move YouTube to Daily"], ["settings", "settings background"]
+    ].map(([verb, example]) => ({ kind: "verb", verb, example }));
+  }
+
+  processCommand(text) {
+    if (!this.commandSnapshot) this.commandSnapshot = JSON.stringify(this.app.config);
+    document.body.classList.add("commanding");
+    const { candidates, help } = window.NordlysCommands?.parse(text, this.commandWorld(), this.commandLocale()) || { candidates: [] };
+    this.commandCandidates = help ? this.commandHelp() : candidates.map((candidate) => candidate.kind === "verb" ? this.commandHelp().find((row) => row.verb === candidate.verb) : candidate).filter(Boolean);
+    this.renderCommands();
+    // The best reading is shown at once; arrowing shows the others.
+    this.previewCommand(this.commandCandidates.find((candidate) => candidate.kind !== "verb"));
+  }
+
+  renderCommands() {
+    if (!this.sugg) return;
+    this.sugg.replaceChildren();
+    this.selIdx = -1;
+    this.commandCandidates.forEach((candidate, index) => {
+      const row = document.createElement("div");
+      row.className = `sugg-item sugg-command${candidate.kind === "verb" ? " sugg-command-help" : ""}`;
+      row.dataset.command = String(index);
+      row.style.setProperty("--si", index);
+      const mark = document.createElement("span");
+      mark.className = "sugg-command-mark";
+      mark.setAttribute("aria-hidden", "true");
+      mark.textContent = ">";
+      const words = document.createElement("span");
+      words.className = "sugg-command-text";
+      if (candidate.kind === "verb") {
+        const example = document.createElement("strong");
+        example.textContent = candidate.example;
+        const meaning = document.createElement("small");
+        meaning.textContent = this.say(COMMAND_KEYS[candidate.verb][1], "");
+        words.append(example, meaning);
+      } else {
+        words.textContent = this.describeCommand(candidate);
+      }
+      row.append(mark, words);
+      if (candidate.kind !== "verb") {
+        const key = document.createElement("span");
+        key.className = "sugg-badge";
+        key.textContent = "Enter";
+        row.append(key);
+      }
+      row.addEventListener("mousedown", (event) => {
+        event.preventDefault();
+        if (candidate.kind === "verb") {
+          // A verb from the list becomes the start of the command.
+          this.input.value = `>${candidate.example.split(" ").slice(0, candidate.verb === "newFolder" ? 2 : 1).join(" ")} `;
+          this.input.focus();
+          this.onInput();
+          return;
+        }
+        this.runCommand(candidate);
+      });
+      this.sugg.append(row);
+    });
+    if (this.commandCandidates.length) {
+      this.sugg.querySelectorAll(".sugg-item").forEach((item, index) => {
+        item.id = `search-option-${index}`;
+        item.setAttribute("role", "option");
+        item.setAttribute("aria-selected", "false");
+      });
+      this.sugg.classList.add("on");
+      this.input.setAttribute("aria-expanded", "true");
+    } else {
+      this.closeSuggestions();
+    }
+  }
+
+  // Put the page back to how it was before the first ">".
+  restoreCommandPreview() {
+    document.querySelectorAll(".command-target").forEach((node) => node.classList.remove("command-target"));
+    document.getElementById("board")?.classList.remove("command-preview");
+    if (!this.commandPreviewing) return;
+    this.commandPreviewing = false;
+    this.app.config = JSON.parse(this.commandSnapshot);
+    this.refreshLook();
+  }
+
+  refreshLook() {
+    this.app.applyThemeTokens();
+    this.app.updateBackgroundMode();
+    this.app.settings?.renderThemeCards?.();
+  }
+
+  previewCommand(candidate) {
+    this.restoreCommandPreview();
+    if (!candidate) return;
+    const board = document.getElementById("board");
+    const lift = (selector) => {
+      const node = board?.querySelector(selector);
+      if (!node) return;
+      board.classList.add("command-preview");
+      node.classList.add("command-target");
+    };
+    const look = (change) => {
+      change(this.app.config);
+      this.commandPreviewing = true;
+      this.refreshLook();
+    };
+    switch (candidate.kind) {
+      case "theme": look((config) => { config.theme = candidate.target.key; delete config.customTheme; }); break;
+      case "sky": look((config) => { config.bgMode = candidate.target.key; }); break;
+      case "mood": look((config) => { config.bgPalette = candidate.target.key; }); break;
+      case "hide": case "rename": lift(`.card[data-group-idx="${candidate.target.key}"]`); break;
+      case "move": {
+        const [g, l] = candidate.target.key.split(":");
+        lift(`.tile[data-group-idx="${g}"][data-link-idx="${l}"]`);
+        board?.querySelector(`.card[data-group-idx="${candidate.folder.key}"]`)?.classList.add("command-target");
+        break;
+      }
+      default: break;
+    }
+  }
+
+  runCommand(candidate) {
+    const before = this.commandSnapshot || JSON.stringify(this.app.config);
+    // A look being previewed is already on the page: keeping it is saving it.
+    this.commandPreviewing = false;
+    this.app.config = JSON.parse(before);
+    const config = this.app.config;
+    const groups = config.groups || [];
+    let done = true;
+    switch (candidate.kind) {
+      case "theme": config.theme = candidate.target.key; delete config.customTheme; break;
+      case "sky": config.bgMode = candidate.target.key; break;
+      case "mood": config.bgPalette = candidate.target.key; break;
+      case "shuffle": config.bgSeed = crypto.getRandomValues(new Uint32Array(1))[0] || 1; break;
+      case "newFolder": groups.push({ label: candidate.name, cols: 4, hidden: false, links: [] }); break;
+      case "rename": if (candidate.name) groups[candidate.target.key].label = candidate.name; else done = false; break;
+      case "hide": groups[candidate.target.key].hidden = true; break;
+      case "show": groups[candidate.target.key].hidden = false; break;
+      case "move": {
+        const [g, l] = candidate.target.key.split(":").map(Number);
+        const from = groups[g], to = groups[candidate.folder.key];
+        if (from?.source?.folderId || to?.source?.folderId) { done = false; break; }
+        const [link] = from.links.splice(l, 1);
+        (to.links ||= []).push(link);
+        break;
+      }
+      case "settings": {
+        this.endCommandMode();
+        this.input.value = "";
+        this.input.blur();
+        this.app.settings?.open(candidate.target?.key || null);
+        return;
+      }
+      /* Arranging is a place to go, not a change to undo: the arrangement
+         keeps its own Undo, and says so when it is done. */
+      case "arrange": {
+        this.endCommandMode();
+        this.input.value = "";
+        this.input.blur();
+        document.body.classList.remove("searching");
+        this.closeSuggestions();
+        this.app.grid?.arrange?.enter();
+        return;
+      }
+      default: done = false;
+    }
+    if (!done) return;
+    this.endCommandMode({ keep: true });
+    this.app.saveConfig();
+    this.refreshLook();
+    this.app.grid?.render();
+    const said = this.describeCommand(candidate);
+    this.input.value = "";
+    this.input.blur();
+    document.body.classList.remove("searching");
+    this.closeSuggestions();
+    window.NordlysUI?.showUndoToast?.({
+      message: said,
+      onAction: () => {
+        this.app.config = JSON.parse(before);
+        this.app.saveConfig();
+        this.refreshLook();
+        this.app.grid?.render();
+      }
+    });
+  }
+
+  endCommandMode({ keep = false } = {}) {
+    if (!keep) this.restoreCommandPreview();
+    else {
+      document.querySelectorAll(".command-target").forEach((node) => node.classList.remove("command-target"));
+      document.getElementById("board")?.classList.remove("command-preview");
+    }
+    this.commandPreviewing = false;
+    this.commandSnapshot = null;
+    this.commandCandidates = null;
+    document.body.classList.remove("commanding");
+  }
+
   closeSuggestions() {
     if (this.sugg) {
       this.sugg.classList.remove("on");
@@ -411,6 +686,7 @@ class SearchWidget {
     if (e.key === "Escape") {
       e.preventDefault();
       e.stopPropagation();
+      this.endCommandMode();
       if (this.navigationValue !== undefined) this.input.value = this.navigationValue;
       this.navigationValue = undefined;
       document.body.classList.remove("searching");
@@ -442,6 +718,9 @@ class SearchWidget {
       e.preventDefault();
       if (this.selIdx >= 0 && items[this.selIdx]) {
         items[this.selIdx].dispatchEvent(new MouseEvent("mousedown"));
+      } else if (this.input.value.trim().startsWith(">")) {
+        // A command with nothing highlighted runs the best reading of it.
+        items.find((item) => item.classList.contains("sugg-command"))?.dispatchEvent(new MouseEvent("mousedown"));
       } else {
         this.executeSearch(this.input.value.trim());
       }
@@ -455,9 +734,10 @@ class SearchWidget {
         item.setAttribute("aria-selected", "true");
         this.input.setAttribute("aria-activedescendant", item.id);
         const span = item.querySelector("span");
-        if (span && !item.classList.contains("sugg-bookmark") && !item.classList.contains("sugg-calc")) {
+        if (span && !item.classList.contains("sugg-bookmark") && !item.classList.contains("sugg-calc") && !item.classList.contains("sugg-command")) {
           this.input.value = span.textContent;
         }
+        if (item.classList.contains("sugg-command")) this.previewCommand(this.commandCandidates?.[Number(item.dataset.command)]);
       } else {
         item.classList.remove("sel");
         item.setAttribute("aria-selected", "false");

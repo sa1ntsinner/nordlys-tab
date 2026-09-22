@@ -33,25 +33,35 @@
   text-shadow: var(--nl-shadow-2);
 }
 
+/* Quieter than the digits, never below the 3:1 large text needs. At .48 the
+   colon measured 2.6 to 2.9 to one in fourteen of the themes, and .66 still
+   gave out over a bright thread of Silk. */
 #clock .colon:not(.sc) {
   display: inline-block;
   margin-inline: .025em;
-  opacity: .48;
+  opacity: .72;
   transform: translateY(-.045em);
 }
 
+/* A sentence, set as one: 13px, mixed case, no tracking, and the secondary
+   tier at full strength. It was 11px — a size the scale keeps for uppercase
+   group labels — tracked wide like a label and thinned to 88%, sitting
+   straight on the sky, where it measured 3.2 to one in Solarized Light. */
 #date {
   margin-top: 8px;
-  font-size: var(--nl-text-2xs);
-  font-weight: 650;
-  letter-spacing: var(--nl-track-wide);
+  font-size: var(--nl-text-sm);
+  font-weight: 600;
+  letter-spacing: var(--nl-track-none);
   text-transform: none;
-  color: color-mix(in srgb, var(--nl-text-secondary) 88%, transparent);
+  color: var(--nl-text-secondary);
 }
 
+/* Secondary, not tertiary. The greeting sits straight on the sky, where a
+   bright curtain or a halo can pass behind it, and the tertiary tier measured
+   3.4:1 there in the default theme. Light themes already used this tier. */
 #greet {
   font-size: var(--nl-text-md);
-  color: var(--nl-text-tertiary);
+  color: var(--nl-text-secondary);
 }
 
 /* Search is the primary action, not another glass card. */
@@ -68,7 +78,9 @@
   padding-inline: 14px;
   border-radius: var(--nl-radius-lg);
   border-color: var(--nl-polish-hairline);
-  background: color-mix(in srgb, var(--nl-surface-card-deep) 74%, transparent);
+  /* --search-solid, like a folder's --card-solid, is raised over a bright
+     wallpaper until the field's own words read. */
+  background: color-mix(in srgb, var(--nl-surface-card-deep) max(74%, calc(var(--search-solid, 0) * 100%)), transparent);
   box-shadow: var(--nl-shadow-2);
   min-width: 0;
   backdrop-filter: blur(18px) saturate(125%);
@@ -103,13 +115,16 @@ body.searching #search {
   min-width: 0;
 }
 
+/* A key, and solid like one. A tint over the glass let the sky through, and
+   with blur off — reduced motion turns it off — a contour line could run
+   straight through the "/" under it. */
 #search kbd {
   min-width: 24px;
   padding: 5px 6px;
   text-align: center;
-  color: var(--nl-text-tertiary);
+  color: var(--nl-text-secondary);
   border-color: var(--nl-polish-hairline);
-  background: color-mix(in srgb, var(--nl-text-primary) 4%, transparent);
+  background: color-mix(in srgb, var(--nl-text-primary) 4%, var(--nl-surface-card-deep));
 }
 
 #sugg {
@@ -132,21 +147,31 @@ body.searching #search {
   background: var(--nl-polish-accent-soft);
 }
 
-/* Bookmark board */
+/* Bookmark board. In Natural each folder is as tall as its own tiles:
+   stretched to the tallest in its row, a two-bookmark folder carried a hundred
+   and twenty pixels of empty glass under its tiles, which reads as something
+   missing. Fitted asks for the matching heights on purpose, and gets them. */
 #board {
   width: min(94vw, 1400px);
-  gap: 14px;
+  --board-gap: calc(var(--grid-gap, 12px) + 2px);
 }
 
 .card {
   gap: 14px;
   padding: 14px 16px 16px;
-  border-radius: var(--nl-radius-lg);
+  /* The Corner radius setting. A fixed radius here once drew over it, so the
+     slider moved and no folder did. */
+  border-radius: var(--card-radius, var(--nl-radius-lg));
   border-color: var(--nl-polish-hairline);
+  /* The glass level reaches the tint as well as the blur. This used fixed 52%
+     and 64%, so "None" took the blur away and left the same see-through card:
+     frosted is 52/64 at the default opacity of .7, and opacity 1 is solid. */
+  /* --card-solid is set on a folder over a wallpaper whose patch of the
+     picture needs more glass for its words to read (measureWallpaper). */
   background: linear-gradient(
     145deg,
-    color-mix(in srgb, var(--nl-surface-card) 52%, transparent),
-    color-mix(in srgb, var(--nl-surface-card-deep) 64%, transparent)
+    color-mix(in srgb, var(--nl-surface-card) max(calc((var(--glass-opacity, .7) - .7) * 160% + 52%), calc(var(--card-solid, 0) * 100%)), transparent),
+    color-mix(in srgb, var(--nl-surface-card-deep) max(calc((var(--glass-opacity, .7) - .7) * 120% + 64%), calc(var(--card-solid, 0) * 100%)), transparent)
   );
   box-shadow: var(--nl-shadow-1);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate, 122%));
@@ -173,7 +198,9 @@ body.searching #search {
 .cat b {
   font-size: var(--nl-text-xs);
   letter-spacing: var(--nl-track-none);
-  color: var(--nl-text-secondary);
+  /* A folder's name is its heading: the ink, above the tier its tiles use.
+     In the secondary tier it measured 3.0 to one over frost at full intensity. */
+  color: var(--nl-text-primary);
   text-transform: none;
 }
 
@@ -181,8 +208,10 @@ body.searching #search {
   display: none;
 }
 
+/* The Spacing setting sets --grid-gap. A fixed gap here once put the slider
+   out of reach, so it moved and nothing on the board did. */
 .grid {
-  gap: 12px 10px;
+  gap: var(--grid-gap, 12px) calc(var(--grid-gap, 12px) - 2px);
 }
 
 .tile {
@@ -208,10 +237,15 @@ body.hover-glow .tile:hover .box {
   transform: translateY(-2px);
 }
 
+/* A tile's name is the one thing on the board a person reads to choose, so it
+   takes the secondary tier. Tertiary measured 3.6:1 on paper and rendered at
+   2.7:1, because a face this small never reaches its own colour; the stronger
+   tier fixes that without a heavier weight, which would widen every name —
+   at 500, "Kleinanzeigen" no longer fit its tile. */
 .lbl {
   font-size: var(--nl-text-xs);
   font-weight: 450;
-  color: var(--nl-text-tertiary);
+  color: var(--nl-text-secondary);
 }
 
 .tile:hover .lbl,

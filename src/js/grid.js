@@ -10,6 +10,20 @@ class GridController {
     this.app = app;
     this.board = document.getElementById("board");
     this.dock = document.getElementById("hiddenDock");
+    // Which tile of each folder is its one stop for Tab, by folder index.
+    this.rovingIndex = new Map();
+    // Faces arrive late, and a window can narrow: both can cut a name short.
+    document.fonts?.ready.then(() => this.relayout());
+    document.fonts?.addEventListener?.("loadingdone", () => this.relayout());
+    let resized = null;
+    window.addEventListener("resize", () => { clearTimeout(resized); resized = setTimeout(() => this.titleCutNames(), 200); }, { passive: true });
+    // The skip link lands on the board's first tile rather than on the board.
+    document.querySelector(".skip-link")?.addEventListener("click", (event) => {
+      const first = this.board?.querySelector('.tile[tabindex="0"]');
+      if (!first) return;
+      event.preventDefault();
+      first.focus();
+    });
     
     // Context Menus & Modals
     this.tileCtxMenu = document.getElementById("tile-ctx-menu");
@@ -29,15 +43,15 @@ class GridController {
     this.activeTileTarget = null;   // { gIdx, lIdx }
     this.activeFolderTarget = null; // gIdx
 
-    // Drag states
-    this.dragTile = null;   // { gIdx, lIdx, link }
-    this.dragFolder = null; // { gIdx }
+    // Drag states (board-arrange.js owns the drag itself)
     this.isDragging = false;
     this.justDragged = false;
 
-    // Capture-phase global click interceptor to stop any unintended link navigation after drag
+    /* Capture-phase click interceptor. The click that ends a drag belongs to
+       the drag, and while arranging a tile is something to move, not a link. */
     window.addEventListener("click", (e) => {
-      if (this.justDragged || this.isDragging) {
+      const arranging = this.arrange?.active && e.target.closest?.("#board .tile");
+      if (this.justDragged || this.isDragging || arranging) {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
@@ -45,29 +59,25 @@ class GridController {
       }
     }, true);
 
-
-    // One delegated listener disarms folder dragging after any mouse release
-    // (previously each render attached a fresh window listener per card — a leak)
-    window.addEventListener("mouseup", () => {
-      this.board?.querySelectorAll(".card[draggable='true']").forEach((c) => {
-        c.draggable = false;
-      });
-    });
-
     this.initContextMenusAndModals();
-    this.initBoardDragListeners();
+    this.drag = window.NordlysBoardDrag ? new window.NordlysBoardDrag(this) : null;
+    this.arrange = window.NordlysBoardArranger ? new window.NordlysBoardArranger(this) : null;
   }
 
   render() {
     if (!this.board) return;
+    const layout = window.NordlysBoardLayout;
+    const groups = this.app.config.groups || [];
+    /* Whatever edited the folders last — a list, an import, a new folder —
+       may have left them in any order. The board reads them row by row, so
+       they are put back into that order before anything is drawn. */
+    if (layout?.normalise(groups)) this.app.saveConfig();
 
     const boardFragment = document.createDocumentFragment();
     const dockFragment = document.createDocumentFragment();
-
-    const groups = this.app.config.groups || [];
+    const cards = new Map();
     let hasHidden = false;
     let visibleIdx = 0;
-    let maxLinks = 0;
 
     groups.forEach((group, gIdx) => {
       if (group.hidden) {
@@ -75,16 +85,18 @@ class GridController {
         this.renderDockItem(group, gIdx, dockFragment);
         return;
       }
-
-      const card = this.createGroupCard(group, gIdx, visibleIdx++);
-      maxLinks = Math.max(maxLinks, (group.links || []).length);
-      boardFragment.appendChild(card);
+      cards.set(gIdx, this.createGroupCard(group, gIdx, visibleIdx++));
     });
+
+    const rows = layout ? layout.rowsOf(groups) : (cards.size ? [[...cards.keys()]] : []);
+    rows.forEach((row, index) => boardFragment.appendChild(this.createRow(row.map((gIdx) => cards.get(gIdx)), index)));
 
       // Deleting the last folder otherwise left a page with nothing on it and no
       // way forward but a settings tab the user had no reason to open.
       if (!groups.length) boardFragment.appendChild(this.createEmptyState());
 
+    this.board.dataset.layout = this.app.config.boardLayout === "fitted" ? "fitted" : "natural";
+    this.board.dataset.rows = layout?.hasRows(groups) ? "yours" : "auto";
     this.board.replaceChildren(boardFragment);
     if (this.dock) {
       this.dock.replaceChildren(dockFragment);
@@ -95,28 +107,358 @@ class GridController {
        is where that choreography was switched off so later renders would not
        replay it. Nothing animates on arrival now, so there is nothing to switch
        off: the page is finished the moment it is painted. */
+    this.flowRows();
+    this.watchBoardWidth();
+    this.numberShortcuts();
+    this.wireRovingTiles();
+    this.arrange?.refresh();
+    requestAnimationFrame(() => this.titleCutNames());
   }
 
+  /* A row is one or more lines: one while it fits the window, more when it has
+     to wrap. flowRows decides where. */
+  createRow(cards, index) {
+    const row = document.createElement("div");
+    row.className = "board-row";
+    row.dataset.row = String(index);
+    const line = document.createElement("div");
+    line.className = "board-line";
+    line.append(...cards);
+    row.append(line);
+    return row;
+  }
+
+  /* Where rows break into lines: as few as the window allows, as even as it
+     allows (NordlysBoardLayout.balance). Widths are measured with every folder
+     at its own size — in Fitted before the lines are stretched — so both
+     layouts break in the same places, and Fitted grows each folder from the
+     width it would have had.
+
+     Before anybody has arranged anything, every line is a row of its own:
+     that is what the board looks like, so it is also what arranging starts
+     from. Rows somebody made keep their folders together and wrap inside
+     themselves when the window is too narrow for them. Only what changes is
+     rebuilt, and focus is handed back if the rebuild took it. */
+  flowRows() {
+    const layout = window.NordlysBoardLayout;
+    if (!this.board || !layout || this.frozen) return;
+    const rows = [...this.board.querySelectorAll(":scope > .board-row")];
+    if (!rows.length) return;
+    const auto = this.board.dataset.rows !== "yours";
+    const runs = auto ? [rows] : rows.map((row) => [row]);
+    const cardsOf = (line) => [...line.children].filter((child) => child.classList.contains("card"));
+    const focused = this.board.contains(document.activeElement) ? document.activeElement : null;
+    this.board.classList.add("is-measuring");
+    const plans = runs.map((run) => {
+      const lines = run.flatMap((row) => [...row.querySelectorAll(":scope > .board-line")]);
+      const cards = lines.flatMap(cardsOf);
+      const gap = parseFloat(getComputedStyle(lines[0]).columnGap) || 0;
+      const capacity = lines[0].getBoundingClientRect().width;
+      const widths = cards.map((card) => card.getBoundingClientRect().width);
+      return { run, lines, cards, widths, counts: capacity ? layout.balance(widths, gap, capacity) : [cards.length] };
+    });
+    this.board.classList.remove("is-measuring");
+    const makeLine = (cards) => {
+      const line = document.createElement("div");
+      line.className = "board-line";
+      line.append(...cards);
+      return line;
+    };
+    for (const { run, lines, cards, widths, counts } of plans) {
+      cards.forEach((card, index) => card.style.setProperty("--natural-w", `${widths[index]}px`));
+      const current = lines.map((line) => cardsOf(line).length).join();
+      if (auto) {
+        if (run.length === counts.length && run.every((row) => row.children.length === 1) && current === counts.join()) continue;
+        let at = 0;
+        const next = counts.map((count, index) => {
+          const row = document.createElement("div");
+          row.className = "board-row";
+          row.dataset.row = String(index);
+          row.append(makeLine(cards.slice(at, at += count)));
+          return row;
+        });
+        run[0].before(...next);
+        run.forEach((row) => row.remove());
+      } else {
+        if (current === counts.join()) continue;
+        let at = 0;
+        run[0].replaceChildren(...counts.map((count) => makeLine(cards.slice(at, at += count))));
+      }
+    }
+    if (focused && focused.isConnected && document.activeElement !== focused) focused.focus({ preventScroll: true });
+  }
+
+  /* The lines depend on the width, so a narrower window re-breaks them — in
+     the observer's own callback, which runs after layout and before paint, so
+     no frame is ever shown with the old breaks squeezed into the new width.
+     What is observed is a line with no height across the board rather than
+     the board: re-breaking changes the board's height, and an observer that
+     changes the size of what it observes loops. The probe only ever changes
+     when the width does. */
+  watchBoardWidth() {
+    if (typeof ResizeObserver === "undefined") return;
+    if (!this.widthProbe) {
+      this.widthProbe = document.createElement("div");
+      this.widthProbe.className = "board-width-probe";
+      this.widthProbe.setAttribute("aria-hidden", "true");
+    }
+    if (this.widthProbe.parentNode !== this.board) this.board.prepend(this.widthProbe);
+    if (this.boardWidthObserver) return;
+    let width = this.widthProbe.getBoundingClientRect().width;
+    this.boardWidthObserver = new ResizeObserver(([entry]) => {
+      const next = entry.contentRect.width;
+      if (!next || Math.abs(next - width) < 0.5) return;
+      width = next;
+      this.flowRows();
+    });
+    this.boardWidthObserver.observe(this.widthProbe);
+  }
+
+  /* Anything that can change a folder's width without a render — a face that
+     finishes loading, a theme, the tile size — asks for this. */
+  relayout() {
+    this.flowRows();
+    this.titleCutNames();
+  }
+
+  /* Row and position of a folder as the board shows it, counted from one. */
+  placeOf(group) {
+    const index = (this.app.config.groups || []).indexOf(group);
+    const card = this.board?.querySelector(`.card[data-group-idx="${index}"]`);
+    const row = card?.closest(".board-row");
+    if (!card || !row) return null;
+    const rows = [...this.board.querySelectorAll(":scope > .board-row")];
+    const inRow = [...row.querySelectorAll(".card")];
+    return { row: rows.indexOf(row) + 1, position: inRow.indexOf(card) + 1, count: inRow.length };
+  }
+
+  /* A name the tile has to cut short — a long name, or a wide face chosen in
+     Typography — gets its whole self as a tooltip. Only when it is cut: a
+     tooltip that repeats what is already on screen is noise on every hover. */
+  titleCutNames() {
+    if (!this.board) return;
+    for (const label of this.board.querySelectorAll(".tile .lbl")) {
+      const tile = label.closest(".tile");
+      if (label.scrollWidth > label.clientWidth + 1) tile.title = label.textContent;
+      else tile.removeAttribute("title");
+    }
+  }
+
+  /* ── The board from the keyboard ─────────────────────────────────
+     Each folder is one stop for Tab, and the arrow keys move between its tiles
+     by where they sit on screen, so twenty bookmarks are not twenty presses to
+     get past; Home and End go to its first and last. Alt+Shift+Arrow carries
+     the focused bookmark to the next place, the way a drag would. */
+  wireRovingTiles() {
+    if (!this.board) return;
+    for (const grid of this.board.querySelectorAll(".card .grid")) {
+      const tiles = [...grid.querySelectorAll(".tile")];
+      if (!tiles.length) continue;
+      const current = Math.min(this.rovingIndex.get(Number(tiles[0].dataset.groupIdx)) ?? 0, tiles.length - 1);
+      tiles.forEach((tile, index) => { tile.tabIndex = index === current ? 0 : -1; });
+    }
+  }
+
+  // Focus a tile and make it its folder's stop for Tab.
+  roveTo(target, options) {
+    const tiles = [...target.parentElement.querySelectorAll(".tile")];
+    for (const tile of tiles) tile.tabIndex = tile === target ? 0 : -1;
+    this.rovingIndex.set(Number(target.dataset.groupIdx), tiles.indexOf(target));
+    target.focus(options);
+  }
+
+  /* The tile the arrow points at, found by position rather than by index, so
+     it is right at any column count and at any width the folder wraps to. */
+  tileToward(tile, key) {
+    const tiles = [...tile.parentElement.querySelectorAll(".tile")];
+    const index = tiles.indexOf(tile);
+    if (key === "ArrowRight") return tiles[index + 1] || null;
+    if (key === "ArrowLeft") return tiles[index - 1] || null;
+    if (key === "Home") return tiles[0];
+    if (key === "End") return tiles[tiles.length - 1];
+    if (key !== "ArrowDown" && key !== "ArrowUp") return null;
+    const here = tile.getBoundingClientRect();
+    const middle = rect => rect.left + rect.width / 2;
+    const below = key === "ArrowDown";
+    const rows = tiles.map(other => ({ other, rect: other.getBoundingClientRect() }))
+      .filter(({ rect }) => (below ? rect.top > here.top + here.height / 2 : rect.bottom < here.top + here.height / 2));
+    if (!rows.length) return null;
+    const nearestTop = below ? Math.min(...rows.map(row => row.rect.top)) : Math.max(...rows.map(row => row.rect.top));
+    return rows.filter(row => Math.abs(row.rect.top - nearestTop) < 4)
+      .reduce((best, row) => (Math.abs(middle(row.rect) - middle(here)) < Math.abs(middle(best.rect) - middle(here)) ? row : best)).other;
+  }
+
+  carryTile(tile, key) {
+    const gIdx = Number(tile.dataset.groupIdx);
+    const lIdx = Number(tile.dataset.linkIdx);
+    const group = this.app.config.groups[gIdx];
+    const say = (id, fallback, params) => {
+      const value = window.I18N?.t(id, params || {});
+      return value && value !== id ? value : fallback;
+    };
+    if (!group?.links) return;
+    // A folder that follows the browser keeps the browser's order.
+    if (group.source?.folderId) {
+      NordlysUI.announce(say("announce.followsBrowserOrder", "This folder keeps the browser's order"));
+      return;
+    }
+    const target = this.tileToward(tile, key);
+    if (!target) return;
+    const to = Number(target.dataset.linkIdx);
+    const [link] = group.links.splice(lIdx, 1);
+    group.links.splice(to, 0, link);
+    this.app.saveConfig();
+    this.render();
+    const moved = this.board.querySelector(`.tile[data-group-idx="${gIdx}"][data-link-idx="${to}"]`);
+    if (moved) this.roveTo(moved);
+    NordlysUI.announce(say("announce.movedToPosition", `${link.name} moved to position ${to + 1}`, { name: link.name, position: to + 1 }));
+  }
+
+  /* The first nine tiles on the board, in reading order across every folder on
+     it, answer to Alt+1 to Alt+9 — they say so to assistive technology, and
+     show their number while Alt is held. It used to be the first folder only,
+     so a board that opened with a two-bookmark folder had seven dead chords. */
+  numberShortcuts() {
+    if (!this.board) return;
+    this.board.querySelectorAll(".card .tile").forEach((tile, index) => {
+      if (index < 9) {
+        tile.dataset.shortcut = String(index + 1);
+        tile.setAttribute("aria-keyshortcuts", `Alt+${index + 1}`);
+      } else {
+        delete tile.dataset.shortcut;
+        tile.removeAttribute("aria-keyshortcuts");
+      }
+    });
+  }
+
+  /* The one folder-creation path the board has. The empty state calls it, and
+     anything else that needs a folder should call it rather than push its own
+     shape into config.groups. */
+  addFolder() {
+    const label = window.I18N ? window.I18N.t("bookmarks.newFolder") : "New Folder";
+    (this.app.config.groups ||= []).push({ label, cols: 4, hidden: false, links: [] });
+    this.app.saveConfig();
+    this.render();
+    this.app.settings?.renderBookmarksManager();
+    NordlysUI.announce(window.I18N ? window.I18N.t("board.folderAdded") : "Folder added");
+  }
+
+  /* What a new install opens on, and what is left when the last folder goes.
+     Both are the same moment — a board with nothing on it — and neither is an
+     error, so this is an invitation: the atmosphere and the type stay the hero,
+     one line says why the page is empty, and two actions say where to begin.
+
+     No tour, no cards, no sample links. The second action hands off to the
+     import the Backup tab already owns, by asking its controller for it. */
   createEmptyState() {
     const t = (key, fallback) => (window.I18N ? window.I18N.t(key) : fallback);
     const empty = document.createElement("div");
     empty.className = "board-empty";
+
+    const title = document.createElement("h2");
+    title.className = "board-empty-title";
+    title.textContent = t("board.emptyTitle", "Make this space yours");
+
     const line = document.createElement("p");
     line.className = "board-empty-text";
-    line.textContent = t("board.empty", "No folders yet.");
-    const add = document.createElement("button");
-    add.type = "button";
-    add.className = "glass-btn accent";
-    add.textContent = t("bookmarks.addFolder", "+ Add Folder");
-    add.addEventListener("click", () => {
-      (this.app.config.groups ||= []).push({ label: t("bookmarks.newFolder", "New Folder"), cols: 4, hidden: false, links: [] });
-      this.app.saveConfig();
-      this.render();
-      this.app.settings?.renderBookmarksManager();
-      NordlysUI.announce("Folder added");
-    });
-    empty.append(line, add);
+    line.textContent = t("board.empty", "Nordlys starts empty. Add a folder, or bring the bookmarks you already have.");
+
+    const actions = document.createElement("div");
+    actions.className = "board-empty-actions";
+
+    /* The wall at the beginning of every start page is that the bookmarks are
+       already somewhere else. Where the browser can hand them over, that is the
+       first thing offered, and the folders it makes follow the browser — so
+       nothing brought in this way can be lost here. */
+    const canBring = Boolean(window.NordlysBookmarks && typeof chrome !== "undefined" && chrome.permissions);
+    if (canBring) {
+      const bring = document.createElement("button");
+      bring.type = "button";
+      bring.id = "board-empty-browser";
+      bring.className = "glass-btn accent";
+      bring.textContent = t("board.emptyBrowser", "Bring my browser's bookmarks");
+      bring.addEventListener("click", () => this.bringBrowserBookmarks(bring));
+      actions.append(bring);
+    }
+
+    const create = document.createElement("button");
+    create.type = "button";
+    create.id = "board-empty-create";
+    create.className = canBring ? "glass-btn" : "glass-btn accent";
+    create.textContent = t("board.emptyCreate", "Create a folder");
+    create.addEventListener("click", () => this.addFolder());
+    actions.append(create);
+
+    /* Offered only when there is something to open it with. A settings
+       controller exists by the time the board first renders, so in practice the
+       pair always arrives together; a button that cannot do what it says would
+       be worse than one fewer way in. */
+    if (this.app.settings) {
+      const bring = document.createElement("button");
+      bring.type = "button";
+      bring.id = "board-empty-import";
+      bring.className = "glass-btn";
+      bring.textContent = t("board.emptyImport", "Import bookmarks");
+      bring.addEventListener("click", () => this.app.settings.openImportPicker(bring));
+      actions.append(bring);
+    }
+
+    empty.append(title, line, actions);
     return empty;
+  }
+
+  /* The bookmarks bar, and each folder in it, as folders that follow the
+     browser. Asked for on the click, as the permission has to be; read before
+     anything is written; said in numbers afterwards, with a way back. */
+  async bringBrowserBookmarks(opener) {
+    const sync = window.NordlysBookmarks;
+    const say = (key, fallback, params) => {
+      const value = window.I18N?.t(key, params || {});
+      return value && value !== key ? value : fallback;
+    };
+    if (!(await sync.granted()) && !(await sync.request())) {
+      toast(say("board.browserRefused", "Nordlys was not allowed to read your bookmarks."), "info");
+      return;
+    }
+    let folders;
+    try {
+      const tree = await sync.folders();
+      /* The bar is the one the person arranged to see every day; its own
+         folders come with it, one level deep, the way the board is. */
+      const bar = tree.find((folder) => folder.id === "1") || tree[0];
+      folders = bar ? [bar, ...tree.filter((folder) => folder.path.startsWith(`${bar.path} / `) && folder.path.split(" / ").length === bar.path.split(" / ").length + 1)] : [];
+    } catch {
+      toast(say("bookmarks.linkUnavailable", "Browser bookmarks are not available"), "info");
+      return;
+    }
+    const groups = [];
+    for (const folder of folders.slice(0, 12)) {
+      let links;
+      try { links = await sync.linksIn(folder.id); } catch { continue; }
+      if (!links.length) continue;
+      groups.push({ label: folder.title, cols: Math.min(6, Math.max(2, Math.ceil(Math.sqrt(links.length)))), hidden: false, source: { type: "browser", folderId: folder.id, title: folder.title }, links });
+    }
+    if (!groups.length) {
+      toast(say("board.browserEmpty", "Your browser's bookmarks bar is empty."), "info");
+      return;
+    }
+    const before = this.app.config.groups;
+    this.app.config.groups = [...before, ...groups];
+    this.app.saveConfig();
+    this.render();
+    this.app.followBrowserFolders?.();
+    const count = groups.reduce((sum, group) => sum + group.links.length, 0);
+    NordlysUI.showUndoToast({
+      message: say("board.broughtIn", `${groups.length} folders and ${count} bookmarks came in. They follow your browser from now on.`, { folders: groups.length, count }),
+      duration: 9000,
+      onAction: () => {
+        this.app.config.groups = before;
+        this.app.saveConfig();
+        this.render();
+        this.app.followBrowserFolders?.();
+      }
+    });
+    this.focusTile(this.app.config.groups.indexOf(groups[0]), 0) || opener?.focus?.();
   }
 
   createGroupCard(group, gIdx, visibleIdx = gIdx) {
@@ -133,7 +475,7 @@ class GridController {
       <s></s>
       <b>${esc(group.label || "Group")}</b>
       <i></i>
-      <button class="groupGrip" title="${esc(window.I18N ? window.I18N.t('hint.dragFolder') : 'Drag folder')}" aria-label="Drag folder">⋮⋮</button>
+      <button type="button" class="groupGrip">⋮⋮</button>
       <button class="foldBtn" title="${esc(window.I18N ? window.I18N.t('hint.foldFolder') : 'Hide this folder')}" aria-label="${esc(window.I18N ? window.I18N.t('hint.foldFolder') : 'Hide this folder')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M6.61 6.61A18.4 18.4 0 0 0 2 12s3 8 10 8a9.1 9.1 0 0 0 5.39-1.61"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="2" y1="2" x2="22" y2="22"/></svg></button>
     `;
 
@@ -141,6 +483,7 @@ class GridController {
     const foldBtn = cat.querySelector(".foldBtn");
     foldBtn.addEventListener("click", (e) => {
       e.stopPropagation();
+      this.arrange?.remember();
       card.style.animation = "foldaway 0.22s cubic-bezier(0.2, 0.7, 0.2, 1) forwards";
       setTimeout(() => {
         group.hidden = true;
@@ -156,9 +499,25 @@ class GridController {
       this.openFolderContextMenu(e, gIdx);
     });
 
-    // Folder Dragging
+    /* Moving the folder. Dragging the header picks it up anywhere on the
+       board; the grip is also the door into arranging — pressed, it opens the
+       arrangement with this folder in hand, and there its arrow keys move it. */
     const groupGrip = cat.querySelector(".groupGrip");
-    this.attachFolderDrag(card, cat, groupGrip, gIdx);
+    const gripName = group.label || this.say("bookmarks.newFolder", "Folder");
+    groupGrip.setAttribute("aria-label", this.say("arrange.gripLabel", `Move ${gripName}`, { name: gripName }));
+    groupGrip.title = this.say("arrange.gripTitle", "Drag to move — or press to arrange folders");
+    groupGrip.setAttribute("aria-describedby", "arrange-grip-help");
+    groupGrip.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this.arrange?.active) this.arrange?.enter({ focusGroup: group });
+    });
+    groupGrip.addEventListener("keydown", (e) => {
+      if (!this.arrange?.active || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      e.preventDefault();
+      this.arrange.moveByKey(gIdx, e.key);
+    });
+    this.drag?.bindFolder(card, cat);
 
     card.appendChild(cat);
 
@@ -167,6 +526,7 @@ class GridController {
     grid.className = "grid";
     grid.dataset.cols = group.cols || 4;
     grid.dataset.groupIdx = gIdx;
+    this.shareColumns(card, grid, group);
 
     grid.addEventListener("dragover", (e) => this.onGridDragOver(e, grid));
     grid.addEventListener("drop", (e) => this.onGridDrop(e, grid, gIdx));
@@ -188,7 +548,8 @@ class GridController {
     resizeHandle.title = window.I18N ? window.I18N.t('hint.dragResizeFolder') : "Drag to resize folder columns";
     resizeHandle.setAttribute("role", "slider");
     resizeHandle.tabIndex = 0;
-    resizeHandle.setAttribute("aria-label", `Columns for ${group.label || 'folder'}`);
+    const folderName = group.label || (window.I18N ? window.I18N.t('bookmarks.newFolder') : 'folder');
+    resizeHandle.setAttribute("aria-label", window.I18N?.t('hint.columnsFor', { name: folderName }) || `Columns for ${folderName}`);
     resizeHandle.setAttribute("aria-valuemin", String(MIN_COLUMNS));
     resizeHandle.setAttribute("aria-valuemax", String(MAX_COLUMNS));
     resizeHandle.setAttribute("aria-valuenow", String(group.cols || 4));
@@ -221,9 +582,6 @@ class GridController {
     a.style.setProperty("--j", lIdx);
     a.dataset.groupIdx = gIdx;
     a.dataset.linkIdx = lIdx;
-    // A folder that follows the browser owns its order and its contents; the
-    // refusal at the drop target still stands, this just stops the drag earlier.
-    a.draggable = !this.app.config.groups[gIdx]?.source?.folderId;
 
     // Render Box & Icon
     const box = document.createElement("div");
@@ -256,8 +614,9 @@ class GridController {
     a.appendChild(box);
     a.appendChild(lbl);
 
-    // Native Drag-and-Drop on whole tile
-    this.attachTileDrag(a, gIdx, lIdx);
+    /* Picked up and carried by board-arrange.js. A folder that follows the
+       browser owns its order and its contents, so its tiles stay put. */
+    this.drag?.bindTile(a);
 
     // Bookmark Right-Click Context Menu Trigger
     a.addEventListener("contextmenu", (e) => {
@@ -266,6 +625,18 @@ class GridController {
       this.openTileContextMenu(e, gIdx, lIdx);
     });
     a.addEventListener("keydown", (e) => {
+      const arrow = ["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Home", "End"].includes(e.key);
+      if (arrow && e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        if (e.key === "Home" || e.key === "End") return;
+        e.preventDefault();
+        this.carryTile(a, e.key);
+        return;
+      }
+      if (arrow && !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        const target = this.tileToward(a, e.key);
+        if (target) { e.preventDefault(); this.roveTo(target); }
+        return;
+      }
       if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) {
         e.preventDefault();
         e.stopPropagation();
@@ -283,7 +654,8 @@ class GridController {
     btn.className = "restoreFolder";
     btn.type = "button";
     btn.dataset.groupIdx = gIdx;
-    btn.title = `Click to restore "${group.label || 'Folder'}" to board (or Right Click for options)`;
+    const dockName = group.label || (window.I18N ? window.I18N.t('bookmarks.newFolder') : 'Folder');
+    btn.title = window.I18N?.t('hint.restoreFolder', { name: dockName }) || `Show “${dockName}” on the board again — right-click for more`;
 
     const count = (group.links || []).length;
     btn.innerHTML = `
@@ -387,10 +759,7 @@ class GridController {
             }
           }
         } else if (action === "delete") {
-          group.links.splice(lIdx, 1);
-          this.app.saveConfig();
-          this.render();
-          this.app.settings?.renderBookmarksManager();
+          this.deleteBookmarkWithUndo(gIdx, lIdx);
         }
       });
     });
@@ -410,6 +779,8 @@ class GridController {
 
         if (action === "quick-edit-folder") {
           this.openQuickFolderModal(gIdx);
+        } else if (action === "arrange") {
+          this.arrange?.enter({ focusGroup: group });
         } else if (action === "add-link") {
           group.links.push({
             name: "New Bookmark",
@@ -448,7 +819,9 @@ class GridController {
         const action = item.dataset.action;
         this.closeContextMenus();
 
-        if (action === "new-folder") {
+        if (action === "arrange") {
+          this.arrange?.enter();
+        } else if (action === "new-folder") {
           const newGIdx = this.app.config.groups.length;
           this.app.config.groups.push({
             id: `g_${Date.now()}`,
@@ -612,6 +985,64 @@ class GridController {
     });
   }
 
+  /* Deleting a bookmark from the board was instant, silent and final: no
+     confirm, no toast, nothing said out loud, nothing to press. The same act in
+     the settings drawer has offered an undo for releases, so which door you
+     came through decided whether a misclick was recoverable — and the board is
+     the door people actually use.
+
+     The same seam as everywhere else, NordlysUI.showUndoToast, rather than a
+     second one: it is the thing that says what happened, on screen and to a
+     screen reader, and holds the way back for five seconds. No confirm dialog
+     here on purpose — a question in front of every single tile deletion is the
+     nag this product refuses, and an undo is the better answer to a misclick
+     than a modal you learn to dismiss without reading. */
+  deleteBookmarkWithUndo(gIdx, lIdx) {
+    const links = this.app.config.groups[gIdx]?.links;
+    if (!Array.isArray(links) || lIdx < 0 || lIdx >= links.length) return;
+    const [removed] = links.splice(lIdx, 1);
+    const snapshot = JSON.parse(JSON.stringify(removed));
+    const name = snapshot.name || snapshot.url || "Bookmark";
+    const refresh = () => {
+      this.app.saveConfig();
+      this.render();
+      this.app.settings?.renderBookmarksManager();
+    };
+    const say = (key, fallback) => (window.I18N ? window.I18N.t(key, { name }) : fallback);
+    refresh();
+    /* The context menu hands focus back to the tile it was opened from, and
+       that tile is the one that just went. Without this, focus falls to <body>
+       and a keyboard user starts the board again from the top. */
+    if (!this.focusTile(gIdx, lIdx)) this.focusFolder(gIdx);
+    window.NordlysUI?.showUndoToast({
+      message: say("toast.itemDeleted", `${name} deleted`),
+      onAction: () => {
+        const group = this.app.config.groups[gIdx];
+        if (!group || !Array.isArray(group.links)) return;
+        const at = Math.min(lIdx, group.links.length);
+        group.links.splice(at, 0, snapshot);
+        refresh();
+        this.focusTile(gIdx, at);
+        window.NordlysUI?.announce?.(say("toast.itemRestored", `${name} restored`));
+      }
+    });
+  }
+
+  /* Both return whether they found something to focus, so a caller can fall
+     through to the next-best landing place in one line. */
+  focusTile(gIdx, lIdx) {
+    const tile = document.querySelector(`#board .tile[data-group-idx="${gIdx}"][data-link-idx="${lIdx}"]`);
+    if (tile) this.roveTo(tile, { preventScroll: true });
+    return Boolean(tile);
+  }
+
+  focusFolder(gIdx) {
+    const card = document.querySelector(`#board .card[data-group-idx="${gIdx}"]`);
+    const target = card?.querySelector(".groupGrip") || document.getElementById("board-empty-create");
+    target?.focus({ preventScroll: true });
+    return Boolean(target);
+  }
+
   /* A folder holds a whole set of links, and a confirm dialog only protects
      against the click you were paying attention to. A single bookmark has had
      Undo since the redesign; the folder that contains it had none. */
@@ -627,12 +1058,16 @@ class GridController {
       this.app.settings?.renderBookmarksManager();
     };
     refresh();
+    // Same reason as a bookmark: the menu's opener went with the folder.
+    if (!this.focusFolder(gIdx)) this.focusFolder(Math.max(0, gIdx - 1));
     const say = (key, fallback) => (window.I18N ? window.I18N.t(key, { name }) : fallback);
     window.NordlysUI?.showUndoToast({
       message: say("toast.itemDeleted", `${name} deleted`),
       onAction: () => {
-        groups.splice(Math.min(gIdx, groups.length), 0, snapshot);
+        const at = Math.min(gIdx, groups.length);
+        groups.splice(at, 0, snapshot);
         refresh();
+        this.focusFolder(at);
         window.NordlysUI?.announce?.(say("toast.itemRestored", `${name} restored`));
       }
     });
@@ -704,6 +1139,9 @@ class GridController {
   openBoardContextMenu(e) {
     this.closeContextMenus();
     if (!this.boardCtxMenu) return;
+    // Nothing on the board is nothing to arrange.
+    const arrange = this.boardCtxMenu.querySelector('[data-action="arrange"]');
+    if (arrange) arrange.hidden = !this.board?.querySelector(".card");
 
     this.positionMenu(this.boardCtxMenu, e.clientX, e.clientY, e.currentTarget || document.activeElement);
   }
@@ -782,141 +1220,32 @@ class GridController {
     this.quickFolderDialog.close();
   }
 
-  /* ── SOTA Fluid Folder & Tile Drag and Drop ─────────────────── */
-  initBoardDragListeners() {
-    if (!this.board) return;
-
-    this.board.addEventListener("dragover", (e) => {
-      if (this.dragFolder) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
-      }
-    });
-
-    this.board.addEventListener("drop", (e) => {
-      if (!this.dragFolder) return;
-      e.preventDefault();
-      this.handleFolderDropOnBoard(e);
-    });
-  }
-
-  attachFolderDrag(cardEl, catEl, gripEl, gIdx) {
-    cardEl.draggable = false;
-
-    const enableDrag = () => { cardEl.draggable = true; };
-
-    gripEl?.addEventListener("mousedown", enableDrag);
-    catEl?.addEventListener("mousedown", (e) => {
-      if (!e.target.closest("button") && !e.target.closest("input")) {
-        enableDrag();
-      }
-    });
-    // (drag is disarmed by the single delegated window mouseup listener)
-
-    cardEl.addEventListener("dragstart", (e) => {
-      if (this.dragTile) return;
-      this.isDragging = true;
-      this.dragFolder = { gIdx };
-      cardEl.classList.add("ghost");
-      e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", `folder:${gIdx}`);
-    });
-
-    cardEl.addEventListener("dragend", () => {
-      cardEl.classList.remove("ghost");
-      cardEl.draggable = false;
-      this.isDragging = false;
-      this.dragFolder = null;
-      this.clearDropHighlights();
-    });
-
-    cardEl.addEventListener("dragover", (e) => {
-      if (!this.dragFolder) return;
-      e.preventDefault();
-      e.stopPropagation();
-
-      const rect = cardEl.getBoundingClientRect();
-      const mid = rect.left + rect.width / 2;
-      cardEl.classList.remove("group-before", "group-after");
-
-      if (e.clientX < mid) {
-        cardEl.classList.add("group-before");
-      } else {
-        cardEl.classList.add("group-after");
-      }
-    });
-
-    cardEl.addEventListener("dragleave", (e) => {
-      if (!e.relatedTarget || !cardEl.contains(e.relatedTarget)) {
-        cardEl.classList.remove("group-before", "group-after");
-      }
-    });
-
-    cardEl.addEventListener("drop", (e) => {
-      if (!this.dragFolder) return;
-      e.preventDefault();
-      e.stopPropagation();
-
-      const srcIdx = this.dragFolder.gIdx;
-      let tgtIdx = gIdx;
-      if (cardEl.classList.contains("group-after")) {
-        tgtIdx++;
-      }
-      if (srcIdx < tgtIdx) {
-        tgtIdx--;
-      }
-
-      this.reorderFolder(srcIdx, tgtIdx);
-    });
-  }
-
-  handleFolderDropOnBoard(e) {
-    if (!this.dragFolder) return;
-    const cards = Array.from(this.board.querySelectorAll(".card"));
-    if (!cards.length) return;
-
-    const hoveredCard = e.target.closest(".card");
-    const srcIdx = this.dragFolder.gIdx;
-    let tgtIdx = cards.length;
-
-    if (hoveredCard && hoveredCard.dataset.groupIdx !== undefined) {
-      const idx = parseInt(hoveredCard.dataset.groupIdx, 10);
-      const isAfter = hoveredCard.classList.contains("group-after");
-      tgtIdx = isAfter ? idx + 1 : idx;
-      if (srcIdx < tgtIdx) tgtIdx--;
-    }
-
-    this.reorderFolder(srcIdx, tgtIdx);
-  }
-
-  reorderFolder(srcIdx, tgtIdx) {
-    if (srcIdx === tgtIdx || srcIdx === undefined || tgtIdx === undefined) {
-      this.clearDropHighlights();
-      return;
-    }
-
-    const [movedGroup] = this.app.config.groups.splice(srcIdx, 1);
-    this.app.config.groups.splice(tgtIdx, 0, movedGroup);
-
-    this.app.saveConfig();
-    this.clearDropHighlights();
-    this.render();
-    this.app.settings?.renderBookmarksManager();
-  }
-
   /* ── Interactive Card & Folder Resizing ──────────────────────── */
+  /* What Fitted needs to know about a folder: its share of a line is its
+     columns, and it spreads as many tiles as it has, up to its columns. */
+  shareColumns(cardEl, gridEl, group) {
+    const cols = group.cols || 4;
+    cardEl?.style.setProperty("--span", String(cols));
+    gridEl?.style.setProperty("--cols-used", String(Math.max(1, Math.min(cols, (group.links || []).length || 1))));
+  }
+
   /* Single owner of a column change, so pointer and keyboard cannot drift apart. */
   setFolderColumns(group, gridEl, handleEl, requested) {
     const next = Math.max(MIN_COLUMNS, Math.min(MAX_COLUMNS, Number(requested) || MIN_COLUMNS));
     if (next === group.cols) return;
+    this.arrange?.remember();
     NordlysUI.animateReflow(gridEl, () => {
       group.cols = next;
       gridEl.dataset.cols = next;
+      this.shareColumns(gridEl.closest(".card"), gridEl, group);
     });
     handleEl?.setAttribute("aria-valuenow", String(next));
+    this.flowRows();
     this.app.saveConfig();
     this.app.settings?.renderBookmarksManager();
-    NordlysUI.announce(`${group.label || 'Folder'} resized to ${next} columns`);
+    const name = group.label || (window.I18N ? window.I18N.t('bookmarks.newFolder') : 'Folder');
+    const said = window.I18N?.t('announce.resized', { name, count: next });
+    NordlysUI.announce(said && said !== 'announce.resized' ? said : `${name} resized to ${next} columns`);
   }
 
   attachCardResize(cardEl, gridEl, handleEl, group, gIdx) {
@@ -926,6 +1255,7 @@ class GridController {
     let isResizing = false;
     let pillEl = null;
 
+    let before = null;
     const onPointerDown = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -933,6 +1263,8 @@ class GridController {
       startX = e.clientX;
       startCols = group.cols || 4;
       currentCols = startCols;
+      // Undo gets the folder as it was, if the drag turns out to change it.
+      before = this.arrange?.active ? this.arrange.snapshot() : null;
 
       cardEl.classList.add("is-resizing");
       handleEl.setPointerCapture(e.pointerId);
@@ -960,6 +1292,7 @@ class GridController {
         currentCols = targetCols;
         gridEl.dataset.cols = currentCols;
         group.cols = currentCols;
+        this.shareColumns(cardEl, gridEl, group);
         // The same handle reports the value to assistive tech, so dragging must
         // keep it truthful rather than let the two paths drift.
         handleEl.setAttribute("aria-valuenow", String(currentCols));
@@ -983,6 +1316,9 @@ class GridController {
       }
 
       group.cols = currentCols;
+      if (before && currentCols !== startCols) this.arrange.remember(before);
+      before = null;
+      this.flowRows();
       this.app.saveConfig();
       this.app.settings?.renderBookmarksManager();
     };
@@ -991,144 +1327,6 @@ class GridController {
     handleEl.addEventListener("pointermove", onPointerMove);
     handleEl.addEventListener("pointerup", onPointerUp);
     handleEl.addEventListener("pointercancel", onPointerUp);
-  }
-
-  /* ── Clean Whole-Tile Drag & Drop ────────────────────────────── */
-  attachTileDrag(tileEl, gIdx, lIdx) {
-    tileEl.addEventListener("dragstart", (e) => {
-      if (this.dragFolder) return;
-      this.isDragging = true;
-      this.justDragged = true;
-      this.dragTile = { gIdx, lIdx, link: this.app.config.groups[gIdx]?.links[lIdx] };
-      
-      // Delay ghost class application by 1 frame so native drag image captures properly
-      setTimeout(() => {
-        if (this.isDragging) {
-          tileEl.classList.add("ghost");
-        }
-      }, 0);
-
-      e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", JSON.stringify(this.dragTile));
-    });
-
-    tileEl.addEventListener("dragend", () => {
-      tileEl.classList.remove("ghost");
-      this.isDragging = false;
-      this.justDragged = true;
-      setTimeout(() => { this.justDragged = false; }, 450);
-      this.clearDropHighlights();
-    });
-
-    tileEl.addEventListener("dragover", (e) => {
-      if (!this.dragTile || this.dragFolder) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-
-      const rect = tileEl.getBoundingClientRect();
-      const mid = rect.left + rect.width / 2;
-      tileEl.classList.remove("drop-before", "drop-after");
-
-      if (e.clientX < mid) {
-        tileEl.classList.add("drop-before");
-      } else {
-        tileEl.classList.add("drop-after");
-      }
-      tileEl.closest(".card")?.classList.add("dropping");
-    });
-
-    tileEl.addEventListener("dragleave", (e) => {
-      if (!e.relatedTarget || !tileEl.contains(e.relatedTarget)) {
-        tileEl.classList.remove("drop-before", "drop-after");
-      }
-    });
-
-    tileEl.addEventListener("drop", (e) => {
-      if (!this.dragTile || this.dragFolder) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const grid = tileEl.closest(".grid");
-      const targetGIdx = parseInt(tileEl.dataset.groupIdx, 10);
-      this.onGridDrop(e, grid, targetGIdx);
-    });
-
-    tileEl.addEventListener("click", (e) => {
-      if (this.isDragging || this.justDragged) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    });
-  }
-
-  onGridDragOver(e, grid) {
-    if (!this.dragTile || this.dragFolder) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    grid.closest(".card")?.classList.add("dropping");
-  }
-
-  onGridDrop(e, grid, targetGIdx) {
-    if (!this.dragTile || this.dragFolder) return;
-    e.preventDefault();
-    e.stopPropagation();
-    this.isDragging = false;
-    this.justDragged = true;
-    setTimeout(() => { this.justDragged = false; }, 450);
-    grid?.closest(".card")?.classList.remove("dropping");
-
-    const sourceGIdx = this.dragTile.gIdx;
-    const sourceLIdx = this.dragTile.lIdx;
-    const sourceGroup = this.app.config.groups[sourceGIdx];
-    const targetGroup = this.app.config.groups[targetGIdx];
-    if (!sourceGroup || !targetGroup) {
-      this.clearDropHighlights();
-      return;
-    }
-
-    /* A folder that follows the browser owns nothing of its own: a tile dropped
-       into it would vanish on the next refresh, a tile dragged out of it comes
-       back, and its order is the browser's. All three are refused, out loud. */
-    if (sourceGroup.source?.folderId || targetGroup.source?.folderId) {
-      this.clearDropHighlights();
-      const message = window.I18N ? window.I18N.t("bookmarks.linkedNoDrop") : "This folder follows the browser. Add the bookmark there instead.";
-      if (typeof toast === "function") toast(message, "danger", 2800); else NordlysUI.announce(message);
-      return;
-    }
-
-    const hoveredTile = e.target.closest(".tile");
-    let targetLIdx = targetGroup.links.length;
-
-    if (hoveredTile && hoveredTile.dataset.linkIdx !== undefined) {
-      const idx = parseInt(hoveredTile.dataset.linkIdx, 10);
-      const isAfter = hoveredTile.classList.contains("drop-after");
-      targetLIdx = isAfter ? idx + 1 : idx;
-    }
-
-    // If dropped on same position in same group, do nothing
-    if (sourceGIdx === targetGIdx) {
-      if (sourceLIdx === targetLIdx || sourceLIdx + 1 === targetLIdx) {
-        this.clearDropHighlights();
-        return;
-      }
-    }
-
-    const [movedLink] = sourceGroup.links.splice(sourceLIdx, 1);
-    if (!movedLink) {
-      this.clearDropHighlights();
-      return;
-    }
-
-    if (sourceGIdx === targetGIdx && sourceLIdx < targetLIdx) {
-      targetLIdx--;
-    }
-    targetGroup.links.splice(targetLIdx, 0, movedLink);
-
-    this.app.saveConfig();
-    this.clearDropHighlights();
-
-    // Seamless DOM update without full page re-render/flicker
-    this.updateGridDOM(sourceGIdx, targetGIdx);
-    this.app.settings?.renderBookmarksManager();
   }
 
   updateGridDOM(sourceGIdx, targetGIdx) {
@@ -1145,6 +1343,7 @@ class GridController {
         gridFragment.appendChild(tile);
       });
       grid.replaceChildren(gridFragment);
+      this.shareColumns(card, grid, group);
     };
 
     updateCardGrid(sourceGIdx);
@@ -1169,6 +1368,120 @@ class GridController {
     setTimeout(() => { newTile.classList.remove("tile-updated"); }, 500);
   }
 
+  /* A sentence in the user's language, or the English it stands for. */
+  say(key, fallback, params) {
+    const value = window.I18N?.t(key, params || {});
+    return value && value !== key ? value : fallback;
+  }
+
+  /* ── Moving folders and bookmarks ───────────────────────────── */
+  /* Every folder move ends here — a drop, an arrow key, Tidy up — so they all
+     save the same way, animate the same way and can all be undone: from the
+     arrangement's own Undo while arranging, from a toast otherwise. */
+  commitLines(lines, moved, { group = null, lift = null, focus = false, say = "" } = {}) {
+    const layout = window.NordlysBoardLayout;
+    const groups = this.app.config.groups || [];
+    if (!layout) return;
+    const undo = this.arrange && !this.arrange.active ? this.arrange.snapshot() : null;
+    this.arrange?.remember();
+    const before = window.NordlysBoardMotion?.captureCards(this);
+    layout.commit(groups, lines, moved);
+    layout.normalise(groups);
+    this.app.saveConfig();
+    this.render();
+    this.app.settings?.renderBookmarksManager?.();
+    window.NordlysBoardMotion?.settleCards(this, before, { skip: lift ? group : null });
+    const card = group ? this.board.querySelector(`.card[data-group-idx="${groups.indexOf(group)}"]`) : null;
+    if (lift) this.flyHome(lift, card);
+    // A folder moved by the keyboard may have left the screen; it is followed.
+    if (focus) card?.querySelector(".groupGrip")?.focus();
+    const place = group ? this.placeOf(group) : null;
+    const name = group?.label || "";
+    NordlysUI.announce(say || (place
+      ? this.say("arrange.movedTo", `${name}: row ${place.row}, position ${place.position} of ${place.count}`, { name, ...place })
+      : ""));
+    if (undo) {
+      NordlysUI.showUndoToast({
+        message: group ? this.say("arrange.folderMoved", `${name} moved`, { name }) : this.say("arrange.arranged", "Board arranged"),
+        onAction: () => this.arrange.restore(undo)
+      });
+    }
+    this.app.settings?.syncBoardLayout?.();
+  }
+
+  /* A bookmark from one place to another, in the same folder or not. */
+  moveLink(from, fromIndex, to, toIndex, { lift = null } = {}) {
+    const groups = this.app.config.groups || [];
+    const link = from?.links?.[fromIndex];
+    if (!link || !to) { lift?.remove(); return; }
+    if (from.source?.folderId || to.source?.folderId) {
+      lift?.remove();
+      this.updateGridDOM(groups.indexOf(from), groups.indexOf(to));
+      const message = this.say("bookmarks.linkedNoDrop", "This folder follows the browser. Add the bookmark there instead.");
+      if (typeof toast === "function") toast(message, "danger", 2800); else NordlysUI.announce(message);
+      return;
+    }
+    const undo = this.arrange && !this.arrange.active && from !== to ? this.arrange.snapshot() : null;
+    this.arrange?.remember();
+    from.links.splice(fromIndex, 1);
+    (to.links ||= []).splice(Math.min(toIndex, to.links.length), 0, link);
+    this.app.saveConfig();
+    const fromIdx = groups.indexOf(from);
+    const toIdx = groups.indexOf(to);
+    this.updateGridDOM(fromIdx, toIdx);
+    this.numberShortcuts();
+    this.wireRovingTiles();
+    this.arrange?.refresh();
+    this.app.settings?.renderBookmarksManager?.();
+    const landed = this.board.querySelector(`.tile[data-group-idx="${toIdx}"][data-link-idx="${to.links.indexOf(link)}"]`);
+    this.flyHome(lift, landed);
+    const name = link.name || "";
+    const folder = to.label || "";
+    NordlysUI.announce(from === to
+      ? this.say("announce.movedToPosition", `${name} moved to position ${to.links.indexOf(link) + 1}`, { name, position: to.links.indexOf(link) + 1 })
+      : this.say("announce.movedToFolder", `${name} moved to ${folder}`, { name, folder }));
+    if (undo) {
+      NordlysUI.showUndoToast({
+        message: this.say("announce.movedToFolder", `${name} moved to ${folder}`, { name, folder }),
+        onAction: () => this.arrange.restore(undo)
+      });
+    }
+  }
+
+  /* The copy in hand settles onto the real thing, which waits unseen until it
+     lands. Without a target the copy simply fades where it is. */
+  flyHome(lift, target) {
+    if (!lift) return;
+    let finished = false;
+    const done = () => {
+      if (finished) return;
+      finished = true;
+      lift.remove();
+      target?.classList.remove("drag-landing");
+    };
+    const motion = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!motion) { done(); return; }
+    const width = parseFloat(lift.style.width) || 1;
+    const height = parseFloat(lift.style.height) || 1;
+    const baseLeft = parseFloat(lift.style.left) || 0;
+    const baseTop = parseFloat(lift.style.top) || 0;
+    const from = getComputedStyle(lift).transform;
+    let to;
+    if (target?.isConnected) {
+      target.classList.add("drag-landing");
+      const box = target.getBoundingClientRect();
+      to = `translate3d(${box.left - baseLeft}px, ${box.top - baseTop}px, 0) scale(${box.width / width}, ${box.height / height})`;
+    }
+    lift.classList.add("is-landing");
+    const frames = to
+      ? [{ transform: from === "none" ? "none" : from }, { transform: to }]
+      : [{ opacity: 1 }, { opacity: 0 }];
+    const animation = lift.animate(frames, { duration: to ? 220 : 160, easing: "cubic-bezier(.2, .8, .2, 1)", fill: "forwards" });
+    animation.onfinish = done;
+    animation.oncancel = done;
+    setTimeout(done, 600);
+  }
+
   updateFolderDOM(gIdx) {
     const card = this.board?.querySelector(`.card[data-group-idx="${gIdx}"]`);
     const group = this.app.config.groups[gIdx];
@@ -1186,13 +1499,8 @@ class GridController {
     }
 
     this.updateGridDOM(gIdx);
+    // A new name or a new column count changes the folder's width.
+    this.flowRows();
   }
 
-  clearDropHighlights() {
-    this.dragTile = null;
-    this.dragFolder = null;
-    document.querySelectorAll(".drop-before, .drop-after, .group-before, .group-after, .dropping").forEach((el) => {
-      el.classList.remove("drop-before", "drop-after", "group-before", "group-after", "dropping");
-    });
-  }
 }

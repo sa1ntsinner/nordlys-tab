@@ -92,3 +92,67 @@ test('the picker preview steps aside while the cropper has its own', async ({ no
   await page.locator('#cropper-back-btn').click();
   await expect(page.locator('#icon-modal .icon-live-preview')).toBeVisible();
 });
+
+async function openCustomPane(page) {
+  await page.locator('#gear').click();
+  await page.locator('#settings-tab-bookmarks').click();
+  const folder = page.locator('.bookmark-folder-accordion').first();
+  await folder.locator('summary').click();
+  await openIconPicker(page, folder);
+  await page.locator('.icon-tab-btn[data-tab="custom"]').click();
+  await expect(page.locator('#modal-pane-custom')).toBeVisible();
+}
+
+/* The status line used to say "Image loaded successfully!" whatever happened,
+   because the loader hands the address back unchanged when every fetch fails. */
+test('an address that gives no image says so and offers nothing to apply', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.route('https://example.invalid/**', route => route.fulfill({ status: 404, body: 'gone' }));
+  await page.route('https://images.weserv.nl/**', route => route.fulfill({ status: 404, body: 'gone' }));
+  await openCustomPane(page);
+  await page.locator('#icon-url-input').fill('https://example.invalid/logo.png');
+  await page.locator('#icon-url-check-btn').click();
+  await expect(page.locator('#icon-url-status')).toHaveText('No image came back from that address');
+  await expect(page.locator('#icon-url-actions')).toBeHidden();
+
+  await page.locator('#icon-url-input').fill(BIG);
+  await page.locator('#icon-url-check-btn').click();
+  await expect(page.locator('#icon-url-status')).toHaveText('Image ready');
+  await expect(page.locator('#icon-url-actions')).toBeVisible();
+});
+
+/* "Max 5MB" was a caption and nothing more. */
+test('a file over 5 MB, or one that is not an image, is refused with the reason', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await openCustomPane(page);
+  const input = page.locator('#icon-file-input');
+  await input.setInputFiles({ name: 'huge.png', mimeType: 'image/png', buffer: Buffer.alloc(5 * 1024 * 1024 + 1) });
+  await expect(page.locator('#icon-file-hint')).toHaveText('That file is over 5 MB');
+  await expect(page.locator('#icon-file-preview-wrap')).toBeHidden();
+  await input.setInputFiles({ name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('hello') });
+  await expect(page.locator('#icon-file-hint')).toHaveText('That file is not an image');
+});
+
+/* An icon is stored inside the config, and the config shares a few megabytes
+   with everything else; the full file used to go in as it came. */
+test('a large image used as an icon is stored at icon size', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await openCustomPane(page);
+  const big = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1600; canvas.height = 1200;
+    const context = canvas.getContext('2d');
+    for (let i = 0; i < 400; i++) { context.fillStyle = `hsl(${i * 37 % 360} 70% 50%)`; context.fillRect((i * 97) % 1600, (i * 53) % 1200, 120, 90); }
+    return canvas.toDataURL('image/png');
+  });
+  await page.locator('#icon-file-input').setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: Buffer.from(big.split(',')[1], 'base64') });
+  await expect(page.locator('#icon-file-preview-wrap')).toBeVisible();
+  await page.locator('#icon-file-apply-btn').click();
+  await expect(page.locator('#icon-modal')).toBeHidden();
+  const stored = await page.evaluate(() => window.Nordlys.config.groups[0].links[0].customImg);
+  expect(stored).toMatch(/^data:image\/webp/);
+  const size = await page.evaluate(src => new Promise(done => { const image = new Image(); image.onload = () => done([image.naturalWidth, image.naturalHeight]); image.src = src; }), stored);
+  expect(Math.max(...size)).toBe(256);
+  // A budget per icon, not a ratio: a flat test image compresses unusually well.
+  expect(stored.length).toBeLessThan(60000);
+});

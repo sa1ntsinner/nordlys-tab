@@ -11,7 +11,7 @@
     }
     ensurePreview() {
       if (this.root.querySelector('#icon-live-preview')) return;
-      const preview = document.createElement('div'); preview.id = 'icon-live-preview'; preview.className = 'icon-live-preview'; preview.setAttribute('aria-label', 'Live tile preview');
+      const preview = document.createElement('div'); preview.id = 'icon-live-preview'; preview.className = 'icon-live-preview'; preview.setAttribute('aria-label', window.I18N?.t('a11y.liveTilePreview') || 'Live tile preview'); preview.dataset.i18nAria = 'a11y.liveTilePreview';
       const card = document.createElement('section'); card.className = 'card';
       const tile = document.createElement('div'); tile.className = 'tile';
       const box = document.createElement('div'); box.className = 'box';

@@ -24,7 +24,8 @@ test('the canvas can be operated from the keyboard alone', async ({ nordlysPage 
   const wanted = {
     'the search field': item => item === 'q',
     'a bookmark tile': item => /tile/.test(item),
-    'the folder drag handle': item => /Drag folder/i.test(item),
+    // The grip moves the folder, and pressed, opens the arrangement.
+    'the folder move handle': item => /^Move /.test(item),
     'the folder fold control': item => /hide this folder/i.test(item),
     'the folder resize slider': item => /Columns for/i.test(item),
     'the settings button': item => item === 'gear'
@@ -39,7 +40,7 @@ test('the canvas can be operated from the keyboard alone', async ({ nordlysPage 
    user mid-task while a folder is folded away in the dock. */
 test('a folded folder stays reachable from the keyboard', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  await page.locator('#board > .card').first().locator('.foldBtn').click();
+  await page.locator('#board .card').first().locator('.foldBtn').click();
   await page.waitForTimeout(360);
   await expect(page.locator('#hiddenDock')).toBeVisible();
 

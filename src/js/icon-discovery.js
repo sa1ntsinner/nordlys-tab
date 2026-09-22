@@ -11,11 +11,39 @@
   const MAX_RESPONSE_BYTES = 512 * 1024;
   const REQUEST_TIMEOUT_MS = 8000;
 
+  /* Simple Icons names its marks by running the words together — githubactions,
+     googledrive — so a result read "Githubactions". The brands whose casing is
+     their own are spelled out, the families that prefix a hundred products are
+     split off, and everything else is capitalised as a word. */
+  const TITLES = {
+    github: "GitHub", gitlab: "GitLab", youtube: "YouTube", linkedin: "LinkedIn", paypal: "PayPal",
+    openai: "OpenAI", whatsapp: "WhatsApp", tiktok: "TikTok", playstation: "PlayStation", macos: "macOS",
+    ios: "iOS", npm: "npm", pnpm: "pnpm", ebay: "eBay", iphone: "iPhone", ipad: "iPad", icloud: "iCloud",
+    javascript: "JavaScript", typescript: "TypeScript", nodedotjs: "Node.js", vuedotjs: "Vue.js", nextdotjs: "Next.js",
+    stackoverflow: "Stack Overflow", deepl: "DeepL", leetcode: "LeetCode", hackerrank: "HackerRank",
+    duckduckgo: "DuckDuckGo", soundcloud: "SoundCloud", wordpress: "WordPress", woocommerce: "WooCommerce",
+    mongodb: "MongoDB", postgresql: "PostgreSQL", mysql: "MySQL", graphql: "GraphQL", devdotto: "DEV",
+    bbc: "BBC", cnn: "CNN", nba: "NBA", nasa: "NASA", ibm: "IBM", hp: "HP", aws: "AWS", gmail: "Gmail",
+    chatgpt: "ChatGPT", huggingface: "Hugging Face", googlechrome: "Google Chrome", xbox: "Xbox", dropbox: "Dropbox",
+    onedrive: "OneDrive", onenote: "OneNote", vk: "VK", ok: "OK", x: "X"
+  };
+  const FAMILIES = ["google", "github", "microsoft", "amazon", "apple", "adobe", "youtube", "jetbrains", "atlassian",
+    "mozilla", "samsung", "xbox", "nintendo", "playstation", "facebook", "discord", "spotify", "cloudflare", "oracle", "visualstudio"];
+  const WORDS = { visualstudio: "Visual Studio", aws: "AWS" };
+
   function titleFromSlug(slug) {
-    return String(slug)
+    const name = String(slug || "").toLowerCase();
+    if (TITLES[name]) return TITLES[name];
+    if (WORDS[name]) return WORDS[name];
+    for (const family of FAMILIES) {
+      if (name.startsWith(family) && name.length > family.length + 1) {
+        return `${titleFromSlug(family)} ${titleFromSlug(name.slice(family.length))}`;
+      }
+    }
+    return name
       .split("-")
       .filter(Boolean)
-      .map(word => word.length <= 3 ? word.toUpperCase() : word.charAt(0).toUpperCase() + word.slice(1))
+      .map(word => TITLES[word] || word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
   }
 

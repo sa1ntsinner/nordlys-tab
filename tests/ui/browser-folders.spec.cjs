@@ -194,15 +194,13 @@ test('every way of adding to a linked folder is closed, not just the button', as
   expect(targets, 'a folder that follows the browser is not a destination').not.toContain(linkedLabel);
   await page.keyboard.press('Escape');
 
-  // Dropping a tile onto the board's linked card is refused too.
+  // Dropping a tile onto the board's linked card is refused too: the carry
+  // refuses it on the way (arrange.spec), and the move itself refuses it here.
   const outcome = await page.evaluate(() => {
-    const grid = window.Nordlys.grid;
-    const before = window.Nordlys.config.groups.map(group => group.links.length);
-    grid.dragTile = { gIdx: 1, lIdx: 0 };
-    const card = document.querySelectorAll('#board .card')[0];
-    const event = { preventDefault() {}, stopPropagation() {}, target: card.querySelector('.grid') || card };
-    grid.onGridDrop(event, card.querySelector('.grid'), 0);
-    return { before, after: window.Nordlys.config.groups.map(group => group.links.length) };
+    const groups = window.Nordlys.config.groups;
+    const before = groups.map(group => group.links.length);
+    window.Nordlys.grid.moveLink(groups[1], 0, groups[0], 0);
+    return { before, after: groups.map(group => group.links.length) };
   });
   expect(outcome.after, 'nothing moved').toEqual(outcome.before);
 });

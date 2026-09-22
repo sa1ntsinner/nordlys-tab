@@ -18,7 +18,7 @@ test('a long folder name widens its card within bounds and then truncates', asyn
     }];
     window.Nordlys.grid.render();
     document.getElementById('board').classList.add('board-loaded');
-    const card = document.querySelector('#board > .card');
+    const card = document.querySelector('#board .card');
     const title = card.querySelector('.cat b');
     return {
       card: Math.round(card.getBoundingClientRect().width),
@@ -40,7 +40,7 @@ test('a long folder name widens its card within bounds and then truncates', asyn
     window.Nordlys.config = JSON.parse(JSON.stringify(window.Nordlys.defaultConfig));
     window.Nordlys.grid.render();
     document.getElementById('board').classList.add('board-loaded');
-    return [...document.querySelectorAll('#board > .card .cat b')]
+    return [...document.querySelectorAll('#board .card .cat b')]
       .filter(node => node.scrollWidth > node.clientWidth + 1)
       .map(node => node.textContent);
   });

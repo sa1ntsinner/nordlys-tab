@@ -50,14 +50,23 @@ const NordlysToast = {
     return this.dock;
   },
 
+  /* Keeps the stack short and readable — and never at the cost of the one thing
+     in it that is a control rather than a notice. Three ordinary toasts used to
+     push a five-second Undo out of the dock before its five seconds were up, so
+     a notice about something else could take away the only way back from a
+     deletion. Notices are evicted first; only a dock made entirely of undos
+     falls back to evicting the oldest of those. */
+  makeRoom(dock, limit = 3) {
+    while (dock.children.length >= limit) {
+      const notice = [...dock.children].find((child) => !child.querySelector(".toast-action"));
+      (notice || dock.firstElementChild).remove();
+    }
+  },
+
   /* kind: "info" | "success" | "danger" */
   show(message, kind = "info", duration = 2600) {
     const dock = this.ensureDock();
-
-    // Keep the stack short & readable
-    while (dock.children.length >= 3) {
-      dock.firstElementChild.remove();
-    }
+    this.makeRoom(dock);
 
     const el = document.createElement("div");
     el.className = `toast toast-${kind}`;

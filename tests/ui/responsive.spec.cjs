@@ -55,7 +55,7 @@ test('1024 layout remains usable at a 200 percent zoom equivalent', async ({ nor
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   await expect(page.locator('#clock')).toBeVisible();
   await expect(page.locator('#searchwrap')).toBeVisible();
-  await expect(page.locator('#board > .card').first()).toBeVisible();
+  await expect(page.locator('#board .card').first()).toBeVisible();
 });
 
 for (const width of [320, 768, 1440]) {
