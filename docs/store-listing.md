@@ -44,7 +44,7 @@ This is a beta. Things get removed as well as added — two background scenes an
 
 Bookmarks live in folders you arrange yourself. Drag a tile into another folder, drag folders around, pull a corner to change how many columns a folder has, fold the ones you rarely open into a dock at the bottom. Right click anything to edit it in place.
 
-Icons come from a built-in vector set that recognises most sites by domain, or from a favicon, an image URL, a local file, or a monogram. A black logo on a black theme used to disappear. Nordlys now measures every icon against the plate behind it and re-tones only the ones that would vanish, so coloured logos keep their colour. You can override that decision on any bookmark.
+Search for a brand or product and Nordlys offers clean Simple Icons vectors, then saves your choice locally instead of hotlinking it. Chrome's favicon cache, an image URL, a local file and a monogram remain available. A black logo on a black theme used to disappear; Nordlys now measures every icon against its plate and re-tones only marks that would vanish, so coloured logos keep their colour. You can override that decision on any bookmark.
 
 21 themes, 11 dark and 10 light. Each one sets the background, the glass tint and the colours of the canvas behind it, so Gruvbox gets an amber sky and OLED Obsidian stays properly black. Follow the system, or pin it to dark or light. If none of the 21 fit, build your own in the theme studio or write CSS directly.
 
@@ -56,7 +56,7 @@ The search box uses whichever search engine you have set in Chrome — it does n
 
 A folder can follow one of your browser's bookmark folders instead of being filled in by hand. It mirrors one way, so the browser keeps the data — which also means an update here cannot lose it. Nordlys asks for permission to read bookmarks at the moment you link a folder, never at install.
 
-No account, no analytics, no telemetry, no remote code. Settings and bookmarks live in local storage, and the only request the extension makes on its own is for an icon you asked for by pasting its address. Export the lot to JSON whenever you want.
+No account, no analytics, no telemetry, no remote code. Settings and bookmarks live in local storage. Brand-icon search contacts Iconify only after Search is pressed, sends only the phrase in that field, and stores the selected vector locally. Export the lot to JSON whenever you want.
 
 Available in English, Russian, Spanish, German, French, Japanese, Chinese and Turkish.
 

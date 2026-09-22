@@ -1255,19 +1255,89 @@ class SettingsController {
 
     modalX?.addEventListener("click", () => this.closeIconModal());
 
-    // Tab 1: Library Search & Categories
+    // Tab 1: explicit online discovery. Search terms leave the device only
+    // after the person presses Search, and the chosen SVG is embedded locally.
     const iconSearch = document.getElementById("icon-search");
-    const catChips = document.querySelectorAll(".icon-chip");
+    const iconSearchBtn = document.getElementById("icon-search-btn");
+    const iconSearchStatus = document.getElementById("icon-search-status");
+    const iconSearchGrid = document.getElementById("modal-icon-grid");
+    let searchSequence = 0;
+    let searchController = null;
 
-    iconSearch?.addEventListener("input", (e) => {
-      this.filterIconLibrary(e.target.value.toLowerCase(), "all");
-    });
-
-    catChips.forEach((chip) => {
-      chip.addEventListener("click", () => {
-        catChips.forEach((c) => c.classList.toggle("active", c === chip));
-        this.filterIconLibrary(iconSearch?.value.toLowerCase() || "", chip.dataset.cat);
-      });
+    const say = (key, fallback) => {
+      const value = window.I18N?.t(key);
+      return value && value !== key ? value : fallback;
+    };
+    const renderSearchResults = (results) => {
+      iconSearchGrid?.replaceChildren();
+      for (const result of results) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "icon-item discovered-icon";
+        button.setAttribute("aria-label", result.name);
+        const image = document.createElement("img");
+        image.src = result.dataUrl;
+        image.alt = "";
+        const name = document.createElement("span");
+        name.textContent = result.name;
+        const source = document.createElement("small");
+        source.textContent = result.source || "Simple Icons";
+        button.append(image, name, source);
+        button.addEventListener("click", () => {
+          if (!this.activeIconTarget) return;
+          const { gIdx, lIdx } = this.activeIconTarget;
+          const link = this.app.config.groups[gIdx]?.links[lIdx];
+          if (!link) return;
+          link.customImg = result.dataUrl;
+          link.iconSource = result.id;
+          delete link.icon;
+          delete link.monogram;
+          this.app.saveConfig();
+          this.app.grid?.updateTileDOM(gIdx, lIdx);
+          this.renderBookmarksManager();
+          this.closeIconModal();
+        });
+        iconSearchGrid?.append(button);
+      }
+    };
+    const searchOnline = async () => {
+      const query = iconSearch?.value.trim();
+      if (!query) {
+        if (iconSearchStatus) iconSearchStatus.textContent = say("picker.searchNeedsQuery", "Enter a brand or product name.");
+        iconSearch?.focus();
+        return;
+      }
+      const sequence = ++searchSequence;
+      searchController?.abort();
+      const controller = new AbortController();
+      searchController = controller;
+      iconSearchBtn?.setAttribute("aria-busy", "true");
+      if (iconSearchStatus) iconSearchStatus.textContent = say("picker.searching", "Searching official vector collections…");
+      try {
+        const target = this.activeIconTarget;
+        const link = target ? this.app.config.groups[target.gIdx]?.links[target.lIdx] : null;
+        const results = await window.NordlysIconDiscovery.search(query, { colour: link?.color, signal: controller.signal });
+        if (sequence !== searchSequence) return;
+        renderSearchResults(results);
+        if (iconSearchStatus) iconSearchStatus.textContent = results.length
+          ? say("picker.searchFound", "Choose a vector to save it locally.")
+          : say("picker.searchEmpty", "No brand mark found. Try the website icon or paste an image URL.");
+      } catch {
+        if (sequence !== searchSequence) return;
+        iconSearchGrid?.replaceChildren();
+        if (iconSearchStatus) iconSearchStatus.textContent = say("picker.searchFailed", "Search unavailable. Try again or use the website icon.");
+      } finally {
+        if (sequence === searchSequence) {
+          searchController = null;
+          iconSearchBtn?.removeAttribute("aria-busy");
+        }
+      }
+    };
+    iconSearchBtn?.addEventListener("click", searchOnline);
+    iconSearch?.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      searchOnline();
     });
 
     // Tab 2: Smart Favicon & High-Res Fetcher
@@ -2025,20 +2095,20 @@ class SettingsController {
     // A pasted URL, an uploaded file and a monogram share one pane now, so
     // whichever of them the bookmark is already using lands in the same place.
     const kind = window.NordlysIcons.classifyIcon(link);
-    const defaultTab = kind === "favicon" ? "favicon" : (link.customImg || link.monogram) ? "custom" : "library";
+    const defaultTab = kind === "favicon" ? "favicon" : (link.customImg && !link.iconSource) || link.monogram ? "custom" : "search";
 
     this.iconPicker.select(defaultTab);
     this.activeModalTab = defaultTab;
 
-    // 8. Reset Search Filter and Render Library
+    // 8. Prepare discovery without contacting its provider.
     const searchIpt = document.getElementById("icon-search");
-    if (searchIpt) searchIpt.value = "";
-    // Only the library's category chips: the source chips on the website-icon
-    // pane share the class and keep their own selection.
-    document.querySelectorAll(".icon-chip:not([data-fav-source])").forEach((c, idx) => c.classList.toggle("active", idx === 0));
-    this.filterIconLibrary("", "all", link.icon);
+    if (searchIpt) searchIpt.value = link.name || "";
+    document.getElementById("modal-icon-grid")?.replaceChildren();
+    const searchStatus = document.getElementById("icon-search-status");
+    if (searchStatus) searchStatus.textContent = window.I18N?.t("picker.searchIdle") || "Search happens only when you ask.";
 
     this.iconPicker.open(link, opener);
+    if (defaultTab === "search") queueMicrotask(() => searchIpt?.focus());
   }
 
   closeIconModal() {
@@ -2049,58 +2119,6 @@ class SettingsController {
       const { gIdx, lIdx } = this.app.grid.quickEditReturnTarget;
       this.app.grid.quickEditReturnTarget = null;
       this.app.grid.openQuickEditModal(gIdx, lIdx);
-    }
-  }
-
-  filterIconLibrary(query, cat, highlightIconKey = null) {
-    const grid = document.getElementById("modal-icon-grid");
-    if (!grid) return;
-
-    /* Picking a library icon keeps the bookmark's own colour, so drawing the
-       grid in plain white showed something the user would never get: YouTube
-       read white here and arrived red on the board. Paint the grid in the
-       colour the choice will actually produce. */
-    const target = this.activeIconTarget;
-    const editing = target ? this.app.config.groups?.[target.gIdx]?.links?.[target.lIdx] : null;
-    grid.style.setProperty("--icon-preview-accent", editing?.color || "var(--nl-text-primary)");
-
-    grid.innerHTML = "";
-    for (const key in ICONS_DB) {
-      const item = ICONS_DB[key];
-      const matchQ = !query || item.name.toLowerCase().includes(query) || key.toLowerCase().includes(query);
-      const matchCat = cat === "all" || item.cat === cat;
-
-      if (matchQ && matchCat) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.setAttribute("aria-label", item.name);
-        btn.className = "icon-item";
-        if (key === highlightIconKey) {
-          btn.classList.add("active");
-          btn.style.boxShadow = "0 0 0 2px var(--accent)";
-          setTimeout(() => btn.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
-        }
-        btn.innerHTML = `
-          <svg viewBox="${item.vb || '0 0 24 24'}"><path d="${item.p}"/></svg>
-          <span>${item.name}</span>
-        `;
-
-        btn.addEventListener("click", () => {
-          if (this.activeIconTarget) {
-            const { gIdx, lIdx } = this.activeIconTarget;
-            const link = this.app.config.groups[gIdx].links[lIdx];
-            link.icon = key;
-            delete link.customImg;
-            delete link.monogram;
-            this.app.saveConfig();
-            this.app.grid?.updateTileDOM(gIdx, lIdx);
-            this.renderBookmarksManager();
-            this.closeIconModal();
-          }
-        });
-
-        grid.appendChild(btn);
-      }
     }
   }
 

@@ -1078,7 +1078,9 @@ input[type="range"].ipt:focus-visible {
   font-size: var(--nl-text-xs);
   font-weight: 500;
   cursor: pointer;
-  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), transform var(--nl-motion-control);
+  /* The pane switches immediately. Keep the selection marker in lockstep with
+     it; animating border-color left the old tab visibly selected for a frame. */
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), transform var(--nl-motion-control);
 }
 .icon-tab-btn:hover {
   color: var(--ink);
@@ -1146,6 +1148,13 @@ input[type="range"].ipt:focus-visible {
   font-weight: 600;
 }
 
+.icon-search-intro { margin: 0 0 12px; color: var(--nl-text-secondary); font-size: var(--nl-text-sm); line-height: 1.5; }
+.icon-search-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.icon-search-status { min-height: 34px; padding: 8px 1px; color: var(--nl-text-tertiary); font-size: var(--nl-text-xs); }
+.icon-search-legal { color: var(--nl-text-tertiary); font-size: var(--nl-text-2xs); text-align: center; }
+.icon-search-row .glass-input { min-width: 0; }
+.icon-search-row .glass-btn[aria-busy="true"] { opacity: .65; pointer-events: none; }
+
 .icon-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(73px, 1fr));
@@ -1189,6 +1198,14 @@ input[type="range"].ipt:focus-visible {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.icon-item small {
+  color: var(--nl-text-tertiary);
+  font-size: var(--nl-text-2xs);
+  transform: scale(.82);
+  transform-origin: center;
+  line-height: 1;
+}
+.discovered-icon img { object-fit: contain; }
 
 .url-preview-box {
   display: flex;

@@ -552,28 +552,23 @@
 
       <!-- 5 Modal Source Tabs -->
       <div class="icon-modal-tabs">
-        <button class="icon-tab-btn active" data-tab="library" data-i18n="modal.tabLibrary">Library</button>
+        <button class="icon-tab-btn active" data-tab="search" data-i18n="modal.tabLibrary">Find online</button>
         <button class="icon-tab-btn" data-tab="favicon" data-i18n="modal.tabFavicon">Website icon</button>
         <button class="icon-tab-btn" data-tab="custom" data-i18n="modal.tabCustom">Custom</button>
       </div>
 
       <div class="modal-body">
         
-        <!-- Tab 1: Built-in Library -->
-        <div id="modal-pane-library" class="modal-tab-pane active">
+        <!-- Tab 1: Explicit online discovery. Nothing is requested until Search. -->
+        <div id="modal-pane-search" class="modal-tab-pane active">
+          <p class="icon-search-intro" data-i18n="picker.searchIntro">Find a polished vector logo by brand or product name. Selected icons are saved locally.</p>
           <div class="icon-search-row">
-            <input id="icon-search" type="text" class="glass-input" placeholder="Search brand & system icons...">
+            <input id="icon-search" type="search" class="glass-input" data-i18n-placeholder="picker.searchPlaceholder" placeholder="GitHub, Figma, Spotify…">
+            <button id="icon-search-btn" type="button" class="glass-btn accent" data-i18n="picker.searchAction">Search</button>
           </div>
-          <div class="icon-category-chips">
-            <button class="icon-chip active" data-cat="all">All</button>
-            <button class="icon-chip" data-cat="brand">Brands</button>
-            <button class="icon-chip" data-cat="tech">Dev & Tech</button>
-            <button class="icon-chip" data-cat="media">Media</button>
-            <button class="icon-chip" data-cat="productivity">Productivity</button>
-            <button class="icon-chip" data-cat="study">Study</button>
-            <button class="icon-chip" data-cat="tools">Tools</button>
-          </div>
+          <div id="icon-search-status" class="icon-search-status" role="status" aria-live="polite" data-i18n="picker.searchIdle">Search happens only when you ask.</div>
           <div id="modal-icon-grid" class="icon-grid"></div>
+          <small class="icon-search-legal">Simple Icons · Brand marks belong to their owners.</small>
         </div>
 
         <!-- Tab 2: Smart Favicon / High-Res Fetcher -->
@@ -1058,6 +1053,7 @@
   <script src="src/js/bookmark-sync.js"></script>
   <script src="src/js/icons-db.js"></script>
   <script src="src/js/icon-presentation.js"></script>
+  <script src="src/js/icon-discovery.js"></script>
   <script src="src/js/background.js"></script>
   <script src="src/js/calc.js"></script>
   <script src="src/js/widgets.js"></script>

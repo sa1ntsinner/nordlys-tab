@@ -14,6 +14,7 @@
     "test:ui:update": "playwright test --update-snapshots=all",
     "artwork": "playwright test --config=tools/artwork/playwright.config.cjs",
     "preview:backgrounds": "node tools/capture-backgrounds.cjs",
+    "qa:visual": "node tools/qa-visual.cjs",
     "package": "node tools/package.cjs"
   },
   "devDependencies": {

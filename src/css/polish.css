@@ -57,6 +57,8 @@
 /* Search is the primary action, not another glass card. */
 #searchwrap {
   width: min(88vw, 620px);
+  min-width: 0;
+  max-width: 100%;
   margin-top: 10px;
 }
 
@@ -68,6 +70,7 @@
   border-color: var(--nl-polish-hairline);
   background: color-mix(in srgb, var(--nl-surface-card-deep) 74%, transparent);
   box-shadow: var(--nl-shadow-2);
+  min-width: 0;
   backdrop-filter: blur(18px) saturate(125%);
   -webkit-backdrop-filter: blur(18px) saturate(125%);
 }
@@ -97,6 +100,7 @@ body.searching #search {
 
 #q {
   font-size: var(--nl-text-md);
+  min-width: 0;
 }
 
 #search kbd {
