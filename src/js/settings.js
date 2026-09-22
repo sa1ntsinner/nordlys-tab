@@ -6,12 +6,18 @@
    data-i18n lets a language switch retranslate it without a listener here. */
 const SCENE_NAMES = {
   "aurora": "Aurora",
+  "halo": "Halo",
+  "drift": "Drift",
+  "horizon": "Horizon",
   "custom-image": "Wallpaper",
   "custom-video": "Video",
   "solid": "Solid"
 };
 const SCENE_KEYS = {
   "aurora": "scene.aurora",
+  "halo": "scene.halo",
+  "drift": "scene.drift",
+  "horizon": "scene.horizon",
   "custom-image": "scene.wallpaper",
   "custom-video": "scene.video",
   "solid": "scene.solid"
@@ -66,10 +72,12 @@ class SettingsController {
   initScenePicker() {
     const select = document.getElementById("cfg-bg-mode");
     const grid = document.getElementById("bg-scene-grid");
-    if (!select || !grid) return;
+    const personalGrid = document.getElementById("bg-personal-grid");
+    if (!select || !grid || !personalGrid) return;
 
     const paint = () => {
       grid.replaceChildren();
+      personalGrid.replaceChildren();
       for (const option of select.options) {
         const card = document.createElement("button");
         card.type = "button";
@@ -96,12 +104,13 @@ class SettingsController {
           select.dispatchEvent(new Event("change", { bubbles: true }));
           paint();
         });
-        grid.append(card);
+        const personal = ["custom-image", "custom-video", "solid"].includes(option.value);
+        (personal ? personalGrid : grid).append(card);
       }
     };
 
     select.addEventListener("change", () => {
-      grid.querySelectorAll(".scene-card").forEach((card) => {
+      document.querySelectorAll("#bg-scene-picker .scene-card").forEach((card) => {
         card.setAttribute("aria-checked", String(card.dataset.scene === select.value));
       });
       showRelevant();
@@ -111,7 +120,7 @@ class SettingsController {
        slider with nothing to blur, is noise the user has to read and dismiss.
        Each control declares the scenes it belongs to and the rest step aside. */
     const SCENE_GROUPS = {
-      procedural: ["aurora"],
+      procedural: ["aurora", "halo", "drift", "horizon"],
       media: ["custom-image", "custom-video"],
       image: ["custom-image"]
     };
@@ -126,9 +135,10 @@ class SettingsController {
     const applyAtmosphere = () => {
       const motion = Number(document.getElementById("cfg-bg-motion")?.value ?? 100) / 100;
       const intensity = Number(document.getElementById("cfg-bg-intensity")?.value ?? 100) / 100;
+      const palette = this.app.config.bgPalette || "theme";
       this.app.config.bgMotion = motion;
       this.app.config.bgIntensity = intensity;
-      this.app.bgEngine?.setAtmosphere({ motion, intensity });
+      this.app.bgEngine?.setAtmosphere({ motion, intensity, palette });
       const motionLabel = document.getElementById("lbl-bg-motion");
       const intensityLabel = document.getElementById("lbl-bg-intensity");
       /* Zero is a state, not a quantity, and it is the one people reach for
@@ -155,14 +165,29 @@ class SettingsController {
       slider.addEventListener("input", applyAtmosphere);
       slider.addEventListener("change", () => { applyAtmosphere(); this.app.saveConfig(); });
     }
+
+    const paletteButtons = Array.from(document.querySelectorAll("#bg-palette-grid [data-palette]"));
+    const paintPalette = () => {
+      const selected = this.app.config.bgPalette || "theme";
+      paletteButtons.forEach((button) => {
+        button.setAttribute("aria-checked", String(button.dataset.palette === selected));
+      });
+    };
+    paletteButtons.forEach((button) => button.addEventListener("click", () => {
+      this.app.config.bgPalette = button.dataset.palette;
+      applyAtmosphere();
+      paintPalette();
+      this.app.saveConfig();
+    }));
     /* Uploading a wallpaper or removing one sets the mode from code rather than
        from a card, and the picker has to follow: otherwise Wallpaper stays
        highlighted while Aurora is already running behind it. */
-    this.syncScenePicker = () => { paint(); showRelevant(); };
+    this.syncScenePicker = () => { paint(); showRelevant(); paintPalette(); };
 
     /* The still field has its own small picker, built the same way, because a
        composition is a picture too and a list of four words would say less. */
     applyAtmosphere();
+    paintPalette();
     showRelevant();
     paint();
   }

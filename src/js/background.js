@@ -3,6 +3,14 @@
    Time-based (refresh-rate independent), light/dark aware, zero idle cost.
    ═══════════════════════════════════════════════════════════════════ */
 
+const NORDLYS_GENERATIVE_SCENES = new Set(["aurora", "halo", "drift", "horizon"]);
+const NORDLYS_BACKGROUND_PALETTES = {
+  polar: ["#68e1d1", "#6ea8fe", "#9d8cff"],
+  violet: ["#8be9fd", "#8b7cff", "#cf78ff"],
+  ember: ["#ffd166", "#f48c6b", "#b86bff"],
+  mono: ["#dbeafe", "#94a3b8", "#64748b"]
+};
+
 class NordlysBackgroundEngine {
   constructor() {
     this.canvas = document.getElementById("bg-canvas");
@@ -14,22 +22,20 @@ class NordlysBackgroundEngine {
     this.t = 0;
     this.lastFrame = 0;
     this.running = false;
-    /* One living scene. Cosmos was Aurora with the aurora removed — the same
-       nebulae, stars and meteors, minus the ribbons that give the thing its
-       name — and Particles measured 0.08 of 255 different from a plain colour,
-       while both held a full animation loop open to draw it. Stillness is not a
-       scene at all now: it is this one with its motion at zero, painted once
-       and held, which costs nothing to keep and lets the glass above it stop
-       re-blurring every frame. */
-    this.mode = "aurora"; // 'aurora', 'custom-image', 'custom-video', 'solid'
+    /* Atmospheres are different compositions, not particle-count variants.
+       Every one shares the same small set of controls and can become a still
+       image at zero motion, which keeps the system expressive without turning
+       the settings panel into a shader editor. */
+    this.mode = "aurora";
     this.motion = 1;
     this.intensity = 1;
+    this.paletteName = "theme";
     this.isMousePending = false;
     this.mouseX = 50;
     this.mouseY = 50;
     this.motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-    // Per-theme shader palette (filled from CSS --shader-1..3 tokens)
+    // Per-theme shader palette (filled from CSS --shader-1..3 tokens by default)
     this.palette = ["#35d6c0", "#5b6cff", "#9d4edd"];
     this.paletteRgb = [[53, 214, 192], [91, 108, 255], [157, 78, 221]];
 
@@ -37,15 +43,16 @@ class NordlysBackgroundEngine {
     this.refreshPalette();
   }
 
-  /* Reads the active theme's --shader-1..3 tokens so every theme paints
-     its own aurora and nebulae instead of one fixed set. */
+  /* Reads the active theme's --shader-1..3 tokens, unless the user chose one
+     of the deliberately small colour moods shared by every atmosphere. */
   refreshPalette() {
     const styles = getComputedStyle(document.documentElement);
     const fallback = ["#35d6c0", "#5b6cff", "#9d4edd"];
-    const colors = [1, 2, 3].map((i, idx) => {
-      const v = styles.getPropertyValue(`--shader-${i}`).trim();
-      return /^#[0-9a-f]{6}$/i.test(v) ? v : fallback[idx];
-    });
+    const preset = NORDLYS_BACKGROUND_PALETTES[this.paletteName];
+    const colors = preset || [1, 2, 3].map((i, idx) => {
+        const v = styles.getPropertyValue(`--shader-${i}`).trim();
+        return /^#[0-9a-f]{6}$/i.test(v) ? v : fallback[idx];
+      });
     this.palette = colors;
     this.paletteRgb = colors.map((hex) => {
       const n = parseInt(hex.slice(1), 16);
@@ -96,7 +103,7 @@ class NordlysBackgroundEngine {
         // The loop parks itself on its next frame; the picture stays.
         document.documentElement.style.removeProperty("--mouse-x");
         document.documentElement.style.removeProperty("--mouse-y");
-      } else if (this.mode === "aurora") {
+      } else if (NORDLYS_GENERATIVE_SCENES.has(this.mode)) {
         this.start();
         this.resumeIfMoving();
       }
@@ -106,7 +113,7 @@ class NordlysBackgroundEngine {
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
         this.stop();
-      } else if (this.mode === "aurora") {
+      } else if (NORDLYS_GENERATIVE_SCENES.has(this.mode)) {
         this.start();
       }
     });
@@ -162,10 +169,15 @@ class NordlysBackgroundEngine {
   }
 
   setMode(mode) {
+    const changed = mode !== this.mode;
     this.mode = mode;
-    if (mode === "aurora") {
+    if (NORDLYS_GENERATIVE_SCENES.has(mode)) {
       if (this.canvas) this.canvas.style.display = "block";
       this.start();
+      /* A still or reduced-motion scene has deliberately parked its animation
+         loop. Switching composition must paint immediately instead of waiting
+         for a frame that will never arrive. */
+      if (changed) this.repaint();
     } else {
       if (this.canvas) this.canvas.style.display = "none";
       this.stop();
@@ -227,7 +239,7 @@ class NordlysBackgroundEngine {
   }
 
   resume() {
-    if (this.mode === "aurora") {
+    if (NORDLYS_GENERATIVE_SCENES.has(this.mode)) {
       this.start();
     }
   }
@@ -236,9 +248,13 @@ class NordlysBackgroundEngine {
      effect: how fast the world advances, and how present it is. Before this the
      modes differed only in which particles they drew, so switching between them
      read as no change at all. */
-  setAtmosphere({ motion, intensity } = {}) {
+  setAtmosphere({ motion, intensity, palette } = {}) {
     if (Number.isFinite(motion)) this.motion = Math.max(0, Math.min(1.5, motion));
     if (Number.isFinite(intensity)) this.intensity = Math.max(0.15, Math.min(1.5, intensity));
+    if (typeof palette === "string" && (palette === "theme" || NORDLYS_BACKGROUND_PALETTES[palette])) {
+      this.paletteName = palette;
+      this.refreshPalette();
+    }
     this.resumeIfMoving();
     this.repaint();
   }
@@ -267,6 +283,15 @@ class NordlysBackgroundEngine {
         this.drawRibbon(0.62, c3, 0.08, 1.5, 0.8, 1);
         break;
       }
+      case "halo":
+        this.renderHalo();
+        break;
+      case "drift":
+        this.renderDrift();
+        break;
+      case "horizon":
+        this.renderHorizon();
+        break;
     }
     this.ctx.globalAlpha = 1;
   }
@@ -366,6 +391,89 @@ class NordlysBackgroundEngine {
       this.ctx.lineTo(m.x - Math.cos(m.angle) * m.len, m.y - Math.sin(m.angle) * m.len);
       this.ctx.stroke();
     }
+  }
+
+  /* Architectural rings: a quiet focal point with generous negative space.
+     Unlike Aurora it has no particles and no full-width ribbons. */
+  renderHalo() {
+    const light = this.lightMode;
+    const [c1, c2, c3] = this.palette;
+    const cx = this.w * (0.72 + Math.sin(this.t * 0.32) * 0.018);
+    const cy = this.h * (0.34 + Math.cos(this.t * 0.27) * 0.014);
+    const radius = Math.min(this.w, this.h) * 0.29;
+    this.ctx.save();
+    this.ctx.globalCompositeOperation = light ? "multiply" : "screen";
+
+    const bloom = this.ctx.createRadialGradient(cx, cy, radius * 0.05, cx, cy, radius * 1.65);
+    bloom.addColorStop(0, `${c2}24`);
+    bloom.addColorStop(0.42, `${c1}12`);
+    bloom.addColorStop(1, `${c3}00`);
+    this.ctx.fillStyle = bloom;
+    this.ctx.fillRect(0, 0, this.w, this.h);
+
+    [0.72, 1, 1.34].forEach((scale, index) => {
+      this.ctx.beginPath();
+      this.ctx.ellipse(cx, cy, radius * scale, radius * scale * 0.72, -0.28, 0, Math.PI * 2);
+      this.ctx.strokeStyle = [c1, c2, c3][index];
+      this.ctx.globalAlpha = (light ? 0.12 : 0.2) - index * 0.035;
+      this.ctx.lineWidth = index === 1 ? 1.4 : 0.8;
+      this.ctx.stroke();
+    });
+    this.ctx.restore();
+  }
+
+  /* Slow contour cloth. The parallel paths read as material rather than as a
+     cloud of decorative particles, and are cheap enough to redraw at 60fps. */
+  renderDrift() {
+    const light = this.lightMode;
+    this.ctx.save();
+    this.ctx.globalCompositeOperation = light ? "multiply" : "screen";
+    this.ctx.lineCap = "round";
+    for (let line = 0; line < 9; line++) {
+      const base = this.h * (0.16 + line * 0.09);
+      const color = this.palette[line % this.palette.length];
+      this.ctx.beginPath();
+      for (let x = -40; x <= this.w + 40; x += 30) {
+        const y = base
+          + Math.sin(x * 0.0045 + this.t * 0.7 + line * 0.62) * (34 + line * 2)
+          + Math.cos(x * 0.009 - this.t * 0.42 + line) * 12;
+        if (x === -40) this.ctx.moveTo(x, y);
+        else this.ctx.lineTo(x, y);
+      }
+      this.ctx.strokeStyle = color;
+      this.ctx.globalAlpha = (light ? 0.085 : 0.13) * (1 - Math.abs(4 - line) * 0.08);
+      this.ctx.lineWidth = 1 + (line % 3) * 0.55;
+      this.ctx.stroke();
+    }
+    this.ctx.restore();
+  }
+
+  /* A low luminous horizon keeps the centre calm for the clock and search.
+     Its movement is only a slow breath, making it the least animated scene. */
+  renderHorizon() {
+    const light = this.lightMode;
+    const [c1, c2, c3] = this.palette;
+    const y = this.h * (0.8 + Math.sin(this.t * 0.22) * 0.012);
+    this.ctx.save();
+    this.ctx.globalCompositeOperation = light ? "multiply" : "screen";
+    const glow = this.ctx.createRadialGradient(this.w * 0.5, y, 0, this.w * 0.5, y, Math.max(this.w, this.h) * 0.72);
+    glow.addColorStop(0, `${c1}${light ? "2b" : "40"}`);
+    glow.addColorStop(0.28, `${c2}${light ? "1c" : "2c"}`);
+    glow.addColorStop(0.62, `${c3}${light ? "0d" : "15"}`);
+    glow.addColorStop(1, `${c3}00`);
+    this.ctx.fillStyle = glow;
+    this.ctx.fillRect(0, 0, this.w, this.h);
+    const line = this.ctx.createLinearGradient(0, 0, this.w, 0);
+    line.addColorStop(0, `${c3}00`);
+    line.addColorStop(0.5, `${c1}${light ? "25" : "45"}`);
+    line.addColorStop(1, `${c2}00`);
+    this.ctx.strokeStyle = line;
+    this.ctx.globalAlpha = 0.55;
+    this.ctx.beginPath();
+    this.ctx.moveTo(this.w * 0.08, y);
+    this.ctx.lineTo(this.w * 0.92, y);
+    this.ctx.stroke();
+    this.ctx.restore();
   }
 
   drawRibbon(baseYFactor, colorHex, baseAlpha, freq, speed, spread = 1) {

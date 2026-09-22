@@ -21,13 +21,13 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
   const { page } = nordlysPage;
   await openBackground(page);
 
-  const cards = page.locator('#bg-scene-grid .scene-card');
+  const cards = page.locator('#bg-scene-picker .scene-card');
   await expect(cards).toHaveCount(await page.locator('#cfg-bg-mode option').count());
-  await expect(page.locator('#bg-scene-grid')).toHaveAttribute('role', 'radiogroup');
+  await expect(page.locator('#bg-scene-picker')).toHaveAttribute('role', 'radiogroup');
 
   /* Wallpaper, Video and Solid share a ground and differ by the mark drawn on
      it, so comparing the background alone would report them identical. */
-  const previews = await page.locator('#bg-scene-grid .scene-preview').evaluateAll(
+  const previews = await page.locator('#bg-scene-picker .scene-preview').evaluateAll(
     nodes => nodes.map(node => {
       const own = getComputedStyle(node);
       const mark = getComputedStyle(node, '::after');
@@ -35,6 +35,8 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
     })
   );
   expect(new Set(previews).size, 'each scene must look like itself').toBe(previews.length);
+  await expect(page.locator('#bg-scene-grid .scene-card')).toHaveCount(4);
+  await expect(page.locator('#bg-personal-grid .scene-card')).toHaveCount(3);
 
   const solid = page.locator('.scene-card[data-scene="solid"]');
   await solid.click();
@@ -43,23 +45,35 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
   await expect.poll(() => nordlysPage.storageState.nordlys_config?.bgMode).toBe('solid');
 });
 
-/* What is offered has been cut twice, both times on measurement rather than
-   taste. Cosmos drew Aurora's nebulae, stars and meteors and left out the
-   ribbons that give it its name. Particles measured 0.08 of 255 away from a
-   plain colour. Then the four still compositions went: rendered at full size
-   behind the real board they sat 4.55 to 8.68 of 255 apart — the same distance
-   that had already condemned cosmos — and since a person sees exactly one of
-   them at a time, they were being asked to choose between things they could not
-   tell apart. Four scenes remain and each is a different kind of thing. */
-test('only scenes that are a different kind of thing are offered', async ({ nordlysPage }) => {
+/* The generated choices are compositions rather than effect-level variants:
+   curtains, orbital rings, contour cloth and a low horizon. Personal media
+   remains available alongside them without pretending to be another shader. */
+test('the atmosphere gallery offers four distinct compositions and personal media', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await openBackground(page);
   const offered = await page.locator('#cfg-bg-mode option').evaluateAll(
     nodes => nodes.map(node => node.value)
   );
-  expect(offered).toEqual(['aurora', 'custom-image', 'custom-video', 'solid']);
+  expect(offered).toEqual(['aurora', 'halo', 'drift', 'horizon', 'custom-image', 'custom-video', 'solid']);
   // And nothing anywhere still offers a composition to pick between.
   expect(await page.locator('#bg-gradient-grid').count()).toBe(0);
+});
+
+test('colour mood reaches the canvas engine and persists', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await openBackground(page);
+  const ember = page.locator('[data-palette="ember"]');
+  await ember.click();
+  await expect(ember).toHaveAttribute('aria-checked', 'true');
+  expect(await page.evaluate(() => ({
+    stored: window.Nordlys.config.bgPalette,
+    active: window.Nordlys.bgEngine.paletteName,
+    colours: window.Nordlys.bgEngine.palette
+  }))).toEqual({ stored: 'ember', active: 'ember', colours: ['#ffd166', '#f48c6b', '#b86bff'] });
+
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  expect(await page.evaluate(() => window.Nordlys.bgEngine.paletteName)).toBe('ember');
 });
 
 test('solid means one colour, and no attribute survives the deleted mode', async ({ nordlysPage }) => {
@@ -149,6 +163,20 @@ test('zero motion paints the scene once and then stops', async ({ nordlysPage })
   await page.locator('#cfg-bg-motion').dispatchEvent('change');
   await page.waitForTimeout(200);
   expect(await page.evaluate(() => window.Nordlys.bgEngine.animId)).toBeTruthy();
+});
+
+test('switching a still atmosphere repaints the new composition immediately', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => {
+    window.Nordlys.config.bgMotion = 0;
+    window.Nordlys.bgEngine.setAtmosphere({ motion: 0 });
+  });
+  await chooseBackground(page, 'halo');
+  const halo = await page.locator('#bg-canvas').screenshot();
+  await chooseBackground(page, 'drift');
+  const drift = await page.locator('#bg-canvas').screenshot();
+  expect(Buffer.compare(halo, drift)).not.toBe(0);
+  expect(await page.evaluate(() => window.Nordlys.bgEngine.mode)).toBe('drift');
 });
 
 /* "Reduce motion" is not "remove the picture". The loop used to refuse to start

@@ -416,15 +416,30 @@
       <!-- 4. Background Section -->
       <section id="sec-background" class="csec">
         <h3 data-i18n="nav.background">Background</h3>
-        <div class="scene-block">
-          <span class="settings-block-label" data-i18n="background.scene">Scene</span>
+        <div class="scene-block" id="bg-scene-picker" role="radiogroup" aria-label="Background scene">
+          <span class="settings-block-label" data-i18n="background.atmospheres">Atmospheres</span>
           <select id="cfg-bg-mode" class="ipt" hidden data-native aria-hidden="true" tabindex="-1">
             <option value="aurora">Aurora</option>
+            <option value="halo">Halo</option>
+            <option value="drift">Drift</option>
+            <option value="horizon">Horizon</option>
             <option value="custom-image">Wallpaper</option>
             <option value="custom-video">Video</option>
             <option value="solid">Solid</option>
           </select>
-          <div class="scene-grid" id="bg-scene-grid" role="radiogroup" aria-label="Background scene"></div>
+          <div class="scene-grid atmosphere-grid" id="bg-scene-grid"></div>
+          <span class="settings-block-label personal-label" data-i18n="background.personal">Personal</span>
+          <div class="scene-grid personal-grid" id="bg-personal-grid"></div>
+        </div>
+        <div class="atmosphere-palette" data-scene-only="procedural">
+          <span class="settings-block-label" data-i18n="background.colorMood">Color mood</span>
+          <div id="bg-palette-grid" class="palette-grid" role="radiogroup" aria-label="Color mood">
+            <button type="button" class="palette-chip" data-palette="theme" role="radio"><i></i><span data-i18n="background.paletteTheme">Theme</span></button>
+            <button type="button" class="palette-chip" data-palette="polar" role="radio"><i></i><span data-i18n="background.palettePolar">Polar</span></button>
+            <button type="button" class="palette-chip" data-palette="violet" role="radio"><i></i><span data-i18n="background.paletteViolet">Violet</span></button>
+            <button type="button" class="palette-chip" data-palette="ember" role="radio"><i></i><span data-i18n="background.paletteEmber">Ember</span></button>
+            <button type="button" class="palette-chip" data-palette="mono" role="radio"><i></i><span data-i18n="background.paletteMono">Mono</span></button>
+          </div>
         </div>
         <div class="row setting-row" data-scene-only="procedural">
           <span><span data-i18n="background.motion">Motion</span> (<b id="lbl-bg-motion">100%</b>)</span>

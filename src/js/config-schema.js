@@ -25,7 +25,7 @@
      are allowed through: a newer build may have added one, and refusing it
      would make every upgrade path a validation failure. */
   const FIELDS = {
-    version: "string", theme: "string", colorMode: "string", bgMode: "string",
+    version: "string", theme: "string", colorMode: "string", bgMode: "string", bgPalette: "string",
     glassLevel: "string", headerStyle: "string", timeFormat: "string",
     userName: "string", customCss: "string", iconShape: "string",
     hoverEffect: "string", language: "string",

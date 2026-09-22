@@ -1759,7 +1759,9 @@ input[type="range"].ipt:focus-visible {
 /* ── Background scenes ──────────────────────────────────────────────
    A shown choice instead of a list of engine names. Each preview is drawn from
    the active theme's shader colours, so the cards belong to the palette. */
-.scene-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+.scene-grid { display: grid; gap: 10px; }
+.atmosphere-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.personal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .scene-card {
   display: grid; gap: 7px; padding: 7px; border-radius: var(--nl-radius-md);
   border: 1px solid var(--nl-border); background: transparent; cursor: pointer;
@@ -1777,6 +1779,24 @@ input[type="range"].ipt:focus-visible {
   background:
     radial-gradient(80% 60% at 30% 110%, color-mix(in srgb, var(--shader-1, #35d6c0) 70%, transparent), transparent 70%),
     radial-gradient(70% 50% at 75% 100%, color-mix(in srgb, var(--shader-2, #5b6cff) 60%, transparent), transparent 68%),
+    var(--nl-canvas);
+}
+.scene-preview[data-scene="halo"] {
+  background:
+    radial-gradient(circle at 70% 38%, transparent 0 17%, color-mix(in srgb, var(--shader-1) 36%, transparent) 17.5% 18%, transparent 18.5% 25%, color-mix(in srgb, var(--shader-2) 24%, transparent) 25.5% 26%, transparent 26.5%),
+    radial-gradient(circle at 70% 38%, color-mix(in srgb, var(--shader-2) 18%, transparent), transparent 52%),
+    var(--nl-canvas);
+}
+.scene-preview[data-scene="drift"] {
+  background:
+    repeating-radial-gradient(ellipse 130% 48% at 30% 120%, transparent 0 11%, color-mix(in srgb, var(--shader-1) 30%, transparent) 11.4% 11.8%, transparent 12.2% 17%),
+    linear-gradient(145deg, color-mix(in srgb, var(--shader-3) 12%, transparent), transparent 56%),
+    var(--nl-canvas);
+}
+.scene-preview[data-scene="horizon"] {
+  background:
+    linear-gradient(90deg, transparent 8%, color-mix(in srgb, var(--shader-1) 48%, transparent) 50%, transparent 92%) 0 76% / 100% 1px no-repeat,
+    radial-gradient(80% 48% at 50% 92%, color-mix(in srgb, var(--shader-2) 42%, transparent), transparent 72%),
     var(--nl-canvas);
 }
 .scene-preview[data-scene="solid"] { background: var(--nl-canvas); }
@@ -1816,6 +1836,31 @@ input[type="range"].ipt:focus-visible {
 }
 .scene-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scene-block { display: grid; gap: 10px; margin-bottom: 6px; }
+.scene-block .personal-label { margin-top: 8px; }
+
+@media (max-width: 560px) {
+  .atmosphere-grid { grid-template-columns: 1fr; }
+  .personal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.atmosphere-palette { display: grid; gap: 9px; margin: 16px 0 4px; }
+.palette-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+.palette-chip {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 0 11px 0 8px;
+  border: 1px solid var(--nl-border); border-radius: 999px; background: transparent;
+  color: var(--nl-text-secondary); font: inherit; font-size: var(--nl-text-xs); cursor: pointer;
+  transition: border-color var(--nl-motion-control), color var(--nl-motion-control), background var(--nl-motion-control);
+}
+.palette-chip:hover { border-color: var(--nl-border-strong); color: var(--nl-text-primary); }
+.palette-chip[aria-checked="true"] {
+  border-color: color-mix(in srgb, var(--nl-accent) 70%, transparent);
+  background: color-mix(in srgb, var(--nl-accent) 10%, transparent); color: var(--nl-text-primary);
+}
+.palette-chip i { width: 18px; height: 18px; border-radius: 50%; background: var(--nl-canvas-gradient); box-shadow: inset 0 0 0 1px color-mix(in srgb, white 16%, transparent); }
+.palette-chip[data-palette="polar"] i { background: conic-gradient(from 215deg, #68e1d1, #6ea8fe, #9d8cff, #68e1d1); }
+.palette-chip[data-palette="violet"] i { background: conic-gradient(from 215deg, #8be9fd, #8b7cff, #cf78ff, #8be9fd); }
+.palette-chip[data-palette="ember"] i { background: conic-gradient(from 215deg, #ffd166, #f48c6b, #b86bff, #ffd166); }
+.palette-chip[data-palette="mono"] i { background: conic-gradient(from 215deg, #dbeafe, #94a3b8, #64748b, #dbeafe); }
 
 /* Hit areas — see the matching block in components.css. */
 .icon-tab-btn { min-height: var(--nl-target-min); }

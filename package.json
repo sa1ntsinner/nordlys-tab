@@ -13,6 +13,7 @@
     "test:ui": "playwright test",
     "test:ui:update": "playwright test --update-snapshots=all",
     "artwork": "playwright test --config=tools/artwork/playwright.config.cjs",
+    "preview:backgrounds": "node tools/capture-backgrounds.cjs",
     "package": "node tools/package.cjs"
   },
   "devDependencies": {
