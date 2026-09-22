@@ -16,7 +16,7 @@
   --frost: rgba(53, 214, 192, 0.25);
   --ink: #e9effb;
   --dim: #8ca0c4;
-  --faint: #5a739e;
+  --faint: #6f89b5;
   --accent: #35d6c0;
   --accent-glow: rgba(53, 214, 192, 0.45);
   --card-tint: #0f1c32;
@@ -41,6 +41,9 @@
   --dim: #00f3ff;
   --faint: #d946ef;
   --accent: #ff007f;
+  /* Neon pink fills beautifully and reads at 4.1 to one as a word on the
+     menus; the ink is the same pink, lifted. */
+  --accent-ink: #fe4d8d;
   --accent-glow: rgba(255, 0, 127, 0.55);
   --card-tint: #180a2a;
   --card-tint-deep: #0a0414;
@@ -61,7 +64,7 @@
   --frost: rgba(187, 154, 247, 0.24);
   --ink: #c0caf5;
   --dim: #7aa2f7;
-  --faint: #565f89;
+  --faint: #838dba;
   --accent: #7aa2f7;
   --accent-glow: rgba(122, 162, 247, 0.45);
   --card-tint: #1f2335;
@@ -83,7 +86,7 @@
   --frost: rgba(250, 179, 135, 0.20);
   --ink: #cdd6f4;
   --dim: #a6adc8;
-  --faint: #6c7086;
+  --faint: #8c90a7;
   --accent: #cba6f7;
   --accent-glow: rgba(203, 166, 247, 0.42);
   --card-tint: #242438;
@@ -103,7 +106,7 @@
   --frost: rgba(255, 255, 255, 0.16);
   --ink: #ffffff;
   --dim: #b5b5b5;
-  --faint: #787878;
+  --faint: #7f7f7f;
   --accent: #f1f5f9;
   --accent-glow: rgba(255, 255, 255, 0.28);
   --card-tint: #0e0e10;
@@ -151,7 +154,7 @@ html[data-theme="oled-obsidian"] #veil {
   --frost: rgba(254, 128, 25, 0.22);
   --ink: #ebdbb2;
   --dim: #d5c4a1;
-  --faint: #928374;
+  --faint: #aa9a8b;
   --accent: #fabd2f;
   --accent-glow: rgba(250, 189, 47, 0.42);
   --card-tint: #32302f;
@@ -215,7 +218,7 @@ html[data-theme="oled-obsidian"] #veil {
   --frost: rgba(255, 121, 198, 0.22);
   --ink: #f8f8f2;
   --dim: #bd93f9;
-  --faint: #6272a4;
+  --faint: #8395c9;
   --accent: #bd93f9;
   --accent-glow: rgba(189, 147, 249, 0.45);
   --card-tint: #282a36;
@@ -242,8 +245,9 @@ html[data-theme="oled-obsidian"] #veil {
   --frost: rgba(59, 130, 246, 0.12);
   --ink: #0f172a;
   --dim: #334155;
-  --faint: #64748b;
+  --faint: #5d6d83;
   --accent: #3b82f6;
+  --accent-ink: #1f66d8;
   --accent-glow: rgba(59, 130, 246, 0.28);
   --card-tint: #ffffff;
   --card-tint-deep: #f1f5f9;
@@ -266,8 +270,9 @@ html[data-theme="oled-obsidian"] #veil {
   --frost: rgba(217, 119, 6, 0.12);
   --ink: #2b221a;
   --dim: #574436;
-  --faint: #856d5b;
+  --faint: #7b6452;
   --accent: #d97706;
+  --accent-ink: #9e5505;
   --accent-glow: rgba(217, 119, 6, 0.28);
   --card-tint: #ffffff;
   --card-tint-deep: #f5eedf;
@@ -290,8 +295,9 @@ html[data-theme="oled-obsidian"] #veil {
   --frost: rgba(22, 163, 74, 0.12);
   --ink: #14291c;
   --dim: #2d523b;
-  --faint: #507a60;
+  --faint: #456f55;
   --accent: #16a34a;
+  --accent-ink: #087733;
   --accent-glow: rgba(22, 163, 74, 0.28);
   --card-tint: #ffffff;
   --card-tint-deep: #e3efe7;
@@ -316,6 +322,7 @@ html[data-theme="oled-obsidian"] #veil {
   --dim: #831843;
   --faint: #9d174d;
   --accent: #ec4899;
+  --accent-ink: #c31677;
   --accent-glow: rgba(236, 72, 153, 0.28);
   --card-tint: #ffffff;
   --card-tint-deep: #fce7f3;
@@ -337,9 +344,10 @@ html[data-theme="oled-obsidian"] #veil {
   --glass-border: rgba(42, 161, 152, 0.20);
   --frost: rgba(42, 161, 152, 0.15);
   --ink: #073642;
-  --dim: #586e75;
-  --faint: #657b83;
+  --dim: #445960;
+  --faint: #52676f;
   --accent: #2aa198;
+  --accent-ink: #037069;
   --accent-glow: rgba(42, 161, 152, 0.28);
   --card-tint: #fffdf5;
   --card-tint-deep: #eee8d5;
@@ -364,6 +372,7 @@ html[data-theme="oled-obsidian"] #veil {
   --dim: #334155;
   --faint: #475569;
   --accent: #0284c7;
+  --accent-ink: #09699f;
   --accent-glow: rgba(2, 132, 199, 0.28);
   --card-tint: #ffffff;
   --card-tint-deep: #e2e8f0;
@@ -386,8 +395,9 @@ html[data-theme="oled-obsidian"] #veil {
   --frost: rgba(139, 92, 246, 0.14);
   --ink: #2e1065;
   --dim: #5b21b6;
-  --faint: #7c3aed;
+  --faint: #7b39ec;
   --accent: #8b5cf6;
+  --accent-ink: #7744de;
   --accent-glow: rgba(139, 92, 246, 0.28);
   --card-tint: #ffffff;
   --card-tint-deep: #ede9fe;
@@ -410,8 +420,9 @@ html[data-theme="oled-obsidian"] #veil {
   --frost: rgba(214, 93, 14, 0.15);
   --ink: #282828;
   --dim: #3c3836;
-  --faint: #7c6f64;
+  --faint: #675a50;
   --accent: #d65d0e;
+  --accent-ink: #9c4000;
   --accent-glow: rgba(214, 93, 14, 0.28);
   --card-tint: #fffbe6;
   --card-tint-deep: #ebdbb2;
@@ -436,6 +447,7 @@ html[data-theme="oled-obsidian"] #veil {
   --dim: #881337;
   --faint: #9f1239;
   --accent: #f43f5e;
+  --accent-ink: #d00a42;
   --accent-glow: rgba(244, 63, 94, 0.28);
   --card-tint: #ffffff;
   --card-tint-deep: #ffedd5;
@@ -457,9 +469,10 @@ html[data-theme="oled-obsidian"] #veil {
   --glass-border: rgba(13, 148, 136, 0.18);
   --frost: rgba(13, 148, 136, 0.12);
   --ink: #042f2e;
-  --dim: #115e59;
-  --faint: #134e4a;
+  --dim: #134e4a;
+  --faint: #296f6a;
   --accent: #0d9488;
+  --accent-ink: #06776d;
   --accent-glow: rgba(13, 148, 136, 0.28);
   --card-tint: #ffffff;
   --card-tint-deep: #ccfbf1;
@@ -473,8 +486,25 @@ html[data-theme="oled-obsidian"] #veil {
    Shared across .light-ui, Porcelain, Sage Garden, and Warm Ivory
    ═══════════════════════════════════════════════════════════════════ */
 
+/* Status colours are text as often as they are tint — "Remove", "Delete", the
+   mood editor's error line — and the dark-theme values are pale: rose, amber
+   and mint that read at 2.6, 1.7 and 1.9 to one on a light panel. Light themes
+   take the deep end of the same three hues, each clearing 4.5:1 on the darkest
+   light surface there is, Gruvbox Light's deep card. */
+.light-ui {
+  --nl-status-success: #065f46;
+  --nl-status-danger: #9a050d;
+  --nl-status-warning: #92400e;
+}
+
 .light-ui #veil {
   background: radial-gradient(120% 92% at 50% 4%, transparent 55%, rgba(0, 0, 0, 0.05) 100%);
+}
+
+/* Dark text over a photo needs the photo lighter, not darker: in a light theme
+   the dimmer washes the wallpaper towards the page instead of towards night. */
+.light-ui #bg-dimmer {
+  background: var(--nl-canvas);
 }
 
 .light-ui #veil::after {
@@ -491,26 +521,23 @@ html[data-theme="oled-obsidian"] #veil {
    were being given background-clip: text and transparent ink, which is not
    something a card can want. */
 
+/* No weights in here. Light themes used to set their own on the date, the
+   greeting, folder titles and tile names; a heavier face is a wider one, so
+   switching to a light theme reflowed the board, and in Auto mode it did so
+   on its own at dusk. The shared rules already take the right tier. */
+
 .light-ui #clock .ampm {
-  color: var(--accent);
+  color: var(--nl-accent-text);
   background: color-mix(in srgb, var(--accent) 12%, rgba(255, 255, 255, 0.8));
   border-color: color-mix(in srgb, var(--accent) 26%, transparent);
   box-shadow: var(--nl-shadow-1);
 }
 
-.light-ui #date {
-  color: var(--dim);
-  font-weight: 700;
-}
 
-.light-ui #greet,
-.light-ui #greeting {
-  color: var(--dim);
-  font-weight: 500;
-}
 
 .light-ui #search {
-  background: rgba(255, 255, 255, 0.82);
+  /* As solid as a wallpaper behind it needs (--search-solid), never less. */
+  background: rgb(255 255 255 / max(0.82, var(--search-solid, 0)));
   border-color: var(--glass-border);
 }
 
@@ -526,14 +553,14 @@ html[data-theme="oled-obsidian"] #veil {
 }
 
 .light-ui #q::placeholder {
-  color: var(--faint);
-  opacity: 0.85;
+  color: var(--nl-text-tertiary);
+  opacity: 1;
 }
 
 .light-ui #search kbd {
   color: var(--dim);
   border-color: rgba(0, 0, 0, 0.14);
-  background: rgba(0, 0, 0, 0.04);
+  background: color-mix(in srgb, #000 4%, var(--nl-surface-card));
 }
 
 .light-ui #sugg {
@@ -557,7 +584,7 @@ html[data-theme="oled-obsidian"] #veil {
 }
 
 .light-ui #sugg .sugg-calc .calc-val {
-  color: var(--accent);
+  color: var(--nl-accent-text);
   text-shadow: none;
 }
 
@@ -568,7 +595,6 @@ html[data-theme="oled-obsidian"] #veil {
 .light-ui #sugg .bm-url,
 .light-ui #sugg .sugg-bookmark small {
   color: var(--dim);
-  opacity: 0.8;
 }
 
 .light-ui #sugg .hist-text {
@@ -588,7 +614,7 @@ html[data-theme="oled-obsidian"] #veil {
 .light-ui #sugg .sugg-calc-badge {
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   border-color: color-mix(in srgb, var(--accent) 25%, transparent);
-  color: var(--accent);
+  color: var(--nl-accent-text);
 }
 
 .light-ui #sugg .sugg-del-btn {
@@ -596,7 +622,6 @@ html[data-theme="oled-obsidian"] #veil {
 }
 
 .light-ui #sugg .sugg-del-btn:hover {
-  color: #dc2626;
   background: rgba(239, 68, 68, 0.12);
 }
 
@@ -614,10 +639,6 @@ html[data-theme="oled-obsidian"] #veil {
   background: rgba(0, 0, 0, 0.03);
 }
 
-.light-ui .cat b {
-  color: var(--dim);
-  font-weight: 700;
-}
 
 .light-ui .cat:hover b {
   color: var(--ink);
@@ -662,10 +683,6 @@ html[data-theme="oled-obsidian"] #veil {
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.22));
 }
 
-.light-ui .lbl {
-  color: var(--dim);
-  font-weight: 550;
-}
 
 .light-ui .tile:hover .lbl {
   color: var(--ink);
@@ -737,8 +754,10 @@ html[data-theme="oled-obsidian"] #veil {
 }
 
 /* ── Light-Mode Drawer, Modals & Menus Tuning ─────────────────── */
+/* The drawer's ground comes from polish.css, opaque and theme-tinted, as it is
+   in every dark theme. This rule used to repaint it 94% white, and six percent
+   of a busy board is enough to read the tile names through the settings. */
 .light-ui #cfg {
-  background: rgba(255, 255, 255, 0.94);
   border-left: 1px solid rgba(0, 0, 0, 0.09);
   box-shadow: var(--nl-shadow-3);
 }
@@ -819,7 +838,7 @@ html[data-theme="oled-obsidian"] #veil {
 }
 
 .light-ui .ctx-header {
-  color: var(--accent);
+  color: var(--nl-accent-text);
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
@@ -921,7 +940,6 @@ html[data-theme="oled-obsidian"] #veil {
 
 .light-ui .theme-card b {
   color: #0f172a;
-  font-weight: 600;
 }
 
 .light-ui .custom-theme-tuning-card {
@@ -997,7 +1015,7 @@ html[data-theme="oled-obsidian"] #veil {
 }
 
 .light-ui .icon-tab-btn.active {
-  color: var(--accent);
+  color: var(--nl-accent-text);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 

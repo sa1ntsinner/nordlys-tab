@@ -1,3 +1,4 @@
+/* global NORDLYS_REST_PHASE -- read inside page.evaluate, where background.js declares it */
 const { chromium } = require('@playwright/test');
 const { mkdir } = require('node:fs/promises');
 const { resolve } = require('node:path');
@@ -26,15 +27,28 @@ async function main() {
   await page.goto(`${server.origin}/newtab.html`);
   await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
 
-  for (const mode of ['aurora', 'halo', 'drift', 'horizon']) {
+  const demo = require('../tests/helpers/demo-board.cjs');
+  await page.evaluate(board => {
+    window.Nordlys.config.groups = board;
+    window.Nordlys.saveConfig();
+    window.Nordlys.grid.render();
+  }, demo.DEMO_BOARD.groups);
+
+  /* Every scene is a function of engine time, so each is photographed at its
+     own rest phase — the frame a still sky holds — rather than at whatever
+     moment the shutter happened to fall. */
+  for (const mode of process.argv.slice(2).length ? process.argv.slice(2) : ['aurora', 'halo', 'silk', 'frost', 'drift', 'horizon']) {
     await page.evaluate(async scene => {
       window.Nordlys.config.bgMode = scene;
       window.Nordlys.config.bgMotion = 0;
       window.Nordlys.config.bgIntensity = 1;
       window.Nordlys.config.bgPalette = 'polar';
       await window.Nordlys.updateBackgroundMode();
+      const engine = window.Nordlys.bgEngine;
+      engine.t = NORDLYS_REST_PHASE[scene];
+      engine.render(0);
     }, mode);
-    await page.waitForTimeout(120);
+    await page.waitForTimeout(140);
     await page.screenshot({ path: resolve(output, `${mode}.png`) });
   }
 

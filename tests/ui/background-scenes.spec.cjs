@@ -1,3 +1,4 @@
+/* global NORDLYS_REST_PHASE -- read inside page.evaluate, where background.js declares it */
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
 
 async function openBackground(page) {
@@ -25,17 +26,30 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
   await expect(cards).toHaveCount(await page.locator('#cfg-bg-mode option').count());
   await expect(page.locator('#bg-scene-picker')).toHaveAttribute('role', 'radiogroup');
 
-  /* Wallpaper, Video and Solid share a ground and differ by the mark drawn on
-     it, so comparing the background alone would report them identical. */
-  const previews = await page.locator('#bg-scene-picker .scene-preview').evaluateAll(
+  /* The generative previews are stills painted by the scene engine, so each
+     one is compared by its pixels. Wallpaper, Video and Solid share a ground
+     and differ by the mark drawn on it, so comparing their background alone
+     would report them identical. */
+  await expect(page.locator('#bg-scene-grid .scene-preview.is-live')).toHaveCount(6);
+  const stills = await page.locator('#bg-scene-grid canvas.scene-still').evaluateAll(
+    nodes => nodes.map(node => {
+      const data = node.getContext('2d').getImageData(0, 0, node.width, node.height).data;
+      let painted = 0;
+      for (let i = 3; i < data.length; i += 4) if (data[i] > 8) painted++;
+      return { image: node.toDataURL(), painted: painted / (data.length / 4) };
+    })
+  );
+  for (const still of stills) expect(still.painted, 'a still must show its scene').toBeGreaterThan(0.02);
+  expect(new Set(stills.map(still => still.image)).size, 'each scene must look like itself').toBe(6);
+  const personal = await page.locator('#bg-personal-grid .scene-preview').evaluateAll(
     nodes => nodes.map(node => {
       const own = getComputedStyle(node);
       const mark = getComputedStyle(node, '::after');
-      return `${own.backgroundImage}|${mark.clipPath}|${mark.content}|${mark.width}`;
+      return `${own.backgroundImage}|${own.backgroundColor}|${mark.clipPath}|${mark.content}|${mark.width}`;
     })
   );
-  expect(new Set(previews).size, 'each scene must look like itself').toBe(previews.length);
-  await expect(page.locator('#bg-scene-grid .scene-card')).toHaveCount(4);
+  expect(new Set(personal).size, 'each personal source must look like itself').toBe(personal.length);
+  await expect(page.locator('#bg-scene-grid .scene-card')).toHaveCount(6);
   await expect(page.locator('#bg-personal-grid .scene-card')).toHaveCount(3);
 
   const solid = page.locator('.scene-card[data-scene="solid"]');
@@ -46,17 +60,32 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
 });
 
 /* The generated choices are compositions rather than effect-level variants:
-   curtains, orbital rings, contour cloth and a low horizon. Personal media
-   remains available alongside them without pretending to be another shader. */
-test('the atmosphere gallery offers four distinct compositions and personal media', async ({ nordlysPage }) => {
+   curtains, an ice halo, a flow field, rime, contour cloth and a low horizon.
+   Personal media remains alongside them without pretending to be a shader. */
+test('the atmosphere gallery offers six distinct compositions and personal media', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await openBackground(page);
   const offered = await page.locator('#cfg-bg-mode option').evaluateAll(
     nodes => nodes.map(node => node.value)
   );
-  expect(offered).toEqual(['aurora', 'halo', 'drift', 'horizon', 'custom-image', 'custom-video', 'solid']);
+  expect(offered).toEqual(['aurora', 'halo', 'silk', 'frost', 'drift', 'horizon', 'custom-image', 'custom-video', 'solid']);
   // And nothing anywhere still offers a composition to pick between.
   expect(await page.locator('#bg-gradient-grid').count()).toBe(0);
+});
+
+/* The thumbnails are the sky in miniature, so choosing a mood repaints them in
+   it — a picker whose previews stay on the old colours shows the wrong choice. */
+test('scene previews repaint in the chosen colour mood', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await openBackground(page);
+  const halo = page.locator('#bg-scene-grid canvas.scene-still[data-scene="halo"]');
+  await expect(page.locator('#bg-scene-grid .scene-preview.is-live')).toHaveCount(6);
+  const before = await halo.evaluate(node => node.toDataURL());
+  await page.locator('[data-palette="ember"]').click();
+  await expect.poll(() => halo.evaluate(node => node.toDataURL())).not.toBe(before);
+  // Painted from the same seeded world: the mood changes the colours, not the scene.
+  await page.locator('[data-palette="theme"]').click();
+  await expect.poll(() => halo.evaluate(node => node.toDataURL())).toBe(before);
 });
 
 test('colour mood reaches the canvas engine and persists', async ({ nordlysPage }) => {
@@ -247,4 +276,126 @@ test('every moving part keeps the pace the slider sets', async ({ nordlysPage })
   expect(full, 'a meteor at full pace travels').toBeGreaterThan(10);
   expect(tenth, 'and at a tenth of the pace it travels about a tenth as far')
     .toBeLessThan(full * 0.25);
+});
+
+/* The sky is scattered from a stored seed. A new tab used to scatter it again,
+   so the frost a person liked was gone the next time they looked; now reload
+   is the same sky, Shuffle is a different one, and Undo is the last one. */
+test('the sky keeps its composition across reloads, and shuffle is one undo away', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const still = async () => page.evaluate(async () => {
+    window.Nordlys.config.bgMode = 'frost';
+    window.Nordlys.config.bgMotion = 0;
+    await window.Nordlys.updateBackgroundMode();
+    const engine = window.Nordlys.bgEngine;
+    engine.t = NORDLYS_REST_PHASE.frost;
+    engine.render(0);
+    return document.getElementById('bg-canvas').toDataURL();
+  });
+  const first = await still();
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  expect(await still(), 'a reload is the same sky').toBe(first);
+
+  await openBackground(page);
+  await page.locator('#bg-shuffle').click();
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.bgSeed).not.toBe(0);
+  const shuffled = await still();
+  expect(shuffled, 'shuffle scatters a different sky').not.toBe(first);
+
+  await page.locator('.toast .toast-action').last().click();
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.bgSeed).toBe(0);
+  expect(await still(), 'undo brings the previous sky back').toBe(first);
+});
+
+/* Halo draws tonight's moon, from the date alone. The same sky at a new moon and
+   a full moon is two different pictures; with the real sky off it holds full. */
+test('Halo follows the real moon, and holds a full one when told not to', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const moonAt = iso => page.evaluate(async when => {
+    window.Nordlys.config.bgMode = 'halo';
+    window.Nordlys.config.bgMotion = 0;
+    await window.Nordlys.updateBackgroundMode();
+    const engine = window.Nordlys.bgEngine;
+    engine.now = () => new Date(when);
+    engine.moonCache = null;
+    engine.t = NORDLYS_REST_PHASE.halo;
+    engine.render(0);
+    // The moon itself, top right: read back just that patch.
+    const canvas = document.getElementById('bg-canvas');
+    const ratio = canvas.width / innerWidth;
+    const x = Math.round(innerWidth * 0.775 * ratio), y = Math.round(innerHeight * 0.24 * ratio);
+    const { data } = canvas.getContext('2d').getImageData(x - 20, y - 20, 40, 40);
+    let lit = 0;
+    for (let i = 0; i < data.length; i += 4) lit += data[i + 3] > 200 ? 1 : 0;
+    return { lit, info: engine.moonTonight() };
+  }, iso);
+  const newMoon = await moonAt('2024-04-08T18:21:00Z');
+  const fullMoon = await moonAt('2024-10-17T11:26:00Z');
+  expect(newMoon.info.illumination).toBeLessThan(0.02);
+  expect(fullMoon.info.illumination).toBeGreaterThan(0.98);
+  expect(fullMoon.lit, 'a full moon lights more of its patch').toBeGreaterThan(newMoon.lit * 2);
+
+  await openBackground(page);
+  await page.locator('.scene-card[data-scene="halo"]').click();
+  await expect(page.locator('#bg-moon-tonight')).toHaveText(/^Tonight: .+, \d+% lit$/);
+  await page.locator('label.tg:has(#cfg-bg-real-sky)').click();
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.bgRealSky).toBe(false);
+  expect((await moonAt('2024-04-08T18:21:00Z')).info.illumination, 'held full').toBe(1);
+});
+
+/* A mood can start from somewhere other than three blank pickers: two harmonies
+   of its first colour, and — when there is one — the person's own wallpaper. */
+test('a mood can start from a harmony, or from the wallpaper when there is one', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await openBackground(page);
+  await expect(page.locator('#bg-palette-wallpaper')).toBeHidden();
+  await page.locator('#bg-palette-new').click();
+  const hexes = () => page.locator('#bg-palette-colors .hex-text').evaluateAll(nodes => nodes.map(node => node.value));
+  const first = (await hexes())[0];
+  await page.locator('[data-harmony="split"]').click();
+  const split = await hexes();
+  expect(split[0]).toBe(first);
+  expect(new Set(split).size).toBe(3);
+  expect(await page.evaluate(() => window.Nordlys.bgEngine.palette)).toEqual(split);
+  await page.locator('#bg-palette-cancel').click();
+
+  // A wallpaper of three flat bands, stored the way an upload stores it.
+  await page.evaluate(async () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 90; canvas.height = 30;
+    const context = canvas.getContext('2d');
+    [['#1446a0', 0], ['#e68c28', 30], ['#1e783c', 60]].forEach(([fill, x]) => { context.fillStyle = fill; context.fillRect(x, 0, 30, 30); });
+    const blob = await new Promise(done => canvas.toBlob(done, 'image/png'));
+    await MediaVault.saveMedia('custom_bg', blob, 'image/png');
+  });
+  await page.locator('#bg-palette-new').click();
+  await expect(page.locator('#bg-palette-wallpaper')).toBeVisible();
+  const fresh = (await hexes()).join();
+  await page.locator('#bg-palette-wallpaper').click();
+  // Reading the wallpaper back is asynchronous; wait for the draft to change.
+  await expect.poll(async () => (await hexes()).join()).not.toBe(fresh);
+  const fromWallpaper = await hexes();
+  // An orange, a blue and a green, in some order: the picture's own colours.
+  const channels = fromWallpaper.map(hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)));
+  expect(channels.some(([r, g, b]) => r > g && r > b)).toBe(true);
+  expect(channels.some(([r, g, b]) => b > r && b > g)).toBe(true);
+  expect(channels.some(([r, g, b]) => g > r && g > b)).toBe(true);
+});
+
+/* A mood can become a whole theme: the studio opens with the mood's colours
+   as its three base colours, derives the rest, and keeps the text readable. */
+test('a mood becomes a theme in the studio, readable from the start', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await openBackground(page);
+  await expect(page.locator('#bg-palette-theme')).toBeHidden();
+  await page.locator('[data-palette="ember"]').click();
+  await expect(page.locator('#bg-palette-theme')).toBeVisible();
+  await page.locator('#bg-palette-theme').click();
+  await expect(page.locator('#custom-theme-editor-card')).toBeVisible();
+  await expect(page.locator('#thm-accent-hex')).toHaveValue('#ffd166');
+  await expect(page.locator('#thm-name-input')).toHaveValue('Ember');
+  // The page is wearing it, and the studio has nothing to warn about.
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim())).toBe('#ffd166');
+  await expect(page.locator('#custom-theme-contrast-warning')).toBeHidden();
 });

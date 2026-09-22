@@ -32,7 +32,12 @@
 }
 
 /* ── Authentic Frosted Glass Theme ────────────────────────────── */
-[data-theme="frosted-glass"], [data-theme="liquid-glass"], [data-theme="liquid-tahoe"] {
+/* Written the way every theme in themes.css is: `html[data-theme]` outranks the
+   bare `:root` those themes use for their defaults. As a bare attribute it tied
+   with that `:root` and lost on load order, so Frosted Glass rendered with
+   Aurora Void's ink, dim and accent — its folder names measured 1.8 to one. */
+:root[data-theme="frosted-glass"], html[data-theme="frosted-glass"],
+html[data-theme="liquid-glass"], html[data-theme="liquid-tahoe"] {
   --theme-name: "Frosted Glass";
   --void: #0b1220;
   --void-gradient: radial-gradient(120% 100% at 50% 0%, #152037 0%, #0c1424 55%, #050812 100%);
@@ -54,12 +59,17 @@
 [data-theme="frosted-glass"] .card,
 [data-theme="liquid-glass"] .card,
 [data-theme="liquid-tahoe"] .card {
-  /* --glass-opacity (0.1–0.95) is scaled into the white-frost alpha range */
-  background: linear-gradient(
-    165deg,
-    rgba(255, 255, 255, calc(var(--glass-opacity, 0.7) * 0.22)) 0%,
-    rgba(255, 255, 255, calc(var(--glass-opacity, 0.7) * 0.06)) 100%
-  );
+  /* --glass-opacity (0.1–0.95) is scaled into the white-frost alpha range. The
+     frost is a sheen over a dark ground, the way a dark frosted material is
+     built: white frost alone over a bright sky put white text on near-white,
+     3.8 to one where a frond of Frost ran behind a folder's name. */
+  background:
+    linear-gradient(
+      165deg,
+      rgba(255, 255, 255, calc(var(--glass-opacity, 0.7) * 0.22)) 0%,
+      rgba(255, 255, 255, calc(var(--glass-opacity, 0.7) * 0.06)) 100%
+    ),
+    rgba(9, 14, 26, calc(0.2 + var(--glass-opacity, 0.7) * 0.4));
   border: 1px solid rgba(255, 255, 255, calc(var(--glass-border-sheen, 0.45) * 0.75));
   backdrop-filter: blur(var(--glass-blur, 28px)) saturate(var(--glass-saturate, 160%));
   -webkit-backdrop-filter: blur(var(--glass-blur, 28px)) saturate(var(--glass-saturate, 160%));

@@ -1,0 +1,443 @@
+{
+  "aurora-void": [
+    {
+      "scene": "silk",
+      "mood": "mono",
+      "phase": 7.4,
+      "margin": 1.056
+    },
+    {
+      "scene": "silk",
+      "mood": "polar",
+      "phase": 7.4,
+      "margin": 1.057
+    },
+    {
+      "scene": "silk",
+      "mood": "ember",
+      "phase": 7.4,
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 1.052
+    }
+  ],
+  "boreal-emerald": [
+    {
+      "scene": "silk",
+      "mood": "theme",
+      "phase": 31.7,
+      "margin": 1.552
+    },
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "margin": 1.678
+    },
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T05:02:00Z",
+      "margin": 1.678
+    }
+  ],
+  "catppuccin-mocha": [
+    {
+      "scene": "silk",
+      "mood": "theme",
+      "phase": 7.4,
+      "margin": 1.01
+    },
+    {
+      "scene": "silk",
+      "mood": "polar",
+      "phase": 7.4,
+      "margin": 1.02
+    },
+    {
+      "scene": "silk",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 1.005
+    }
+  ],
+  "cyberpunk-neon": [
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "margin": 1.127
+    },
+    {
+      "scene": "aurora",
+      "mood": "polar",
+      "phase": 7.4,
+      "margin": 1.127
+    },
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T05:02:00Z",
+      "margin": 1.127
+    }
+  ],
+  "dracula-velvet": [
+    {
+      "scene": "frost",
+      "mood": "theme",
+      "phase": 7.4,
+      "margin": 1.065
+    },
+    {
+      "scene": "horizon",
+      "mood": "theme",
+      "phase": 31.7,
+      "margin": 1.071
+    },
+    {
+      "scene": "frost",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T05:02:00Z",
+      "margin": 1.01
+    }
+  ],
+  "frosted-glass": [
+    {
+      "scene": "frost",
+      "mood": "polar",
+      "phase": 7.4,
+      "margin": 1.498
+    },
+    {
+      "scene": "frost",
+      "mood": "ember",
+      "phase": 7.4,
+      "margin": 1.526
+    },
+    {
+      "scene": "frost",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T05:02:00Z",
+      "margin": 1.497
+    }
+  ],
+  "gruvbox-dark": [
+    {
+      "scene": "silk",
+      "mood": "mono",
+      "phase": 7.4,
+      "margin": 1.089
+    },
+    {
+      "scene": "silk",
+      "mood": "polar",
+      "phase": 7.4,
+      "margin": 1.093
+    },
+    {
+      "scene": "silk",
+      "mood": "ember",
+      "phase": 7.4,
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 1.083
+    }
+  ],
+  "gruvbox-light": [
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "margin": 1.101
+    },
+    {
+      "scene": "aurora",
+      "mood": "polar",
+      "phase": 7.4,
+      "margin": 1.101
+    },
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T05:02:00Z",
+      "margin": 1.101
+    }
+  ],
+  "lavender-mist": [
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "margin": 1.005
+    },
+    {
+      "scene": "aurora",
+      "mood": "polar",
+      "phase": 7.4,
+      "margin": 1.005
+    },
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T05:02:00Z",
+      "margin": 1.005
+    }
+  ],
+  "mint-breeze": [
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "margin": 1.137
+    },
+    {
+      "scene": "aurora",
+      "mood": "polar",
+      "phase": 7.4,
+      "margin": 1.137
+    },
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T05:02:00Z",
+      "margin": 1.137
+    }
+  ],
+  "nord-frost": [
+    {
+      "scene": "silk",
+      "mood": "mono",
+      "phase": 7.4,
+      "margin": 1.33
+    },
+    {
+      "scene": "silk",
+      "mood": "polar",
+      "phase": 7.4,
+      "margin": 1.335
+    },
+    {
+      "scene": "silk",
+      "mood": "ember",
+      "phase": 7.4,
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 1.322
+    }
+  ],
+  "nordic-snow": [
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "margin": 1.039
+    },
+    {
+      "scene": "aurora",
+      "mood": "polar",
+      "phase": 7.4,
+      "margin": 1.039
+    },
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T05:02:00Z",
+      "margin": 1.039
+    }
+  ],
+  "oled-obsidian": [
+    {
+      "scene": "silk",
+      "mood": "mono",
+      "phase": 7.4,
+      "margin": 1.017
+    },
+    {
+      "scene": "silk",
+      "mood": "ember",
+      "phase": 7.4,
+      "margin": 1.022
+    },
+    {
+      "scene": "silk",
+      "mood": "mono",
+      "phase": 7.4,
+      "daylight": "2026-09-22T17:42:00Z",
+      "margin": 1.017
+    }
+  ],
+  "peach-sunset": [
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "margin": 1.159
+    },
+    {
+      "scene": "aurora",
+      "mood": "polar",
+      "phase": 7.4,
+      "margin": 1.159
+    },
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T05:02:00Z",
+      "margin": 1.159
+    }
+  ],
+  "porcelain-light": [
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "margin": 1.103
+    },
+    {
+      "scene": "silk",
+      "mood": "violet",
+      "phase": 7.4,
+      "margin": 1.106
+    },
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T17:42:00Z",
+      "margin": 1.101
+    }
+  ],
+  "sage-light": [
+    {
+      "scene": "silk",
+      "mood": "violet",
+      "phase": 7.4,
+      "margin": 1.206
+    },
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "margin": 1.209
+    },
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T17:42:00Z",
+      "margin": 1.209
+    }
+  ],
+  "sakura-daylight": [
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "margin": 1.207
+    },
+    {
+      "scene": "aurora",
+      "mood": "polar",
+      "phase": 7.4,
+      "margin": 1.207
+    },
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T05:02:00Z",
+      "margin": 1.207
+    }
+  ],
+  "solarized-light": [
+    {
+      "scene": "silk",
+      "mood": "theme",
+      "phase": 31.7,
+      "margin": 1.05
+    },
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 31.7,
+      "margin": 1.069
+    },
+    {
+      "scene": "silk",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T17:05:00Z",
+      "margin": 1.047
+    }
+  ],
+  "sunset-amber": [
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "margin": 1.519
+    },
+    {
+      "scene": "aurora",
+      "mood": "polar",
+      "phase": 7.4,
+      "margin": 1.519
+    },
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T05:02:00Z",
+      "margin": 1.519
+    }
+  ],
+  "tokyo-night": [
+    {
+      "scene": "silk",
+      "mood": "mono",
+      "phase": 7.4,
+      "margin": 1.05
+    },
+    {
+      "scene": "silk",
+      "mood": "polar",
+      "phase": 7.4,
+      "margin": 1.056
+    },
+    {
+      "scene": "frost",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T05:02:00Z",
+      "margin": 1.027
+    }
+  ],
+  "warm-ivory": [
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "margin": 1.166
+    },
+    {
+      "scene": "silk",
+      "mood": "violet",
+      "phase": 7.4,
+      "margin": 1.166
+    },
+    {
+      "scene": "aurora",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T05:02:00Z",
+      "margin": 1.166
+    }
+  ]
+}
