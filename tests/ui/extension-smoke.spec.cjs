@@ -32,3 +32,32 @@ test('loads the real unpacked MV3 extension with its derived id and no CSP error
     rmSync(profile, { recursive: true, force: true });
   }
 });
+
+/* The manifest no longer exposes anything to websites. The new tab page is an
+   extension page, so Chrome's favicon store is still its to read: the list was
+   only ever needed by content scripts, and Nordlys has none. */
+test('favicons still load from the extension page with nothing web-accessible', async () => {
+  const extensionPath = resolve(__dirname, '../..');
+  const profile = mkdtempSync(join(tmpdir(), 'nordlys-extension-'));
+  let context;
+  try {
+    context = await chromium.launchPersistentContext(profile, {
+      channel: 'chromium', headless: true,
+      args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`]
+    });
+    const page = context.pages()[0] || await context.newPage();
+    await page.goto('chrome://newtab');
+    await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+    // What a tile does: point an image at the favicon store and let it decode.
+    const width = await page.evaluate(() => new Promise(done => {
+      const image = new Image();
+      image.onload = () => done(image.naturalWidth);
+      image.onerror = () => done(0);
+      image.src = chrome.runtime.getURL('/_favicon/?pageUrl=https%3A%2F%2Fgithub.com%2F&size=64');
+    }));
+    expect(width).toBeGreaterThan(0);
+  } finally {
+    await context?.close();
+    rmSync(profile, { recursive: true, force: true });
+  }
+});

@@ -13,8 +13,18 @@ test('Appearance uses selectable two-column theme cards and a shared live tile p
   const columns = await page.locator('#theme-dark-grid').evaluate(node => getComputedStyle(node).gridTemplateColumns.split(' ').length);
   expect(columns).toBe(2);
   await expect(page.locator('#advanced-glass-settings')).not.toHaveAttribute('open', '');
-  await expect(page.locator('#appearance-shared-preview .card .tile .box')).toBeVisible();
-  await expect(page.locator('#appearance-shared-preview .lbl')).toHaveText('Nordlys Studio');
+  // The preview is the person's own first bookmarks, inert, not an invented one.
+  await expect(page.locator('#appearance-shared-preview .card .tile .box').first()).toBeVisible();
+  await expect(page.locator('#appearance-shared-preview .lbl')).toHaveText(['YouTube', 'Notion', 'ChatGPT']);
+  expect(await page.locator('#appearance-shared-preview a, #appearance-shared-preview [href]').count()).toBe(0);
+});
+
+test.describe('with nothing on the board', () => {
+  test.use({ nordlysBoard: null });
+  test('the Appearance preview keeps a single sample tile', async ({ nordlysPage }) => {
+    const { page } = nordlysPage; await page.locator('#gear').click();
+    await expect(page.locator('#appearance-shared-preview .lbl')).toHaveText('Nordlys Studio');
+  });
 });
 
 test('all built-in themes retain semantic colors and identical component geometry', async ({ nordlysPage }) => {

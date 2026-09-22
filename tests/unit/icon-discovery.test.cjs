@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { vectorDataUrl, search } = require('../../src/js/icon-discovery.js');
+const { vectorDataUrl, search, titleFromSlug } = require('../../src/js/icon-discovery.js');
 
 test('brand vectors become inert path-only data URLs', () => {
   const url = vectorDataUrl({ width: 24, height: 24, body: '<path fill="currentColor" d="M2 2H22V22H2Z"/>' }, '#35d6c0');
@@ -18,4 +18,15 @@ test('active or unsupported SVG markup is refused', () => {
 test('oversized provider responses are rejected before parsing', async () => {
   const fetchImpl = async () => new Response(' '.repeat(512 * 1024 + 1), { status: 200, headers: { 'content-type': 'application/json' } });
   await assert.rejects(search('github', { fetchImpl }), /too large/);
+});
+
+/* Simple Icons runs a brand's words together; a result used to read
+   "Githubactions" and "Googledrive". */
+test('search results are named the way the brands name themselves', () => {
+  const expectations = {
+    github: 'GitHub', githubactions: 'GitHub Actions', googledrive: 'Google Drive', microsoftteams: 'Microsoft Teams',
+    stackoverflow: 'Stack Overflow', youtubemusic: 'YouTube Music', nodedotjs: 'Node.js', figma: 'Figma',
+    adobephotoshop: 'Adobe Photoshop', 'hacker-news': 'Hacker News', app: 'App', npm: 'npm'
+  };
+  for (const [slug, title] of Object.entries(expectations)) assert.equal(titleFromSlug(slug), title, slug);
 });

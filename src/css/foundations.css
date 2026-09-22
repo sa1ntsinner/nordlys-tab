@@ -13,6 +13,11 @@
   --nl-border: var(--glass-border, rgba(255, 255, 255, .12));
   --nl-border-strong: rgba(255, 255, 255, .22);
   --nl-accent: var(--accent, #7c9cff);
+  /* The accent as ink. A light theme's accent is a mid-tone chosen to fill a
+     control, and as text it measured 2.6 to 3.6 to one on its own panels;
+     those themes declare a deeper --accent-ink of the same hue. Fills,
+     borders and rings keep --nl-accent. */
+  --nl-accent-text: var(--accent-ink, var(--accent, #7c9cff));
   --nl-on-accent: #071018;
   --nl-focus: #a9c4ff;
   --nl-focus-outer: rgba(3, 7, 18, .86);
@@ -151,6 +156,35 @@ html[data-glass="off"] {
   --glass-border-sheen: 0;
 }
 
+/* High legibility — asked for by the system (prefers-contrast: more) or by the
+   switch in Appearance. Solid glass, the quieter text tiers pulled towards the
+   ink, and a shadow under the words that sit straight on the sky. The sky
+   itself is dimmed and its quiet zones held to 7:1 by the scripts. */
+html[data-legibility="high"] {
+  --glass-blur: 0px;
+  --glass-saturate: 100%;
+  --glass-opacity: 1;
+  --glass-border-sheen: 0;
+  --nl-text-secondary: color-mix(in oklch, var(--dim, #a7b5d0) 50%, var(--ink, #e9effb));
+  --nl-text-tertiary: color-mix(in oklch, var(--faint, #8da0c2) 45%, var(--ink, #e9effb));
+}
+html[data-legibility="high"] :is(#clock, #date, #greet) {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 0 12px rgba(0, 0, 0, 0.45);
+}
+html.light-ui[data-legibility="high"] :is(#clock, #date, #greet) {
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8), 0 0 12px rgba(255, 255, 255, 0.55);
+}
+
+/* Forced colours: the system decides every colour, so the painted sky — which
+   it cannot recolour — steps aside, and so does anything translucent over it. */
+@media (forced-colors: active) {
+  #bg-canvas, #veil, #dim { display: none !important; }
+  :where(.card, #search, #cfg, .glass-context-menu, .quick-modal-card, .toast) {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
 /* Blur is not free and is not universal. Where the browser cannot do it, the
    surface must already be opaque enough to read against, not merely lighter. */
 @supports not (backdrop-filter: blur(1px)) {
@@ -161,6 +195,25 @@ html[data-glass="off"] {
   outline: 2px solid var(--nl-focus);
   outline-offset: 2px;
   box-shadow: 0 0 0 4px var(--nl-focus-outer);
+}
+
+/* Form controls do not inherit type from the page: the browser gives buttons
+   its own face at 13.33px. So the rail, the first-run actions, Export, Save
+   mood and a dozen other buttons rendered in Arial, and the three typography
+   slots never reached any of them. Zero specificity, so every component rule
+   that sets its own size, weight or colour still wins. */
+:where(button, input, select, textarea, optgroup) {
+  font-family: inherit;
+  font-size: var(--nl-text-sm);
+  letter-spacing: inherit;
+  color: inherit;
+}
+
+/* Placeholders are text. The browser's grey measured 3.2 to one on the
+   settings fields in Nord Frost; the tertiary tier is held above 4.8. */
+::placeholder {
+  color: var(--nl-text-tertiary);
+  opacity: 1;
 }
 
 /* Author display rules must never override the platform's closed-layer state. */

@@ -418,16 +418,37 @@
     return window.I18N ? window.I18N.t(key, params) : null;
   }
 
+  /* The product's one recovery affordance, and therefore the one every
+     destructive path is expected to reach for rather than inventing a second.
+     It says what happened out loud as well as on screen, so the same sentence
+     reaches somebody who cannot see the dock, and it asks the dock for room the
+     same way an ordinary notice does — a toast that appended past the cap was
+     how three notices came to evict an Undo. */
   function showUndoToast({ message, actionLabel, onAction, duration = 5000 }) {
     actionLabel = actionLabel || undoText('toast.undo') || 'Undo';
     const dock = document.getElementById('toast-dock') || document.body;
+    /* A bare reference, not window.NordlysToast: ui-kit.js declares it with
+       const, so it is a global binding and never a property of window. */
+    if (typeof NordlysToast !== 'undefined') NordlysToast.makeRoom(dock);
     const item = document.createElement('div'); item.className = 'toast toast-info on'; item.setAttribute('role', 'status');
     const text = document.createElement('span'); text.textContent = message;
     const button = document.createElement('button'); button.type = 'button'; button.className = 'toast-action'; button.textContent = actionLabel;
     let active = true; const finish = action => { if (!active) return; active = false; clearTimeout(timer); item.remove(); if (action) onAction?.(); };
     button.addEventListener('click', () => finish(true)); item.append(text, button); dock.append(item);
+    announce(message);
     const timer = setTimeout(() => finish(false), duration); return { dismiss: () => finish(false) };
   }
 
-  window.NordlysUI = { FocusScope, DialogController, RovingTabs, MenuController, SelectMenu, enhanceSelect, enhanceSelects, refreshSelects, announce, showUndoToast, undoText, animateReflow, visibleFocusable, layers };
+  /* Resolves once every finite CSS animation and transition on the page has
+     ended, so a colour read afterwards is the colour being moved to rather than
+     one halfway there. A view transition's own snapshot animations are left out:
+     they move pictures of the page, never a real element's computed style. */
+  function settled() {
+    return Promise.all(document.getAnimations()
+      .filter(animation => animation.effect?.getComputedTiming?.().iterations !== Infinity
+        && !String(animation.effect?.pseudoElement || '').startsWith('::view-transition'))
+      .map(animation => animation.finished.catch(() => {})));
+  }
+
+  window.NordlysUI = { FocusScope, DialogController, RovingTabs, MenuController, SelectMenu, enhanceSelect, enhanceSelects, refreshSelects, announce, showUndoToast, undoText, animateReflow, visibleFocusable, layers, settled };
 })();

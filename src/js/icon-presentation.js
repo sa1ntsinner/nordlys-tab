@@ -24,6 +24,7 @@
   function renderIcon(presentation) {
     const wrapper = document.createElement('span'); wrapper.className = 'nl-icon';
     wrapper.dataset.iconKind = presentation.kind;
+    if (presentation.key) wrapper.dataset.iconKey = presentation.key;
     if (presentation.source.tone) wrapper.dataset.iconToneChoice = presentation.source.tone;
     wrapper.style.setProperty('--icon-optical-scale', presentation.opticalScale);
     wrapper.style.setProperty('--icon-accent', presentation.accent);
@@ -78,13 +79,32 @@
 
   /* Composite the plate over its ancestors until the stack is opaque, so a
      translucent plate is judged by what the eye receives, not by its own alpha. */
+  /* A gradient is judged by the average of its stops. Light themes paint their
+     plates entirely with gradients, over a transparent background colour, and
+     reading only the colour judged every one of them by whatever sat behind. */
+  const COLOUR_TOKEN = /rgba?\([^)]*\)|color\([^)]*\)|#[0-9a-f]{3,8}\b/gi;
+  function gradientAverage(image) {
+    const stops = (image && image !== 'none' ? image.match(COLOUR_TOKEN) : null) || [];
+    if (!stops.length) return null;
+    const sum = [0, 0, 0, 0];
+    for (const stop of stops) {
+      const [r, g, b, a] = paint(stop);
+      sum[0] += r * a; sum[1] += g * a; sum[2] += b * a; sum[3] += a;
+    }
+    if (!sum[3]) return null;
+    const alpha = sum[3] / stops.length / 255;
+    return `rgba(${Math.round(sum[0] / sum[3])}, ${Math.round(sum[1] / sum[3])}, ${Math.round(sum[2] / sum[3])}, ${alpha.toFixed(3)})`;
+  }
+
   function plateLuminance(node) {
     const layers = [];
     for (let current = node; current; current = current.parentElement) {
-      const background = getComputedStyle(current).backgroundColor;
-      if (paint(background)[3] === 0) continue;
-      layers.unshift(background);
-      if (paint(background)[3] > 250) break;
+      const style = getComputedStyle(current);
+      const painted = [gradientAverage(style.backgroundImage), style.backgroundColor].filter(layer => layer && paint(layer)[3] > 0);
+      if (!painted.length) continue;
+      // The image sits over the colour, so it is the later of the two to paint.
+      layers.unshift(...painted.reverse());
+      if (painted.some(layer => paint(layer)[3] > 250)) break;
     }
     const context = canvas2d(); context.canvas.width = context.canvas.height = 1;
     context.clearRect(0, 0, 1, 1); context.fillStyle = '#000'; context.fillRect(0, 0, 1, 1);
@@ -158,6 +178,27 @@
      art alone, 'light'/'dark' force a direction, anything else re-decides. */
   const COLOURFUL_ENOUGH = 0.25;
 
+  // Glyphs from the library, which carry the bookmark's own colour.
+  const GENERIC_GLYPHS = new Set(['school', 'keyboard', 'terminal', 'globe', 'brain', 'tag', 'crosshair', 'flag', 'steering', 'bag']);
+  const GLYPH_CONTRAST = 3;
+
+  /* The chosen colour if it already reads on the plate; otherwise the nearest
+     colour of the same hue that does, or null if even black or white would not. */
+  function readableAgainst(rgb, surface, target) {
+    const [r, g, b] = rgb;
+    if (contrast(luminanceOf(r, g, b), surface) >= target) return null;
+    const lighter = surface < 0.18;
+    const { toOklch, displayable } = window.NordlysColour;
+    let [L, C, H] = toOklch([r, g, b]);
+    for (let step = 0; step < 200; step++) {
+      L += lighter ? 0.005 : -0.005;
+      if (L <= 0 || L >= 1) break;
+      const [x, y, z] = displayable(L, C, H);
+      if (contrast(luminanceOf(x, y, z), surface) >= target) return `rgb(${x}, ${y}, ${z})`;
+    }
+    return null;
+  }
+
   function wearTone(wrapper, tone) {
     if (tone) wrapper.dataset.iconTone = tone; else delete wrapper.dataset.iconTone;
   }
@@ -170,15 +211,31 @@
 
     // Always measure on a settled frame. Callers build tiles detached and attach
     // them afterwards — getComputedStyle reports nothing for a detached element —
-    // and a theme swap runs through a view transition, so the palette is not in
-    // place the instant setTheme returns.
+    // and a theme swap runs through a view transition and then a colour
+    // transition, so the palette is not in place the instant setTheme returns.
+    // One frame used to be the whole wait, which measured the plate halfway
+    // between two themes and toned marks for the one being left.
     await new Promise(resolve => requestAnimationFrame(resolve));
+    await window.NordlysUI?.settled?.();
     if (!plate.isConnected) return;
+    const surface = plateLuminance(plate);
+
+    /* A library glyph — a bag, a school, a flag — wears the colour the person
+       gave the bookmark, not a brand's, so its displayed colour may move: same
+       hue, same chroma, lightness walked away from the plate until it reads at
+       3:1. What is stored stays exactly what they chose. */
+    if (GENERIC_GLYPHS.has(wrapper.dataset.iconKey)) {
+      const chosen = wrapper.dataset.iconSource;
+      const shown = chosen && chosen !== 'var(--nl-text-primary)' ? readableAgainst(paint(chosen, '#000'), surface, GLYPH_CONTRAST) : null;
+      if (shown) wrapper.style.setProperty('--icon-accent', shown); else if (chosen) wrapper.style.setProperty('--icon-accent', chosen);
+      wearTone(wrapper, null);
+      return;
+    }
+
     const icon = await iconAppearance(wrapper);
     if (!plate.isConnected) return;
     if (!icon) { wearTone(wrapper, null); return; }
 
-    const surface = plateLuminance(plate);
     if (contrast(icon.luminance, surface) >= MIN_ICON_CONTRAST) { wearTone(wrapper, null); return; }
     // It is hard to see — but re-toning a coloured logo would destroy it, so that
     // case is left to the per-bookmark control rather than guessed at.
@@ -194,5 +251,5 @@
     });
   }
 
-  window.NordlysIcons = { classifyIcon, resolvePresentation, renderIcon, applyIconContrast, refreshIconContrast, MIN_ICON_CONTRAST };
+  window.NordlysIcons = { classifyIcon, resolvePresentation, renderIcon, applyIconContrast, refreshIconContrast, readableAgainst, gradientAverage, MIN_ICON_CONTRAST };
 })();

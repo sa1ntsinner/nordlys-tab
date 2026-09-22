@@ -4,11 +4,16 @@
 
 /* Fallback names, and the keys that translate them. Marking the card with
    data-i18n lets a language switch retranslate it without a listener here. */
+/* The fallbacks used to read Aurora / Drift / Horizon while the dictionary that
+   actually paints the cards said Nordlys / Contour / Fjord, so a missing key or
+   a late I18N renamed three scenes on the spot. Same words in both places now. */
 const SCENE_NAMES = {
-  "aurora": "Aurora",
+  "aurora": "Nordlys",
   "halo": "Halo",
-  "drift": "Drift",
-  "horizon": "Horizon",
+  "silk": "Silk",
+  "frost": "Frost",
+  "drift": "Contour",
+  "horizon": "Fjord",
   "custom-image": "Wallpaper",
   "custom-video": "Video",
   "solid": "Solid"
@@ -16,6 +21,8 @@ const SCENE_NAMES = {
 const SCENE_KEYS = {
   "aurora": "scene.aurora",
   "halo": "scene.halo",
+  "silk": "scene.silk",
+  "frost": "scene.frost",
   "drift": "scene.drift",
   "horizon": "scene.horizon",
   "custom-image": "scene.wallpaper",
@@ -34,12 +41,20 @@ class SettingsController {
     this.customThemes = this.loadCustomThemes();
     this.shell = new NordlysSettingsShell({
       root: this.drawer,
-      opener: document.getElementById("gear")
+      opener: document.getElementById("gear"),
+      // However the panel closes — Escape, the cross, a click outside — a look
+      // being tried on and never kept is put back.
+      onClosed: () => { if (this.lookTrial) this.revertLook(); }
     });
     this.bookmarkSettings = new NordlysBookmarkSettings({
       app: this.app,
       root: document.getElementById("cfg-groups-editor"),
       openIconPicker: (gIdx, lIdx, opener) => this.openIconModal(gIdx, lIdx, opener)
+    });
+    this.support = new NordlysSupportSettings({
+      root: document.getElementById("sec-support"),
+      // For the one number the About block prints, and nothing else.
+      app: this.app
     });
     this.iconPicker = new NordlysIconPicker({
       dialogRoot: this.modal,
@@ -59,6 +74,7 @@ class SettingsController {
     this.initRestorePoint();
     this.initScenePicker();
     this.initTypography();
+    this.initLookShare();
     // Every native dropdown gets a themed control drawn over it; the element
     // stays as the value source but stops painting platform chrome.
     window.NordlysUI?.enhanceSelects(document);
@@ -75,6 +91,26 @@ class SettingsController {
     const personalGrid = document.getElementById("bg-personal-grid");
     if (!select || !grid || !personalGrid) return;
 
+    /* The generative previews are stills of the real scenes (paintStill), so
+       they are drawn once the grid has a size to draw into, and again whenever
+       the palette moves: a new mood, a new theme, a mood still being mixed. */
+    let stillsQueued = false;
+    const paintStills = () => {
+      stillsQueued = false;
+      const engine = this.app.bgEngine;
+      if (!engine || !grid.offsetParent) return;
+      for (const still of grid.querySelectorAll("canvas.scene-still")) {
+        if (engine.paintStill(still, still.dataset.scene)) still.parentElement.classList.add("is-live");
+      }
+    };
+    const queueStills = () => {
+      if (stillsQueued) return;
+      stillsQueued = true;
+      requestAnimationFrame(paintStills);
+    };
+    if (typeof ResizeObserver === "function") new ResizeObserver(queueStills).observe(grid);
+    window.addEventListener("nordlys:palette", queueStills);
+
     const paint = () => {
       grid.replaceChildren();
       personalGrid.replaceChildren();
@@ -89,6 +125,12 @@ class SettingsController {
         preview.className = "scene-preview";
         preview.dataset.scene = option.value;
         preview.setAttribute("aria-hidden", "true");
+        if (NORDLYS_GENERATIVE_SCENES.has(option.value)) {
+          const still = document.createElement("canvas");
+          still.className = "scene-still";
+          still.dataset.scene = option.value;
+          preview.append(still);
+        }
         const name = document.createElement("span");
         name.className = "scene-name";
         // The stored labels are engine descriptions ("Dynamic Aurora Borealis
@@ -107,6 +149,7 @@ class SettingsController {
         const personal = ["custom-image", "custom-video", "solid"].includes(option.value);
         (personal ? personalGrid : grid).append(card);
       }
+      queueStills();
     };
 
     select.addEventListener("change", () => {
@@ -120,15 +163,20 @@ class SettingsController {
        slider with nothing to blur, is noise the user has to read and dismiss.
        Each control declares the scenes it belongs to and the rest step aside. */
     const SCENE_GROUPS = {
-      procedural: ["aurora", "halo", "drift", "horizon"],
       media: ["custom-image", "custom-video"],
-      image: ["custom-image"]
+      image: ["custom-image"],
+      halo: ["halo"]
     };
     const showRelevant = () => {
       const scene = select.value;
       for (const node of document.querySelectorAll("#sec-background [data-scene-only]")) {
-        const belongs = SCENE_GROUPS[node.dataset.sceneOnly] || [];
-        node.hidden = !belongs.includes(scene);
+        // "procedural" is every scene the canvas draws itself, which background.js
+        // already names; listing them again here is how a new atmosphere ships
+        // without the controls that belong to it.
+        const belongs = node.dataset.sceneOnly === "procedural"
+          ? NORDLYS_GENERATIVE_SCENES.has(scene)
+          : (SCENE_GROUPS[node.dataset.sceneOnly] || []).includes(scene);
+        node.hidden = !belongs;
       }
     };
 
@@ -166,19 +214,439 @@ class SettingsController {
       slider.addEventListener("change", () => { applyAtmosphere(); this.app.saveConfig(); });
     }
 
-    const paletteButtons = Array.from(document.querySelectorAll("#bg-palette-grid [data-palette]"));
-    const paintPalette = () => {
-      const selected = this.app.config.bgPalette || "theme";
-      paletteButtons.forEach((button) => {
-        button.setAttribute("aria-checked", String(button.dataset.palette === selected));
-      });
+    /* ── Colour moods ───────────────────────────────────────────────
+       Five that ship and as many as somebody cares to mix. A mood is three
+       colours and a name — nothing else about a scene changes with it — which
+       is why this is a row of chips and not a second theme studio. */
+    const paletteGrid = document.getElementById("bg-palette-grid");
+    const moodEditor = document.getElementById("bg-palette-editor");
+    const moodColours = document.getElementById("bg-palette-colors");
+    const moodName = document.getElementById("bg-palette-name");
+    const moodBar = document.getElementById("bg-palette-preview");
+    const moodError = document.getElementById("bg-palette-error");
+    const moodNew = document.getElementById("bg-palette-new");
+    const moodEdit = document.getElementById("bg-palette-edit");
+    const moodRemove = document.getElementById("bg-palette-remove");
+    const BUILT_IN_MOODS = [
+      ["theme", "Theme", "background.paletteTheme"],
+      ["polar", "Polar", "background.palettePolar"],
+      ["violet", "Violet", "background.paletteViolet"],
+      ["ember", "Ember", "background.paletteEmber"],
+      ["mono", "Mono", "background.paletteMono"]
+    ];
+    // Enough for anyone with a mood per season and a few spare; past this the
+    // row stops being a row and the chips stop being findable.
+    const MOOD_LIMIT = 12;
+    let moodDraft = null;
+
+    const say = (key, fallback, params) => {
+      const value = window.I18N?.t(key, params || {});
+      return value && value !== key ? value : fallback;
     };
-    paletteButtons.forEach((button) => button.addEventListener("click", () => {
-      this.app.config.bgPalette = button.dataset.palette;
+    const moods = () => (Array.isArray(this.app.config.bgPalettes) ? this.app.config.bgPalettes : []);
+    const moodById = (id) => moods().find((mood) => mood && mood.id === id) || null;
+
+    const moodChip = (id, label, i18nKey, colors) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "palette-chip";
+      chip.dataset.palette = id;
+      chip.setAttribute("role", "radio");
+      const swatch = document.createElement("i");
+      // The five that ship carry their swatch in CSS; a mixed one carries its
+      // own, because its colours are not known until somebody picks them.
+      if (colors) swatch.style.background = `conic-gradient(from 215deg, ${colors[0]}, ${colors[1]}, ${colors[2]}, ${colors[0]})`;
+      const text = document.createElement("span");
+      if (i18nKey) text.dataset.i18n = i18nKey;
+      text.textContent = i18nKey ? say(i18nKey, label) : label;
+      chip.append(swatch, text);
+      chip.addEventListener("click", () => chooseMood(id));
+      return chip;
+    };
+
+    const paintPalette = () => {
+      if (!paletteGrid) return;
+      const selected = this.app.config.bgPalette || "theme";
+      paletteGrid.replaceChildren();
+      for (const [id, label, key] of BUILT_IN_MOODS) paletteGrid.append(moodChip(id, label, key));
+      for (const mood of moods()) {
+        if (mood && mood.id) paletteGrid.append(moodChip(mood.id, mood.name || say("background.moodUntitled", "My mood"), null, mood.colors));
+      }
+      for (const chip of paletteGrid.querySelectorAll("[data-palette]")) {
+        chip.setAttribute("aria-checked", String(chip.dataset.palette === selected));
+      }
+      const mine = Boolean(moodById(selected));
+      if (moodEdit) moodEdit.hidden = !mine;
+      if (moodRemove) moodRemove.hidden = !mine;
+      // The theme's own mood is the theme already; any other can become one.
+      const themeFrom = document.getElementById("bg-palette-theme");
+      if (themeFrom) themeFrom.hidden = selected === "theme";
+    };
+
+    const commitMoods = () => {
+      this.app.bgEngine?.setPalettes(moods());
       applyAtmosphere();
       paintPalette();
       this.app.saveConfig();
-    }));
+    };
+
+    const chooseMood = (id) => {
+      this.app.config.bgPalette = id;
+      closeMoodEditor(false);
+      applyAtmosphere();
+      paintPalette();
+      this.app.saveConfig();
+    };
+
+    const drawMoodDraft = () => {
+      if (!moodDraft) return;
+      const [one, two, three] = moodDraft.colors;
+      if (moodBar) moodBar.style.background = `linear-gradient(100deg, ${one}, ${two} 52%, ${three})`;
+      // The sky itself is the swatch: colours are tried on the real canvas
+      // rather than on a rectangle that only resembles it.
+      this.app.bgEngine?.previewPalette(moodDraft.colors);
+    };
+
+    const buildMoodColours = () => {
+      if (!moodColours || !moodDraft) return;
+      moodColours.replaceChildren();
+      moodDraft.colors.forEach((value, index) => {
+        const field = document.createElement("div");
+        field.className = "palette-color";
+        const label = say("background.moodColour", `Colour ${index + 1}`, { index: index + 1 });
+        const well = document.createElement("input");
+        well.type = "color";
+        well.className = "color-well";
+        well.value = value;
+        well.setAttribute("aria-label", label);
+        const hex = document.createElement("input");
+        hex.type = "text";
+        hex.className = "hex-text";
+        hex.value = value;
+        hex.maxLength = 7;
+        hex.spellcheck = false;
+        hex.autocomplete = "off";
+        hex.setAttribute("aria-label", label);
+        well.addEventListener("input", () => {
+          moodDraft.colors[index] = well.value.toLowerCase();
+          hex.value = moodDraft.colors[index];
+          if (moodError) moodError.textContent = "";
+          drawMoodDraft();
+        });
+        hex.addEventListener("input", () => {
+          const typed = hex.value.trim().toLowerCase();
+          if (!/^#[0-9a-f]{6}$/.test(typed)) return;
+          moodDraft.colors[index] = typed;
+          well.value = typed;
+          if (moodError) moodError.textContent = "";
+          drawMoodDraft();
+        });
+        field.append(well, hex);
+        moodColours.append(field);
+      });
+    };
+
+    /* Two harmonies of the first colour, and the three colours a stored
+       wallpaper is mostly made of. All three only fill the draft: the sky shows
+       it at once, and nothing is kept until Save. */
+    const fillDraft = (colors) => {
+      if (!moodDraft || !Array.isArray(colors) || colors.length !== 3) return;
+      moodDraft.colors = colors.map((hex) => hex.toLowerCase());
+      if (moodError) moodError.textContent = "";
+      buildMoodColours();
+      drawMoodDraft();
+    };
+    document.querySelectorAll("#bg-palette-editor [data-harmony]").forEach((button) => {
+      button.addEventListener("click", () => fillDraft(window.NordlysColour?.harmony(moodDraft?.colors[0], button.dataset.harmony)));
+    });
+    const wallpaperButton = document.getElementById("bg-palette-wallpaper");
+    const wallpaperPixels = async () => {
+      const blob = await MediaVault.getMedia("custom_bg").catch(() => null);
+      if (!blob || !String(blob.type || "").startsWith("image/")) return null;
+      const bitmap = await createImageBitmap(blob).catch(() => null);
+      if (!bitmap) return null;
+      const canvas = document.createElement("canvas");
+      canvas.width = 64;
+      canvas.height = Math.max(1, Math.round((64 * bitmap.height) / bitmap.width));
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+      const pixels = [];
+      for (let i = 0; i < data.length; i += 4) if (data[i + 3] > 200) pixels.push([data[i], data[i + 1], data[i + 2]]);
+      return pixels;
+    };
+    wallpaperButton?.addEventListener("click", async () => {
+      const pixels = await wallpaperPixels();
+      if (pixels) fillDraft(window.NordlysColour?.paletteFromPixels(pixels));
+    });
+    const offerWallpaper = async () => {
+      if (!wallpaperButton) return;
+      const blob = await MediaVault.getMedia("custom_bg").catch(() => null);
+      wallpaperButton.hidden = !blob || !String(blob.type || "").startsWith("image/");
+    };
+
+    const openMoodEditor = (mood) => {
+      if (!moodEditor) return;
+      offerWallpaper();
+      /* A new mood starts from the one on screen rather than from three
+         arbitrary colours: the first move is a nudge away from something the
+         person already chose, which is a much easier first move. */
+      const live = this.app.bgEngine?.palette;
+      const from = mood ? mood.colors : (Array.isArray(live) && live.length === 3 ? live : ["#68e1d1", "#6ea8fe", "#9d8cff"]);
+      moodDraft = {
+        id: mood ? mood.id : `mood_${Date.now().toString(36)}`,
+        colors: from.map((value) => String(value).toLowerCase())
+      };
+      if (moodName) moodName.value = mood ? (mood.name || "") : "";
+      if (moodError) moodError.textContent = "";
+      buildMoodColours();
+      moodEditor.hidden = false;
+      if (moodNew) moodNew.hidden = true;
+      drawMoodDraft();
+      moodName?.focus();
+    };
+
+    const closeMoodEditor = (restore = true) => {
+      if (!moodEditor || moodEditor.hidden) return;
+      moodDraft = null;
+      moodEditor.hidden = true;
+      if (moodNew) moodNew.hidden = false;
+      if (moodError) moodError.textContent = "";
+      // Whatever was actually chosen comes back; nothing was written.
+      if (restore) this.app.bgEngine?.refreshPalette();
+    };
+
+    const saveMood = () => {
+      if (!moodDraft) return;
+      const colors = NordlysBackgroundEngine.paletteColors({ colors: moodDraft.colors });
+      if (!colors) {
+        if (moodError) moodError.textContent = say("background.moodBadColour", "Each colour needs a hex value such as #68e1d1.");
+        return;
+      }
+      const list = moods().slice();
+      const at = list.findIndex((mood) => mood && mood.id === moodDraft.id);
+      if (at < 0 && list.length >= MOOD_LIMIT) {
+        if (moodError) moodError.textContent = say("background.moodLimit", `You can keep ${MOOD_LIMIT} moods. Remove one to make another.`, { count: MOOD_LIMIT });
+        return;
+      }
+      const saved = { id: moodDraft.id, name: (moodName?.value || "").trim() || say("background.moodUntitled", "My mood"), colors };
+      if (at >= 0) list[at] = saved; else list.push(saved);
+      this.app.config.bgPalettes = list;
+      this.app.config.bgPalette = saved.id;
+      closeMoodEditor(false);
+      commitMoods();
+      window.NordlysUI?.announce?.(say("background.moodSaved", `${saved.name} saved`, { name: saved.name }));
+      paletteGrid?.querySelector(`[data-palette="${saved.id}"]`)?.focus();
+    };
+
+    /* Three colours are cheap to mix again, so removing one is done rather than
+       asked about — and taken back with the same undo every other deletion in
+       the product offers. */
+    const removeMood = () => {
+      const mood = moodById(this.app.config.bgPalette);
+      if (!mood) return;
+      const list = moods();
+      const at = list.findIndex((entry) => entry && entry.id === mood.id);
+      const snapshot = JSON.parse(JSON.stringify(mood));
+      this.app.config.bgPalettes = list.filter((entry) => entry !== mood);
+      this.app.config.bgPalette = "theme";
+      closeMoodEditor(false);
+      commitMoods();
+      window.NordlysUI?.showUndoToast?.({
+        message: say("background.moodRemoved", `${snapshot.name} removed`, { name: snapshot.name }),
+        onAction: () => {
+          const back = moods().slice();
+          back.splice(Math.min(at < 0 ? back.length : at, back.length), 0, snapshot);
+          this.app.config.bgPalettes = back;
+          this.app.config.bgPalette = snapshot.id;
+          commitMoods();
+          window.NordlysUI?.announce?.(say("background.moodRestored", `${snapshot.name} restored`, { name: snapshot.name }));
+        }
+      });
+    };
+
+    moodNew?.addEventListener("click", () => openMoodEditor(null));
+    moodEdit?.addEventListener("click", () => openMoodEditor(moodById(this.app.config.bgPalette)));
+    moodRemove?.addEventListener("click", removeMood);
+    document.getElementById("bg-palette-cancel")?.addEventListener("click", () => {
+      closeMoodEditor();
+      moodNew?.focus();
+    });
+    document.getElementById("bg-palette-save")?.addEventListener("click", saveMood);
+
+    /* A mood can become a whole theme: the theme studio opens with its three
+       base colours taken from the mood — a deep ground in the second colour's
+       hue, cards a step up from it, the first colour as the accent — and the
+       studio derives the rest and holds the text above AA as it always does.
+       Nothing is kept until it is saved there. */
+    document.getElementById("bg-palette-theme")?.addEventListener("click", () => {
+      const colors = this.app.bgEngine?.palette;
+      const C = window.NordlysColour;
+      if (!colors || !C) return;
+      const light = this.app.isLightTheme();
+      const hue = C.toOklch(C.hexToRgb(colors[1]))[2];
+      const base = {
+        bg: C.rgbToHex(C.displayable(light ? 0.97 : 0.16, light ? 0.012 : 0.03, hue)),
+        card: C.rgbToHex(C.displayable(light ? 0.995 : 0.22, light ? 0.008 : 0.038, hue)),
+        accent: colors[0]
+      };
+      this.shell.select("appearance");
+      const editor = document.getElementById("custom-theme-editor-card");
+      if (editor && editor.style.display === "none") document.getElementById("btn-create-custom-theme")?.click();
+      for (const [key, value] of Object.entries(base)) {
+        const hex = document.getElementById(`thm-${key}-hex`);
+        const well = document.getElementById(`thm-${key}-color`);
+        if (well) well.value = value;
+        if (hex) hex.value = value;
+      }
+      const name = document.getElementById("thm-name-input");
+      const mood = moodById(this.app.config.bgPalette);
+      if (name) name.value = mood?.name || document.querySelector(`[data-palette="${this.app.config.bgPalette}"] span`)?.textContent || "";
+      // One input re-derives the other four and previews the whole theme.
+      document.getElementById("thm-accent-hex")?.dispatchEvent(new Event("input", { bubbles: true }));
+      editor?.scrollIntoView({ block: "nearest" });
+    });
+
+    /* Tonight's moon, said in words beside the switch that follows it. */
+    const realSky = document.getElementById("cfg-bg-real-sky");
+    const tonight = document.getElementById("bg-moon-tonight");
+    // Spelled out so every phase's message key can be found by searching for it.
+    const MOON_WORDS = {
+      new: ["moon.new", "new moon"], waxingCrescent: ["moon.waxingCrescent", "waxing crescent"],
+      firstQuarter: ["moon.firstQuarter", "first quarter"], waxingGibbous: ["moon.waxingGibbous", "waxing gibbous"],
+      full: ["moon.full", "full moon"], waningGibbous: ["moon.waningGibbous", "waning gibbous"],
+      lastQuarter: ["moon.lastQuarter", "last quarter"], waningCrescent: ["moon.waningCrescent", "waning crescent"]
+    };
+    const sayTonight = () => {
+      if (!tonight || !window.NordlysSky) return;
+      const moon = window.NordlysSky.moonPhase(new Date());
+      const [key, english] = MOON_WORDS[window.NordlysSky.phaseName(moon.phase)];
+      const percent = Math.round(moon.illumination * 100);
+      tonight.textContent = say("background.moonTonight", `Tonight: ${english}, ${percent}% lit`, { phase: say(key, english), percent });
+      tonight.hidden = this.app.config.bgRealSky === false;
+    };
+    if (realSky) realSky.checked = this.app.config.bgRealSky !== false;
+    sayTonight();
+    realSky?.addEventListener("change", () => {
+      this.app.config.bgRealSky = realSky.checked;
+      this.app.saveConfig();
+      this.app.updateBackgroundMode();
+      sayTonight();
+    });
+    window.addEventListener("nordlys:languagechange", sayTonight);
+
+    /* The time of day, as light on the chosen mood: the switch, what the sun
+       is doing now in words beside it, and a day played through in a few
+       seconds so the switch shows what it does instead of promising it. */
+    const daylight = document.getElementById("cfg-bg-daylight");
+    const daylightNow = document.getElementById("bg-daylight-now");
+    const daylightPlay = document.getElementById("bg-daylight-play");
+    // Spelled out so every phase's message key can be found by searching for it.
+    const DAYLIGHT_WORDS = {
+      night: ["daylight.night", "night"], dawn: ["daylight.dawn", "dawn"], sunrise: ["daylight.sunrise", "sunrise"],
+      morning: ["daylight.morning", "morning"], afternoon: ["daylight.afternoon", "afternoon"],
+      sunset: ["daylight.sunset", "sunset"], dusk: ["daylight.dusk", "dusk"]
+    };
+    const sayDaylight = (sky = this.app.bgEngine?.sky, clock = null) => {
+      if (!daylightNow) return;
+      const on = this.app.config.bgDaylight === true;
+      daylightNow.hidden = !on || !sky;
+      if (daylightPlay) daylightPlay.hidden = !on;
+      if (!on || !sky) return;
+      const [key, english] = DAYLIGHT_WORDS[sky.phase] || DAYLIGHT_WORDS.night;
+      const phase = say(key, english);
+      daylightNow.textContent = clock
+        ? say("background.daylightAt", `${clock}: ${phase}`, { time: clock, phase })
+        : say("background.daylightNow", `Now: ${phase}`, { phase });
+    };
+    if (daylight) daylight.checked = this.app.config.bgDaylight === true;
+    daylight?.addEventListener("change", () => {
+      this.app.config.bgDaylight = daylight.checked;
+      this.app.saveConfig();
+      this.app.bgEngine?.setDaylight(daylight.checked);
+      sayDaylight();
+    });
+    window.addEventListener("nordlys:palette", () => { if (!this.playingDay) sayDaylight(); });
+    window.addEventListener("nordlys:languagechange", () => sayDaylight());
+    /* Twenty-four hours in fourteen seconds, from now, on the real sky. With
+       reduced motion the day goes by as seven held moments instead. */
+    daylightPlay?.addEventListener("click", () => {
+      const engine = this.app.bgEngine;
+      if (!engine || this.playingDay) return;
+      this.playingDay = true;
+      daylightPlay.disabled = true;
+      const clock = engine.now;
+      const start = clock().getTime();
+      const span = 24 * 3600000;
+      // The hours as the clock on the page shows them, 12- or 24-hour.
+      const time = new Intl.DateTimeFormat(window.I18N?.currentLang || undefined, { hour: "2-digit", minute: "2-digit", hourCycle: this.app.config.timeFormat === "12h" ? "h12" : "h23" });
+      const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const show = (fraction) => {
+        const moment = new Date(start + span * fraction);
+        engine.now = () => moment;
+        engine.followSun();
+        sayDaylight(engine.sky, time.format(moment));
+      };
+      const finish = () => {
+        engine.now = clock;
+        engine.followSun();
+        this.playingDay = false;
+        daylightPlay.disabled = false;
+        sayDaylight();
+      };
+      if (still) {
+        let step = 0;
+        const next = () => { if (step > 7) { finish(); return; } show(step / 7); step++; setTimeout(next, 1100); };
+        next();
+        return;
+      }
+      /* Every step regrades the sky and repaints the scene thumbnails beside
+         the button, so the day is drawn about twenty-five times a second
+         rather than at the display's full rate. */
+      const began = performance.now();
+      let drawn = -Infinity;
+      const frame = (now) => {
+        const fraction = Math.min(1, (now - began) / 14000);
+        if (now - drawn >= 40 || fraction === 1) { drawn = now; show(fraction); }
+        if (fraction < 1) requestAnimationFrame(frame); else finish();
+      };
+      requestAnimationFrame(frame);
+    });
+    sayDaylight();
+
+    /* A new scatter of the same scene — other stars, other frost, another
+       weave — kept until shuffled again, and one undo away from the last. */
+    document.getElementById("bg-shuffle")?.addEventListener("click", () => {
+      const previous = this.app.config.bgSeed ?? 0;
+      const next = crypto.getRandomValues(new Uint32Array(1))[0] || 1;
+      const sow = (seed) => {
+        this.app.config.bgSeed = seed;
+        this.app.bgEngine?.setSeed(seed);
+        this.app.saveConfig();
+      };
+      sow(next);
+      window.NordlysUI?.showUndoToast?.({
+        message: say("background.shuffled", "A new sky"),
+        onAction: () => {
+          sow(previous);
+          window.NordlysUI?.announce?.(say("background.unshuffled", "The previous sky is back"));
+        }
+      });
+    });
+    moodEditor?.addEventListener("keydown", (event) => {
+      // The drawer closes on Escape too, and the editor is the nearer layer.
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        closeMoodEditor();
+        moodNew?.focus();
+      } else if (event.key === "Enter" && event.target.tagName === "INPUT" && event.target.type !== "color") {
+        event.preventDefault();
+        saveMood();
+      }
+    });
+
+    // The engine has to know the mixed moods before it is asked to wear one.
+    this.app.bgEngine?.setPalettes(moods());
     /* Uploading a wallpaper or removing one sets the mode from code rather than
        from a card, and the picker has to follow: otherwise Wallpaper stays
        highlighted while Aurora is already running behind it. */
@@ -291,15 +759,253 @@ class SettingsController {
 
   }
 
-  open(targetTab = null) {
+  /* ── Share this look ─────────────────────────────────────────────
+     Copy writes the look as a line of text; Try puts a pasted one on the page
+     without saving anything, and the person keeps it or puts theirs back. A
+     look left undecided when the panel closes is put back: nothing is written
+     that nobody chose. */
+  initLookShare() {
+    const Look = window.NordlysLook;
+    const status = document.getElementById("look-status");
+    const field = document.getElementById("look-paste");
+    const decide = document.getElementById("look-decide");
+    if (!Look || !status || !field || !decide) return;
+    const say = (key, fallback) => {
+      const value = window.I18N?.t(key);
+      return value && value !== key ? value : fallback;
+    };
+    const tell = (key, fallback, refused = false) => {
+      status.textContent = say(key, fallback);
+      status.classList.toggle("refused", refused);
+      window.NordlysUI?.announce?.(status.textContent);
+    };
+
+    document.getElementById("look-copy")?.addEventListener("click", async () => {
+      const code = Look.encode(Look.capture(this.app.config));
+      try {
+        await navigator.clipboard.writeText(code);
+        tell("look.copied", "Copied. Paste it anywhere to share it.");
+      } catch {
+        // No clipboard here: hand the line over to be copied by hand.
+        field.value = code;
+        field.select();
+        tell("look.copyManually", "Copy the line in the field below.");
+      }
+    });
+
+    document.getElementById("look-try")?.addEventListener("click", () => {
+      const { look, error } = Look.decode(field.value);
+      if (error) {
+        const reasons = { notALook: ["look.notALook", "That isn't a Nordlys look."], damaged: ["look.damaged", "That look is damaged — part of it is missing."], empty: ["look.empty", "That look has nothing in it this version can use."] };
+        tell(...reasons[error], true);
+        return;
+      }
+      if (!this.lookTrial) this.lookTrial = JSON.stringify(this.app.config);
+      const knownTheme = look.theme === "custom" || Boolean(document.querySelector(`.theme-card[data-theme="${CSS.escape(look.theme || "")}"]`));
+      this.wearLook(look, knownTheme);
+      decide.hidden = false;
+      status.textContent = "";
+      if (look.theme && !knownTheme) tell("look.unknownTheme", "That look's theme isn't in this version, so yours was kept.");
+    });
+
+    document.getElementById("look-keep")?.addEventListener("click", () => {
+      this.lookTrial = null;
+      decide.hidden = true;
+      this.app.saveConfig();
+      field.value = "";
+      tell("look.kept", "This look is yours now.");
+    });
+    document.getElementById("look-revert")?.addEventListener("click", () => {
+      this.revertLook();
+      tell("look.reverted", "Your own look is back.");
+    });
+
+    document.getElementById("look-picture")?.addEventListener("click", async () => {
+      const blob = await this.lookPicture();
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const link = Object.assign(document.createElement("a"), { href: url, download: "nordlys-look.png" });
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      tell("look.pictureSaved", "Picture saved.");
+    });
+  }
+
+  // Put a look on the page, in memory only.
+  wearLook(look, knownTheme = true) {
+    const config = this.app.config;
+    for (const key of ["bgMode", "bgMotion", "bgIntensity", "bgSeed", "bgRealSky", "bgDaylight", "boardLayout", "glassLevel", "cardRadius", "tileSize", "cardGap", "cardGlow", "iconShape", "hoverEffect"]) {
+      if (key in look) config[key] = look[key];
+    }
+    if (look.fonts) config.fonts = { ...(config.fonts || {}), ...look.fonts };
+    if (look.theme === "custom" && look.customTheme) {
+      config.theme = "custom";
+      config.customTheme = look.customTheme;
+    } else if (look.theme && knownTheme) {
+      config.theme = look.theme;
+      delete config.customTheme;
+    }
+    if (look.mood) {
+      // A shared mood arrives as a mood of its own, or as the one already here.
+      const moods = Array.isArray(config.bgPalettes) ? config.bgPalettes : (config.bgPalettes = []);
+      const same = moods.find((mood) => mood && JSON.stringify(mood.colors) === JSON.stringify(look.mood.colors));
+      const mood = same || { id: `shared-${look.mood.colors.join("").replace(/#/g, "")}`, name: look.mood.name, colors: look.mood.colors };
+      if (!same) moods.push(mood);
+      config.bgPalette = mood.id;
+    } else if (["theme", "polar", "violet", "ember", "mono"].includes(look.bgPalette)) {
+      config.bgPalette = look.bgPalette;
+    }
+    this.refreshLookEverywhere();
+  }
+
+  revertLook() {
+    if (!this.lookTrial) return;
+    this.app.config = JSON.parse(this.lookTrial);
+    this.lookTrial = null;
+    document.getElementById("look-decide").hidden = true;
+    this.refreshLookEverywhere();
+  }
+
+  refreshLookEverywhere() {
+    this.app.applyThemeTokens();
+    this.app.applyGeometryTokens();
+    this.app.applyGlassLevel();
+    this.app.applyLegibility();
+    this.app.updateBackgroundMode();
+    this.app.grid?.render();
+    this.renderThemeCards();
+    this.syncFormValues();
+  }
+
+  /* A picture of the look, 1200 by 630: the sky, painted by the scene itself,
+     and a glass card naming the theme, the sky, the mood and the faces. */
+  async lookPicture() {
+    const engine = this.app.bgEngine;
+    const config = this.app.config;
+    const width = 1200, height = 630;
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    const root = getComputedStyle(document.documentElement);
+    const token = (name, fallback) => root.getPropertyValue(name).trim() || fallback;
+    ctx.fillStyle = token("--void", "#060a14");
+    ctx.fillRect(0, 0, width, height);
+    const scene = NORDLYS_GENERATIVE_SCENES.has(config.bgMode) ? config.bgMode : null;
+    if (engine && scene) {
+      const sky = document.createElement("canvas");
+      if (engine.paintStill(sky, scene, { width, height, dpr: 1, zoom: 1 })) ctx.drawImage(sky, 0, 0, width, height);
+    }
+    await document.fonts.ready;
+    const display = token("--font-display", "sans-serif");
+    const body = token("--font-main", "sans-serif");
+    const ink = token("--ink", "#e9effb");
+    const dim = token("--dim", "#a7b5d0");
+    // The card: the theme's own glass colour, solid enough to read on any sky.
+    const x = 56, y = height - 56 - 250, w = 560, h = 250, r = 28;
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+    ctx.fillStyle = token("--card-tint-deep", "#070d18");
+    ctx.globalAlpha = 0.82;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = token("--accent", "#35d6c0");
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+    const themeName = config.theme === "custom" ? say("theme.custom", "My theme") : (document.querySelector(`.theme-card[data-theme="${CSS.escape(config.theme || "")}"] b`)?.textContent || config.theme);
+    function say(key, fallback) {
+      const value = window.I18N?.t(key);
+      return value && value !== key ? value : fallback;
+    }
+    const sceneName = scene ? (document.querySelector(`.scene-card[data-scene="${scene}"] .scene-name`)?.textContent || scene) : "";
+    const mood = (config.bgPalettes || []).find((entry) => entry && entry.id === config.bgPalette);
+    const moodName = mood?.name || document.querySelector(`[data-palette="${CSS.escape(config.bgPalette || "theme")}"] span`)?.textContent || "";
+    ctx.fillStyle = ink;
+    ctx.font = `600 48px ${display}`;
+    ctx.fillText(themeName, x + 36, y + 76, w - 72);
+    ctx.fillStyle = dim;
+    ctx.font = `500 26px ${body}`;
+    ctx.fillText([sceneName, moodName].filter(Boolean).join("  ·  "), x + 36, y + 122, w - 72);
+    (engine?.palette || []).forEach((hex, index) => {
+      ctx.beginPath();
+      ctx.arc(x + 52 + index * 44, y + 170, 15, 0, Math.PI * 2);
+      ctx.fillStyle = hex;
+      ctx.fill();
+    });
+    const fonts = config.fonts || {};
+    const faces = [fonts.display, fonts.interface].map((family) => (family && family !== "default" ? family : null));
+    ctx.fillStyle = dim;
+    ctx.font = `400 20px ${body}`;
+    ctx.fillText(faces.map((family, index) => family || ["Outfit", "Instrument Sans"][index]).join("  /  "), x + 36, y + 222, w - 72);
+    ctx.fillStyle = ink;
+    ctx.globalAlpha = 0.72;
+    ctx.font = `600 22px ${display}`;
+    ctx.textAlign = "right";
+    ctx.fillText("Nordlys", width - 48, 60);
+    ctx.globalAlpha = 1;
+    return new Promise((done) => canvas.toBlob(done, "image/png"));
+  }
+
+  open(targetTab = null, opener = null) {
     this.syncFormValues();
     this.renderBookmarksManager();
+    this.renderAppearancePreview();
     const mapped = targetTab ? this.mapTab(targetTab) : null;
-    this.shell.open(mapped);
+    this.shell.open(mapped, opener);
+  }
+
+  /* The Appearance preview shows the person's own first bookmarks, so a change
+     of shape, size or glow is judged on the tiles it is about to change. It
+     used to be one invented tile called "Nordlys Studio", which read as a
+     feature rather than a preview. The copies are inert — a preview is not a
+     link — and an empty board keeps the single sample. */
+  renderAppearancePreview() {
+    const card = document.querySelector("#appearance-shared-preview .appearance-preview-card");
+    if (!card) return;
+    if (!this.appearanceSample) this.appearanceSample = [...card.childNodes].map((node) => node.cloneNode(true));
+    const tiles = [...document.querySelectorAll("#board .card .tile")].slice(0, 3);
+    if (!tiles.length) {
+      card.replaceChildren(...this.appearanceSample.map((node) => node.cloneNode(true)));
+      return;
+    }
+    const row = document.createElement("div");
+    row.className = "appearance-preview-row";
+    const SKIP = new Set(["href", "id", "tabindex", "draggable", "role", "target", "rel", "data-shortcut"]);
+    for (const tile of tiles) {
+      const copy = document.createElement("div");
+      for (const { name, value } of tile.attributes) {
+        if (!SKIP.has(name) && !name.startsWith("aria-")) copy.setAttribute(name, value);
+      }
+      copy.append(...[...tile.childNodes].map((node) => node.cloneNode(true)));
+      copy.setAttribute("aria-hidden", "true");
+      row.append(copy);
+    }
+    card.replaceChildren(row);
   }
 
   openDrawer(targetTab = null) {
     this.open(targetTab);
+  }
+
+  /* The board's empty state offers the same import the Backup tab does, and
+     asks for it here rather than reaching across a closed drawer to click a
+     hidden file input: one owner for the flow, one parser, and nothing that
+     breaks the next time the markup moves.
+
+     The drawer is opened on Backup first, so cancelling the file dialog leaves
+     the user where importing lives instead of back on an empty board. The
+     picker is raised synchronously, inside the gesture that asked for it —
+     browsers refuse a file dialog that arrives after an await. */
+  openImportPicker(opener = null) {
+    const input = document.getElementById("cfg-import-universal");
+    if (!input) return false;
+    this.open("backup", opener);
+    input.click();
+    return true;
   }
 
   close() {
@@ -336,6 +1042,9 @@ class SettingsController {
 
   syncFormValues() {
     const cfg = this.app.config;
+    const daylightSwitch = document.getElementById("cfg-bg-daylight");
+    if (daylightSwitch) daylightSwitch.checked = cfg.bgDaylight === true;
+    this.syncBoardLayout();
     
     // Color Mode
     this.syncColorModeSwitcher();
@@ -365,7 +1074,9 @@ class SettingsController {
     const iconShape = document.getElementById("cfg-icon-shape");
 
     if (glassLevel) glassLevel.value = cfg.glassLevel || "full";
-    if (cardRadius) cardRadius.value = cfg.cardRadius != null ? cfg.cardRadius : 24;
+    const highLegibility = document.getElementById("cfg-high-legibility");
+    if (highLegibility) highLegibility.checked = Boolean(cfg.highLegibility);
+    if (cardRadius) cardRadius.value = cfg.cardRadius != null ? cfg.cardRadius : 18;
     if (tileSize) tileSize.value = cfg.tileSize != null ? cfg.tileSize : 78;
     if (cardGap) cardGap.value = cfg.cardGap != null ? cfg.cardGap : 12;
     if (cardGlow) cardGlow.value = cfg.cardGlow != null ? cfg.cardGlow : 40;
@@ -388,7 +1099,7 @@ class SettingsController {
     const lblBgBlur = document.getElementById("lbl-bgblur");
     const lblBgDim = document.getElementById("lbl-bgdim");
 
-    if (lblRadius) lblRadius.textContent = `${cfg.cardRadius != null ? cfg.cardRadius : 24}px`;
+    if (lblRadius) lblRadius.textContent = `${cfg.cardRadius != null ? cfg.cardRadius : 18}px`;
     if (lblTile) lblTile.textContent = `${cfg.tileSize != null ? cfg.tileSize : 78}px`;
     if (lblGap) lblGap.textContent = `${cfg.cardGap != null ? cfg.cardGap : 12}px`;
     if (lblGlow) lblGlow.textContent = `${cfg.cardGlow != null ? cfg.cardGlow : 40}%`;
@@ -402,7 +1113,7 @@ class SettingsController {
     if (!previewCard) return;
 
     const cfg = this.app.config;
-    const radiusVal = `${cfg.cardRadius != null ? cfg.cardRadius : 24}px`;
+    const radiusVal = `${cfg.cardRadius != null ? cfg.cardRadius : 18}px`;
 
     /* The preview reads the same tokens the real surface does, so it cannot
        drift from it and cannot invent a fifth filter function of its own. */
@@ -465,6 +1176,13 @@ class SettingsController {
       this.updateMiniPreview();
     });
 
+    document.getElementById("cfg-high-legibility")?.addEventListener("change", (e) => {
+      this.app.config.highLegibility = e.target.checked;
+      this.app.applyLegibility();
+      this.app.updateBackgroundMode();
+      this.app.saveConfig();
+    });
+
     cardRadius?.addEventListener("input", (e) => {
       const val = `${e.target.value}px`;
       document.documentElement.style.setProperty("--card-radius", val);
@@ -474,19 +1192,23 @@ class SettingsController {
       this.app.saveConfig();
     });
 
+    /* Both go through applyGeometryTokens, the one place the page turns these
+       settings into CSS — the slider used to write its own, different rule —
+       and both change folder widths, so the rows are broken again. */
     tileSize?.addEventListener("input", (e) => {
-      document.documentElement.style.setProperty("--tw", `min(${e.target.value}px, 12vw)`);
       this.app.config.tileSize = parseInt(e.target.value, 10);
+      this.app.applyGeometryTokens();
       this.updateSliderLabels();
       this.app.saveConfig();
+      this.app.grid?.relayout();
     });
 
     cardGap?.addEventListener("input", (e) => {
-      const val = `${e.target.value}px`;
-      document.documentElement.style.setProperty("--grid-gap", val);
       this.app.config.cardGap = parseInt(e.target.value, 10);
+      this.app.applyGeometryTokens();
       this.updateSliderLabels();
       this.app.saveConfig();
+      this.app.grid?.relayout();
     });
 
     iconShape?.addEventListener("change", (e) => {
@@ -1011,7 +1733,63 @@ class SettingsController {
   }
 
   /* ── 7. In-Settings Bookmarks & Folder Manager (Move / Reorder) ── */
+  /* The board's layout and rows, mirrored here from the arrangement that owns
+     them, and the door into it. */
+  initBoardLayout() {
+    const options = [...document.querySelectorAll(".board-layout-option")];
+    for (const option of options) {
+      option.addEventListener("click", () => {
+        this.app.grid?.arrange?.setLayout(option.dataset.layout);
+        this.syncBoardLayout();
+      });
+      option.addEventListener("keydown", (event) => {
+        const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+        if (!step) return;
+        event.preventDefault();
+        const next = options[(options.indexOf(option) + step + options.length) % options.length];
+        next.focus();
+        next.click();
+      });
+    }
+    document.getElementById("cfg-arrange")?.addEventListener("click", () => {
+      this.close();
+      this.app.grid?.arrange?.enter();
+    });
+    document.getElementById("board-rows-auto")?.addEventListener("click", () => {
+      this.app.grid?.arrange?.autoRows();
+      this.syncBoardLayout();
+    });
+    window.addEventListener("nordlys:languagechange", () => this.syncBoardLayout());
+    this.syncBoardLayout();
+  }
+
+  syncBoardLayout() {
+    const config = this.app.config;
+    const current = config.boardLayout === "fitted" ? "fitted" : "natural";
+    for (const option of document.querySelectorAll(".board-layout-option")) {
+      const on = option.dataset.layout === current;
+      option.setAttribute("aria-checked", String(on));
+      option.tabIndex = on ? 0 : -1;
+    }
+    const groups = config.groups || [];
+    const yours = Boolean(window.NordlysBoardLayout?.hasRows(groups));
+    const say = (key, fallback, params) => {
+      const value = window.I18N?.t(key, params || {});
+      return value && value !== key ? value : fallback;
+    };
+    const state = document.getElementById("board-rows-state");
+    if (state) {
+      const count = window.NordlysBoardLayout ? window.NordlysBoardLayout.rowsOf(groups).length : 0;
+      state.textContent = yours
+        ? say("bookmarks.rowsYours", `Rows: ${count}, arranged by you`, { count })
+        : say("bookmarks.rowsAuto", "Rows: chosen by the board, as evenly as the window allows");
+    }
+    const auto = document.getElementById("board-rows-auto");
+    if (auto) auto.hidden = !yours;
+  }
+
   initBookmarksManager() {
+    this.initBoardLayout();
     document.getElementById("cfg-add-group")?.addEventListener("click", () => {
       this.app.config.groups.push({
         id: `g_${Date.now()}`,
@@ -1026,6 +1804,7 @@ class SettingsController {
   }
 
   renderBookmarksManager() {
+    this.syncBoardLayout();
     if (this.bookmarkSettings) {
       this.bookmarkSettings.render();
       return;
@@ -1280,9 +2059,8 @@ class SettingsController {
         image.alt = "";
         const name = document.createElement("span");
         name.textContent = result.name;
-        const source = document.createElement("small");
-        source.textContent = result.source || "Simple Icons";
-        button.append(image, name, source);
+        // The source is named once, under the results, not on every tile.
+        button.append(image, name);
         button.addEventListener("click", () => {
           if (!this.activeIconTarget) return;
           const { gIdx, lIdx } = this.activeIconTarget;
@@ -1402,8 +2180,10 @@ class SettingsController {
       const say = (key, fallback) => (window.I18N ? window.I18N.t(key) : fallback);
       if (favStatus) favStatus.textContent = provider === "chrome" ? say("picker.faviconLocal", "From your browser's own cache") : say("picker.faviconFetching", "Fetching…");
       const resolvedFavUrl = buildFaviconUrl(rawUrl, provider);
+      const badge = document.getElementById("favicon-res-badge");
+      if (badge) badge.hidden = true;
       if (!resolvedFavUrl) {
-        if (favStatus) favStatus.textContent = "Invalid site URL or domain.";
+        if (favStatus) favStatus.textContent = say("picker.faviconInvalid", "That isn't a site address or a domain.");
         return;
       }
 
@@ -1411,7 +2191,7 @@ class SettingsController {
       if (favImgBox) {
         favImgBox.replaceChildren();
         const img = document.createElement("img");
-        img.alt = "Favicon";
+        img.alt = "";
         img.style.cssText = "width: 100%; height: 100%; object-fit: contain; cursor: pointer;";
         /* A miss stays a miss. This used to fall back to DuckDuckGo on its
            own, which meant a failed local lookup became a network request the
@@ -1423,6 +2203,8 @@ class SettingsController {
         }, { once: true });
         img.addEventListener("load", () => {
           if (favStatus && provider !== "chrome") favStatus.textContent = say("picker.faviconReady", "Icon ready");
+          // The size that actually arrived, not the size asked for.
+          if (badge) { badge.textContent = `${img.naturalWidth}×${img.naturalHeight}`; badge.hidden = false; }
         }, { once: true });
         img.src = resolvedFavUrl;
         favImgBox.appendChild(img);
@@ -1487,12 +2269,31 @@ class SettingsController {
     const urlApplyBtn = document.getElementById("icon-url-apply-btn");
     this.currentLoadedUrl = null;
 
-    const handleUrlLoaded = (url) => {
+    const word = (key, fallback) => {
+      const value = window.I18N?.t(key);
+      return value && value !== key ? value : fallback;
+    };
+    /* Success is said only once the image has actually decoded. The loader
+       hands the address back unchanged when every way of fetching it failed,
+       and this used to announce that as "loaded successfully" regardless. */
+    const handleUrlLoaded = async (url) => {
+      const decodes = await new Promise((done) => {
+        const probe = new Image();
+        probe.onload = () => done(probe.naturalWidth > 0);
+        probe.onerror = () => done(false);
+        probe.src = url;
+      });
+      if (!decodes) {
+        this.currentLoadedUrl = null;
+        if (urlStatus) urlStatus.textContent = word("modal.imageFailed", "No image came back from that address");
+        if (urlActions) urlActions.style.display = "none";
+        return;
+      }
       this.currentLoadedUrl = url;
       if (urlImgBox) {
         this.setPreviewImage(urlImgBox, url, () => this.openCropper(url, "url"));
       }
-      if (urlStatus) urlStatus.textContent = "Image loaded successfully!";
+      if (urlStatus) urlStatus.textContent = word("modal.imageLoaded", "Image ready");
       if (urlActions) urlActions.style.display = "flex";
     };
 
@@ -1500,9 +2301,9 @@ class SettingsController {
       const url = urlInput?.value.trim();
       if (!url) return;
 
-      if (urlStatus) urlStatus.textContent = "Loading and optimizing image...";
+      if (urlStatus) urlStatus.textContent = word("modal.imageLoading", "Loading the image…");
       const cleanDataUrl = await this.loadImageAsCleanBase64(url);
-      handleUrlLoaded(cleanDataUrl);
+      await handleUrlLoaded(cleanDataUrl);
     });
 
     urlCropBtn?.addEventListener("click", () => {
@@ -1538,8 +2339,26 @@ class SettingsController {
     const fileApplyBtn = document.getElementById("icon-file-apply-btn");
     this.uploadedDataUrl = null;
 
+    /* The hint under the drop zone said "Max 5MB" and nothing held anyone to
+       it; an oversized or non-image file was taken, or silently ignored. Now
+       the hint line says why a file was refused, and says it out loud too. */
+    const fileHint = document.getElementById("icon-file-hint");
+    const refuseFile = (key, fallback) => {
+      const message = word(key, fallback);
+      if (fileHint) {
+        fileHint.textContent = message;
+        fileHint.classList.add("refused");
+      }
+      window.NordlysUI?.announce?.(message);
+    };
     const processUploadedFile = (file) => {
-      if (!file || !file.type.startsWith("image/")) return;
+      if (!file) return;
+      if (!file.type.startsWith("image/")) { refuseFile("modal.fileNotImage", "That file is not an image"); return; }
+      if (file.size > 5 * 1024 * 1024) { refuseFile("modal.fileTooLarge", "That file is over 5 MB"); return; }
+      if (fileHint) {
+        fileHint.textContent = word("modal.fileHint", "PNG, SVG, JPG, WebP or GIF, up to 5 MB");
+        fileHint.classList.remove("refused");
+      }
       const reader = new FileReader();
       reader.onload = (evt) => {
         this.uploadedDataUrl = evt.target.result;
@@ -1587,12 +2406,12 @@ class SettingsController {
       }
     });
 
-    fileApplyBtn?.addEventListener("click", () => {
+    fileApplyBtn?.addEventListener("click", async () => {
       if (this.uploadedDataUrl && this.activeIconTarget) {
         const { gIdx, lIdx } = this.activeIconTarget;
         const link = this.app.config.groups[gIdx]?.links[lIdx];
         if (link) {
-          link.customImg = this.uploadedDataUrl;
+          link.customImg = await this.iconSizedDataUrl(this.uploadedDataUrl);
           delete link.icon;
           delete link.monogram;
           this.app.saveConfig();
@@ -1832,6 +2651,31 @@ class SettingsController {
 
   /* XSS-safe preview injection: the URL is assigned as a property, never
      interpolated into markup, so quotes in user input can't break out. */
+  /* An icon is drawn at a few dozen pixels, and it is stored inside the config,
+     which lives in a store of a few megabytes shared with everything else. The
+     full file went in as it came — up to 5 MB for one tile — so a single photo
+     could leave no room to save anything. A raster is kept at 256 pixels on its
+     longer side, as WebP; a vector is already small and stays a vector. */
+  async iconSizedDataUrl(dataUrl, longest = 256) {
+    if (!dataUrl || /^data:image\/svg\+xml/i.test(dataUrl)) return dataUrl;
+    try {
+      const image = new Image();
+      image.src = dataUrl;
+      await image.decode();
+      const scale = Math.min(1, longest / Math.max(image.naturalWidth, image.naturalHeight));
+      if (scale === 1 && dataUrl.length < 200000) return dataUrl;
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const context = canvas.getContext("2d");
+      context.imageSmoothingQuality = "high";
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL("image/webp", 0.9);
+    } catch {
+      return dataUrl;
+    }
+  }
+
   setPreviewImage(box, url, onClick) {
     box.replaceChildren();
     const img = document.createElement("img");
@@ -2267,47 +3111,183 @@ class SettingsController {
   }
 
   /* ── 10. Backup & Browser Bookmarks Migration ─────────────────── */
-  /* Only visible when there is something to go back to. A restore button with
-     nothing behind it is worse than none: it promises a safety net. */
+  /* Two rows, two questions, and each only visible when there is something
+     behind it. A restore button with nothing behind it is worse than none: it
+     promises a safety net.
+
+       restore point — what was here before Nordlys changed it: a migration on
+                       load, or an import.
+       undo point    — one step back from the last thing you did that replaced
+                       everything: a reset, or a restore. */
   initRestorePoint() {
-    const row = document.getElementById("restore-point-row");
-    const when = document.getElementById("restore-point-when");
-    const button = document.getElementById("cfg-restore-point");
-    if (!row || !button) return;
-
-    const point = this.app.restorePoint();
-    row.hidden = !point;
-    if (!point) return;
-
-    if (when && point.savedAt) {
-      const saved = new Date(point.savedAt);
-      if (!Number.isNaN(saved.getTime())) when.textContent = `(${saved.toLocaleDateString()})`;
-    }
-
-    button.addEventListener("click", async () => {
-      const ok = await confirmDialog({
-        title: this.text("backup.restorePointBtn", "Put those back"),
-        message: this.text("backup.restorePoint", "Settings from before the last update"),
-        confirmText: this.text("backup.restorePointBtn", "Put those back"),
-        cancelText: this.text("confirm.cancel", "Cancel")
-      });
-      if (!ok) return;
-      if (!this.app.useRestorePoint()) return;
-      if (typeof toast === "function") {
-        toast(window.I18N ? window.I18N.t("toast.restorePointUsed") : "Restored", "success");
-      }
-      setTimeout(() => location.reload(), 400);
-    });
+    this.renderRecoveryRows();
+    document.getElementById("cfg-restore-point")?.addEventListener("click", () => this.useRestorePointWithUndo());
+    document.getElementById("cfg-undo-point")?.addEventListener("click", () => this.stepBack());
   }
 
-  text(key, fallback) {
-    return (window.I18N ? window.I18N.t(key) : null) || fallback;
+  renderRecoveryRows() {
+    const point = this.app.restorePoint();
+    const row = document.getElementById("restore-point-row");
+    if (row) row.hidden = !point;
+    const when = document.getElementById("restore-point-when");
+    if (when) when.textContent = point ? this.savedAtText(point) : "";
+
+    const undo = this.app.undoPoint();
+    const undoRow = document.getElementById("undo-point-row");
+    if (undoRow) undoRow.hidden = !undo;
+    const undoWhen = document.getElementById("undo-point-when");
+    if (undoWhen) undoWhen.textContent = undo ? this.savedAtText(undo) : "";
+    const what = document.getElementById("undo-point-what");
+    if (what && undo) {
+      what.textContent = undo.cause === "restore"
+        ? this.text("backup.undoPointRestore", "Older settings were put back")
+        : this.text("backup.undoPointReset", "Everything was reset");
+    }
+  }
+
+  savedAtText(point) {
+    const saved = new Date(point?.savedAt || NaN);
+    if (Number.isNaN(saved.getTime())) return "";
+    return `(${saved.toLocaleDateString()} ${saved.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`;
+  }
+
+  /* Restoring replaces the whole setup, so it is itself a destructive act and
+     gets the same treatment as one: what it is about to discard is kept first,
+     and if that cannot be written the restore does not happen. It applies in
+     place rather than reloading — a reload would throw away the moment in which
+     somebody can say "no, that was the wrong one". */
+  async useRestorePointWithUndo() {
+    const point = this.app.restorePoint();
+    if (!point) return;
+    const ok = await confirmDialog({
+      title: this.text("confirm.restoreTitle", "Put the older settings back?"),
+      message: this.text("backup.confirmRestore", "Your folders, bookmarks and appearance are replaced.", { when: this.savedAtText(point) }),
+      confirmText: this.text("backup.restorePointBtn", "Put those back"),
+      cancelText: this.text("confirm.cancel", "Cancel")
+    });
+    if (!ok) return;
+    if (!this.keepAWayBack("restore")) return;
+    if (!this.app.applyRecoveryBundle(point)) { this.sayNoRoom("toast.saveFailed"); return; }
+    this.renderRecoveryRows();
+    const done = this.text("toast.restorePointUsed", "Restored");
+    if (typeof toast === "function") toast(done, "success");
+    NordlysUI.announce(done);
+    /* Focus lands on the way back rather than staying on a button whose row has
+       just changed meaning under it. */
+    document.getElementById("cfg-undo-point")?.focus({ preventScroll: true });
+  }
+
+  /* The one step back. It spends the slot rather than writing a new one, so
+     there is no chain of snapshots behind somebody pressing undo twice. No
+     confirm dialog: this is the direction that gives things back, and a
+     question in front of it would be the nag this product refuses. */
+  async stepBack() {
+    const point = this.app.undoPoint();
+    if (!point) return;
+    if (!this.app.applyRecoveryBundle(point)) { this.sayNoRoom("toast.saveFailed"); return; }
+    if (point.cause === "reset" && point.media) await this.restoreWallpaperAside();
+    this.app.clearSnapshot(UNDO_POINT_KEY);
+    this.renderRecoveryRows();
+    const done = this.text(point.cause === "restore" ? "toast.restoreUndone" : "toast.resetUndone", "Put back");
+    if (typeof toast === "function") toast(done, "success");
+    NordlysUI.announce(done);
+    // The row this button sat in has just gone, so focus moves to the other way
+    // back if there is one, and to the tab heading if there is not.
+    const other = document.getElementById("cfg-restore-point");
+    (other?.offsetParent ? other : document.getElementById("settings-tab-backup"))?.focus({ preventScroll: true });
+  }
+
+  /* Writes the way back before the thing that needs one, and answers whether it
+     landed. An irreversible version of a reversible action is not a fallback. */
+  keepAWayBack(cause, extra = {}) {
+    const bundle = Object.assign(this.app.captureRecoveryBundle(cause), extra);
+    if (this.app.writeSnapshot(UNDO_POINT_KEY, bundle)) return true;
+    this.sayNoRoom("toast.recoveryFailed");
+    return false;
+  }
+
+  sayNoRoom(key) {
+    const message = this.text(key, "There is not enough room in storage, so nothing was changed.");
+    if (typeof toast === "function") toast(message, "danger", 7000);
+    NordlysUI.announce(message);
+  }
+
+  /* A wallpaper is tens of megabytes and cannot travel in a snapshot, so on a
+     reset it is moved to one slot beside the live one rather than deleted. One
+     slot, overwritten by each reset: no chain, and the undo can honestly say it
+     brings back everything the reset took.
+
+     Until the new snapshot is written, that slot still belongs to the undo
+     point already sitting there. Spending it first — overwriting it, or, with
+     no wallpaper to move, emptying it for nothing — and only then finding
+     there is no room for the snapshot is how a reset that did not happen left
+     the previous way back promising a file that was no longer on disk. So
+     whatever is displaced is held here, and the caller puts it back if the
+     snapshot does not land. */
+  async setWallpaperAside() {
+    const read = async (id) => { try { return await MediaVault.getMedia(id); } catch (error) { return null; } };
+    const live = await read("custom_bg");
+    const displaced = await read(UNDO_MEDIA_ID);
+    const putBack = async () => {
+      try {
+        if (displaced) await MediaVault.saveMedia(UNDO_MEDIA_ID, displaced, displaced.type);
+        else await MediaVault.deleteMedia(UNDO_MEDIA_ID);
+      } catch (error) { /* the vault refused its own previous contents; nothing here can do better */ }
+    };
+    /* The vault commits a transaction at a time, so a write that throws leaves
+       the slot as it was. A wallpaper that cannot be set aside is reported, not
+       swallowed: the reset would delete the live copy next. */
+    if (live) await MediaVault.saveMedia(UNDO_MEDIA_ID, live, live.type);
+    else { try { await MediaVault.deleteMedia(UNDO_MEDIA_ID); } catch (error) { /* nothing aside */ } }
+    return { media: Boolean(live), putBack };
+  }
+
+  async restoreWallpaperAside() {
+    try {
+      const kept = await MediaVault.getMedia(UNDO_MEDIA_ID);
+      if (!kept) return;
+      await MediaVault.saveMedia("custom_bg", kept, kept.type);
+      await MediaVault.deleteMedia(UNDO_MEDIA_ID);
+      await this.app.updateBackgroundMode();
+    } catch (error) { /* the settings came back; the wallpaper is best effort */ }
+  }
+
+  /* Re-reads the stores that live beside the config after a bundle put them
+     back, so the drawer shows what storage now holds rather than what it was
+     showing a moment ago. */
+  adoptRestoredStores() {
+    this.customThemes = this.loadCustomThemes();
+    this.renderThemeCards();
+    try {
+      const width = localStorage.getItem("nordlys_drawer_width");
+      if (this.drawer) this.drawer.style.width = width || "";
+    } catch (error) { /* the drawer keeps the width it has */ }
+  }
+
+  text(key, fallback, params) {
+    return (window.I18N ? window.I18N.t(key, params || {}) : null) || fallback;
+  }
+
+  /* What the export button actually writes. The config sits at the top level,
+     where every release since 2.0 put it; the themes someone authored and the
+     width they dragged the drawer to travel beside it in one namespaced
+     envelope, because a file called a backup that loses them is a backup in
+     name only. What it cannot carry — wallpaper and video files, which run to
+     tens of megabytes — is named in the panel rather than left to be discovered
+     after a reset. */
+  buildBackupPayload() {
+    let drawerWidth = "";
+    try { drawerWidth = localStorage.getItem("nordlys_drawer_width") || ""; } catch (error) { /* no width to carry */ }
+    return window.NordlysConfigSchema.buildBackupFile(this.app.config, {
+      customThemes: this.loadCustomThemes(),
+      drawerWidth
+    });
   }
 
   initBackupManager() {
     // Export JSON Backup
     document.getElementById("cfg-export")?.addEventListener("click", () => {
-      const blob = new Blob([JSON.stringify(this.app.config, null, 2)], { type: "application/json" });
+      const blob = new Blob([JSON.stringify(this.buildBackupPayload(), null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -2406,8 +3386,13 @@ class SettingsController {
               toast(window.I18N ? window.I18N.t("toast.importEmpty") : "No bookmarks found in HTML file", "danger");
             }
           } else {
-            // JSON Format
-            const imported = window.NordlysConfigSchema.normalizeImportConfig(JSON.parse(text));
+            /* JSON. The envelope beside the config is lifted out first, so it
+               is never validated as a setting and never stored as one; a file
+               without one — every backup written before this build, including
+               the 2.0 exports people still have — reads as itself. */
+            const file = window.NordlysConfigSchema.readBackupFile(JSON.parse(text));
+            const imported = window.NordlysConfigSchema.normalizeImportConfig(file.config);
+            window.NordlysConfigSchema.migrateRaw(imported);
             /* Checked in full before anything is written. The old test was "has a
                groups or a theme key", which let {"groups": {}} through — saved,
                and then a page that failed on every open. The reasons are shown,
@@ -2427,9 +3412,30 @@ class SettingsController {
             const incoming = Object.assign({}, DEFAULT_CONFIG, imported);
             window.NordlysConfigSchema.repairConfig(incoming);
             this.app.normalizeStoredConfig(incoming);
-            this.app.snapshotBeforeMigration(this.app.config);
+            /* One commit for the whole file. A file of embedded icons can be
+               megabytes, and it is written to four keys: when the write failed,
+               this reloaded anyway — and the page came back on the old config,
+               which reads as "the import did nothing" with nothing said. Worse,
+               the parts written before it stayed: the restore point spent on an
+               import that never happened, or the imported themes left under the
+               config they did not come with.
+
+               The restore point and the extras go first because they are
+               localStorage only and can be put back to the byte. The config
+               goes last because it is the one write that also reaches the
+               browser-storage mirror, and a mirror holding a refused import is
+               a copy of a setup that never existed. */
+            const previous = this.app.config;
+            const putBack = this.holdLocalKeys([RESTORE_POINT_KEY, STORAGE_KEY, "nordlys_custom_themes", "nordlys_drawer_width"]);
             this.app.config = incoming;
-            this.app.saveConfig();
+            if (!this.app.snapshotBeforeMigration(previous, "import")
+              || !this.adoptImportedExtras(file.extras)
+              || !this.app.saveConfig()) {
+              this.app.config = previous;
+              putBack();
+              this.sayNoRoom("toast.saveFailed");
+              return;
+            }
             location.reload();
           }
         } catch (err) {
@@ -2442,24 +3448,35 @@ class SettingsController {
       reader.readAsText(file);
     });
 
-    // Reset Defaults
+    /* Reset. The most destructive action in the product, and the one that used
+       to delete its own safety net: nordlys_restore_point was in the key list
+       it cleared, and it took no snapshot of its own, so "this cannot be undone"
+       was simply accurate.
+
+       Now the snapshot comes first and the removal only happens if it landed —
+       everything the reset takes is inside it, including the wallpaper, which is
+       moved aside rather than copied because of its size. The restore point is
+       not in the key list any more: a reset may not spend the other way back. */
     document.getElementById("cfg-reset")?.addEventListener("click", () => {
-      const t = (k, fb) => (window.I18N ? window.I18N.t(k) : fb);
       confirmDialog({
-        title: t("confirm.resetTitle", "Reset everything?"),
-        message: t("backup.confirmReset", "Reset all Nordlys settings to factory defaults? This cannot be undone."),
-        confirmText: t("confirm.reset", "Reset"),
-        cancelText: t("confirm.cancel", "Cancel")
+        title: this.text("confirm.resetTitle", "Reset everything?"),
+        message: this.text("backup.confirmReset", "This clears your folders, bookmarks and appearance. A way back is saved first."),
+        confirmText: this.text("confirm.reset", "Reset"),
+        cancelText: this.text("confirm.cancel", "Cancel")
       }).then(async (ok) => {
         if (!ok) return;
-        // Everything this build writes, and everything any earlier build wrote.
-        [
-          "nordlys_config", "nordlys_custom_themes", "nordlys_drawer_width",
-          "nordlys_language", "nordlys_search_history", "nordlys_restore_point",
-          "aether_tab_config", "aurora_tab_config", "aurora_custom_themes",
-          "aurora_drawer_width", "aurora_language", "aurora_search_history"
-        ].forEach((key) => localStorage.removeItem(key));
+        /* Both halves of the way back, or neither. The wallpaper moves first
+           because the vault can be asked to put it back; the snapshot is the
+           commit point, because localStorage cannot. */
+        let aside;
+        try { aside = await this.setWallpaperAside(); }
+        catch (error) { this.sayNoRoom("toast.recoveryFailed"); return; }
+        if (!this.keepAWayBack("reset", { media: aside.media })) { await aside.putBack(); return; }
+        for (const key of OWNED_LOCAL_KEYS) {
+          try { localStorage.removeItem(key); } catch (error) { /* already gone */ }
+        }
         try { await MediaVault.deleteMedia("custom_bg"); } catch (e) {}
+        NordlysUI.announce(this.text("toast.resetDone", "Everything was reset"));
         if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
           chrome.storage.local.clear(() => location.reload());
           setTimeout(() => location.reload(), 400); // fallback if callback never fires
@@ -2468,5 +3485,37 @@ class SettingsController {
         }
       });
     });
+  }
+
+  /* localStorage has no transaction, so the nearest honest thing is to hold the
+     exact bytes of every key an action writes and put them all back the moment
+     one write fails. Returns the way back. */
+  holdLocalKeys(keys) {
+    const held = keys.map((key) => {
+      try { return [key, localStorage.getItem(key)]; } catch (error) { return [key, null]; }
+    });
+    return () => {
+      for (const [key, value] of held) {
+        try {
+          /* Written straight back rather than cleared first: the value going in
+             is the one the store already had room for, so it cannot itself be
+             the write that runs out of room — and the key whose write is what
+             failed was never changed, so it is holding this already. */
+          if (value === null) localStorage.removeItem(key);
+          else localStorage.setItem(key, value);
+        } catch (error) { /* the store refused its own previous contents; it still has them */ }
+      }
+    };
+  }
+
+  /* The stores an imported file carried beside its config. Answers whether they
+     landed: a file whose themes will not fit is a file that has not been
+     imported, not one that half has. */
+  adoptImportedExtras(extras = {}) {
+    try {
+      if (Array.isArray(extras.customThemes)) localStorage.setItem("nordlys_custom_themes", JSON.stringify(extras.customThemes));
+      if (extras.drawerWidth) localStorage.setItem("nordlys_drawer_width", extras.drawerWidth);
+      return true;
+    } catch (error) { return false; }
   }
 }

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Contrast calibration</title>
+<!-- Pairs whose ratios are known exactly, for tests/ui/contrast.spec.cjs to
+     measure before any of its verdicts on the real page count. -->
+<style>
+  html, body { margin: 0; background: #ffffff; font: 400 20px/1.2 sans-serif; }
+  .row { display: flex; align-items: center; height: 56px; padding: 0 24px; }
+  .row span { display: inline-block; }
+  #black { color: #000000; }
+  #grey-aa { color: #767676; }
+  #grey-large { color: #949494; }
+  #half { color: rgba(0, 0, 0, 0.5); }
+  #split { background: linear-gradient(90deg, #ffffff 0 50%, #000000 50% 100%); }
+  #split span { color: #777777; width: 100%; text-align: center; letter-spacing: 0.3em; }
+  #night { background: #0a0f1d; }
+  #night span { color: #8ca0c4; }
+</style>
+</head>
+<body>
+  <div class="row"><span id="black">Black on white, twenty-one to one</span></div>
+  <div class="row"><span id="grey-aa">#767676 on white, the AA line</span></div>
+  <div class="row"><span id="grey-large">#949494 on white, the large-text line</span></div>
+  <div class="row"><span id="half">Half-transparent black on white</span></div>
+  <div class="row" id="split"><span id="split-text">MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM</span></div>
+  <div class="row" id="night"><span id="night-text">Aurora Void dim on its own ground</span></div>
+</body>
+</html>

@@ -17,7 +17,7 @@ async function expectCycles(page, root) {
 
 test('every settings section contains forward and backward keyboard focus', async ({ nordlysPage }) => {
   const { page } = nordlysPage; await page.locator('#gear').click(); const drawer = page.locator('#cfg');
-  for (const id of ['appearance', 'background', 'bookmarks', 'general', 'custom-css', 'backup']) {
+  for (const id of ['appearance', 'background', 'bookmarks', 'general', 'support', 'custom-css', 'backup']) {
     await page.locator(`#settings-tab-${id}`).click(); await expectCycles(page, drawer);
     for (let index = 0; index < 35; index++) await page.keyboard.press('Tab');
     expect(await page.evaluate(() => document.activeElement.closest('#cfg') !== null), `${id} leaked focus`).toBe(true);

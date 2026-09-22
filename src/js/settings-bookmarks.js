@@ -5,7 +5,7 @@
       this.app = app; this.root = root; this.openIconPicker = openIconPicker;
       this.expanded = new Set(); this.renaming = new Set();
     }
-    text(key, fallback) { return window.I18N?.t(key) || fallback; }
+    text(key, fallback, params) { const value = window.I18N?.t(key, params || {}); return value && value !== key ? value : fallback; }
 
     /* Every row used to wear its whole vocabulary: Edit, up, down, a Move-to
        select and Delete, five controls competing with the bookmark they act on.
@@ -68,27 +68,41 @@
       if (filter) filter.focus({ preventScroll: true });
     }
     save(message) { this.app.saveConfig(); this.app.grid?.render(); if (message) NordlysUI.announce(message); }
+    /* The list is the board in reading order, so with rows of the user's own a
+       step can cross the end of a row without the index changing: the folder
+       stays put in the list and changes row on the board. */
     moveFolder(folder, delta) {
-      const groups = this.app.config.groups, index = groups.indexOf(folder), target = Math.max(0, Math.min(groups.length - 1, index + delta)); if (index < 0 || target === index) return;
-      const [movedFolder] = groups.splice(index, 1); groups.splice(target, 0, movedFolder); this.save(`${movedFolder.label} moved to position ${target + 1}`); this.render();
+      const groups = this.app.config.groups, index = groups.indexOf(folder);
+      if (index < 0 || !window.NordlysBoardLayout) return;
+      const target = window.NordlysBoardLayout.shift(groups, index, delta);
+      if (target < 0) return;
+      const name = folder.label;
+      const place = window.NordlysBoardLayout.hasRows(groups) && !folder.hidden ? this.app.grid?.placeOf(folder) : null;
+      this.save(place
+        ? this.text('announce.movedToRow', `${name} moved to row ${place.row}, position ${place.position}`, { name, ...place })
+        : this.text('announce.movedToPosition', `${name} moved to position ${target + 1}`, { name, position: target + 1 }));
+      this.render();
     }
     moveBookmark(group, link, delta) {
       const links = group.links || [], bookmarkIndex = links.indexOf(link), target = Math.max(0, Math.min(links.length - 1, bookmarkIndex + delta)); if (bookmarkIndex < 0 || target === bookmarkIndex) return;
-      links.splice(bookmarkIndex, 1); links.splice(target, 0, link); this.expanded.add(group); this.save(`${link.name} moved to position ${target + 1}`); this.render();
+      links.splice(bookmarkIndex, 1); links.splice(target, 0, link); this.expanded.add(group); this.save(this.text('announce.movedToPosition', `${link.name} moved to position ${target + 1}`, { name: link.name, position: target + 1 })); this.render();
     }
     transferBookmark(group, link, destination) {
       if (destination?.source?.folderId || group.source?.folderId) return;
       const sourceIndex = group.links.indexOf(link); if (sourceIndex < 0 || !destination || destination === group) return;
-      group.links.splice(sourceIndex, 1); (destination.links ||= []).push(link); this.expanded.add(destination); this.save(`${link.name} moved to ${destination.label}`); this.render();
+      group.links.splice(sourceIndex, 1); (destination.links ||= []).push(link); this.expanded.add(destination); this.save(this.text('announce.movedToFolder', `${link.name} moved to ${destination.label}`, { name: link.name, folder: destination.label })); this.render();
     }
     removeWithUndo({ group, link }) {
       const bookmarkIndex = group.links.indexOf(link); if (bookmarkIndex < 0) return;
       const [removed] = group.links.splice(bookmarkIndex, 1), snapshot = JSON.parse(JSON.stringify(removed));
-      this.expanded.add(group); this.save(`${snapshot.name} deleted`); this.render();
+      /* Said once, by the toast, in the reader's own language — this used to
+         announce an English literal here and then show a translated toast. */
+      this.expanded.add(group); this.save(); this.render();
       const say = (key, fallback) => (window.I18N ? window.I18N.t(key, { name: snapshot.name }) : fallback);
       NordlysUI.showUndoToast({ message: say('toast.itemDeleted', `${snapshot.name} deleted`), onAction: () => {
         if (!this.app.config.groups.includes(group)) return;
-        group.links.splice(Math.min(bookmarkIndex, group.links.length), 0, snapshot); this.expanded.add(group); this.save(`${snapshot.name} restored`); this.render();
+        group.links.splice(Math.min(bookmarkIndex, group.links.length), 0, snapshot); this.expanded.add(group); this.save(); this.render();
+        NordlysUI.announce(say('toast.itemRestored', `${snapshot.name} restored`));
       } });
     }
     iconFor(link) {
@@ -105,7 +119,7 @@
       if (group.source?.folderId) {
         delete group.source;
         for (const link of group.links || []) delete link.fromBrowser;
-        this.save(`${group.label} no longer follows the browser`);
+        this.save(this.text('announce.unfollowed', `${group.label} no longer follows the browser`, { name: group.label }));
         this.render();
         this.app.followBrowserFolders?.();
         return;
@@ -154,7 +168,7 @@
           }
           group.source = { type: 'browser', folderId: folder.id, title: folder.title };
           group.links = links;
-          this.save(`${group.label} follows ${folder.title}`);
+          this.save(this.text('announce.follows', `${group.label} follows ${folder.title}`, { name: group.label, folder: folder.title }));
           this.render();
           this.app.grid?.render();
           this.app.followBrowserFolders?.();
@@ -199,20 +213,20 @@
 
         const renameInput = document.createElement('input'); renameInput.className = 'bookmark-folder-name-input'; renameInput.setAttribute('aria-label', `Folder name for ${group.label}`); renameInput.value = group.label || '';
         renameInput.hidden = !this.renaming.has(group);
-        const commitRename = () => { group.label = renameInput.value.trim() || this.text('bookmarks.newFolder', 'New Folder'); this.renaming.delete(group); this.save(`${group.label} renamed`); this.render(); };
+        const commitRename = () => { group.label = renameInput.value.trim() || this.text('bookmarks.newFolder', 'New Folder'); this.renaming.delete(group); this.save(this.text('announce.renamed', `${group.label} renamed`, { name: group.label })); this.render(); };
         renameInput.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); commitRename(); } });
         renameInput.addEventListener('change', commitRename);
         renameInput.addEventListener('click', event => event.stopPropagation());
 
         const addBookmark = () => {
           (group.links ||= []).push({ name: 'New Bookmark', url: 'https://', color: '#35d6c0', icon: 'globe' });
-          this.expanded.add(group); this.save('Bookmark added'); this.render();
+          this.expanded.add(group); this.save(this.text('announce.bookmarkAdded', 'Bookmark added')); this.render();
         };
 
         const folderMenu = button(`More actions for ${group.label}`, '⋯', node => this.openOverflow(node, [
           { label: this.text('bookmarks.rename', 'Rename'), run: () => { this.renaming.add(group); this.render(); this.root.querySelector(`[data-group-index="${this.app.config.groups.indexOf(group)}"] .bookmark-folder-name-input`)?.focus(); } },
           { label: this.text('bookmarks.addBookmark', 'Add bookmark'), disabled: Boolean(group.source?.folderId), run: addBookmark },
-          { label: group.hidden ? this.text('bookmarks.showOnBoard', 'Show on the board') : this.text('bookmarks.hideFromBoard', 'Hide from the board'), run: () => { group.hidden = !group.hidden; this.save(`${group.label} ${group.hidden ? 'hidden' : 'shown'}`); this.render(); } },
+          { label: group.hidden ? this.text('bookmarks.showOnBoard', 'Show on the board') : this.text('bookmarks.hideFromBoard', 'Hide from the board'), run: () => { group.hidden = !group.hidden; this.save(group.hidden ? this.text('announce.hidden', `${group.label} hidden`, { name: group.label }) : this.text('announce.shown', `${group.label} shown`, { name: group.label })); this.render(); } },
           { label: this.text('bookmarks.moveUp', 'Move up'), disabled: groupIndex === 0, run: () => this.moveFolder(group, -1) },
           { label: this.text('bookmarks.moveDown', 'Move down'), disabled: groupIndex === groups.length - 1, run: () => this.moveFolder(group, 1) },
           { label: group.source?.folderId
@@ -253,7 +267,7 @@
         const columnsText = document.createElement('span'); columnsText.textContent = this.text('bookmarks.columns', 'Columns');
         const columns = document.createElement('select'); columns.setAttribute('aria-label', `Columns for ${group.label}`);
         for (let value = 1; value <= 8; value++) { const option = document.createElement('option'); option.value = String(value); option.textContent = `${value}`; option.selected = Number(group.cols) === value; columns.append(option); }
-        columns.addEventListener('change', () => { group.cols = Number(columns.value); this.save(`${group.label}: ${group.cols} columns`); });
+        columns.addEventListener('change', () => { group.cols = Number(columns.value); this.save(this.text('announce.columns', `${group.label}: ${group.cols} columns`, { name: group.label, count: group.cols })); });
         columnsLabel.append(columnsText, columns);
         toolbar.append(add, columnsLabel);
         list.append(toolbar);
@@ -276,7 +290,7 @@
           const saveButton = button(`Save ${link.name}`, this.text('modal.saveChanges', 'Save'), () => {
             link.name = titleInput.value.trim() || 'Bookmark';
             link.url = /^https?:\/\//i.test(urlInput.value) ? urlInput.value : `https://${urlInput.value}`;
-            this.save(`${link.name} saved`); this.render();
+            this.save(this.text('announce.saved', `${link.name} saved`, { name: link.name })); this.render();
           });
           editor.append(titleInput, urlInput, iconButton, saveButton);
 

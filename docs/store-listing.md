@@ -26,7 +26,7 @@ description instead. Both say it in their first line.
 ## Summary (132 characters maximum)
 
 ```
-A new tab page with 21 themes, a living aurora, bookmark folders you arrange yourself, and a search box that does arithmetic.
+A new tab page with 21 themes, six living skies you can recolour, folders you arrange, and a search box that does arithmetic.
 ```
 
 125 characters. Identical to the `description` field in `manifest.json`, and a unit test keeps it so.
@@ -42,7 +42,7 @@ Nordlys replaces the new tab page. It opens instantly, keeps everything on your 
 
 This is a beta. Things get removed as well as added — two background scenes and four gradient variants have already gone, each one dropped because it measured as indistinguishable from another rather than because someone disliked it. What does not change without warning is your setup: every upgrade that migrates anything keeps a restore point you can go back to.
 
-Bookmarks live in folders you arrange yourself. Drag a tile into another folder, drag folders around, pull a corner to change how many columns a folder has, fold the ones you rarely open into a dock at the bottom. Right click anything to edit it in place.
+Bookmarks live in folders you arrange yourself. Drag a bookmark into another folder and the tiles make room for it as it goes; drag a folder into a gap, or between two rows to start a new row, and the board shows exactly where it will land before you let go. Choose Fitted and every row runs edge to edge with folders of one height, or press Tidy up and folders of a similar height line up side by side. Pull a folder's edge to change how many columns it has, and fold the ones you rarely open into a dock at the bottom. All of it works from the keyboard, and all of it has Undo. Right click anything to edit it in place.
 
 Search for a brand or product and Nordlys offers clean Simple Icons vectors, then saves your choice locally instead of hotlinking it. Chrome's favicon cache, an image URL, a local file and a monogram remain available. A black logo on a black theme used to disappear; Nordlys now measures every icon against its plate and re-tones only marks that would vanish, so coloured logos keep their colour. You can override that decision on any bookmark.
 
@@ -50,7 +50,11 @@ Search for a brand or product and Nordlys offers clean Simple Icons vectors, the
 
 Type is split into three slots: the clock and headings, the interface, and monospace. Choose from the bundled faces or from the fonts already installed on your computer.
 
-One living scene — the aurora it is named after — your own image or a looping video, stored locally, or a flat theme colour. Motion and Atmosphere dial the aurora from a slow shimmer down to Still, where the scene is painted once and held. If your system asks for reduced motion, that is what you get automatically: the picture, without the movement.
+Six living skies, each its own composition: Nordlys, the aurora it is named after; Halo, a moon inside its ice ring; Silk, threads drawn through a slow current; Frost, fern ice growing in from the edges; Contour, a survey map of slowly wandering hills; and Fjord. Or your own image or looping video, stored locally, or a flat theme colour. Colour moods tint any sky, and you can mix your own from three colours while the sky follows your picks. Motion and Atmosphere dial a scene from a slow shimmer down to Still, where it is painted once and held; if your system asks for reduced motion, that is what you get automatically. Shuffle a sky you like into a new arrangement, and it stays that way on every new tab. Turn on Follow the time of day and every sky is lit by where the sun is in your time zone: a warm glow at sunrise and sunset, a pale calm sky by day, a cool blue hour, stars at night — worked out on your machine, with no location permission.
+
+Text stays readable on every sky. Behind the clock, the date and the search field, Nordlys measures the sky it has just painted and quiets it exactly as much as the text needs, and every theme's text colours are held above the contrast readable text requires on each surface they sit on. Your own wallpaper is measured too: a bright photo gets a soft shade from the top and more solid glass where the words are, and stays itself everywhere else.
+
+Type > in the search box and the board takes commands: theme nord, sky frost, mood ember, move YouTube to Daily, new folder Reading. The page shows the result before you press Enter, and one undo takes it back. And a look — theme, sky, mood, fonts — can be copied as one line of text or saved as a picture, without a single bookmark in it.
 
 The search box uses whichever search engine you have set in Chrome — it does not have one of its own and does not ask you to pick. As you type it offers your own bookmarks, your recent searches, and arithmetic: 45 * 12 + sqrt(144) gets its answer right there, one click to copy. Nothing you type is sent anywhere until you press Enter.
 

@@ -1,5 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const { launchExtension } = require('../helpers/real-extension.cjs');
+const { DEMO_BOARD } = require('../helpers/demo-board.cjs');
 
 /* Behaviour that only the real extension can prove. Each test here is the
    user's own gesture — typing, pressing a key, choosing a file — followed by
@@ -28,7 +29,11 @@ test('arithmetic typed into the search box gets its answer under the real CSP', 
 
 test('Enter on Cancel leaves everything in place in the real dialog', async () => {
   const { page } = ext;
+  // A real install opens empty, so the folder this test declines to delete has
+  // to be put there first — through the extension's own storage.
+  await ext.installBoard(DEMO_BOARD);
   const before = await page.evaluate(() => window.Nordlys.config.groups.length);
+  expect(before, 'the board under test must actually hold folders').toBeGreaterThan(0);
   await page.locator('#gear').click();
   await page.getByRole('tab', { name: 'Bookmarks' }).click();
   await page.locator('.bookmark-folder-accordion').first()

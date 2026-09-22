@@ -20,19 +20,21 @@
 
   const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
   const kindOf = (value) => Array.isArray(value) ? "list" : value === null ? "null" : typeof value;
+  // The sky's seed is an unsigned 32-bit whole number, the width of its stream.
+  const isSeed = (value) => Number.isInteger(value) && value >= 0 && value <= 0xffffffff;
 
   /* Top-level fields and the type each must have when present. Unknown fields
      are allowed through: a newer build may have added one, and refusing it
      would make every upgrade path a validation failure. */
   const FIELDS = {
-    version: "string", theme: "string", colorMode: "string", bgMode: "string", bgPalette: "string",
+    version: "string", theme: "string", colorMode: "string", bgMode: "string", bgPalette: "string", boardLayout: "string",
     glassLevel: "string", headerStyle: "string", timeFormat: "string",
     userName: "string", customCss: "string", iconShape: "string",
     hoverEffect: "string", language: "string",
     bgBlur: "number", bgDim: "number", cardRadius: "number", tileSize: "number",
-    cardGap: "number", cardGlow: "number", bgMotion: "number", bgIntensity: "number",
-    showSeconds: "boolean", openNewTab: "boolean",
-    groups: "list", customTheme: "object"
+    cardGap: "number", cardGlow: "number", bgMotion: "number", bgIntensity: "number", bgSeed: "number",
+    showSeconds: "boolean", openNewTab: "boolean", highLegibility: "boolean", bgRealSky: "boolean", bgDaylight: "boolean",
+    groups: "list", bgPalettes: "list", customTheme: "object"
   };
   const NUMERIC_FIELDS = Object.entries(FIELDS)
     .filter(([, type]) => type === "number")
@@ -40,6 +42,8 @@
   const LINK_TEXT_FIELDS = ["name", "url", "icon", "iconSource", "color", "customImg", "monogram", "tone"];
   // The same bounds the grid enforces on its resize handle.
   const COLUMNS = { min: 1, max: 8 };
+  // The same bound board-layout.js keeps rows inside.
+  const ROWS = { max: 99 };
 
   /* A URL that runs code instead of opening a page is never a bookmark. The
      browser's parser strips tabs and newlines from a scheme before it looks at
@@ -58,6 +62,9 @@
       errors.push(`${where}: cols should be a whole number from ${COLUMNS.min} to ${COLUMNS.max}`);
     }
     if (group.source !== undefined && !isObject(group.source)) errors.push(`${where}: source should be an object`);
+    if (group.row !== undefined && !(Number.isInteger(group.row) && group.row >= 0 && group.row <= ROWS.max)) {
+      errors.push(`${where}: row should be a whole number from 0 to ${ROWS.max}`);
+    }
     if (group.links === undefined) return;
     if (!Array.isArray(group.links)) { errors.push(`${where}: links should be a list`); return; }
     group.links.forEach((link, linkIndex) => {
@@ -67,6 +74,25 @@
       else if (isForbiddenUrl(link.url)) errors.push(`${at}: url must open a page, not run code`);
       for (const field of LINK_TEXT_FIELDS) {
         if (link[field] !== undefined && typeof link[field] !== "string") errors.push(`${at}: ${field} should be text`);
+      }
+    });
+  }
+
+  /* A colour mood somebody mixed. Three hex colours, a name, and an id — the
+     same shape the canvas resolves, checked here so a hand-edited file is
+     refused with a reason instead of painting a gradient stop transparent. */
+  function validatePalette(palette, index, errors) {
+    const where = `colour mood ${index + 1}`;
+    if (!isObject(palette)) { errors.push(`${where} is not a colour mood object`); return; }
+    if (typeof palette.id !== "string" || !palette.id.trim()) errors.push(`${where}: id should be text`);
+    if (palette.name !== undefined && typeof palette.name !== "string") errors.push(`${where}: name should be text`);
+    if (!Array.isArray(palette.colors) || palette.colors.length !== 3) {
+      errors.push(`${where}: colors should be a list of three colours`);
+      return;
+    }
+    palette.colors.forEach((colour, at) => {
+      if (typeof colour !== "string" || !/^#[0-9a-f]{6}$/i.test(colour.trim())) {
+        errors.push(`${where}, colour ${at + 1}: should be a hex colour such as #68e1d1`);
       }
     });
   }
@@ -82,6 +108,9 @@
       if (actual !== type) errors.push(`${field} should be a ${type === "list" ? "list" : type}, not ${actual}`);
     }
     if (Array.isArray(candidate.groups)) candidate.groups.forEach((group, index) => validateGroup(group, index, errors));
+    if (Array.isArray(candidate.bgPalettes)) candidate.bgPalettes.forEach((palette, index) => validatePalette(palette, index, errors));
+    if (typeof candidate.bgSeed === "number" && !isSeed(candidate.bgSeed)) errors.push("bgSeed should be a whole number from 0 to 4294967295");
+    if (typeof candidate.boardLayout === "string" && !["natural", "fitted"].includes(candidate.boardLayout)) errors.push('boardLayout should be "natural" or "fitted"');
     return { ok: errors.length === 0, errors };
   }
 
@@ -105,9 +134,25 @@
   function repairConfig(config) {
     if (!isObject(config)) return false;
     let repaired = false;
+    if (config.bgSeed !== undefined && !isSeed(config.bgSeed)) { config.bgSeed = 0; repaired = true; }
+    if (config.boardLayout !== undefined && !["natural", "fitted"].includes(config.boardLayout)) { config.boardLayout = "natural"; repaired = true; }
     if (!Array.isArray(config.groups)) { config.groups = []; repaired = true; }
     const groups = config.groups.filter(isObject);
     if (groups.length !== config.groups.length) { config.groups = groups; repaired = true; }
+    /* A mood that cannot be resolved is dropped rather than kept: the canvas
+       would fall back to the theme anyway, and a chip that does nothing when
+       pressed is worse than one that is not there. */
+    if (config.bgPalettes !== undefined) {
+      const moods = Array.isArray(config.bgPalettes) ? config.bgPalettes : [];
+      const kept = moods.filter((palette) => isObject(palette)
+        && typeof palette.id === "string" && palette.id.trim()
+        && Array.isArray(palette.colors) && palette.colors.length === 3
+        && palette.colors.every((colour) => typeof colour === "string" && /^#[0-9a-f]{6}$/i.test(colour.trim())));
+      if (!Array.isArray(config.bgPalettes) || kept.length !== config.bgPalettes.length) {
+        config.bgPalettes = kept;
+        repaired = true;
+      }
+    }
     for (const group of groups) {
       if (!Array.isArray(group.links)) { group.links = []; repaired = true; }
       const links = group.links.filter((link) => isObject(link) && typeof link.url === "string" && !isForbiddenUrl(link.url));
@@ -116,7 +161,71 @@
     return repaired;
   }
 
-  const NordlysConfigSchema = { validateConfig, normalizeImportConfig, repairConfig, isForbiddenUrl, COLUMNS };
+  /* ── What a backup FILE is, as opposed to a config ────────────────
+     Every release since 2.0 wrote the config object at the top level of the
+     file, so that is where it stays: a file this build writes still opens in an
+     older one, and every file an older one wrote still opens here.
+
+     Some durable state was never part of the config — the themes someone
+     authored, the width they dragged the drawer to — and a "backup" that loses
+     them is a backup in name only. It travels in one namespaced envelope beside
+     the config, which an older build ignores as an unknown field and this one
+     lifts out before the config is validated, so it never lands in settings.
+
+     Not carried, on purpose: wallpaper and video files, which live in IndexedDB
+     and run to tens of megabytes — embedding one would produce a file no
+     storage would take back. Search history is not carried either; a settings
+     file people mail themselves has no business holding a list of what they
+     looked for. Both exclusions are stated in the export panel. */
+  const BACKUP_EXTRAS_KEY = "nordlysBackup";
+  const BACKUP_FORMAT_VERSION = 1;
+
+  function buildBackupFile(config, extras = {}) {
+    const envelope = { formatVersion: BACKUP_FORMAT_VERSION, savedAt: new Date().toISOString() };
+    if (Array.isArray(extras.customThemes)) envelope.customThemes = extras.customThemes;
+    if (typeof extras.drawerWidth === "string" && extras.drawerWidth) envelope.drawerWidth = extras.drawerWidth;
+    return Object.assign({}, config, { [BACKUP_EXTRAS_KEY]: envelope });
+  }
+
+  /* The inverse, and the only reader that knows the envelope exists. A file
+     without one reads as itself with nothing invented; a damaged one is dropped
+     rather than allowed to sink an otherwise sound import. */
+  function readBackupFile(parsed) {
+    if (!isObject(parsed)) return { config: parsed, extras: {} };
+    const envelope = parsed[BACKUP_EXTRAS_KEY];
+    const config = Object.assign({}, parsed);
+    delete config[BACKUP_EXTRAS_KEY];
+    const extras = {};
+    if (isObject(envelope)) {
+      if (Array.isArray(envelope.customThemes)) extras.customThemes = envelope.customThemes;
+      if (typeof envelope.drawerWidth === "string" && envelope.drawerWidth) extras.drawerWidth = envelope.drawerWidth;
+    }
+    return { config, extras };
+  }
+
+  /* ── Settings that meant something different when they were saved ──
+     Asked of a config as it was stored or exported, before the defaults are
+     merged under it — the only moment its own age is still visible.
+
+     Until the board learned rows and layouts, the folder corner slider was
+     drawn over by a fixed 18px radius: whatever it held, folders showed 18.
+     boardLayout arrived in the same release as the fix, so a config without
+     one predates it, and its untouched default of 24 becomes the 18 it always
+     looked like. Fixing the slider changes nobody's board; a value somebody
+     actually chose is finally theirs to see. */
+  function migrateRaw(raw) {
+    if (!isObject(raw)) return false;
+    if (raw.boardLayout === undefined && Number(raw.cardRadius) === 24) {
+      raw.cardRadius = 18;
+      return true;
+    }
+    return false;
+  }
+
+  const NordlysConfigSchema = {
+    validateConfig, normalizeImportConfig, repairConfig, migrateRaw, isForbiddenUrl, COLUMNS,
+    buildBackupFile, readBackupFile, BACKUP_EXTRAS_KEY, BACKUP_FORMAT_VERSION
+  };
   if (typeof window !== "undefined") window.NordlysConfigSchema = NordlysConfigSchema;
   if (typeof module === "object" && module.exports) module.exports = NordlysConfigSchema;
 })();

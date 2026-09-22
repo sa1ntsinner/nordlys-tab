@@ -1,8 +1,14 @@
 const { test: base, expect } = require('@playwright/test');
 const { resolve } = require('node:path');
 const { startStaticServer } = require('./static-server.cjs');
+const { DEMO_BOARD } = require('./demo-board.cjs');
 const test = base.extend({
-  nordlysPage: async ({ page }, use) => {
+  /* What the page finds in storage when it opens. The product ships an empty
+     board, so a spec that needs tiles to drag installs one the way a returning
+     user has one — see demo-board.cjs. Set to null for first-run behaviour and
+     for anything asserting how storage is adopted. */
+  nordlysBoard: [DEMO_BOARD, { option: true }],
+  nordlysPage: async ({ page, nordlysBoard }, use) => {
     const storageState = {}, runtimeErrors = [];
     const server = await startStaticServer(resolve(__dirname, '../..'));
     await page.exposeFunction('__nordlysStorageSet', values => Object.assign(storageState, values));
@@ -11,7 +17,14 @@ const test = base.extend({
     });
     page.on('pageerror', error => runtimeErrors.push(`pageerror: ${error.message}`));
     page.on('console', message => { if (message.type() === 'error') runtimeErrors.push(`console: ${message.text()}`); });
-    await page.addInitScript(state => {
+    await page.addInitScript(([state, board]) => {
+      /* Once per context, not once per navigation: a spec that removes the
+         config and reloads is testing what an empty store does, and a fixture
+         that put it back would answer its own question. */
+      if (board && !localStorage.getItem('__nordlys_test_board')) {
+        localStorage.setItem('__nordlys_test_board', '1');
+        localStorage.setItem('nordlys_config', JSON.stringify(board));
+      }
       const saved = localStorage.getItem('__nordlys_test_storage');
       if (saved) Object.assign(state, JSON.parse(saved));
       const persist = () => localStorage.setItem('__nordlys_test_storage', JSON.stringify(state));
@@ -70,7 +83,7 @@ const test = base.extend({
           onMoved: { addListener() {}, removeListener() {} },
           onChildrenReordered: { addListener() {}, removeListener() {} }
         } };
-    }, storageState);
+    }, [storageState, nordlysBoard]);
     await page.goto(`${server.origin}/newtab.html`);
     await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
     await use({ page, storageState, runtimeErrors, origin: server.origin });

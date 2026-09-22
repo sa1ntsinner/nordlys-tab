@@ -13,7 +13,9 @@ const pageGlobals = {
   // app.js
   Nordlys: "writable", NordlysApp: "readonly", DEFAULT_CONFIG: "readonly",
   STORAGE_KEY: "readonly", LEGACY_STORAGE_KEYS: "readonly", LEGACY_LOCAL_KEYS: "readonly",
-  RESTORE_POINT_KEY: "readonly", LIGHT_THEMES: "readonly", THEME_MIGRATIONS: "readonly",
+  RESTORE_POINT_KEY: "readonly", UNDO_POINT_KEY: "readonly", UNDO_MEDIA_ID: "readonly",
+  SIDE_STORAGE: "readonly", OWNED_LOCAL_KEYS: "readonly",
+  LIGHT_THEMES: "readonly", THEME_MIGRATIONS: "readonly",
   BACKGROUND_MIGRATIONS: "readonly", STILL_MIGRATIONS: "readonly", THEME_INLINE_TOKENS: "readonly",
   adoptLegacyLocalStorage: "readonly",
   // ui-kit.js
@@ -27,12 +29,14 @@ const pageGlobals = {
   NordlysIcons: "readonly", NordlysIconPicker: "readonly", NordlysIconDiscovery: "readonly",
   // background.js, calc.js, config-schema.js, bookmark-sync.js
   NordlysBackgroundEngine: "readonly", MediaVault: "readonly",
+  NORDLYS_GENERATIVE_SCENES: "readonly", NORDLYS_BACKGROUND_PALETTES: "readonly",
   NordlysCalc: "readonly", NordlysConfigSchema: "readonly", NordlysBookmarks: "readonly",
   // widgets.js, grid.js, settings*.js
   ClockWidget: "readonly", SearchWidget: "readonly", WidgetsController: "readonly", LOCALE_MAP: "readonly",
   GridController: "readonly", MIN_COLUMNS: "readonly", MAX_COLUMNS: "readonly",
   SettingsController: "readonly", SCENE_NAMES: "readonly", SCENE_KEYS: "readonly",
-  NordlysSettingsShell: "readonly", NordlysBookmarkSettings: "readonly"
+  NordlysSettingsShell: "readonly", NordlysBookmarkSettings: "readonly",
+  NordlysSupportSettings: "readonly"
 };
 
 export default [
@@ -75,7 +79,7 @@ export default [
       ecmaVersion: 2023,
       sourceType: "commonjs",
       // Names the tests reach inside page.evaluate(): the page's own globals.
-      globals: { ...globals.node, ...globals.browser, chrome: "readonly", MediaVault: "readonly", Nordlys: "readonly", confirmDialog: "readonly", I18N: "readonly", NordlysUI: "readonly" }
+      globals: { ...globals.node, ...globals.browser, chrome: "readonly", MediaVault: "readonly", Nordlys: "readonly", confirmDialog: "readonly", I18N: "readonly", NordlysUI: "readonly", NordlysToast: "readonly" }
     },
     rules: {
       "no-unused-vars": ["error", { args: "none", caughtErrors: "none" }],

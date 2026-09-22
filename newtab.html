@@ -27,6 +27,7 @@
   <link rel="stylesheet" href="src/css/polish.css">
 </head>
 <body>
+  <a class="skip-link" href="#board" data-i18n="a11y.skipToBoard">Skip to bookmarks</a>
 
   <!-- Dynamic Background Layers -->
   <div id="bg-container">
@@ -62,6 +63,48 @@
       <div id="sugg"></div>
     </section>
 
+    <!-- Arranging the board. Hidden until somebody asks to arrange — from a
+         folder's grip or menu, the board's menu, Settings → Bookmarks or
+         "> arrange". It sits before the board so Tab goes from the bar
+         straight into the folders; it is fixed to the bottom of the window. -->
+    <div id="arrange-bar" class="arrange-bar" role="toolbar" aria-labelledby="arrange-title" hidden>
+      <p id="arrange-hint" class="arrange-hint" data-i18n="arrange.hint">Drag a folder by its name to move it, or its edge to widen it. Bookmarks move between folders the same way.</p>
+      <div class="arrange-controls">
+        <span id="arrange-title" class="arrange-title" data-i18n="arrange.title">Arrange folders</span>
+        <div class="arrange-layouts" role="radiogroup" aria-label="Layout" data-i18n-aria="arrange.layout">
+          <button type="button" role="radio" class="arrange-layout" data-layout="natural" aria-checked="true" aria-describedby="arrange-natural-desc">
+            <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="2" y="1" width="6" height="7" rx="1.2"/><rect x="9" y="1" width="5" height="5" rx="1.2"/><rect x="15" y="1" width="7" height="7" rx="1.2"/><rect x="5" y="10" width="6" height="5" rx="1.2"/><rect x="12" y="10" width="8" height="5" rx="1.2"/></svg>
+            <span data-i18n="arrange.natural">Natural</span>
+          </button>
+          <button type="button" role="radio" class="arrange-layout" data-layout="fitted" aria-checked="false" aria-describedby="arrange-fitted-desc">
+            <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="1" y="1" width="7" height="7" rx="1.2"/><rect x="9" y="1" width="6" height="7" rx="1.2"/><rect x="16" y="1" width="7" height="7" rx="1.2"/><rect x="1" y="10" width="10" height="5" rx="1.2"/><rect x="12" y="10" width="11" height="5" rx="1.2"/></svg>
+            <span data-i18n="arrange.fitted">Fitted</span>
+          </button>
+        </div>
+        <span class="arrange-divider" aria-hidden="true"></span>
+        <button type="button" id="arrange-tidy" class="arrange-action" aria-describedby="arrange-tidy-desc">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 4 1.4 3.6L20 9l-3.6 1.4L15 14l-1.4-3.6L10 9l3.6-1.4Z"/><path d="M4 20 13 11"/><path d="M5.5 5v3M4 6.5h3"/></svg>
+          <span data-i18n="arrange.tidy">Tidy up</span>
+        </button>
+        <button type="button" id="arrange-auto" class="arrange-action" hidden aria-describedby="arrange-auto-desc">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/><path d="M17 14l3 3-3 3"/></svg>
+          <span data-i18n="arrange.autoRows">Automatic rows</span>
+        </button>
+        <button type="button" id="arrange-undo" class="arrange-action" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>
+          <span data-i18n="toast.undo">Undo</span>
+        </button>
+        <button type="button" id="arrange-done" class="glass-btn accent arrange-done" data-i18n="arrange.done">Done</button>
+      </div>
+      <!-- What each choice does, read out on focus and shown in the hint above
+           the bar while the pointer or the focus is on it. -->
+      <span id="arrange-natural-desc" class="nl-visually-hidden" data-i18n="arrange.naturalHint">Natural: folders keep their own size and wrap like words.</span>
+      <span id="arrange-fitted-desc" class="nl-visually-hidden" data-i18n="arrange.fittedHint">Fitted: every row runs edge to edge, and folders in a row share one height.</span>
+      <span id="arrange-tidy-desc" class="nl-visually-hidden" data-i18n="arrange.tidyHint">Tidy up puts folders of a similar height side by side, so every row comes out even.</span>
+      <span id="arrange-auto-desc" class="nl-visually-hidden" data-i18n="arrange.autoRowsHint">Let the board choose the rows again, keeping the folders in their order.</span>
+    </div>
+    <span id="arrange-grip-help" class="nl-visually-hidden" data-i18n="arrange.gripHelp">Press to arrange folders. While arranging, the arrow keys move this folder, and up and down change its row.</span>
+
     <!-- Speed Dial Bento Board -->
     <div id="board"></div>
 
@@ -71,24 +114,25 @@
   </main>
 
   <!-- Settings Trigger Gear -->
-  <button id="gear" type="button" title="Customize Nordlys" aria-label="Settings">
+  <button id="gear" type="button" title="Customize Nordlys" data-i18n-title="a11y.customize" aria-label="Settings" data-i18n-aria="a11y.openSettings">
     <svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97s-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 13.5 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1s.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"/></svg>
   </button>
 
   <!-- Sliding Resizable Settings Drawer -->
   <aside id="cfg">
     <!-- Draggable Left-Edge Resize Handle -->
-    <div id="cfg-resizer" title="Drag left/right to resize drawer width" aria-label="Resize drawer"></div>
+    <div id="cfg-resizer" title="Drag left/right to resize drawer width" data-i18n-title="a11y.resizeDrawerHint" aria-label="Resize drawer" data-i18n-aria="a11y.resizeDrawer"></div>
 
     <div class="chead">
       <b data-i18n="settings.title">Nordlys Settings</b>
-      <button id="cfgx" type="button" aria-label="Close settings">✕</button>
+      <button id="cfgx" type="button" aria-label="Close settings" data-i18n-aria="a11y.closeSettings">✕</button>
     </div>
 
     <!-- Horizontally Scrollable Tabs Navigation -->
     <nav class="ctabs">
       <button class="ctab active" data-tab="appearance" data-i18n="nav.appearance">Appearance</button>
       <button class="ctab" data-tab="general" data-i18n="nav.general">General</button>
+      <button class="ctab" data-tab="support" data-i18n="nav.support">Support</button>
       <button class="ctab" data-tab="background" data-i18n="nav.background">Background</button>
       <button class="ctab" data-tab="bookmarks" data-i18n="nav.bookmarks">Bookmarks</button>
       <button class="ctab" data-tab="custom-css" data-i18n="nav.customCss">Custom CSS</button>
@@ -249,7 +293,7 @@
 
             <div class="row">
               <span data-i18n="customTheme.presetName">Preset Name</span>
-              <input id="thm-name-input" type="text" class="ipt" placeholder="My Custom Theme" style="width: 150px;">
+              <input id="thm-name-input" type="text" class="ipt" placeholder="My Custom Theme" data-i18n-placeholder="studio.namePlaceholder" style="width: 150px;">
             </div>
 
             <p id="custom-theme-contrast-warning" class="custom-theme-warning" role="status" data-i18n="customTheme.contrastWarning" hidden>Text colors need more contrast against the background and cards.</p>
@@ -260,9 +304,9 @@
           </div>
         </div>
 
-        <div id="appearance-shared-preview" class="appearance-shared-preview" aria-label="Live bookmark preview">
+        <div id="appearance-shared-preview" class="appearance-shared-preview" role="img" aria-label="Live bookmark preview" data-i18n-aria="a11y.livePreview">
           <section class="card appearance-preview-card">
-            <div class="tile" aria-label="Nordlys Studio preview">
+            <div class="tile">
               <div class="box"><span class="nl-icon" data-icon-kind="builtin" data-icon-tone="brand"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.1 6.3 6.9 1-5 4.8 1.2 6.9-6.2-3.2L5.8 21 7 14.1 2 9.3l6.9-1z"></path></svg></span></div>
               <span class="lbl" data-i18n="appearance.previewBookmark">Nordlys Studio</span>
             </div>
@@ -287,7 +331,7 @@
         </div>
 
         <details id="advanced-glass-settings" class="advanced-settings">
-          <summary>Advanced glass & geometry</summary>
+          <summary data-i18n="appearance.advancedGlass">Advanced glass &amp; geometry</summary>
         <!-- Bookmark & Card Aesthetics Studio -->
         <div id="card-customizer-controls" class="card-customizer-card" style="margin-top: 16px;">
           <h4 style="margin: 0; color: var(--accent); font-size: var(--nl-text-md); font-weight: 650; display: flex; align-items: center; gap: 6px;">
@@ -296,6 +340,10 @@
 
           <!-- 1. Surface & Glass Section -->
           <div class="settings-group-label" data-i18n="appearance.surfaceGlass">Glass</div>
+          <div class="row">
+            <span><span data-i18n="appearance.highLegibility">High legibility</span><small class="setting-note-inline" data-i18n="appearance.highLegibilityNote">Solid glass, a quieter sky and stronger text. On by itself when your system asks for more contrast.</small></span>
+            <label class="tg"><input id="cfg-high-legibility" type="checkbox"><i></i></label>
+          </div>
           <div class="row">
             <span data-i18n="appearance.glassLevel">Glass</span>
             <select id="cfg-glass-level" class="ipt">
@@ -308,8 +356,8 @@
           <!-- 2. Geometry & Spacing Section -->
           <div class="settings-group-label" data-i18n="appearance.geometry">Geometry</div>
           <div class="row">
-            <span><span data-i18n="appearance.cardRadius">Corner radius</span> (<b id="lbl-radius">24px</b>)</span>
-            <input id="cfg-card-radius" type="range" class="ipt" min="6" max="36" value="24">
+            <span><span data-i18n="appearance.cardRadius">Corner radius</span> (<b id="lbl-radius">18px</b>)</span>
+            <input id="cfg-card-radius" type="range" class="ipt" min="6" max="36" value="18">
           </div>
           <div class="row">
             <span><span data-i18n="appearance.tileSize">Tile size</span> (<b id="lbl-tile">78px</b>)</span>
@@ -363,6 +411,30 @@
           </div>
         </div>
         </details>
+
+        <!-- A look is shared as a line of text and a picture; what it carries is
+             listed in look-share.js, and nothing outside that list is read. -->
+        <div id="look-share" class="card-customizer-card look-share">
+          <div class="settings-block-label" data-i18n="look.title">Share this look</div>
+          <p class="settings-note" data-i18n="look.note">Theme, sky, colour mood, fonts and the shape of the board. Never your bookmarks, your name, a wallpaper or custom CSS.</p>
+          <div class="look-actions">
+            <button id="look-copy" type="button" class="glass-btn" data-i18n="look.copy">Copy this look</button>
+            <button id="look-picture" type="button" class="glass-btn" data-i18n="look.picture">Save a picture of it</button>
+          </div>
+          <label for="look-paste" class="look-paste-label" data-i18n="look.pasteLabel">Or paste a look to try it on</label>
+          <div class="look-paste-row">
+            <input id="look-paste" type="text" class="ipt" spellcheck="false" autocomplete="off" placeholder="nordlys-look:v1:…">
+            <button id="look-try" type="button" class="glass-btn" data-i18n="look.try">Try it</button>
+          </div>
+          <p id="look-status" class="look-status" role="status"></p>
+          <div id="look-decide" class="look-decide" hidden>
+            <span data-i18n="look.trying">You are trying on a shared look. Nothing is saved until you keep it.</span>
+            <div class="look-decide-actions">
+              <button id="look-revert" type="button" class="glass-btn" data-i18n="look.revert">Put mine back</button>
+              <button id="look-keep" type="button" class="glass-btn accent" data-i18n="look.keep">Keep this look</button>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- 3. General Section -->
@@ -383,7 +455,7 @@
         </div>
         <div class="row">
           <span data-i18n="general.userName">Your Name</span>
-          <input id="cfg-user-name" type="text" class="ipt" placeholder="e.g. Alex" style="width: 140px;">
+          <input id="cfg-user-name" type="text" class="ipt" placeholder="e.g. Alex" data-i18n-placeholder="general.namePlaceholder" style="width: 140px;">
         </div>
         <div class="row">
           <span data-i18n="general.headerStyle">Header</span>
@@ -416,13 +488,20 @@
       <!-- 4. Background Section -->
       <section id="sec-background" class="csec">
         <h3 data-i18n="nav.background">Background</h3>
-        <div class="scene-block" id="bg-scene-picker" role="radiogroup" aria-label="Background scene">
+        <!-- Shuffle is an ordinary button beside the scene radiogroup, never a
+             control nested inside it. -->
+        <div class="scene-block-head">
           <span class="settings-block-label" data-i18n="background.atmospheres">Atmospheres</span>
+          <button id="bg-shuffle" type="button" class="palette-action" data-scene-only="procedural" data-i18n="background.shuffle">Shuffle this sky</button>
+        </div>
+        <div class="scene-block" id="bg-scene-picker" role="radiogroup" aria-label="Background" data-i18n-aria="nav.background">
           <select id="cfg-bg-mode" class="ipt" hidden data-native aria-hidden="true" tabindex="-1">
-            <option value="aurora">Aurora</option>
+            <option value="aurora">Nordlys</option>
             <option value="halo">Halo</option>
-            <option value="drift">Drift</option>
-            <option value="horizon">Horizon</option>
+            <option value="silk">Silk</option>
+            <option value="frost">Frost</option>
+            <option value="drift">Contour</option>
+            <option value="horizon">Fjord</option>
             <option value="custom-image">Wallpaper</option>
             <option value="custom-video">Video</option>
             <option value="solid">Solid</option>
@@ -431,15 +510,56 @@
           <span class="settings-block-label personal-label" data-i18n="background.personal">Personal</span>
           <div class="scene-grid personal-grid" id="bg-personal-grid"></div>
         </div>
+        <!-- The mood chips are built in settings.js so the five that ship and the
+             ones somebody mixes are the same kind of thing. The radiogroup holds
+             nothing but radios; making a new mood, editing one and removing one
+             are ordinary buttons beside it rather than controls nested in a
+             control. -->
         <div class="atmosphere-palette" data-scene-only="procedural">
-          <span class="settings-block-label" data-i18n="background.colorMood">Color mood</span>
-          <div id="bg-palette-grid" class="palette-grid" role="radiogroup" aria-label="Color mood">
-            <button type="button" class="palette-chip" data-palette="theme" role="radio"><i></i><span data-i18n="background.paletteTheme">Theme</span></button>
-            <button type="button" class="palette-chip" data-palette="polar" role="radio"><i></i><span data-i18n="background.palettePolar">Polar</span></button>
-            <button type="button" class="palette-chip" data-palette="violet" role="radio"><i></i><span data-i18n="background.paletteViolet">Violet</span></button>
-            <button type="button" class="palette-chip" data-palette="ember" role="radio"><i></i><span data-i18n="background.paletteEmber">Ember</span></button>
-            <button type="button" class="palette-chip" data-palette="mono" role="radio"><i></i><span data-i18n="background.paletteMono">Mono</span></button>
+          <span class="settings-block-label" data-i18n="background.colorMood">Colour mood</span>
+          <div id="bg-palette-grid" class="palette-grid" role="radiogroup" data-i18n-aria="background.colorMood" aria-label="Colour mood"></div>
+          <div class="palette-actions">
+            <button id="bg-palette-new" type="button" class="palette-action" data-i18n="background.moodNew">Mix your own</button>
+            <button id="bg-palette-edit" type="button" class="palette-action" hidden data-i18n="background.moodEdit">Edit this mood</button>
+            <button id="bg-palette-remove" type="button" class="palette-action danger" hidden data-i18n="background.moodRemove">Remove</button>
+            <button id="bg-palette-theme" type="button" class="palette-action" hidden data-i18n="background.moodTheme">Make a theme from it</button>
           </div>
+          <!-- The light over whichever mood is chosen: one switch for every
+               atmosphere, beside the colours it changes. -->
+          <div class="daylight-block">
+            <div class="row setting-row daylight-row">
+              <span><span id="bg-daylight-label" data-i18n="background.daylight">Follow the time of day</span><small id="bg-daylight-now" class="setting-note-inline"></small></span>
+              <label class="tg"><input id="cfg-bg-daylight" type="checkbox" aria-labelledby="bg-daylight-label"><i></i></label>
+            </div>
+            <p class="daylight-note" data-i18n="background.daylightNote">Dawn, day, sunset and night light every atmosphere, from where the sun is in your time zone. Nothing is sent anywhere.</p>
+            <button id="bg-daylight-play" type="button" class="palette-action" hidden data-i18n="background.daylightPlay">Watch a day go by</button>
+          </div>
+          <div id="bg-palette-editor" class="palette-editor" hidden>
+            <span id="bg-palette-preview" class="palette-editor-bar" aria-hidden="true"></span>
+            <p class="palette-editor-hint" data-i18n="background.moodHint">The sky behind this panel follows the colours as you pick them.</p>
+            <div class="palette-editor-field">
+              <label for="bg-palette-name" data-i18n="background.moodName">Name</label>
+              <input id="bg-palette-name" type="text" class="ipt" maxlength="24" autocomplete="off" spellcheck="false" data-i18n-placeholder="background.moodNamePlaceholder" placeholder="Midwinter">
+            </div>
+            <div id="bg-palette-colors" class="palette-editor-colors"></div>
+            <!-- Ways to start a mood other than three pickers: two harmonies of
+                 the first colour, and the colours of the person's own wallpaper. -->
+            <div class="palette-helpers">
+              <span data-i18n="background.moodStartFrom">Start from</span>
+              <button type="button" class="palette-action" data-harmony="neighbours" data-i18n="background.moodNeighbours">Neighbouring hues</button>
+              <button type="button" class="palette-action" data-harmony="split" data-i18n="background.moodSplit">A three-way split</button>
+              <button id="bg-palette-wallpaper" type="button" class="palette-action" hidden data-i18n="background.moodWallpaper">My wallpaper</button>
+            </div>
+            <p id="bg-palette-error" class="palette-editor-error" role="status"></p>
+            <div class="palette-editor-actions">
+              <button id="bg-palette-cancel" type="button" class="glass-btn" data-i18n="background.moodCancel">Cancel</button>
+              <button id="bg-palette-save" type="button" class="glass-btn accent" data-i18n="background.moodSave">Save mood</button>
+            </div>
+          </div>
+        </div>
+        <div class="row setting-row" data-scene-only="halo">
+          <span><span data-i18n="background.realMoon">Follow the real moon</span><small id="bg-moon-tonight" class="setting-note-inline"></small></span>
+          <label class="tg"><input id="cfg-bg-real-sky" type="checkbox" checked><i></i></label>
         </div>
         <div class="row setting-row" data-scene-only="procedural">
           <span><span data-i18n="background.motion">Motion</span> (<b id="lbl-bg-motion">100%</b>)</span>
@@ -476,8 +596,32 @@
       <!-- 5. Bookmarks Section -->
       <section id="sec-bookmarks" class="csec">
         <h3 data-i18n="bookmarks.managerTitle">Bookmarks &amp; Folders</h3>
+        <!-- How the board holds its folders. The same two layouts the
+             arrangement offers, and the way into it: rows and positions are
+             easier to shape on the board itself than in a list. -->
+        <div class="board-layout-block">
+          <span class="settings-block-label" data-i18n="bookmarks.boardLayout">On the board</span>
+          <div class="board-layout-options" role="radiogroup" aria-label="Layout" data-i18n-aria="arrange.layout">
+            <button type="button" role="radio" class="board-layout-option" data-layout="natural" aria-checked="true">
+              <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="2" y="1" width="6" height="7" rx="1.2"/><rect x="9" y="1" width="5" height="5" rx="1.2"/><rect x="15" y="1" width="7" height="7" rx="1.2"/><rect x="5" y="10" width="6" height="5" rx="1.2"/><rect x="12" y="10" width="8" height="5" rx="1.2"/></svg>
+              <span class="board-layout-name" data-i18n="arrange.natural">Natural</span>
+              <span class="board-layout-note" data-i18n="bookmarks.naturalNote">Each folder keeps its own size; rows wrap like words.</span>
+            </button>
+            <button type="button" role="radio" class="board-layout-option" data-layout="fitted" aria-checked="false">
+              <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="1" y="1" width="7" height="7" rx="1.2"/><rect x="9" y="1" width="6" height="7" rx="1.2"/><rect x="16" y="1" width="7" height="7" rx="1.2"/><rect x="1" y="10" width="10" height="5" rx="1.2"/><rect x="12" y="10" width="11" height="5" rx="1.2"/></svg>
+              <span class="board-layout-name" data-i18n="arrange.fitted">Fitted</span>
+              <span class="board-layout-note" data-i18n="bookmarks.fittedNote">Rows run edge to edge; folders in a row share one height.</span>
+            </button>
+          </div>
+          <div class="board-layout-foot">
+            <span id="board-rows-state" class="board-rows-state"></span>
+            <button type="button" id="board-rows-auto" class="palette-action" hidden data-i18n="arrange.autoRows">Automatic rows</button>
+            <button type="button" id="cfg-arrange" class="glass-btn accent board-arrange-btn" data-i18n="bookmarks.arrange">Arrange on the board</button>
+          </div>
+        </div>
         <div id="cfg-groups-editor"></div>
-        <button id="cfg-add-group" class="glass-btn accent" style="width: 100%; margin-top: 14px;" data-i18n="bookmarks.addFolder">+ Add Folder</button>
+        <!-- A slot where the next folder goes, not the loudest thing in the panel. -->
+        <button id="cfg-add-group" type="button" class="glass-btn add-slot" data-i18n="bookmarks.addFolder">+ Add Folder</button>
       </section>
 
       <!-- 6. Custom CSS Section -->
@@ -485,23 +629,23 @@
         <h3 data-i18n="customCss.title">Live Custom CSS</h3>
         <p style="font-size: var(--nl-text-xs); color: var(--dim); margin-bottom: 8px;" data-i18n="customCss.desc">Write custom CSS rules. Changes apply in real time.</p>
         
-        <button id="btn-open-css-docs" type="button" class="glass-btn accent" style="margin-bottom: 12px; width: 100%; display: flex; justify-content: center; gap: 8px;">
+        <button id="btn-open-css-docs" type="button" class="glass-btn css-guide-btn">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
           <span data-i18n="customCss.guideBtn">CSS Guide &amp; Class Reference</span>
         </button>
         
         <!-- Preset Snippets -->
         <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
-          <button type="button" class="css-preset-btn" data-preset="compact-6col">6-Col Grid</button>
-          <button type="button" class="css-preset-btn" data-preset="tahoe-glass">Ultra-blur Tahoe</button>
-          <button type="button" class="css-preset-btn" data-preset="monochrome">Monochrome</button>
-          <button type="button" class="css-preset-btn" data-preset="square-tiles">Square Sharp</button>
-          <button type="button" class="css-preset-btn" data-preset="hide-clock">Hide Clock</button>
+          <button type="button" class="css-preset-btn" data-preset="compact-6col" data-i18n="customCss.presetGrid">Six-column grid</button>
+          <button type="button" class="css-preset-btn" data-preset="tahoe-glass" data-i18n="customCss.presetBlur">Heavy blur</button>
+          <button type="button" class="css-preset-btn" data-preset="monochrome" data-i18n="customCss.presetMono">Monochrome</button>
+          <button type="button" class="css-preset-btn" data-preset="square-tiles" data-i18n="customCss.presetSquare">Square tiles</button>
+          <button type="button" class="css-preset-btn" data-preset="hide-clock" data-i18n="customCss.presetNoClock">Hide the clock</button>
         </div>
 
-        <textarea id="css-editor" placeholder="/* Custom CSS snippets */&#10;.card { border-radius: 30px; }"></textarea>
+        <textarea id="css-editor" placeholder="/* Custom CSS snippets */&#10;.card { border-radius: 30px; }" data-i18n-placeholder="css.editorPlaceholder"></textarea>
         <div style="display: flex; gap: 8px; margin-top: 10px;">
-          <button id="cfg-inject-css" class="glass-btn accent" style="flex: 1;" data-i18n="customCss.applySave">Apply &amp; Save CSS</button>
+          <button id="cfg-inject-css" class="glass-btn accent" data-i18n="customCss.applySave">Apply &amp; Save CSS</button>
           <button id="cfg-clear-css" class="glass-btn" style="width: 90px;" data-i18n="customCss.clear">Clear</button>
         </div>
       </section>
@@ -517,11 +661,23 @@
           <span><span data-i18n="backup.restorePoint">Settings from before the last update</span> <b id="restore-point-when"></b></span>
           <button id="cfg-restore-point" class="glass-btn" data-i18n="backup.restorePointBtn">Put those back</button>
         </div>
-        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+
+        <!-- One step back from the last thing that replaced everything — a
+             reset, or a restore. Taking it spends the slot, so there is never a
+             chain of snapshots and never more than these two rows. -->
+        <div class="row restore-point" id="undo-point-row" hidden style="flex-direction: column; align-items: stretch; gap: 8px;">
+          <span><span id="undo-point-what" data-i18n="backup.undoPointReset">Everything was reset</span> <b id="undo-point-when"></b></span>
+          <button id="cfg-undo-point" class="glass-btn" data-i18n="backup.undoPointBtn">Undo that</button>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
           <button id="cfg-export" class="glass-btn" style="flex: 1;" data-i18n="backup.exportJson">Export JSON Config</button>
           <button id="cfg-export-html" class="glass-btn" style="flex: 1;" data-i18n="backup.exportHtml">Export HTML Bookmarks</button>
         </div>
-        
+        <!-- What the file holds, and what it cannot: a backup that quietly
+             leaves out the themes you authored is found out after a reset. -->
+        <p class="backup-note" id="backup-export-note" data-i18n="backup.exportNote">The JSON file holds your folders, bookmarks, appearance and the themes you made. Wallpaper and video files stay on this device — they are far too large for a settings file. Your search history is never exported.</p>
+
         <div class="row" style="flex-direction: column; align-items: stretch; gap: 8px; margin-bottom: 14px;">
           <span data-i18n="backup.importUniversal">Import Backup (JSON / Browser HTML)</span>
           <div class="custom-file-wrap">
@@ -537,6 +693,21 @@
         <div class="row">
           <button id="cfg-reset" class="glass-btn danger" style="width: 100%;" data-i18n="backup.resetDefaults">Reset to Defaults</button>
         </div>
+      </section>
+
+      <!-- 8. Support Section. Nothing in the product points at this: it is
+           found by someone who went looking, and it asks once. What it can
+           offer is declared in src/js/settings-support.js and rendered from
+           there, so an unconfigured account shows a sentence rather than a
+           link nobody verified. -->
+      <section id="sec-support" class="csec">
+        <h3 data-i18n="support.title">Support Nordlys</h3>
+        <p class="support-intro" data-i18n="support.intro">Nordlys is free, carries no ads and no telemetry, and keeps your setup on this machine. Support is what keeps it independent.</p>
+        <div id="support-give" class="support-give"></div>
+        <h3 data-i18n="support.otherTitle">Other ways to help</h3>
+        <div id="support-actions" class="support-actions"></div>
+        <h3 data-i18n="support.aboutTitle">About</h3>
+        <div id="support-about" class="support-about"></div>
       </section>
 
     </div>
@@ -575,7 +746,7 @@
         <div id="modal-pane-favicon" class="modal-tab-pane">
           <label style="display: block; font-size: var(--nl-text-xs); color: var(--dim); margin-bottom: 6px;" data-i18n="modal.faviconDesc">Fetch high-resolution favicon automatically from site domain or page URL</label>
           <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-            <input id="favicon-url-input" type="text" class="glass-input" placeholder="https://github.com or domain.com" style="flex: 1;">
+            <input id="favicon-url-input" type="text" class="glass-input" placeholder="https://github.com or domain.com" data-i18n-placeholder="modal.faviconPlaceholder" style="flex: 1;">
             <button id="favicon-fetch-btn" type="button" class="glass-btn accent">Fetch</button>
           </div>
           
@@ -590,13 +761,13 @@
           </details>
 
           <div class="url-preview-box" id="favicon-preview-wrap">
-            <div id="favicon-preview-img-box" class="url-preview-square" title="Click to open in Cropper Studio">
+            <div id="favicon-preview-img-box" class="url-preview-square" title="Click to open in Cropper Studio" data-i18n-title="modal.openCropper">
               <span style="font-size: var(--nl-text-2xs); color: var(--dim);">No icon</span>
             </div>
             <div style="flex: 1; min-width: 0;">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                 <b id="favicon-domain-name" style="font-size: var(--nl-text-sm); color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Domain.com</b>
-                <span id="favicon-res-badge" class="theme-section-badge" style="font-size: var(--nl-text-2xs);">128×128</span>
+                <span id="favicon-res-badge" class="theme-section-badge" style="font-size: var(--nl-text-2xs);" hidden></span>
               </div>
               <span id="favicon-status" style="font-size: var(--nl-text-xs); color: var(--dim); display: block; margin-top: 2px;">From your browser's own cache</span>
               <div id="favicon-actions" style="display: flex; gap: 8px; margin-top: 10px;">
@@ -619,11 +790,11 @@
           <input type="file" id="icon-file-input" class="hidden-file-input" accept="image/png, image/jpeg, image/svg+xml, image/webp, image/gif">
           <label for="icon-file-input" class="file-drop-zone" id="icon-drop-zone">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 8px; color: var(--accent);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <b style="font-size: var(--nl-text-sm); color: var(--ink);">Drag & drop or Click to choose file</b>
-            <span style="font-size: var(--nl-text-2xs); color: var(--dim); margin-top: 4px;">PNG, SVG, JPG, WebP, GIF (Max 5MB)</span>
+            <b style="font-size: var(--nl-text-sm); color: var(--ink);" data-i18n="modal.fileDrop">Drag a file here or click to choose one</b>
+            <span id="icon-file-hint" class="file-drop-hint" data-i18n="modal.fileHint">PNG, SVG, JPG, WebP or GIF, up to 5 MB</span>
           </label>
           <div id="icon-file-preview-wrap" style="display: none; margin-top: 12px;" class="url-preview-box">
-            <div id="icon-file-preview-img-box" class="url-preview-square" title="Click to open Cropper"></div>
+            <div id="icon-file-preview-img-box" class="url-preview-square" title="Click to open Cropper" data-i18n-title="modal.openCropper"></div>
             <div style="flex: 1;">
               <b id="icon-file-name" style="font-size: var(--nl-text-xs); color: var(--ink);">image.png</b>
               <div style="display: flex; gap: 8px; margin-top: 8px;">
@@ -641,11 +812,11 @@
             <button id="icon-url-check-btn" type="button" class="glass-btn accent">Preview</button>
           </div>
           <div class="url-preview-box">
-            <div id="icon-url-preview-img-box" class="url-preview-square" title="Click to open Cropper">
-              <span style="font-size: var(--nl-text-2xs); color: var(--dim);">No image</span>
+            <div id="icon-url-preview-img-box" class="url-preview-square" title="Click to open Cropper" data-i18n-title="modal.openCropper">
+              <span style="font-size: var(--nl-text-2xs); color: var(--dim);" data-i18n="modal.noImage">No image</span>
             </div>
             <div style="flex: 1;">
-              <span id="icon-url-status" style="font-size: var(--nl-text-xs); color: var(--dim);">Enter an image URL above to test</span>
+              <span id="icon-url-status" style="font-size: var(--nl-text-xs); color: var(--dim);" role="status" data-i18n="modal.urlHint">Enter an image address above to try it</span>
               <div id="icon-url-actions" style="display: none; gap: 8px; margin-top: 8px;">
                 <button id="icon-url-crop-btn" type="button" class="glass-btn accent" style="flex: 1.2;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>Crop &amp; Adjust Icon</button>
                 <button id="icon-url-apply-btn" type="button" class="glass-btn" style="flex: 1;">Use Full Image</button>
@@ -709,17 +880,17 @@
                   <b id="cropper-zoom-val" style="font-size: var(--nl-text-xs); color: var(--accent);">100%</b>
                 </div>
                 <div style="display: flex; gap: 6px; align-items: center;">
-                  <button id="cropper-zoom-out" type="button" class="crop-tool-btn" title="Zoom Out">−</button>
+                  <button id="cropper-zoom-out" type="button" class="crop-tool-btn" title="Zoom Out" data-i18n-title="cropper.zoomOut">−</button>
                   <input id="cropper-zoom-slider" type="range" class="ipt" min="0.3" max="5.0" step="0.05" value="1.0" style="flex: 1;">
-                  <button id="cropper-zoom-in" type="button" class="crop-tool-btn" title="Zoom In">+</button>
+                  <button id="cropper-zoom-in" type="button" class="crop-tool-btn" title="Zoom In" data-i18n-title="cropper.zoomIn">+</button>
                 </div>
               </div>
 
               <div class="cropper-tools-row">
-                <button id="cropper-tool-fit" type="button" class="crop-pill-btn" title="Fit Entire Image">Fit View</button>
-                <button id="cropper-tool-center" type="button" class="crop-pill-btn" title="Center Image">Center</button>
-                <button id="cropper-tool-rotate" type="button" class="crop-pill-btn" title="Rotate 90 Degrees">Rotate 90°</button>
-                <button id="cropper-tool-reset" type="button" class="crop-pill-btn" title="Reset all transforms">Reset</button>
+                <button id="cropper-tool-fit" type="button" class="crop-pill-btn" title="Fit Entire Image" data-i18n-title="cropper.fit">Fit View</button>
+                <button id="cropper-tool-center" type="button" class="crop-pill-btn" title="Center Image" data-i18n-title="cropper.center">Center</button>
+                <button id="cropper-tool-rotate" type="button" class="crop-pill-btn" title="Rotate 90 Degrees" data-i18n-title="cropper.rotate">Rotate 90°</button>
+                <button id="cropper-tool-reset" type="button" class="crop-pill-btn" title="Reset all transforms" data-i18n-title="cropper.reset">Reset</button>
               </div>
             </div>
           </div>
@@ -742,7 +913,7 @@
     <div class="modal-box css-docs-box">
       <div class="modal-head">
         <b id="css-docs-title"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>CSS Guide &amp; Class Reference</b>
-        <button id="css-docs-modal-x" type="button" class="xbtn" aria-label="Close CSS guide">✕</button>
+        <button id="css-docs-modal-x" type="button" class="xbtn" aria-label="Close CSS guide" data-i18n-aria="a11y.closeCssGuide">✕</button>
       </div>
 
       <div class="icon-modal-tabs">
@@ -890,15 +1061,15 @@
     <div class="quick-modal-card">
       <div class="quick-modal-head">
         <b id="quick-edit-title" data-i18n="modal.editBookmarkTitle">Edit Bookmark</b>
-        <button id="quick-modal-x" type="button" class="xbtn" aria-label="Close bookmark editor">✕</button>
+        <button id="quick-modal-x" type="button" class="xbtn" aria-label="Close bookmark editor" data-i18n-aria="a11y.closeBookmarkEditor">✕</button>
       </div>
       <div class="quick-modal-body">
         <div style="display: flex; gap: 14px; align-items: center;">
-          <button type="button" id="quick-icon-preview" class="quick-icon-box" title="Click to change icon" aria-label="Choose bookmark icon" data-i18n-title="hint.clickChangeIcon"></button>
+          <button type="button" id="quick-icon-preview" class="quick-icon-box" title="Click to change icon" aria-label="Choose bookmark icon" data-i18n-aria="a11y.chooseIcon" data-i18n-title="hint.clickChangeIcon"></button>
           <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
             <div>
               <label class="quick-label" for="quick-title-input" data-i18n="modal.bookmarkName">Bookmark Title</label>
-              <input id="quick-title-input" type="text" class="glass-input" placeholder="Name">
+              <input id="quick-title-input" type="text" class="glass-input" placeholder="Name" data-i18n-placeholder="modal.namePlaceholder">
             </div>
           </div>
         </div>
@@ -948,6 +1119,10 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       <span data-i18n="ctx.editFolder">Edit Folder</span>
     </div>
+    <div class="ctx-item" data-action="arrange">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>
+      <span data-i18n="arrange.title">Arrange folders</span>
+    </div>
     <div class="ctx-item" data-action="open-all">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
       <span data-i18n="ctx.openAll">Open every bookmark</span>
@@ -972,12 +1147,12 @@
     <div class="quick-modal-card">
       <div class="quick-modal-head">
         <b id="quick-folder-title" data-i18n="modal.editFolderTitle">Edit Folder</b>
-        <button id="quick-folder-modal-x" type="button" class="xbtn" aria-label="Close folder editor">✕</button>
+        <button id="quick-folder-modal-x" type="button" class="xbtn" aria-label="Close folder editor" data-i18n-aria="a11y.closeFolderEditor">✕</button>
       </div>
       <div class="quick-modal-body">
         <div>
           <label class="quick-label" for="quick-folder-name-input" data-i18n="modal.folderName">Folder Name</label>
-          <input id="quick-folder-name-input" type="text" class="glass-input" placeholder="Folder Name">
+          <input id="quick-folder-name-input" type="text" class="glass-input" placeholder="Folder Name" data-i18n-placeholder="modal.folderName">
         </div>
 
         <div>
@@ -1004,6 +1179,10 @@
 
   <!-- Frosted Glass Context Menu for Empty Board Space -->
   <div id="board-ctx-menu" class="glass-context-menu">
+    <div class="ctx-item" data-action="arrange">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>
+      <span data-i18n="arrange.title">Arrange folders</span>
+    </div>
     <div class="ctx-item" data-action="new-folder">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
       <span data-i18n="ctx.newFolder">New Folder</span>
@@ -1051,15 +1230,23 @@
   <script src="src/js/typography.js"></script>
   <script src="src/js/i18n.js"></script>
   <script src="src/js/bookmark-sync.js"></script>
+  <script src="src/js/colour-tools.js"></script>
   <script src="src/js/icons-db.js"></script>
   <script src="src/js/icon-presentation.js"></script>
   <script src="src/js/icon-discovery.js"></script>
+  <script src="src/js/sky-zones.js"></script>
+  <script src="src/js/sky-clock.js"></script>
+  <script src="src/js/look-share.js"></script>
   <script src="src/js/background.js"></script>
   <script src="src/js/calc.js"></script>
+  <script src="src/js/commands.js"></script>
   <script src="src/js/widgets.js"></script>
+  <script src="src/js/board-layout.js"></script>
+  <script src="src/js/board-arrange.js"></script>
   <script src="src/js/grid.js"></script>
   <script src="src/js/settings-shell.js"></script>
   <script src="src/js/settings-bookmarks.js"></script>
+  <script src="src/js/settings-support.js"></script>
   <script src="src/js/icon-picker.js"></script>
   <script src="src/js/settings.js"></script>
   <script src="src/js/config-schema.js"></script>

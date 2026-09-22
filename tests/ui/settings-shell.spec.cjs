@@ -8,7 +8,7 @@ test('desktop settings is a named modal drawer with grouped vertical tabs and co
   await expect(drawer).toHaveAttribute('aria-labelledby', 'settings-title');
   const width = (await drawer.boundingBox()).width;
   expect(width).toBeGreaterThanOrEqual(600); expect(width).toBeLessThanOrEqual(720);
-  const tabs = drawer.getByRole('tab'); await expect(tabs).toHaveCount(6);
+  const tabs = drawer.getByRole('tab'); await expect(tabs).toHaveCount(7);
   await expect(drawer.getByRole('tablist')).toHaveAttribute('aria-orientation', 'vertical');
   await expect(drawer.locator('.settings-nav-group')).toHaveCount(3);
   await drawer.locator('button, input, select, textarea, [tabindex="0"]').last().focus(); await page.keyboard.press('Tab');
@@ -33,3 +33,16 @@ test('settings rail uses local decorative SVG icons with consistent geometry', a
     const box = await icon.boundingBox(); expect(box.width).toBeGreaterThanOrEqual(16); expect(box.width).toBeLessThanOrEqual(18); expect(box.height).toBe(box.width);
   }
 });
+
+/* Between the phone sheet and the desktop drawer, the 600px floor used to leave
+   a sliver of whatever was underneath. Now one steady 96px band of page. */
+for (const width of [760, 900, 1023]) {
+  test(`at ${width}px the drawer leaves one steady band of the page`, async ({ nordlysPage }) => {
+    const { page } = nordlysPage;
+    await page.setViewportSize({ width, height: 800 });
+    await page.locator('#gear').click();
+    await expect(page.locator('#cfg')).toBeVisible();
+    await expect.poll(() => page.locator('#cfg').evaluate(node => Math.round(node.getBoundingClientRect().left))).toBe(96);
+    await expect(page.locator('#cfg-resizer')).toBeHidden();
+  });
+}

@@ -198,3 +198,44 @@ test('the icon tone can be set from the bookmark editor and survives a reload', 
   await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   await expect(page.locator('#board .tile').first().locator('.nl-icon')).toHaveAttribute('data-icon-tone', 'dark');
 });
+
+/* With transitions running, a theme switch used to measure plates one frame in,
+   halfway between the two themes, and tone monochrome marks for the theme being
+   left: dark marks on a dark board. The decision now waits for the colours to
+   arrive. Transitions stay on here, which is the whole point of the test. */
+test('a theme switch tones monochrome marks for the theme arrived at', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => {
+    window.Nordlys.config.groups = [{ label: 'MARKS', cols: 2, hidden: false, links: [
+      { name: 'Black vector', url: 'https://vector-dark.test/', icon: 'github', color: '#000000' },
+      { name: 'White vector', url: 'https://vector-light.test/', icon: 'github', color: '#ffffff' }
+    ] }];
+    window.Nordlys.saveConfig(); window.Nordlys.grid.render();
+  });
+  const tones = () => page.locator('#board .nl-icon').evaluateAll(nodes => nodes.map(node => node.dataset.iconTone || 'none'));
+  await page.evaluate(() => window.Nordlys.setTheme('porcelain-light'));
+  await expect.poll(tones, { timeout: 3000 }).toEqual(['none', 'dark']);
+  await page.evaluate(() => window.Nordlys.setTheme('oled-obsidian'));
+  await expect.poll(tones, { timeout: 3000 }).toEqual(['light', 'none']);
+});
+
+/* A library glyph carries the bookmark's own colour, so on a plate it cannot be
+   seen on, the colour shown moves — same hue — and the colour stored does not. */
+test('a pale library glyph is shown in a readable shade of its own colour', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => {
+    window.Nordlys.config.groups = [{ label: 'GLYPHS', cols: 2, hidden: false, links: [
+      { name: 'Kleinanzeigen', url: 'https://www.kleinanzeigen.de/', color: '#86efac', icon: 'bag' }
+    ] }];
+    window.Nordlys.saveConfig(); window.Nordlys.grid.render();
+    window.Nordlys.setTheme('porcelain-light');
+  });
+  const icon = page.locator('#board .nl-icon').first();
+  await expect.poll(() => icon.evaluate(node => node.style.getPropertyValue('--icon-accent')), { timeout: 3000 }).not.toBe('#86efac');
+  const shown = await icon.evaluate(node => node.style.getPropertyValue('--icon-accent'));
+  expect(shown).toMatch(/^rgb\(/);
+  const [r, g, b] = shown.match(/\d+/g).map(Number);
+  expect(g).toBeGreaterThan(r);
+  expect(g).toBeGreaterThan(b);
+  expect(await page.evaluate(() => window.Nordlys.config.groups[0].links[0].color)).toBe('#86efac');
+});

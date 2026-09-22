@@ -2,7 +2,7 @@
 (function () {
   const groups = [
     { label: 'Customize', key: 'nav.groupCustomize', ids: ['appearance', 'background', 'bookmarks'] },
-    { label: 'App', key: 'nav.groupApp', ids: ['general'] },
+    { label: 'App', key: 'nav.groupApp', ids: ['general', 'support'] },
     { label: 'Advanced', key: 'nav.groupAdvanced', ids: ['custom-css', 'backup'] }
   ];
   const iconPaths = {
@@ -11,11 +11,12 @@
     bookmarks: 'M6 3h12v18l-6-4-6 4z',
     general: 'M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5ZM19 12l2-1-2-4-2 .5-1.5-1L15 4h-6l-.5 2.5-1.5 1L5 7l-2 4 2 1v2l-2 1 2 4 2-.5 1.5 1L9 22h6l.5-2.5 1.5-1 2 .5 2-4-2-1z',
     'custom-css': 'M8 7 3 12l5 5M16 7l5 5-5 5M14 4l-4 16',
-    backup: 'M12 3v12M7 10l5 5 5-5M4 19h16'
+    backup: 'M12 3v12M7 10l5 5 5-5M4 19h16',
+    support: 'M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z'
   };
   class NordlysSettingsShell {
-    constructor({ root, opener, onSectionChange = null }) {
-      this.root = root; this.opener = opener; this.onSectionChange = onSectionChange;
+    constructor({ root, opener, onSectionChange = null, onClosed = null }) {
+      this.root = root; this.opener = opener; this.onSectionChange = onSectionChange; this.onClosed = onClosed;
       this.nav = root.querySelector('.ctabs'); this.body = root.querySelector('.cbody'); this.closeButton = root.querySelector('#cfgx');
       const title = root.querySelector('.chead b'); if (title) title.id = 'settings-title';
       root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-labelledby', 'settings-title'); root.setAttribute('aria-hidden', 'true');
@@ -60,8 +61,15 @@
     enhanceRows() {
       this.root.querySelectorAll('.csec > .row').forEach((row, index) => {
         row.classList.add('setting-row');
-        const control = row.querySelector('input, select, textarea, button'); const text = row.querySelector('span');
-        if (control && text && !control.getAttribute('aria-label')) control.setAttribute('aria-label', text.textContent.replace(/\s+/g, ' ').trim() || `Setting ${index + 1}`);
+        const control = row.querySelector('input, select, textarea, button'); const text = row.querySelector(':scope > span');
+        /* Named by the visible label itself rather than a copy of its words. The
+           copy was taken once, in English, so a German panel read "Language" to
+           a screen reader beside "Sprache" on the screen — and a slider's name
+           never carried the value its label shows. */
+        if (control && text && !control.getAttribute('aria-label') && !control.hasAttribute('aria-labelledby')) {
+          if (!text.id) text.id = `setting-label-${index + 1}`;
+          control.setAttribute('aria-labelledby', text.id);
+        }
       });
     }
     select(sectionId, { focus = true } = {}) {
@@ -70,9 +78,13 @@
       this.root.querySelectorAll('.csec').forEach(item => { const active = item === panel; item.classList.toggle('active', active); item.hidden = !active; });
       if (focus) tab.focus({ preventScroll: true }); this.onSectionChange?.(sectionId);
     }
-    open(sectionId = null) { if (sectionId) this.select(sectionId, { focus: false }); document.getElementById('dim')?.classList.add('on'); document.body.classList.add('cfgopen'); this.dialog.open(this.opener); }
+    /* The opener is whatever asked for the drawer, because that is where focus
+       goes back to when it closes. It is the gear almost always — but the board's
+       empty state opens it too, and sending focus to a gear the user never
+       pressed loses their place on the page. */
+    open(sectionId = null, opener = this.opener) { if (sectionId) this.select(sectionId, { focus: false }); document.getElementById('dim')?.classList.add('on'); document.body.classList.add('cfgopen'); this.dialog.open(opener || this.opener); }
     close() { this.dialog.close(); }
-    afterClose() { document.getElementById('dim')?.classList.remove('on'); document.body.classList.remove('cfgopen'); }
+    afterClose() { document.getElementById('dim')?.classList.remove('on'); document.body.classList.remove('cfgopen'); this.onClosed?.(); }
     destroy() { this.close(); this.closeButton?.removeEventListener('click', this.onCloseClick); this.dim?.removeEventListener('click', this.onCloseClick); window.removeEventListener('resize', this.onResize); this.roving?.destroy(); }
   }
   window.NordlysSettingsShell = NordlysSettingsShell;

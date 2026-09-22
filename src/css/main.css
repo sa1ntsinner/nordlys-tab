@@ -23,7 +23,7 @@
   /* Core Geometry & Scaling */
   --tw: 78px;               /* Tile box dimension */
   --grid-gap: 12px 10px;
-  --card-radius: 24px;
+  --card-radius: 18px;
   --tile-radius: 20px;
   
   /* Primary Surface Tokens (Overridden by themes.css) */
@@ -120,6 +120,12 @@ html[data-bg="solid"] body {
 #bg-media.active, #bg-video.active {
   opacity: 1;
 }
+
+/* Soft shades behind the words that sit on a wallpaper, placed by
+   measureWallpaper in app.js. Above the picture and the chosen dim. */
+/* Last in #bg-container, so above the picture and the dim by order alone. */
+#wallpaper-scrims { position: absolute; inset: 0; pointer-events: none; }
+.wallpaper-scrim { position: absolute; }
 
 /* User-adjustable darkness overlay above custom wallpapers */
 #bg-dimmer {

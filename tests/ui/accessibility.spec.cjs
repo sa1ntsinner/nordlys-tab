@@ -65,7 +65,7 @@ for (const locale of ['en', 'ru', 'es', 'de', 'fr', 'ja', 'zh', 'tr']) {
       await page.waitForTimeout(100);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
       const tabs = page.locator('#cfg [role="tab"]');
-      await expect(tabs).toHaveCount(6);
+      await expect(tabs).toHaveCount(7);
       const names = await tabs.evaluateAll(items => items.map(item => item.getAttribute('aria-label') || item.textContent.trim()));
       expect(names.every(Boolean)).toBe(true);
     });
@@ -117,7 +117,7 @@ test('every target in the product has a 40px hit area', async ({ nordlysPage }) 
   await page.keyboard.press('Escape');
 
   await page.locator('#gear').click();
-  for (const section of ['appearance', 'background', 'bookmarks', 'general', 'custom-css', 'backup']) {
+  for (const section of ['appearance', 'background', 'bookmarks', 'general', 'support', 'custom-css', 'backup']) {
     await page.locator(`#settings-tab-${section}`).click();
     await expect(page.locator(`#sec-${section}`)).toBeVisible();
     small.push(...await undersizedTargets(page, section));
@@ -132,9 +132,9 @@ test('every target in the product has a 40px hit area', async ({ nordlysPage }) 
 
   await page.keyboard.press('Escape'); await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
 
-  // States the default board never shows: a folded folder's dock chip, and the
-  // prompt an empty board offers.
-  await page.locator('#board > .card').first().locator('.foldBtn').click();
+  // States the fixture board never shows: a folded folder's dock chip, and the
+  // invitation an empty board offers — which is also what a new install opens on.
+  await page.locator('#board .card').first().locator('.foldBtn').click();
   await page.waitForTimeout(360);
   small.push(...await undersizedTargets(page, 'dock'));
   await page.evaluate(() => {
