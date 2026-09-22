@@ -11,15 +11,17 @@ test('icon picker is a focus-contained source-tab dialog with real tile preview'
   /* Three sources, not five: a pasted URL, an uploaded file and a monogram are
      all "something of your own" and made the user pick a mechanism first. */
   await expect(dialog.getByRole('tab')).toHaveCount(3);
-  await expect(dialog.getByRole('tab', { name: 'Library' })).toBeVisible();
+  await expect(dialog.getByRole('tab', { name: 'Find online' })).toBeVisible();
   await expect(dialog.getByRole('tab', { name: 'Website icon' })).toBeVisible();
   await expect(dialog.getByRole('tab', { name: 'Custom' })).toBeVisible();
   await expect(dialog.locator('#icon-live-preview .tile .box')).toBeVisible();
   await expect(dialog.locator('#icon-live-preview .nl-icon[data-icon-kind="builtin"]')).toHaveCount(1);
   await expect(dialog.locator('#icon-live-preview .mono')).toHaveCount(0);
   await page.locator('#icon-search').fill('github');
-  const result = dialog.getByRole('button', { name: /GitHub/ }); await expect(result).toHaveCount(1);
-  const cell = await result.boundingBox(); expect(cell.width).toBeGreaterThanOrEqual(72); expect(cell.height).toBeGreaterThanOrEqual(72);
+  /* Typing alone is private; the explicit button is the network boundary. */
+  await expect(dialog.locator('#modal-icon-grid .icon-item')).toHaveCount(0);
+  const search = dialog.getByRole('button', { name: 'Search' });
+  const target = await search.boundingBox(); expect(target.height).toBeGreaterThanOrEqual(40);
   await page.keyboard.press('Escape'); await expect(trigger).toBeFocused();
 });
 

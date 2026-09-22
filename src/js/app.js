@@ -7,6 +7,9 @@ const DEFAULT_CONFIG = {
   theme: "aurora-void",
   colorMode: "dark",
   bgMode: "aurora",
+  bgPalette: "theme",
+  bgMotion: 1,
+  bgIntensity: 1,
   glassLevel: "full",
   headerStyle: "full",
   bgBlur: 0,
@@ -758,9 +761,14 @@ class NordlysApp {
     // The chosen background, for the rules that need to know which one it is.
     document.documentElement.dataset.bg = bgMode;
 
-    if (bgMode === "aurora") {
+    if (["aurora", "halo", "drift", "horizon"].includes(bgMode)) {
       if (canvas) canvas.style.display = "block";
       clearMedia();
+      this.bgEngine.setAtmosphere({
+        motion: this.config.bgMotion ?? 1,
+        intensity: this.config.bgIntensity ?? 1,
+        palette: this.config.bgPalette || "theme"
+      });
       this.bgEngine.setMode(bgMode);
     } else if (bgMode === "custom-image" || bgMode === "custom-video") {
       this.bgEngine.setMode(bgMode);

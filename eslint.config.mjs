@@ -24,7 +24,7 @@ const pageGlobals = {
   // icons-db.js, icon-presentation.js, icon-picker.js
   ICONS_DB: "readonly", DOMAIN_MAP: "readonly", SECOND_LEVEL_SUFFIXES: "readonly",
   resolveIcon: "readonly", domainMatches: "readonly", getDeterministicHue: "readonly",
-  NordlysIcons: "readonly", NordlysIconPicker: "readonly",
+  NordlysIcons: "readonly", NordlysIconPicker: "readonly", NordlysIconDiscovery: "readonly",
   // background.js, calc.js, config-schema.js, bookmark-sync.js
   NordlysBackgroundEngine: "readonly", MediaVault: "readonly",
   NordlysCalc: "readonly", NordlysConfigSchema: "readonly", NordlysBookmarks: "readonly",

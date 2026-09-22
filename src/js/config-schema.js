@@ -25,7 +25,7 @@
      are allowed through: a newer build may have added one, and refusing it
      would make every upgrade path a validation failure. */
   const FIELDS = {
-    version: "string", theme: "string", colorMode: "string", bgMode: "string",
+    version: "string", theme: "string", colorMode: "string", bgMode: "string", bgPalette: "string",
     glassLevel: "string", headerStyle: "string", timeFormat: "string",
     userName: "string", customCss: "string", iconShape: "string",
     hoverEffect: "string", language: "string",
@@ -37,7 +37,7 @@
   const NUMERIC_FIELDS = Object.entries(FIELDS)
     .filter(([, type]) => type === "number")
     .map(([field]) => field);
-  const LINK_TEXT_FIELDS = ["name", "url", "icon", "color", "customImg", "monogram", "tone"];
+  const LINK_TEXT_FIELDS = ["name", "url", "icon", "iconSource", "color", "customImg", "monogram", "tone"];
   // The same bounds the grid enforces on its resize handle.
   const COLUMNS = { min: 1, max: 8 };
 

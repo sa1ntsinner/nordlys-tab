@@ -416,15 +416,30 @@
       <!-- 4. Background Section -->
       <section id="sec-background" class="csec">
         <h3 data-i18n="nav.background">Background</h3>
-        <div class="scene-block">
-          <span class="settings-block-label" data-i18n="background.scene">Scene</span>
+        <div class="scene-block" id="bg-scene-picker" role="radiogroup" aria-label="Background scene">
+          <span class="settings-block-label" data-i18n="background.atmospheres">Atmospheres</span>
           <select id="cfg-bg-mode" class="ipt" hidden data-native aria-hidden="true" tabindex="-1">
             <option value="aurora">Aurora</option>
+            <option value="halo">Halo</option>
+            <option value="drift">Drift</option>
+            <option value="horizon">Horizon</option>
             <option value="custom-image">Wallpaper</option>
             <option value="custom-video">Video</option>
             <option value="solid">Solid</option>
           </select>
-          <div class="scene-grid" id="bg-scene-grid" role="radiogroup" aria-label="Background scene"></div>
+          <div class="scene-grid atmosphere-grid" id="bg-scene-grid"></div>
+          <span class="settings-block-label personal-label" data-i18n="background.personal">Personal</span>
+          <div class="scene-grid personal-grid" id="bg-personal-grid"></div>
+        </div>
+        <div class="atmosphere-palette" data-scene-only="procedural">
+          <span class="settings-block-label" data-i18n="background.colorMood">Color mood</span>
+          <div id="bg-palette-grid" class="palette-grid" role="radiogroup" aria-label="Color mood">
+            <button type="button" class="palette-chip" data-palette="theme" role="radio"><i></i><span data-i18n="background.paletteTheme">Theme</span></button>
+            <button type="button" class="palette-chip" data-palette="polar" role="radio"><i></i><span data-i18n="background.palettePolar">Polar</span></button>
+            <button type="button" class="palette-chip" data-palette="violet" role="radio"><i></i><span data-i18n="background.paletteViolet">Violet</span></button>
+            <button type="button" class="palette-chip" data-palette="ember" role="radio"><i></i><span data-i18n="background.paletteEmber">Ember</span></button>
+            <button type="button" class="palette-chip" data-palette="mono" role="radio"><i></i><span data-i18n="background.paletteMono">Mono</span></button>
+          </div>
         </div>
         <div class="row setting-row" data-scene-only="procedural">
           <span><span data-i18n="background.motion">Motion</span> (<b id="lbl-bg-motion">100%</b>)</span>
@@ -537,28 +552,23 @@
 
       <!-- 5 Modal Source Tabs -->
       <div class="icon-modal-tabs">
-        <button class="icon-tab-btn active" data-tab="library" data-i18n="modal.tabLibrary">Library</button>
+        <button class="icon-tab-btn active" data-tab="search" data-i18n="modal.tabLibrary">Find online</button>
         <button class="icon-tab-btn" data-tab="favicon" data-i18n="modal.tabFavicon">Website icon</button>
         <button class="icon-tab-btn" data-tab="custom" data-i18n="modal.tabCustom">Custom</button>
       </div>
 
       <div class="modal-body">
         
-        <!-- Tab 1: Built-in Library -->
-        <div id="modal-pane-library" class="modal-tab-pane active">
+        <!-- Tab 1: Explicit online discovery. Nothing is requested until Search. -->
+        <div id="modal-pane-search" class="modal-tab-pane active">
+          <p class="icon-search-intro" data-i18n="picker.searchIntro">Find a polished vector logo by brand or product name. Selected icons are saved locally.</p>
           <div class="icon-search-row">
-            <input id="icon-search" type="text" class="glass-input" placeholder="Search brand & system icons...">
+            <input id="icon-search" type="search" class="glass-input" data-i18n-placeholder="picker.searchPlaceholder" placeholder="GitHub, Figma, Spotify…">
+            <button id="icon-search-btn" type="button" class="glass-btn accent" data-i18n="picker.searchAction">Search</button>
           </div>
-          <div class="icon-category-chips">
-            <button class="icon-chip active" data-cat="all">All</button>
-            <button class="icon-chip" data-cat="brand">Brands</button>
-            <button class="icon-chip" data-cat="tech">Dev & Tech</button>
-            <button class="icon-chip" data-cat="media">Media</button>
-            <button class="icon-chip" data-cat="productivity">Productivity</button>
-            <button class="icon-chip" data-cat="study">Study</button>
-            <button class="icon-chip" data-cat="tools">Tools</button>
-          </div>
+          <div id="icon-search-status" class="icon-search-status" role="status" aria-live="polite" data-i18n="picker.searchIdle">Search happens only when you ask.</div>
           <div id="modal-icon-grid" class="icon-grid"></div>
+          <small class="icon-search-legal">Simple Icons · Brand marks belong to their owners.</small>
         </div>
 
         <!-- Tab 2: Smart Favicon / High-Res Fetcher -->
@@ -1043,6 +1053,7 @@
   <script src="src/js/bookmark-sync.js"></script>
   <script src="src/js/icons-db.js"></script>
   <script src="src/js/icon-presentation.js"></script>
+  <script src="src/js/icon-discovery.js"></script>
   <script src="src/js/background.js"></script>
   <script src="src/js/calc.js"></script>
   <script src="src/js/widgets.js"></script>
