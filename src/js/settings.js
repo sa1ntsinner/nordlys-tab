@@ -2364,7 +2364,7 @@ class SettingsController {
             }
           } else {
             // JSON Format
-            const imported = JSON.parse(text);
+            const imported = window.NordlysConfigSchema.normalizeImportConfig(JSON.parse(text));
             /* Checked in full before anything is written. The old test was "has a
                groups or a theme key", which let {"groups": {}} through — saved,
                and then a page that failed on every open. The reasons are shown,

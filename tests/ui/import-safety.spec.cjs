@@ -52,6 +52,22 @@ test('a sound import keeps what it replaced in the restore point', async ({ nord
   expect(point?.config?.groups?.[0]?.label, 'the previous setup can be brought back').toBe('BEFORE IMPORT');
 });
 
+test('a 2.0 backup with numeric range values stored as text still imports', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const loaded = page.waitForEvent('load');
+  await importFile(page, 'nordlys-2.0.json', JSON.stringify({
+    version: '2.0.0', theme: 'aurora-void', cardRadius: '22', tileSize: '86',
+    groups: [{ label: 'FROM 2.0', cols: 2, hidden: false, links: [] }]
+  }));
+  await loaded;
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  expect(await page.evaluate(() => ({
+    label: window.Nordlys.config.groups[0]?.label,
+    cardRadius: window.Nordlys.config.cardRadius,
+    tileSize: window.Nordlys.config.tileSize
+  }))).toEqual({ label: 'FROM 2.0', cardRadius: 22, tileSize: 86 });
+});
+
 /* Defence in depth: a config that is already broken in storage must not stop the
    page from starting. It is held as well as it can be, and the original is kept. */
 test('a stored config with groups that is not a list still starts the page', async ({ nordlysPage }) => {

@@ -89,7 +89,7 @@ class ClockWidget {
       const opts = { weekday: "long", month: "short", day: "numeric" };
       const currentLang = window.I18N ? window.I18N.currentLang : "en";
       const locale = LOCALE_MAP[currentLang] || currentLang || "en-US";
-      this.elDate.textContent = now.toLocaleDateString(locale, opts).toUpperCase();
+    this.elDate.textContent = now.toLocaleDateString(locale, opts);
     }
 
     // Time-based greeting

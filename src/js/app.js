@@ -24,7 +24,7 @@ const DEFAULT_CONFIG = {
   customCss: "",
   groups: [
     {
-      label: "DAILY",
+      label: "Daily",
       cols: 4,
       hidden: false,
       links: [
@@ -39,7 +39,7 @@ const DEFAULT_CONFIG = {
       ]
     },
     {
-      label: "DEV & TECH",
+      label: "Dev & tech",
       cols: 3,
       hidden: false,
       links: [
@@ -52,7 +52,7 @@ const DEFAULT_CONFIG = {
       ]
     },
     {
-      label: "STUDIES",
+      label: "Studies",
       cols: 2,
       hidden: false,
       links: [
@@ -61,7 +61,7 @@ const DEFAULT_CONFIG = {
       ]
     },
     {
-      label: "GAMING & SIM",
+      label: "Gaming & sim",
       cols: 2,
       hidden: false,
       links: [
@@ -72,7 +72,7 @@ const DEFAULT_CONFIG = {
       ]
     },
     {
-      label: "SHOPPING",
+      label: "Shopping",
       cols: 2,
       hidden: false,
       links: [
