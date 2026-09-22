@@ -34,6 +34,9 @@
     showSeconds: "boolean", openNewTab: "boolean",
     groups: "list", customTheme: "object"
   };
+  const NUMERIC_FIELDS = Object.entries(FIELDS)
+    .filter(([, type]) => type === "number")
+    .map(([field]) => field);
   const LINK_TEXT_FIELDS = ["name", "url", "icon", "color", "customImg", "monogram", "tone"];
   // The same bounds the grid enforces on its resize handle.
   const COLUMNS = { min: 1, max: 8 };
@@ -82,6 +85,21 @@
     return { ok: errors.length === 0, errors };
   }
 
+  /* Versions up to 2.0 wrote range values exactly as the DOM exposed them:
+     numeric strings. They are valid Nordlys backups, not hand-edited damaged
+     files. Canonicalise only complete, finite numbers before validation so a
+     value such as "22px" is still refused instead of being guessed at. */
+  function normalizeImportConfig(candidate) {
+    if (!isObject(candidate)) return candidate;
+    for (const field of NUMERIC_FIELDS) {
+      const value = candidate[field];
+      if (typeof value !== "string" || value.trim() === "") continue;
+      const numeric = Number(value);
+      if (Number.isFinite(numeric)) candidate[field] = numeric;
+    }
+    return candidate;
+  }
+
   /* Coerces a stored config into something the page can hold. Returns true when
      anything was changed, so the caller knows to keep the original. */
   function repairConfig(config) {
@@ -98,7 +116,7 @@
     return repaired;
   }
 
-  const NordlysConfigSchema = { validateConfig, repairConfig, isForbiddenUrl, COLUMNS };
+  const NordlysConfigSchema = { validateConfig, normalizeImportConfig, repairConfig, isForbiddenUrl, COLUMNS };
   if (typeof window !== "undefined") window.NordlysConfigSchema = NordlysConfigSchema;
   if (typeof module === "object" && module.exports) module.exports = NordlysConfigSchema;
 })();

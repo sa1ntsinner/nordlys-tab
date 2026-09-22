@@ -1,7 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { validateConfig, repairConfig } = require('../../src/js/config-schema.js');
+const { validateConfig, normalizeImportConfig, repairConfig } = require('../../src/js/config-schema.js');
 
 const good = () => ({
   version: '2.2.3', theme: 'aurora-void', tileSize: 56, showSeconds: false,
@@ -17,6 +17,21 @@ test('a well-formed export passes', () => {
 test('unknown fields are allowed through, so newer exports still import', () => {
   const candidate = { ...good(), somethingFromTheFuture: { nested: true } };
   assert.equal(validateConfig(candidate).ok, true);
+});
+
+test('old exports canonicalise numeric range strings before validation', () => {
+  const candidate = { version: '2.0.0', cardRadius: '22', tileSize: '86', bgDim: '0.4', groups: [] };
+  assert.equal(normalizeImportConfig(candidate), candidate);
+  assert.deepEqual(candidate, { version: '2.0.0', cardRadius: 22, tileSize: 86, bgDim: 0.4, groups: [] });
+  assert.equal(validateConfig(candidate).ok, true);
+});
+
+test('import normalisation never guesses at malformed numeric values', () => {
+  for (const tileSize of ['', '86px', 'not-a-number']) {
+    const candidate = { tileSize, groups: [] };
+    normalizeImportConfig(candidate);
+    assert.equal(validateConfig(candidate).ok, false, tileSize);
+  }
 });
 
 /* The exact file that used to be accepted, saved, and then crashed every open. */
