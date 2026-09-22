@@ -1,0 +1,354 @@
+/* ═══════════════════════════════════════════════════════════════════
+   NORDLYS - MOTION
+   ═══════════════════════════════════════════════════════════════════
+
+   How things move, in one place, loaded last so its word is final.
+
+   Five rules, taken from the interfaces that got motion most right — Apple's
+   fluid interfaces, Material's split between moving things and changing
+   ones, and the design engineers who wrote down why — rather than from any
+   library of effects:
+
+   1. Motion explains or it does not happen. Something moves to show where it
+      came from, where it went, or that it heard you; never to decorate.
+   2. The more often a thing happens, the less it moves. A new tab opens
+      finished. Search, its suggestions and every keyboard action are
+      immediate, because they happen hundreds of times a day.
+   3. Things grow out of where they were asked for: a menu from the cursor, a
+      list from its field, a folder from its chip in the dock, a theme from
+      the card that chose it.
+   4. Arrivals take their time and departures do not. Leaving is faster.
+   5. Only what the compositor can move is animated — transform, opacity, a
+      clip. A disclosure opening is the one exception, because its height is
+      the whole point of it.
+
+   Three kinds of motion, three curves (foundations.css): a state changing
+   answers on --nl-ease-state, something travelling leaves fast and settles
+   slow on --nl-ease-emphasized, and something being put down lands on
+   --nl-ease-spring. Reduced motion keeps the fades and drops the travel
+   (main.css), and the view transitions below step aside for it too. */
+
+/* ── Menus and lists: out of where they were asked for ───────────────
+   A menu used to be shown and given its open class in the same frame, so the
+   entrance written for it never played, and hidden the moment it closed, so
+   the exit never did either. @starting-style gives an entrance something to
+   start from; letting display change at the end of a transition gives the
+   exit time to be seen. --origin is the point the menu was opened from. */
+.glass-context-menu,
+.nl-select-list {
+  transform: scale(.97);
+  transition:
+    opacity var(--nl-transition-fast),
+    transform var(--nl-transition-fast),
+    visibility var(--nl-motion-fast) allow-discrete,
+    display var(--nl-motion-fast) allow-discrete;
+}
+.nl-select-list { transform-origin: var(--origin, top center); }
+.glass-context-menu.open,
+.nl-select-list.open {
+  transform: none;
+  transition:
+    opacity var(--nl-transition-fast),
+    transform var(--nl-transition-enter),
+    visibility 0s,
+    display 0s;
+}
+@starting-style {
+  .glass-context-menu.open,
+  .nl-select-list.open { opacity: 0; transform: scale(.97); }
+}
+
+/* Search suggestions arrive with the first letter and then keep up with the
+   typing. The rows used to cascade in again on every keystroke — the most
+   repeated motion in the product, replayed for nothing — so only the panel
+   itself fades in, once, and its rows are simply there. */
+#sugg {
+  opacity: 0;
+  translate: 0 -4px;
+  transition:
+    opacity var(--nl-transition-fast),
+    translate var(--nl-transition-fast),
+    display var(--nl-motion-fast) allow-discrete;
+}
+#sugg.on { opacity: 1; translate: 0 0; }
+@starting-style {
+  #sugg.on { opacity: 0; translate: 0 -4px; }
+}
+#sugg div { animation: none; }
+
+/* ── Dialogs: the page steps back, the card comes forward ───────────
+   The backdrop used to appear at full strength in one frame and vanish in
+   another; only the card moved. Now the dimming fades in with it, and both
+   leave, faster than they came. */
+.quick-modal-backdrop,
+#icon-modal,
+#css-docs-modal {
+  transition:
+    opacity var(--nl-transition-fast),
+    visibility var(--nl-motion-fast) allow-discrete,
+    display var(--nl-motion-fast) allow-discrete;
+}
+.quick-modal-backdrop.open,
+#icon-modal.open,
+#css-docs-modal.open {
+  transition:
+    opacity var(--nl-transition-control),
+    visibility 0s,
+    display 0s;
+}
+@starting-style {
+  .quick-modal-backdrop.open,
+  #icon-modal.open,
+  #css-docs-modal.open { opacity: 0; }
+}
+.quick-modal-backdrop .quick-modal-card,
+#icon-modal .modal-box,
+#css-docs-modal .modal-box {
+  animation: none;
+  opacity: 0;
+  transform: translateY(6px) scale(.98);
+  transition: opacity var(--nl-transition-fast), transform var(--nl-transition-fast);
+}
+.quick-modal-backdrop.open .quick-modal-card,
+#icon-modal.open .modal-box,
+#css-docs-modal.open .modal-box {
+  animation: none;
+  opacity: 1;
+  transform: none;
+  transition: opacity var(--nl-transition-control), transform var(--nl-transition-settle-fast);
+}
+@starting-style {
+  .quick-modal-backdrop.open .quick-modal-card,
+  #icon-modal.open .modal-box,
+  #css-docs-modal.open .modal-box { opacity: 0; transform: translateY(10px) scale(.97); }
+}
+
+/* ── Settings: the highlight travels, the page follows ──────────────
+   The rail's accent bar is one shape that slides to the chosen tab instead of
+   a bar per tab switching on and off (settings-shell.js places it), and the
+   new section arrives from the direction the choice went — down the rail,
+   from below; up it, from above. */
+.ctabs.has-indicator { position: relative; }
+.ctabs.has-indicator .ctab.active::before { opacity: 0; }
+.ctabs.has-indicator::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--tab-w, 3px);
+  height: var(--tab-h, 0);
+  border-radius: 4px;
+  background: var(--nl-accent);
+  translate: var(--tab-x, 0) var(--tab-y, 0);
+  pointer-events: none;
+}
+.ctabs.has-indicator[data-indicator="moving"]::after {
+  transition: translate var(--nl-transition-settle-fast), height var(--nl-transition-settle-fast), width var(--nl-transition-settle-fast);
+}
+.csec.active {
+  transition: opacity var(--nl-transition-control), translate var(--nl-transition-enter);
+}
+@starting-style {
+  .csec.active { opacity: 0; translate: 0 var(--travel, 6px); }
+}
+#cfg[data-travel="up"] { --travel: -6px; }
+
+/* Disclosures open instead of appearing. Height is the one layout property
+   animated anywhere — an opening is what a disclosure is for. */
+details { interpolate-size: allow-keywords; }
+details::details-content {
+  block-size: 0;
+  overflow-y: clip;
+  transition:
+    block-size var(--nl-transition-panel),
+    content-visibility var(--nl-motion-panel) allow-discrete;
+}
+/* Opening shows the content at once and lets the height follow; only
+   closing keeps it drawn until the height has come down around it. */
+details[open]::details-content {
+  block-size: auto;
+  transition:
+    block-size var(--nl-transition-panel),
+    content-visibility 0s allow-discrete;
+}
+
+/* ── Segmented choices: one thumb that slides ───────────────────────
+   Natural and Fitted, Dark, Light and Auto: the chosen option's pill is one
+   shape behind all of them (NordlysUI.trackThumb places it) that slides to
+   the next choice, so the switch shows what changed rather than blinking. */
+.arrange-layouts[data-thumb],
+.color-mode-segmented[data-thumb] {
+  position: relative;
+  isolation: isolate;
+}
+.arrange-layouts[data-thumb]::before,
+.color-mode-segmented[data-thumb]::before {
+  content: "";
+  position: absolute;
+  z-index: var(--nl-z-background);
+  top: 0;
+  left: 0;
+  width: var(--thumb-w, 0);
+  height: var(--thumb-h, 0);
+  translate: var(--thumb-x, 0) var(--thumb-y, 0);
+  pointer-events: none;
+}
+/* The options sit above their thumb by painting after it, not by a layer. */
+.arrange-layouts[data-thumb] > .arrange-layout,
+.color-mode-segmented[data-thumb] > .mode-btn { position: relative; }
+.arrange-layouts[data-thumb]::before {
+  border-radius: var(--nl-radius-sm);
+  background: var(--nl-surface-card);
+  box-shadow: var(--nl-shadow-1);
+}
+.color-mode-segmented[data-thumb]::before {
+  border-radius: 8px;
+  background: var(--accent);
+  box-shadow: var(--nl-shadow-1);
+}
+.arrange-layouts[data-thumb="moving"]::before,
+.color-mode-segmented[data-thumb="moving"]::before {
+  transition: translate var(--nl-transition-settle-fast), width var(--nl-transition-settle-fast), height var(--nl-transition-settle-fast);
+}
+.arrange-layouts[data-thumb] .arrange-layout[aria-checked="true"],
+.arrange-layouts[data-thumb] .arrange-layout[aria-checked="true"]:hover,
+.color-mode-segmented[data-thumb] .mode-btn.active,
+.light-ui .color-mode-segmented[data-thumb] .mode-btn.active {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* ── The board ───────────────────────────────────────────────────── */
+/* A tile rises on the spring and comes back down on the state curve: the lift
+   answers the pointer, the return is only a return. Only a real pointer
+   hovers; a finger never leaves a tile half raised. */
+@media (hover: hover) and (pointer: fine) {
+  .tile:hover .box {
+    transition:
+      transform var(--nl-transition-settle-fast),
+      box-shadow var(--nl-transition-control),
+      border-color var(--nl-transition-fast),
+      background-color var(--nl-transition-fast);
+  }
+  /* A thumbnail of a sky is a window onto it; pointing at it looks closer. */
+  .scene-card .scene-still { transition: scale var(--nl-transition-panel); }
+  .scene-card:hover .scene-still { scale: 1.04; }
+  /* The gear turns as a gear does, and settles. */
+  #gear svg { transition: fill var(--nl-transition-control), transform var(--nl-transition-settle); }
+}
+
+/* Picked up, the copy in hand rises and tilts on the spring — from where it
+   lay, not already lifted — and it is set down the same way (grid.flyHome). */
+.drag-lift > .card,
+.drag-lift .tile .box {
+  transition: scale var(--nl-transition-settle-fast), rotate var(--nl-transition-settle-fast);
+}
+@starting-style {
+  .drag-lift > .card { scale: 1; rotate: 0deg; }
+  .drag-lift .tile .box { scale: 1; }
+}
+
+/* Arranging: the bar rises on the spring and sinks away faster; the rows'
+   outlines and the clock stepping back fade rather than switch. */
+.arrange-bar {
+  animation: none;
+  opacity: 1;
+  transition:
+    opacity var(--nl-transition-control),
+    translate var(--nl-transition-settle),
+    display var(--nl-motion-fast) allow-discrete;
+}
+.arrange-bar[hidden] {
+  opacity: 0;
+  translate: -50% 10px;
+  transition:
+    opacity var(--nl-transition-fast),
+    translate var(--nl-transition-fast),
+    display var(--nl-motion-fast) allow-discrete;
+}
+@starting-style {
+  .arrange-bar:not([hidden]) { opacity: 0; translate: -50% 16px; }
+}
+.board-row {
+  outline: 1px dashed transparent;
+  outline-offset: 9px;
+  transition: outline-color var(--nl-transition-control);
+}
+#searchwrap { transition: width var(--nl-transition-panel), opacity var(--nl-transition-panel); }
+
+/* Folders that move together — a new layout, Tidy up, a folder folded into
+   the dock or brought back from it — are view transitions: each folder is
+   one shape that travels to its new place and size, and a folded folder
+   shrinks into its chip (board-arrange.js boardTransition). */
+/* A view transition takes the page's clicks while it plays, so it is kept to
+   a panel's length: the spring's travel is all in its first half anyway. */
+::view-transition-group(*.nl-folder),
+::view-transition-group(*.nl-tile) {
+  animation-duration: var(--nl-motion-panel);
+  animation-timing-function: var(--nl-ease-spring);
+}
+::view-transition-old(*.nl-folder),
+::view-transition-new(*.nl-folder),
+::view-transition-old(*.nl-tile),
+::view-transition-new(*.nl-tile) {
+  animation-duration: var(--nl-motion-panel);
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--nl-motion-panel);
+}
+
+
+/* ── A new theme spreads from the card that chose it ────────────────
+   The old page stays still underneath while the new one opens over it in a
+   circle centred on the pointer (app.js sets --reveal-x/-y/-r). A theme
+   changed any other way — Auto at dusk, a command — simply crossfades. */
+:root.theme-reveal::view-transition-old(root) { animation: none; }
+:root.theme-reveal::view-transition-new(root) { animation: nl-theme-reveal var(--nl-transition-reveal) both; }
+@keyframes nl-theme-reveal {
+  from { clip-path: circle(0 at var(--reveal-x, 50%) var(--reveal-y, 50%)); }
+  to { clip-path: circle(var(--reveal-r, 150vmax) at var(--reveal-x, 50%) var(--reveal-y, 50%)); }
+}
+
+/* ── The clock: only the digit that changed ─────────────────────────
+   The digit leaving rises and blurs away while the one arriving comes up
+   into its place and sharpens, the way a numeric display turns over. Once a
+   minute is often enough to be noticed and rare enough to be welcome;
+   seconds, when they are shown, change with a fade and nothing else. */
+#clock .digit {
+  position: relative;
+  display: inline-block;
+}
+#clock .digit-out {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+#clock .digit.rolling .digit-in { animation: nl-digit-in var(--nl-transition-settle-fast) both; }
+#clock .digit.rolling .digit-out { animation: nl-digit-out var(--nl-transition-enter-fast) both; }
+#clock #ss .digit.rolling .digit-in { animation: nl-digit-fade var(--nl-transition-fast) both; }
+#clock #ss .digit.rolling .digit-out { animation: nl-digit-leave var(--nl-transition-fast) both; }
+@keyframes nl-digit-in {
+  from { opacity: 0; transform: translateY(.3em); filter: blur(3px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+@keyframes nl-digit-out {
+  from { opacity: 1; transform: none; filter: none; }
+  to { opacity: 0; transform: translateY(-.3em); filter: blur(3px); }
+}
+@keyframes nl-digit-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes nl-digit-leave {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Reduced motion keeps every change and none of the travel: the view
+   transitions become the instant swaps they replace. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+}

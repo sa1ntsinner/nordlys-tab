@@ -1599,17 +1599,9 @@ body.hover-none .tile:hover .box {
   margin-bottom: 4px;
 }
 
-/* ── Clock Digit Tick (soft morph on minute/second change) ────── */
+/* ── Clock figures (each digit turns over on its own: motion.css) ─ */
 #hh, #mm, body.seconds #ss {
   display: inline-block;
-  transition: transform var(--nl-transition-fast), opacity var(--nl-transition-fast);
-}
-.digit-tick {
-  animation: digitTick var(--nl-transition-enter-fast);
-}
-@keyframes digitTick {
-  0% { opacity: 0.45; transform: translateY(-3px); }
-  100% { opacity: 1; transform: none; }
 }
 
 /* ── Frosted Toast Notifications ──────────────────────────────── */

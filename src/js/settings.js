@@ -1038,6 +1038,8 @@ class SettingsController {
     document.querySelectorAll("#color-mode-switcher .mode-btn").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.mode === colorMode);
     });
+    const switcher = document.getElementById("color-mode-switcher");
+    window.NordlysUI?.trackThumb(switcher, switcher?.querySelector(".mode-btn.active"));
   }
 
   syncFormValues() {
@@ -2534,7 +2536,7 @@ class SettingsController {
     });
 
     // Apply Cropped Output
-    applyBtn?.addEventListener("click", () => {
+    applyBtn?.addEventListener("click", async () => {
       if (!this.cropperImage) {
         this.closeIconModal();
         return;
@@ -2593,7 +2595,7 @@ class SettingsController {
     });
 
     // Use Original Image (Bypass crop)
-    useOrigBtn?.addEventListener("click", () => {
+    useOrigBtn?.addEventListener("click", async () => {
       if (this.cropperOriginalSource) {
         if (!this.activeIconTarget) {
           if (this.app.config.groups?.[0]?.links?.[0]) {

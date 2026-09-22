@@ -221,6 +221,23 @@ class GridController {
     this.titleCutNames();
   }
 
+  /* A board transition changes the folders at once and draws them a frame
+     later (board-arrange.js). Anything that reads the board in between draws
+     it first, so it never acts on the picture that is on its way out. */
+  ensureRendered() {
+    if (!this.renderPending) return;
+    this.renderPending = false;
+    this.render();
+  }
+
+  /* Many folders changing at once: one view transition when the board can
+     show it, an in-place glide otherwise. */
+  together(mutate, options) {
+    const move = window.NordlysBoardMotion?.boardTransition;
+    if (move) move(this, mutate, options);
+    else { mutate(); this.render(); this.app.settings?.renderBookmarksManager?.(); options?.after?.(); }
+  }
+
   /* Row and position of a folder as the board shows it, counted from one. */
   placeOf(group) {
     const index = (this.app.config.groups || []).indexOf(group);
@@ -481,15 +498,14 @@ class GridController {
 
     // Folder Fold action
     const foldBtn = cat.querySelector(".foldBtn");
+    // Folded, the folder shrinks into its chip in the dock (board-arrange.js).
     foldBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       this.arrange?.remember();
-      card.style.animation = "foldaway 0.22s cubic-bezier(0.2, 0.7, 0.2, 1) forwards";
-      setTimeout(() => {
+      this.together(() => {
         group.hidden = true;
         this.app.saveConfig();
-        this.render();
-      }, 200);
+      });
     });
 
     // Folder Right-Click Context Menu
@@ -666,14 +682,12 @@ class GridController {
       <span class="dockFolderCount">${count}</span>
     `;
 
+    // Brought back, the chip grows into its folder.
     btn.addEventListener("click", () => {
-      btn.style.transform = "scale(0.92)";
-      btn.style.opacity = "0";
-      setTimeout(() => {
+      this.together(() => {
         group.hidden = false;
         this.app.saveConfig();
-        this.render();
-      }, 140);
+      });
     });
 
     container.appendChild(btn);
@@ -799,10 +813,10 @@ class GridController {
              something a page should be able to do quietly. */
           this.openEveryBookmark(group);
         } else if (action === "hide-folder") {
-          group.hidden = !group.hidden;
-          this.app.saveConfig();
-          this.render();
-          this.app.settings?.renderBookmarksManager();
+          this.together(() => {
+            group.hidden = !group.hidden;
+            this.app.saveConfig();
+          });
         } else if (action === "delete-folder") {
           this.confirmFolderDelete(group).then((ok) => {
             if (ok) this.deleteFolderWithUndo(gIdx);
@@ -845,10 +859,10 @@ class GridController {
           this.app.settings?.renderBookmarksManager();
           this.openQuickEditModal(targetGIdx, targetGroup.links.length - 1);
         } else if (action === "restore-all-folders") {
-          this.app.config.groups.forEach((g) => { g.hidden = false; });
-          this.app.saveConfig();
-          this.render();
-          this.app.settings?.renderBookmarksManager();
+          this.together(() => {
+            this.app.config.groups.forEach((g) => { g.hidden = false; });
+            this.app.saveConfig();
+          });
         } else if (action === "open-settings") {
           this.app.settings?.openDrawer("general");
         } else if (action === "toggle-themes") {
@@ -998,31 +1012,34 @@ class GridController {
      nag this product refuses, and an undo is the better answer to a misclick
      than a modal you learn to dismiss without reading. */
   deleteBookmarkWithUndo(gIdx, lIdx) {
-    const links = this.app.config.groups[gIdx]?.links;
+    const folder = this.app.config.groups[gIdx];
+    const links = folder?.links;
     if (!Array.isArray(links) || lIdx < 0 || lIdx >= links.length) return;
-    const [removed] = links.splice(lIdx, 1);
-    const snapshot = JSON.parse(JSON.stringify(removed));
+    const snapshot = JSON.parse(JSON.stringify(links[lIdx]));
     const name = snapshot.name || snapshot.url || "Bookmark";
-    const refresh = () => {
-      this.app.saveConfig();
-      this.render();
-      this.app.settings?.renderBookmarksManager();
-    };
     const say = (key, fallback) => (window.I18N ? window.I18N.t(key, { name }) : fallback);
-    refresh();
-    /* The context menu hands focus back to the tile it was opened from, and
-       that tile is the one that just went. Without this, focus falls to <body>
-       and a keyboard user starts the board again from the top. */
-    if (!this.focusTile(gIdx, lIdx)) this.focusFolder(gIdx);
+    // The tile fades where it stood and its neighbours close the gap.
+    this.together(() => {
+      links.splice(lIdx, 1);
+      this.app.saveConfig();
+    }, {
+      glide: true,
+      tilesOf: () => [folder],
+      /* The context menu hands focus back to the tile it was opened from, and
+         that tile is the one that just went. Without this, focus falls to
+         <body> and a keyboard user starts the board again from the top. */
+      after: () => { if (!this.focusTile(gIdx, lIdx)) this.focusFolder(gIdx); }
+    });
     window.NordlysUI?.showUndoToast({
       message: say("toast.itemDeleted", `${name} deleted`),
       onAction: () => {
         const group = this.app.config.groups[gIdx];
         if (!group || !Array.isArray(group.links)) return;
         const at = Math.min(lIdx, group.links.length);
-        group.links.splice(at, 0, snapshot);
-        refresh();
-        this.focusTile(gIdx, at);
+        this.together(() => {
+          group.links.splice(at, 0, snapshot);
+          this.app.saveConfig();
+        }, { glide: true, tilesOf: () => [group], after: () => this.focusTile(gIdx, at) });
         window.NordlysUI?.announce?.(say("toast.itemRestored", `${name} restored`));
       }
     });
@@ -1049,25 +1066,26 @@ class GridController {
   deleteFolderWithUndo(gIdx) {
     const groups = this.app.config.groups;
     if (!Array.isArray(groups) || gIdx < 0 || gIdx >= groups.length) return;
-    const [removed] = groups.splice(gIdx, 1);
-    const snapshot = JSON.parse(JSON.stringify(removed));
+    const snapshot = JSON.parse(JSON.stringify(groups[gIdx]));
     const name = snapshot.label || "Folder";
-    const refresh = () => {
-      this.app.saveConfig();
-      this.render();
-      this.app.settings?.renderBookmarksManager();
-    };
-    refresh();
-    // Same reason as a bookmark: the menu's opener went with the folder.
-    if (!this.focusFolder(gIdx)) this.focusFolder(Math.max(0, gIdx - 1));
     const say = (key, fallback) => (window.I18N ? window.I18N.t(key, { name }) : fallback);
+    // The folder fades where it stood and the others close the gap.
+    this.together(() => {
+      groups.splice(gIdx, 1);
+      this.app.saveConfig();
+    }, {
+      glide: true,
+      // Same reason as a bookmark: the menu's opener went with the folder.
+      after: () => { if (!this.focusFolder(gIdx)) this.focusFolder(Math.max(0, gIdx - 1)); }
+    });
     window.NordlysUI?.showUndoToast({
       message: say("toast.itemDeleted", `${name} deleted`),
       onAction: () => {
         const at = Math.min(gIdx, groups.length);
-        groups.splice(at, 0, snapshot);
-        refresh();
-        this.focusFolder(at);
+        this.together(() => {
+          groups.splice(at, 0, snapshot);
+          this.app.saveConfig();
+        }, { glide: true, after: () => this.focusFolder(at) });
         window.NordlysUI?.announce?.(say("toast.itemRestored", `${name} restored`));
       }
     });
@@ -1378,35 +1396,45 @@ class GridController {
   /* Every folder move ends here — a drop, an arrow key, Tidy up — so they all
      save the same way, animate the same way and can all be undone: from the
      arrangement's own Undo while arranging, from a toast otherwise. */
-  commitLines(lines, moved, { group = null, lift = null, focus = false, say = "" } = {}) {
+  commitLines(lines, moved, { group = null, lift = null, focus = false, say = "", together = false } = {}) {
     const layout = window.NordlysBoardLayout;
     const groups = this.app.config.groups || [];
     if (!layout) return;
     const undo = this.arrange && !this.arrange.active ? this.arrange.snapshot() : null;
     this.arrange?.remember();
+    const change = () => {
+      layout.commit(groups, lines, moved);
+      layout.normalise(groups);
+      this.app.saveConfig();
+    };
+    const finish = () => {
+      const card = group ? this.board.querySelector(`.card[data-group-idx="${groups.indexOf(group)}"]`) : null;
+      if (lift) this.flyHome(lift, card);
+      // A folder moved by the keyboard may have left the screen; it is followed.
+      if (focus) card?.querySelector(".groupGrip")?.focus();
+      const place = group ? this.placeOf(group) : null;
+      const name = group?.label || "";
+      NordlysUI.announce(say || (place
+        ? this.say("arrange.movedTo", `${name}: row ${place.row}, position ${place.position} of ${place.count}`, { name, ...place })
+        : ""));
+      if (undo) {
+        NordlysUI.showUndoToast({
+          message: group ? this.say("arrange.folderMoved", `${name} moved`, { name }) : this.say("arrange.arranged", "Board arranged"),
+          onAction: () => this.arrange.restore(undo)
+        });
+      }
+      this.app.settings?.syncBoardLayout?.();
+    };
+    /* A whole board rearranged at once is one transition. A single folder put
+       down or stepped by a key glides in place instead, at once: the next key
+       press or drag must find the board already where it is going. */
+    if (together) { this.together(change, { after: finish }); return; }
     const before = window.NordlysBoardMotion?.captureCards(this);
-    layout.commit(groups, lines, moved);
-    layout.normalise(groups);
-    this.app.saveConfig();
+    change();
     this.render();
     this.app.settings?.renderBookmarksManager?.();
     window.NordlysBoardMotion?.settleCards(this, before, { skip: lift ? group : null });
-    const card = group ? this.board.querySelector(`.card[data-group-idx="${groups.indexOf(group)}"]`) : null;
-    if (lift) this.flyHome(lift, card);
-    // A folder moved by the keyboard may have left the screen; it is followed.
-    if (focus) card?.querySelector(".groupGrip")?.focus();
-    const place = group ? this.placeOf(group) : null;
-    const name = group?.label || "";
-    NordlysUI.announce(say || (place
-      ? this.say("arrange.movedTo", `${name}: row ${place.row}, position ${place.position} of ${place.count}`, { name, ...place })
-      : ""));
-    if (undo) {
-      NordlysUI.showUndoToast({
-        message: group ? this.say("arrange.folderMoved", `${name} moved`, { name }) : this.say("arrange.arranged", "Board arranged"),
-        onAction: () => this.arrange.restore(undo)
-      });
-    }
-    this.app.settings?.syncBoardLayout?.();
+    finish();
   }
 
   /* A bookmark from one place to another, in the same folder or not. */
@@ -1476,7 +1504,8 @@ class GridController {
     const frames = to
       ? [{ transform: from === "none" ? "none" : from }, { transform: to }]
       : [{ opacity: 1 }, { opacity: 0 }];
-    const animation = lift.animate(frames, { duration: to ? 220 : 160, easing: "cubic-bezier(.2, .8, .2, 1)", fill: "forwards" });
+    // Set down on the spring, the way it was picked up; a copy with nowhere to go just fades.
+    const animation = lift.animate(frames, { ...NordlysUI.motion(to ? "settle-fast" : "fast"), fill: "forwards" });
     animation.onfinish = done;
     animation.oncancel = done;
     setTimeout(done, 600);

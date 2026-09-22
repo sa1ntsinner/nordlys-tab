@@ -89,6 +89,8 @@ test('the undo control can actually be pressed', async ({ nordlysPage }) => {
   await deleteFirstTile(page);
   const undo = page.locator(UNDO);
   expect(await undo.evaluate(node => getComputedStyle(node).pointerEvents)).toBe('auto');
+  // The notice rises into place; the button is aimed at once it has arrived.
+  await page.evaluate(() => window.NordlysUI.settled());
   const box = await undo.boundingBox();
   const hit = await page.evaluate(([x, y]) => {
     const node = document.elementFromPoint(x, y);
