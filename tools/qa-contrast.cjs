@@ -42,7 +42,7 @@ const list = value => (value && value !== 'true' ? value.split(',').filter(Boole
 const SCENES = ['aurora', 'halo', 'silk', 'frost', 'drift', 'horizon'];
 const MOODS = ['theme', 'polar', 'violet', 'ember', 'mono'];
 // The fonts pass is opt-in (--surfaces=fonts): it re-renders every tab per face.
-const SURFACES = list(args.surfaces) || ['home', 'search', 'settings', 'menus'];
+const SURFACES = list(args.surfaces) || ['home', 'search', 'settings', 'menus', 'panels'];
 /* The font pass sets one family on the display and interface slots at once.
    The list mixes the two bundled faces, a metric-compatible system face, and
    two deliberately awkward ones — a wide sans and a serif — because a user can
@@ -136,6 +136,10 @@ async function main() {
   let done = 0;
   for (const theme of themes) {
     if (SURFACES.includes('home')) {
+      /* The pointer is parked where it hovers nothing: left where the last
+         settings click was, it sat over a folder once the drawer closed, and
+         the whole home page was measured with that folder's handles showing. */
+      await page.mouse.move(1, 1);
       for (const scene of scenes) {
         const sceneMoods = scene === 'solid' ? ['theme'] : moods;
         for (const mood of sceneMoods) {
@@ -217,6 +221,37 @@ async function main() {
         await page.evaluate(() => document.querySelectorAll('#toast-dock > *').forEach(node => node.remove()));
         done++;
       }
+    }
+    /* The panels opened over the board to change it: the icon picker's three
+       panes (with remembered icon addresses in the strip) and Arrange with its
+       size panel. Their chosen segments sit on sliding thumbs painted by a
+       pseudo-element, which only a measure of pixels can see. */
+    if (SURFACES.includes('panels')) {
+      await applyLook(theme, 'aurora', 'theme', PHASES[0]);
+      await page.evaluate(() => {
+        const link = window.Nordlys.config.groups[0]?.links?.[0];
+        if (!link) return;
+        link.iconUrls = [{ url: 'https://cdn.example.com/a.png', thumb: '', at: 2 }, { url: 'https://cdn.example.com/b.png', thumb: '', at: 1 }];
+        link.iconUrl = 'https://cdn.example.com/a.png';
+        window.Nordlys.settings.openIconModal(0, 0);
+      });
+      for (const pane of ['search', 'favicon', 'custom']) {
+        await page.locator(`.icon-tab-btn[data-tab="${pane}"]`).click();
+        await page.waitForTimeout(260);
+        await record({ surface: 'panels', theme, scene: 'aurora', mood: 'theme', phase: PHASES[0], layer: `icon picker, ${pane}`, scope: '#icon-modal' });
+        done++;
+      }
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(200);
+      await page.evaluate(() => window.Nordlys.grid.arrange.enter());
+      await page.locator('#arrange-size').click();
+      await page.waitForTimeout(400);
+      await record({ surface: 'panels', theme, scene: 'aurora', mood: 'theme', phase: PHASES[0], layer: 'arranging', scope: '#arrange-bar' });
+      done++;
+      await page.keyboard.press('Escape');
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(250);
+      await page.mouse.move(1, 1);
     }
     if (SURFACES.includes('fonts')) {
       for (const family of FONTS) {
