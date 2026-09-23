@@ -53,3 +53,9 @@ test('matching forgives case, accents and the shape of a name', () => {
   assert.ok(score('etoile', 'Étoile') > 0);
   assert.equal(score('zz', 'Daily'), 0);
 });
+
+test('size and spacing have a verb of their own', () => {
+  assert.deepEqual(kinds(parse('size', WORLD)), ['size:']);
+  assert.deepEqual(kinds(parse('spacing', WORLD)), ['size:']);
+  assert.deepEqual(kinds(parse('размер', WORLD, { verbs: { size: ['размер', 'отступы'] } })), ['size:']);
+});

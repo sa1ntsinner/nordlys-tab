@@ -100,7 +100,6 @@ body.seconds .sc, body.seconds #ss {
   position: relative;
   margin-top: 18px;
   width: min(88vw, 640px);
-  transition: width var(--nl-transition-panel);
 }
 
 #search {
@@ -520,7 +519,9 @@ body.minimal #board {
   font-size: var(--nl-text-lg);
   line-height: 24px;
   cursor: grab;
-  opacity: 0.35;
+  /* A control that is shown has to be seen: at 0.35 the hint read at under
+     2:1, below the 3:1 a control needs. 0.7 clears it on every theme. */
+  opacity: 0.7;
   transition: color var(--nl-motion-control), background-color var(--nl-motion-control), opacity var(--nl-motion-control), transform var(--nl-motion-control);
 }
 .cat:hover .groupGrip, .groupGrip:hover {
@@ -540,7 +541,7 @@ body.minimal #board {
   width: var(--nl-target-min);
   height: var(--nl-target-min);
   border-radius: 8px;
-  opacity: 0.45;
+  opacity: 0.7;
   /* transform belongs in this list. Without it the two-pixel nudge on hover
      was a teleport in both directions — the displacement restored, the
      motion not. */
@@ -565,12 +566,10 @@ body.minimal #board {
     opacity: 0;
   }
   .card:hover .groupGrip,
-  .card:focus-within .groupGrip {
-    opacity: 0.35;
-  }
+  .card:focus-within .groupGrip,
   .card:hover .foldBtn,
   .card:focus-within .foldBtn {
-    opacity: 0.45;
+    opacity: 0.7;
   }
   .card .groupGrip:hover,
   .card .groupGrip:focus-visible,
@@ -832,7 +831,9 @@ body.board-dragging * {
   cursor: pointer;
   transition: color var(--nl-motion-control), background-color var(--nl-motion-control), box-shadow var(--nl-motion-control);
 }
-.arrange-layout { min-height: calc(var(--nl-target-min) - 6px); }
+/* On the track the secondary ink loses a little against the tint, so the
+   options not chosen sit between secondary and primary. */
+.arrange-layout { min-height: var(--nl-target-min); color: color-mix(in oklch, var(--nl-text-secondary) 55%, var(--nl-text-primary)); }
 .arrange-layout[aria-checked="true"] {
   background: var(--nl-surface-card);
   color: var(--nl-text-primary);
@@ -952,7 +953,10 @@ body.arranging #board .card.is-resizing .card-resize-handle::after { border-colo
   position: absolute;
   bottom: -36px;
   left: 50%;
-  transform: translateX(-50%) translateY(10px);
+  /* Centred with translate, which reduced motion's "transform: none" leaves
+     in place; the slide in is the transform. */
+  translate: -50% 0;
+  transform: translateY(10px);
   padding: 6px 16px;
   border-radius: 20px;
   background: rgba(14, 22, 42, 0.85);
@@ -976,7 +980,7 @@ body.arranging #board .card.is-resizing .card-resize-handle::after { border-colo
   visibility: visible;
   border-color: var(--accent);
   box-shadow: var(--nl-shadow-2);
-  transform: translateX(-50%) translateY(0);
+  transform: translateY(0);
   transition: opacity var(--nl-transition-control), transform var(--nl-transition-enter), visibility 0s, border-color var(--nl-motion-control), box-shadow var(--nl-motion-control);
 }
 
@@ -991,7 +995,7 @@ body.arranging #board .card.is-resizing .card-resize-handle::after { border-colo
   position: absolute;
   bottom: -38px;
   left: 50%;
-  transform: translateX(-50%);
+  translate: -50% 0;
   padding: 6px 16px;
   border-radius: 20px;
   background: rgba(14, 22, 42, 0.9);
@@ -1009,8 +1013,8 @@ body.arranging #board .card.is-resizing .card-resize-handle::after { border-colo
 }
 
 @keyframes pillIn {
-  from { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.9); }
-  to { opacity: 1; transform: translateX(-50%); }
+  from { opacity: 0; transform: translateY(8px) scale(0.9); }
+  to { opacity: 1; transform: none; }
 }
 
 .brk {
@@ -1547,7 +1551,11 @@ body.hover-none .tile:hover .box {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* In a short window, or at 200% zoom, an editor with its Appearance
+     section open ran off both edges; the head stays, the body scrolls. */
+  max-height: calc(100dvh - 24px);
 }
+.quick-modal-card > .quick-modal-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 
 /* Pop plays on every open, not just once at page load */
 .quick-modal-backdrop.open .quick-modal-card {
@@ -1609,7 +1617,7 @@ body.hover-none .tile:hover .box {
   position: fixed;
   bottom: 26px;
   left: 50%;
-  transform: translateX(-50%);
+  translate: -50% 0;
   z-index: var(--nl-z-toast);
   display: flex;
   flex-direction: column;
@@ -2006,11 +2014,19 @@ body.tile-names-hidden #board .tile .lbl {
   box-shadow: var(--nl-shadow-3);
 }
 .arrange-size[hidden] { display: none; }
+/* In a short window — or a normal one at 200% zoom — the panel would rise off
+   the top of the screen, and a fixed panel cannot be scrolled to. It takes
+   what room there is above the bar and scrolls inside itself. */
+.arrange-size {
+  max-height: calc(100dvh - var(--arrange-controls-h, 72px) - max(18px, env(safe-area-inset-bottom)) - 28px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .arrange-bar:has(.arrange-size:not([hidden])) .arrange-hint { display: none; }
 .arrange-size-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 2px; }
 .arrange-size-title { color: var(--nl-text-primary); font-size: var(--nl-text-sm); font-weight: 650; }
 .arrange-size-reset {
-  min-height: 32px; padding: 0 10px; border: 0; border-radius: var(--nl-radius-sm);
+  min-height: var(--nl-target-min); padding: 0 10px; border: 0; border-radius: var(--nl-radius-sm);
   background: none; color: var(--nl-text-secondary); font: inherit; font-size: var(--nl-text-xs); font-weight: 600; cursor: pointer;
 }
 .arrange-size-reset:hover:not(:disabled) { color: var(--nl-text-primary); background: color-mix(in srgb, var(--nl-text-primary) 8%, transparent); }
@@ -2019,10 +2035,46 @@ body.tile-names-hidden #board .tile .lbl {
 .arrange-size-row + .arrange-size-row { padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--nl-border) 60%, transparent); }
 /* Whatever the panel covers can be scrolled out from under it. */
 body.arranging:has(.arrange-size:not([hidden])) #page { padding-bottom: 560px; }
-.arrange-size-label { flex: 1 0 100%; color: var(--nl-text-secondary); font-size: var(--nl-text-xs); font-weight: 600; }
+.arrange-size-label { flex: 1 0 100%; color: var(--nl-text-primary); font-size: var(--nl-text-xs); font-weight: 600; }
 .arrange-size-row:has(.tg) .arrange-size-label { flex: 1 1 auto; }
 .arrange-size-presets .arrange-layout { padding-inline: 10px; font-size: var(--nl-text-xs); }
 .arrange-size-slider { flex: 1 1 120px; min-width: 0; accent-color: var(--nl-accent); }
-.arrange-size-value { min-width: 3ch; color: var(--nl-text-secondary); font-size: var(--nl-text-xs); font-variant-numeric: tabular-nums; text-align: end; }
-.arrange-size-end { color: var(--nl-text-tertiary); font-size: var(--nl-text-2xs); }
+.arrange-size-value { min-width: 3ch; color: var(--nl-text-primary); font-size: var(--nl-text-xs); font-variant-numeric: tabular-nums; text-align: end; }
+.arrange-size-end { color: var(--nl-text-secondary); font-size: var(--nl-text-2xs); }
 #arrange-size[aria-expanded="true"] { color: var(--nl-text-primary); background: color-mix(in srgb, var(--nl-text-primary) 10%, transparent); }
+.arrange-size-note { flex: 1 0 100%; margin: 0; color: var(--nl-text-secondary); font-size: var(--nl-text-2xs); }
+.arrange-size-note[hidden] { display: none; }
+
+/* ── Forced colours: what is chosen still shows ──────────────────────
+   The system paints every background the same, and most choices here are
+   shown by a background: the tab, the theme, the scene, the segment, the
+   switch. Each one takes the system's selected colours instead, the sliding
+   thumbs that stood for them step aside, and a switch shows its state by its
+   fill and the side its knob is on. */
+@media (forced-colors: active) {
+  :is(.ctab.active, .mode-btn.active, .icon-tab-btn.active, .icon-chip.active,
+    .arrange-layout[aria-checked="true"], .board-layout-option[aria-checked="true"],
+    .palette-chip[aria-checked="true"], .nl-select-option[aria-selected="true"]) {
+    forced-color-adjust: none;
+    /* Above the sliding-thumb rules, which make a chosen segment transparent
+       so the thumb can show through: here there is no thumb. */
+    background: SelectedItem !important;
+    color: SelectedItemText !important;
+  }
+  :is(.ctab.active, .mode-btn.active, .icon-tab-btn.active, .icon-chip.active, .arrange-layout[aria-checked="true"], .board-layout-option[aria-checked="true"]) svg { color: SelectedItemText; fill: currentColor; }
+  :is(.theme-card.active, .theme-card[aria-pressed="true"], .scene-card[aria-checked="true"]) {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+  .icon-url-version.is-current .icon-url-thumb { outline: 3px solid Highlight; }
+  [data-thumb]::before,
+  .ctabs.has-indicator::after { display: none; }
+  .tg i { forced-color-adjust: none; background: Canvas !important; border: 1px solid CanvasText !important; }
+  .tg i::after { background: CanvasText !important; box-shadow: none !important; }
+  .tg input:checked + i { background: Highlight !important; border-color: Highlight !important; }
+  .tg input:checked + i::after { background: HighlightText !important; }
+}
+/* Where the bar wraps, the divider would start the second line on its own. */
+@media (max-width: 720px) {
+  .arrange-divider { display: none; }
+}

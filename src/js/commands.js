@@ -14,6 +14,7 @@
     mood: ['mood', 'colours', 'colors', 'colour', 'color'],
     shuffle: ['shuffle'],
     arrange: ['arrange', 'layout'],
+    size: ['size', 'spacing', 'size and spacing'],
     newFolder: ['new folder', 'folder', 'add folder'],
     rename: ['rename'],
     hide: ['hide', 'fold'],
@@ -109,6 +110,7 @@
       case 'settings': return rest ? one('settings', world.tabs || []) : { candidates: [{ kind: 'settings', target: null }] };
       case 'shuffle': return { candidates: [{ kind: 'shuffle' }] };
       case 'arrange': return { candidates: [{ kind: 'arrange' }] };
+      case 'size': return { candidates: [{ kind: 'size' }] };
       case 'newFolder': return { candidates: rest ? [{ kind: 'newFolder', name: rest }] : [] };
       case 'rename': {
         const [from, to] = split(rest, joiners);

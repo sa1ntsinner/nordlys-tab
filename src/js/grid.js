@@ -490,7 +490,7 @@ class GridController {
     cat.title = window.I18N ? window.I18N.t('hint.dragReorderFolder') : "Drag to reorder or Right-Click to edit folder";
     cat.innerHTML = `
       <s></s>
-      <b>${esc(group.label || "Group")}</b>
+      <b>${esc(group.label || this.say("bookmarks.newFolder", "New Folder"))}</b>
       <i></i>
       <button type="button" class="groupGrip">⋮⋮</button>
       <button class="foldBtn" title="${esc(window.I18N ? window.I18N.t('hint.foldFolder') : 'Hide this folder')}" aria-label="${esc(window.I18N ? window.I18N.t('hint.foldFolder') : 'Hide this folder')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M6.61 6.61A18.4 18.4 0 0 0 2 12s3 8 10 8a9.1 9.1 0 0 0 5.39-1.61"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="2" y1="2" x2="22" y2="22"/></svg></button>
@@ -678,7 +678,7 @@ class GridController {
       <svg class="dockFolderIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
       </svg>
-      <span class="dockFolderName">${esc(group.label || "Folder")}</span>
+      <span class="dockFolderName">${esc(group.label || this.say("bookmarks.newFolder", "New Folder"))}</span>
       <span class="dockFolderCount">${count}</span>
     `;
 
@@ -751,7 +751,7 @@ class GridController {
         e.preventDefault();
         e.stopPropagation();
         const action = item.dataset.action;
-        if (!this.activeTileTarget) return;
+        if (item.hasAttribute("disabled") || !this.activeTileTarget) return;
         const { gIdx, lIdx } = this.activeTileTarget;
         const group = this.app.config.groups[gIdx];
         const link = group?.links[lIdx];
@@ -839,7 +839,7 @@ class GridController {
           const newGIdx = this.app.config.groups.length;
           this.app.config.groups.push({
             id: `g_${Date.now()}`,
-            label: `Folder ${newGIdx + 1}`,
+            label: this.say("bookmarks.newFolder", "New Folder"),
             cols: 4,
             links: []
           });
@@ -900,7 +900,9 @@ class GridController {
       if (typedColor) link.color = typedColor;
 
       // 2. If folder was changed in the dropdown, move it immediately
-      if (!isNaN(targetFolderIdx) && targetFolderIdx !== gIdx && this.app.config.groups[targetFolderIdx]) {
+      // Nothing moves out of a folder that follows the browser, or into one.
+      const destination = this.app.config.groups[targetFolderIdx];
+      if (!oldGroup.source?.folderId && !isNaN(targetFolderIdx) && targetFolderIdx !== gIdx && destination && !destination.source?.folderId) {
         oldGroup.links.splice(lIdx, 1);
         this.app.config.groups[targetFolderIdx].links.push(link);
         this.updateGridDOM(gIdx, targetFolderIdx);
@@ -932,8 +934,9 @@ class GridController {
       const link = oldGroup?.links[lIdx];
       if (!link) return;
 
-      const newTitle = document.getElementById("quick-title-input")?.value.trim() || link.name;
-      let newUrl = document.getElementById("quick-url-input")?.value.trim() || link.url;
+      const followed = Boolean(oldGroup.source?.folderId);
+      const newTitle = followed ? link.name : document.getElementById("quick-title-input")?.value.trim() || link.name;
+      let newUrl = followed ? link.url : document.getElementById("quick-url-input")?.value.trim() || link.url;
       if (newUrl && !/^https?:\/\//i.test(newUrl)) newUrl = `https://${newUrl}`;
       const newColor = document.getElementById("quick-color-input")?.value || link.color;
       const targetFolderIdx = parseInt(document.getElementById("quick-folder-select")?.value, 10);
@@ -946,7 +949,9 @@ class GridController {
       const chosenTone = document.getElementById("quick-tone-select")?.value;
       if (chosenTone && chosenTone !== "auto") link.tone = chosenTone; else delete link.tone;
 
-      if (!isNaN(targetFolderIdx) && targetFolderIdx !== gIdx && this.app.config.groups[targetFolderIdx]) {
+      // Nothing moves out of a folder that follows the browser, or into one.
+      const destination = this.app.config.groups[targetFolderIdx];
+      if (!oldGroup.source?.folderId && !isNaN(targetFolderIdx) && targetFolderIdx !== gIdx && destination && !destination.source?.folderId) {
         oldGroup.links.splice(lIdx, 1);
         this.app.config.groups[targetFolderIdx].links.push(link);
         this.updateGridDOM(gIdx, targetFolderIdx);
@@ -1015,6 +1020,10 @@ class GridController {
     const folder = this.app.config.groups[gIdx];
     const links = folder?.links;
     if (!Array.isArray(links) || lIdx < 0 || lIdx >= links.length) return;
+    if (folder.source?.folderId) {
+      NordlysUI.announce(this.say("bookmarks.linkedRemoveHint", "Remove it in the browser; this folder follows along"));
+      return;
+    }
     const snapshot = JSON.parse(JSON.stringify(links[lIdx]));
     const name = snapshot.name || snapshot.url || "Bookmark";
     const say = (key, fallback) => (window.I18N ? window.I18N.t(key, { name }) : fallback);
@@ -1129,12 +1138,20 @@ class GridController {
     this.activeTileTarget = { gIdx, lIdx };
 
     const link = this.app.config.groups[gIdx]?.links[lIdx];
+    this.activeTileLink = link;
     const titleEl = this.tileCtxMenu.querySelector(".ctx-target-title");
     if (titleEl) {
       const bmkWord = window.I18N ? window.I18N.t('ctx.bookmark') : "Bookmark";
       const linkWord = window.I18N ? window.I18N.t('ctx.link') : "Link";
       titleEl.textContent = `${bmkWord} • ${link?.name || linkWord}`;
     }
+    /* A followed bookmark is removed in the browser: deleted here, the next
+       refresh would bring it straight back. */
+    const followed = Boolean(this.app.config.groups[gIdx]?.source?.folderId);
+    const remove = this.tileCtxMenu.querySelector('[data-action="delete"]');
+    remove?.toggleAttribute("disabled", followed);
+    remove?.setAttribute("aria-disabled", String(followed));
+    if (remove) remove.title = followed ? this.say("bookmarks.linkedRemoveHint", "Remove it in the browser; this folder follows along") : "";
 
     this.positionMenu(this.tileCtxMenu, e.clientX, e.clientY, e.currentTarget || document.activeElement);
   }
@@ -1145,6 +1162,7 @@ class GridController {
     this.activeFolderTarget = gIdx;
 
     const group = this.app.config.groups[gIdx];
+    this.activeFolderGroup = group;
     const titleEl = this.folderCtxMenu.querySelector(".ctx-target-title");
     if (titleEl) {
       const folderWord = window.I18N ? window.I18N.t('ctx.folder') : "Folder";
@@ -1176,6 +1194,7 @@ class GridController {
     this.activeTileTarget = { gIdx, lIdx };
     const link = this.app.config.groups[gIdx]?.links[lIdx];
     if (!link || !this.quickModal) return;
+    this.activeTileLink = link;
 
     const titleInput = document.getElementById("quick-title-input");
     const urlInput = document.getElementById("quick-url-input");
@@ -1185,20 +1204,18 @@ class GridController {
 
     if (titleInput) titleInput.value = link.name || "";
     if (urlInput) urlInput.value = link.url || "";
+    /* The browser owns a followed bookmark's name, address and folder; what
+       it looks like is set here. The fields say so instead of taking an edit
+       the next refresh would quietly undo. */
+    const followed = Boolean(this.app.config.groups[gIdx]?.source?.folderId);
+    for (const input of [titleInput, urlInput]) if (input) input.readOnly = followed;
+    const linkedNote = document.getElementById("quick-edit-linked-note");
+    if (linkedNote) linkedNote.hidden = !followed;
     if (colorInput) colorInput.value = link.color || "#35d6c0";
     const toneSelect = document.getElementById("quick-tone-select");
     if (toneSelect) toneSelect.value = link.tone || "auto";
 
-    if (folderSelect) {
-      folderSelect.innerHTML = (this.app.config.groups || [])
-        .map((g, idx) => `<option value="${idx}" ${idx === gIdx ? "selected" : ""}>${esc(g.label || `Folder ${idx + 1}`)}</option>`)
-        .join("");
-      folderSelect.value = String(gIdx);
-      // The options are rebuilt on every open, so the themed control has to be
-      // told — otherwise it keeps showing the value it read the first time, or
-      // nothing at all.
-      window.NordlysUI?.refreshSelects(this.quickModal);
-    }
+    if (folderSelect) this.fillQuickFolders(this.app.config.groups[gIdx]);
 
     if (iconPreview) {
       const iconDef = resolveIcon(link.url, link.icon);
@@ -1216,6 +1233,31 @@ class GridController {
     this.quickDialog.open(document.querySelector(`.tile[data-group-idx="${gIdx}"][data-link-idx="${lIdx}"]`) || document.activeElement, titleInput);
   }
 
+  /* The editor's folder list, with `chosen` selected. Rebuilt on every open,
+     and again when another tab's board moves the folders under an open
+     editor — otherwise its choice points at whatever folder took the place. */
+  fillQuickFolders(chosen) {
+    const folderSelect = document.getElementById("quick-folder-select");
+    if (!folderSelect) return;
+    const groups = this.app.config.groups || [];
+    const at = Math.max(0, groups.indexOf(chosen));
+    const home = groups[this.activeTileTarget?.gIdx];
+    const followed = Boolean(home?.source?.folderId);
+    folderSelect.innerHTML = groups
+      .map((g, idx) => `<option value="${idx}" ${idx === at ? "selected" : ""}>${esc(g.label || this.say("bookmarks.newFolder", "New Folder"))}</option>`)
+      .join("");
+    folderSelect.value = String(at);
+    folderSelect.disabled = followed;
+    // A folder that follows the browser is not a destination either.
+    [...folderSelect.options].forEach((option) => {
+      option.disabled = groups[Number(option.value)] !== home && Boolean(groups[Number(option.value)]?.source?.folderId);
+    });
+    this.quickFolderChoices = [...groups];
+    // The options are rebuilt, so the themed control has to be told —
+    // otherwise it keeps showing the value it read the first time.
+    window.NordlysUI?.refreshSelects(this.quickModal);
+  }
+
   closeQuickEditModal() {
     this.quickDialog.close();
   }
@@ -1224,6 +1266,7 @@ class GridController {
     this.activeFolderTarget = gIdx;
     const group = this.app.config.groups[gIdx];
     if (!group || !this.quickFolderModal) return;
+    this.activeFolderGroup = group;
 
     const nameInput = document.getElementById("quick-folder-name-input");
     const colsSelect = document.getElementById("quick-folder-cols-select");

@@ -84,12 +84,42 @@ const NordlysToast = {
 
     // enter -> hold -> leave
     requestAnimationFrame(() => el.classList.add("on"));
-    setTimeout(() => {
+    this.hold(el, duration, () => {
       el.classList.remove("on");
       const leave = () => { if (el.isConnected) this.reflow(dock, () => el.remove()); };
       el.addEventListener("transitionend", leave, { once: true });
       setTimeout(leave, 600); // fallback removal
-    }, duration);
+    });
+  },
+
+  /* A notice's time runs only while nobody is attending to it: a pointer
+     resting on it or focus inside it stops the clock, and leaving gives it
+     back at least a moment to be read again. A five-second Undo that left
+     while the pointer was reaching for it was a way back taken away.
+     Returns a way to stop the clock for good. */
+  hold(el, duration, expire) {
+    let remaining = duration;
+    let started = performance.now();
+    let timer = setTimeout(expire, remaining);
+    let held = 0;
+    const pause = () => {
+      if (held++ > 0 || !timer) return;
+      clearTimeout(timer);
+      timer = null;
+      remaining = Math.max(0, remaining - (performance.now() - started));
+    };
+    const resume = () => {
+      if (--held > 0 || timer === undefined) return;
+      held = 0;
+      remaining = Math.max(remaining, 1500);
+      started = performance.now();
+      timer = setTimeout(expire, remaining);
+    };
+    el.addEventListener("pointerenter", pause);
+    el.addEventListener("pointerleave", resume);
+    el.addEventListener("focusin", pause);
+    el.addEventListener("focusout", (event) => { if (!el.contains(event.relatedTarget)) resume(); });
+    return () => { clearTimeout(timer); timer = undefined; };
   },
 
   reflow(dock, change) {

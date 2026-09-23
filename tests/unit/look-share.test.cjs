@@ -72,3 +72,15 @@ test('a look carries the layout and the daylight, never the rows', () => {
   assert.equal(JSON.stringify(look).includes('"row"'), false);
   assert.equal(decode(encode({ boardLayout: 'masonry' })).error, 'empty', 'a layout this version does not know is dropped');
 });
+
+test('a look carries the size and spacing of the board, and refuses what it cannot draw', () => {
+  const { capture, encode, decode } = looks();
+  const { look } = decode(encode(capture({ ...CONFIG, tileSize: 96, cardGap: 20, boardGap: 36, boardWidth: 'wide', tileLabels: false })));
+  assert.equal(look.boardGap, 36);
+  assert.equal(look.boardWidth, 'wide');
+  assert.equal(look.tileLabels, false);
+  const { look: hostile } = decode(encode({ theme: 'nord-frost', boardGap: 900, boardWidth: 'endless', tileLabels: 'no' }));
+  assert.equal('boardGap' in hostile, false);
+  assert.equal('boardWidth' in hostile, false);
+  assert.equal('tileLabels' in hostile, false);
+});

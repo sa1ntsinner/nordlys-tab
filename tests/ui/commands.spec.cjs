@@ -11,7 +11,7 @@ const rows = page => page.locator('#sugg .sugg-command');
 test('a bare > lists every command, as options of the one listbox', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await type(page, '>');
-  await expect(rows(page)).toHaveCount(11);
+  await expect(rows(page)).toHaveCount(12);
   await expect(rows(page).first()).toHaveAttribute('role', 'option');
   await expect(rows(page).first()).toContainText('theme nord');
   const results = await new AxeBuilder({ page }).include('#searchwrap').analyze();
@@ -73,4 +73,24 @@ test('the commands answer to the language the page is in', async ({ nordlysPage 
   await expect(rows(page).first()).toContainText('Тема');
   await type(page, '>переместить youtube в dev');
   await expect(rows(page).first()).toContainText('YouTube');
+});
+
+/* Typed and entered faster than the list redraws, a command used to find no
+   list, and nothing happened. */
+test('a command entered before its list appears still runs', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.locator('#q').click();
+  await page.locator('#q').evaluate(input => {
+    input.value = '>arrange';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  });
+  await expect(page.locator('#arrange-bar')).toBeVisible();
+});
+
+test('"> size" opens size and spacing on the board', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await type(page, '>size');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#arrange-size-panel')).toBeVisible();
 });

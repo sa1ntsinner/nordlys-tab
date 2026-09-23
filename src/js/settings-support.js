@@ -343,7 +343,8 @@
         { chords: [[alt, '1–9']], key: 'support.keyBookmark', fallback: 'Open one of the first nine bookmarks — hold Alt to see which' },
         { chords: [['←→↑↓'], [alt, 'Shift', '←→↑↓']], key: 'support.keyBoard', fallback: 'On a bookmark: walk its folder, or carry the bookmark with it' },
         { chords: [['Enter'], ['←→↑↓']], key: 'support.keyArrange', fallback: "On a folder's handle: Enter arranges the board, then the arrows move the folder" },
-        { chords: [['Shift', 'F10'], ['Menu']], key: 'support.keyMenu', fallback: 'Menu for the focused bookmark' }
+        { chords: [['Shift', 'F10'], ['Menu']], key: 'support.keyMenu', fallback: 'Menu for the focused bookmark' },
+        { chords: [[mod, 'Z']], key: 'support.keyUndo', fallback: 'Undo the last change: while its notice is showing, even inside a dialog, and while arranging' }
       ];
     }
 

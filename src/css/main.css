@@ -206,9 +206,17 @@ html[data-bg="solid"] body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Nothing moves: keyframe animations stop, transforms and filters are
+     dropped, and a transition may only fade or recolour, briefly. This used
+     to stretch every transition on every element to 80ms, and an element with
+     none declared transitions all of its properties, so under "reduce" gaps,
+     widths and positions began to glide, and an opening menu stayed hidden
+     for those 80ms, too long for focus to go into it. Centring that must
+     survive uses `translate`, which `transform: none` leaves alone. */
   *, *::before, *::after {
     animation: none !important;
     animation-delay: 0s !important;
+    transition-property: opacity, color, background-color, border-color, outline-color, fill, stroke, box-shadow !important;
     transition-duration: 80ms !important;
     transition-delay: 0s !important;
     scroll-behavior: auto !important;

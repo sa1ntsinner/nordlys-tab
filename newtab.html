@@ -107,6 +107,7 @@
             <button type="button" role="radio" class="arrange-layout" data-width="standard" aria-checked="true" data-i18n="arrange.standard">Standard</button>
             <button type="button" role="radio" class="arrange-layout" data-width="wide" aria-checked="false" data-i18n="arrange.wide">Wide</button>
           </div>
+          <p id="arrange-width-note" class="arrange-size-note" hidden data-i18n="arrange.widthNote">This window is narrower than all three; the width shows on a wider screen.</p>
         </div>
         <div class="arrange-size-row">
           <span id="arrange-names-label" class="arrange-size-label" data-i18n="arrange.names">Names under bookmarks</span>
@@ -273,7 +274,7 @@
         <!-- Dynamic Custom Theme Palette Studio & Color Pickers -->
         <div id="custom-theme-editor-card" class="custom-theme-tuning-card" style="display: none; margin-top: 14px;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-            <h4 style="margin: 0; color: var(--accent); font-size: var(--nl-text-md); font-weight: 650; display: flex; align-items: center; gap: 6px;">
+            <h4 style="margin: 0; color: var(--nl-accent-text); font-size: var(--nl-text-md); font-weight: 650; display: flex; align-items: center; gap: 6px;">
               <span data-i18n="customTheme.title">Custom Theme Studio</span>
             </h4>
             <button id="close-custom-theme-editor" type="button" class="xbtn" style="font-size: var(--nl-text-xs); padding: 2px 6px;">✕</button>
@@ -383,7 +384,7 @@
           <summary data-i18n="appearance.advancedGlass">Advanced glass &amp; geometry</summary>
         <!-- Bookmark & Card Aesthetics Studio -->
         <div id="card-customizer-controls" class="card-customizer-card" style="margin-top: 16px;">
-          <h4 style="margin: 0; color: var(--accent); font-size: var(--nl-text-md); font-weight: 650; display: flex; align-items: center; gap: 6px;">
+          <h4 style="margin: 0; color: var(--nl-accent-text); font-size: var(--nl-text-md); font-weight: 650; display: flex; align-items: center; gap: 6px;">
             <span data-i18n="appearance.cardStudioTitle">Card &amp; Bookmark Aesthetics</span>
           </h4>
 
@@ -401,6 +402,7 @@
               <option value="off" data-i18n="glass.off">None</option>
             </select>
           </div>
+          <p class="settings-note glass-solid-note" data-i18n="glass.solidNote">While less motion or less transparency is asked for, or high legibility is on, the glass is solid, so this changes nothing.</p>
 
           <!-- 2. Geometry & Spacing Section -->
           <div class="settings-group-label" data-i18n="appearance.geometry">Geometry</div>
@@ -410,7 +412,7 @@
           </div>
           <div class="row">
             <span><span data-i18n="appearance.tileSize">Tile size</span> (<b id="lbl-tile">78px</b>)</span>
-            <input id="cfg-tile-size" type="range" class="ipt" min="50" max="110" value="78">
+            <input id="cfg-tile-size" type="range" class="ipt" min="56" max="110" value="78">
           </div>
           <div class="row">
             <span><span data-i18n="appearance.cardGap">Spacing</span> (<b id="lbl-gap">12px</b>)</span>
@@ -517,8 +519,8 @@
         <div class="row">
           <span data-i18n="general.timeFormat">Time Format</span>
           <select id="cfg-time-format" class="ipt">
-            <option value="24h">24-Hour (14:30)</option>
-            <option value="12h">12-Hour (2:30 PM)</option>
+            <option value="24h" data-i18n="settings.time24">24-hour (14:30)</option>
+            <option value="12h" data-i18n="settings.time12">12-hour (2:30 PM)</option>
           </select>
         </div>
         <div class="row">
@@ -665,6 +667,7 @@
           <div class="board-layout-foot">
             <span id="board-rows-state" class="board-rows-state"></span>
             <button type="button" id="board-rows-auto" class="palette-action" hidden data-i18n="arrange.autoRows">Automatic rows</button>
+            <button type="button" id="cfg-size" class="palette-action" data-i18n="arrange.size">Size &amp; spacing</button>
             <button type="button" id="cfg-arrange" class="glass-btn accent board-arrange-btn" data-i18n="bookmarks.arrange">Arrange on the board</button>
           </div>
         </div>
@@ -766,7 +769,7 @@
   <div id="icon-modal">
     <div class="modal-box">
       <div class="modal-head">
-        <b>Choose Bookmark Icon</b>
+        <b data-i18n="picker.title">Choose an icon</b>
         <button id="modal-x" type="button" class="xbtn">✕</button>
       </div>
 
@@ -788,7 +791,7 @@
           </div>
           <div id="icon-search-status" class="icon-search-status" role="status" aria-live="polite" data-i18n="picker.searchIdle">Search happens only when you ask.</div>
           <div id="modal-icon-grid" class="icon-grid"></div>
-          <small class="icon-search-legal">Simple Icons · Brand marks belong to their owners.</small>
+          <small class="icon-search-legal" data-i18n="picker.legal">Simple Icons · Brand marks belong to their owners.</small>
         </div>
 
         <!-- Tab 2: Smart Favicon / High-Res Fetcher -->
@@ -796,14 +799,14 @@
           <label style="display: block; font-size: var(--nl-text-xs); color: var(--dim); margin-bottom: 6px;" data-i18n="modal.faviconDesc">Fetch high-resolution favicon automatically from site domain or page URL</label>
           <div style="display: flex; gap: 8px; margin-bottom: 10px;">
             <input id="favicon-url-input" type="text" class="glass-input" placeholder="https://github.com or domain.com" data-i18n-placeholder="modal.faviconPlaceholder" style="flex: 1;">
-            <button id="favicon-fetch-btn" type="button" class="glass-btn accent">Fetch</button>
+            <button id="favicon-fetch-btn" type="button" class="glass-btn accent" data-i18n="picker.fetch">Fetch</button>
           </div>
           
           <details class="favicon-sources">
             <summary data-i18n="modal.trySource">Try another source</summary>
             <div class="favicon-source-chips">
-              <button type="button" class="icon-chip active" data-fav-source="chrome">Browser cache</button>
-              <button type="button" class="icon-chip" data-fav-source="direct">The site itself</button>
+              <button type="button" class="icon-chip active" data-fav-source="chrome" data-i18n="picker.sourceBrowser">Browser cache</button>
+              <button type="button" class="icon-chip" data-fav-source="direct" data-i18n="picker.sourceSite">The site itself</button>
               <button type="button" class="icon-chip" data-fav-source="google">Google</button>
               <button type="button" class="icon-chip" data-fav-source="duckduckgo">DuckDuckGo</button>
             </div>
@@ -824,7 +827,7 @@
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
                   <span data-i18n="modal.applyFavicon">Apply Favicon</span>
                 </button>
-                <button id="favicon-crop-btn" type="button" class="glass-btn" style="flex: 1;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>Adjust in Cropper</button>
+                <button id="favicon-crop-btn" type="button" class="glass-btn" style="flex: 1;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg><span data-i18n="picker.cropAdjust">Crop &amp; adjust</span></button>
               </div>
             </div>
           </div>
@@ -887,12 +890,12 @@
             <h4 data-i18n="modal.customMonogram">Or just a letter</h4>
           <div style="display: flex; gap: 14px; align-items: center;">
             <div style="flex: 1;">
-              <label style="font-size: var(--nl-text-xs); color: var(--dim); display: block; margin-bottom: 4px;">Monogram Text (1-3 chars)</label>
+              <label style="font-size: var(--nl-text-xs); color: var(--dim); display: block; margin-bottom: 4px;" for="monogram-input" data-i18n="picker.monogramLabel">One to three letters</label>
               <input id="monogram-input" type="text" class="glass-input" maxlength="3" value="A">
             </div>
-            <div id="monogram-preview-box" class="url-preview-square" style="width: 54px; height: 54px; font-size: var(--nl-text-2xl); font-weight: 700; color: #fff; background: linear-gradient(135deg, #6366f1, #35d6c0);">A</div>
+            <div class="tile monogram-preview-tile" aria-hidden="true"><div id="monogram-preview-box" class="box"><span class="mono">A</span></div></div>
           </div>
-          <button id="icon-monogram-apply-btn" type="button" class="glass-btn accent" style="margin-top: 14px; width: 100%;">Use Monogram Icon</button>
+          <button id="icon-monogram-apply-btn" type="button" class="glass-btn accent" style="margin-top: 14px; width: 100%;" data-i18n="picker.useMonogram">Use these letters</button>
         </section>
         </div>
 
@@ -901,11 +904,11 @@
           <div class="cropper-top-bar">
             <div class="cropper-title-wrap">
               <b style="font-size: var(--nl-text-md); color: var(--ink); display: flex; align-items: center; gap: 6px;">
-                <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg><span>Icon Cropper Studio</span>
+                <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg><span data-i18n="cropper.title">Crop the icon</span>
               </b>
-              <span style="font-size: var(--nl-text-2xs); color: var(--dim);">Drag image to frame the icon • Scroll or slider to zoom</span>
+              <span style="font-size: var(--nl-text-2xs); color: var(--dim);" data-i18n="cropper.hint">Drag to frame the icon · scroll or use the slider to zoom</span>
             </div>
-            <button id="cropper-back-btn" type="button" class="glass-btn" style="padding: 4px 10px; font-size: var(--nl-text-xs);">← Back</button>
+            <button id="cropper-back-btn" type="button" class="glass-btn" style="padding: 4px 10px; font-size: var(--nl-text-xs);" data-i18n="cropper.back">← Back</button>
           </div>
 
           <div class="cropper-workspace">
@@ -924,7 +927,7 @@
             <!-- Right: Controls & Live Glass Tile Preview -->
             <div class="cropper-side-controls">
               <div class="cropper-preview-card">
-                <span class="cropper-label">Tile Live Preview</span>
+                <span class="cropper-label" data-i18n="cropper.preview">On the tile</span>
                 <div class="cropper-tile-mockup">
                   <div id="cropper-tile-box" class="cropper-tile-box">
                     <canvas id="cropper-tile-preview-canvas" width="60" height="60"></canvas>
@@ -935,8 +938,8 @@
 
               <div class="cropper-slider-block">
                 <div class="cropper-slider-head">
-                  <span class="cropper-label">Zoom Level</span>
-                  <b id="cropper-zoom-val" style="font-size: var(--nl-text-xs); color: var(--accent);">100%</b>
+                  <span class="cropper-label" data-i18n="cropper.zoom">Zoom</span>
+                  <b id="cropper-zoom-val" style="font-size: var(--nl-text-xs); color: var(--nl-accent-text);">100%</b>
                 </div>
                 <div style="display: flex; gap: 6px; align-items: center;">
                   <button id="cropper-zoom-out" type="button" class="crop-tool-btn" title="Zoom Out" data-i18n-title="cropper.zoomOut">−</button>
@@ -946,10 +949,10 @@
               </div>
 
               <div class="cropper-tools-row">
-                <button id="cropper-tool-fit" type="button" class="crop-pill-btn" title="Fit Entire Image" data-i18n-title="cropper.fit">Fit View</button>
-                <button id="cropper-tool-center" type="button" class="crop-pill-btn" title="Center Image" data-i18n-title="cropper.center">Center</button>
-                <button id="cropper-tool-rotate" type="button" class="crop-pill-btn" title="Rotate 90 Degrees" data-i18n-title="cropper.rotate">Rotate 90°</button>
-                <button id="cropper-tool-reset" type="button" class="crop-pill-btn" title="Reset all transforms" data-i18n-title="cropper.reset">Reset</button>
+                <button id="cropper-tool-fit" type="button" class="crop-pill-btn" title="Fit Entire Image" data-i18n-title="cropper.fit" data-i18n="cropper.fitShort">Fit</button>
+                <button id="cropper-tool-center" type="button" class="crop-pill-btn" title="Center Image" data-i18n-title="cropper.center" data-i18n="cropper.centerShort">Centre</button>
+                <button id="cropper-tool-rotate" type="button" class="crop-pill-btn" title="Rotate 90 Degrees" data-i18n-title="cropper.rotate" data-i18n="cropper.rotateShort">Rotate</button>
+                <button id="cropper-tool-reset" type="button" class="crop-pill-btn" title="Reset all transforms" data-i18n-title="cropper.reset" data-i18n="cropper.resetShort">Reset</button>
               </div>
             </div>
           </div>
@@ -957,9 +960,9 @@
           <div class="cropper-actions-footer">
             <button id="cropper-apply-btn" type="button" class="glass-btn accent" style="flex: 1.4; font-weight: 650;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-              <span>Save & Apply Cropped Icon</span>
+              <span data-i18n="cropper.apply">Use the cropped icon</span>
             </button>
-            <button id="cropper-use-original-btn" type="button" class="glass-btn" style="flex: 1;">Use Full Image</button>
+            <button id="cropper-use-original-btn" type="button" class="glass-btn" style="flex: 1;" data-i18n="picker.useFull">Use full image</button>
           </div>
         </div>
 
@@ -1135,8 +1138,9 @@
 
         <div>
           <label class="quick-label" for="quick-url-input" data-i18n="modal.url">Target URL</label>
-          <input id="quick-url-input" type="url" class="glass-input" placeholder="https://...">
+          <input id="quick-url-input" type="url" class="glass-input" placeholder="https://..." aria-describedby="quick-edit-linked-note">
         </div>
+        <p id="quick-edit-linked-note" class="quick-linked-note" hidden data-i18n="bookmarks.linkedEditHint">This folder follows the browser: rename or change the address there. The icon and colour are yours to set here.</p>
 
         <div>
           <label class="quick-label" for="quick-folder-select" data-i18n="modal.folder">Folder</label>

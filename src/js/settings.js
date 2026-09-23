@@ -30,6 +30,9 @@ const SCENE_KEYS = {
   "solid": "scene.solid"
 };
 
+/* The settings a shared look may change (look-share.js). */
+const LOOK_SETTINGS = ["bgMode", "bgMotion", "bgIntensity", "bgSeed", "bgRealSky", "bgDaylight", "boardLayout", "glassLevel", "cardRadius", "tileSize", "cardGap", "boardGap", "boardWidth", "tileLabels", "cardGlow", "iconShape", "hoverEffect"];
+
 class SettingsController {
   constructor(app) {
     this.app = app;
@@ -666,6 +669,17 @@ class SettingsController {
     const SLOTS = [["display", "cfg-font-display"], ["interface", "cfg-font-interface"], ["mono", "cfg-font-mono"]];
     const note = document.getElementById("cfg-font-note");
     let device = [];
+    const say = (key, fallback, params) => {
+      const value = window.I18N?.t(key, params || {});
+      return value && value !== key ? value : fallback;
+    };
+    // typography.js names its groups in English; they are shown translated.
+    const GROUPS = {
+      "Recommended": () => say("typography.groupRecommended", "Recommended"),
+      "Bundled with Nordlys": () => say("typography.groupBundled", "Bundled with Nordlys"),
+      "Common system fonts": () => say("typography.groupSystem", "Common system fonts"),
+      "Installed on this device": () => say("typography.groupDevice", "Installed on this device")
+    };
 
     const fill = () => {
       for (const [key, id] of SLOTS) {
@@ -678,19 +692,21 @@ class SettingsController {
           if (row.group !== groupName) {
             groupName = row.group;
             holder = document.createElement("optgroup");
-            holder.label = row.group;
+            holder.label = GROUPS[row.group]?.() || row.group;
             select.append(holder);
           }
           const option = document.createElement("option");
           option.value = row.value;
-          option.textContent = row.label;
+          option.textContent = row.value === NordlysType.DEFAULT ? say("typography.default", "Default") : row.label;
           // Lets the themed list render each option in the face it offers.
           if (row.value !== NordlysType.DEFAULT) option.dataset.fontPreview = row.value;
           holder.append(option);
         }
         const more = document.createElement("option");
         more.value = DEVICE;
-        more.textContent = device.length ? "Refresh device fonts…" : "All fonts on this device…";
+        more.textContent = device.length
+          ? say("typography.refreshDevice", "Refresh device fonts…")
+          : say("typography.allDevice", "All fonts on this device…");
         select.append(more);
         select.value = current;
         if (!select.value) select.value = NordlysType.DEFAULT;
@@ -708,8 +724,8 @@ class SettingsController {
           device = found.families;
           if (note) {
             note.textContent = found.granted
-              ? `${device.length} fonts found on this device.`
-              : "Device fonts are unavailable — permission was not granted.";
+              ? say("typography.deviceFound", `${device.length} fonts found on this device.`, { count: device.length })
+              : say("typography.deviceRefused", "Device fonts are unavailable — permission was not granted.");
           }
           fill();
           return;
@@ -720,6 +736,7 @@ class SettingsController {
       });
     }
     fill();
+    window.addEventListener("nordlys:languagechange", fill);
   }
 
   /* ── 1. Resizable Drawer & Width Presets ──────────────────────── */
@@ -800,7 +817,7 @@ class SettingsController {
         tell(...reasons[error], true);
         return;
       }
-      if (!this.lookTrial) this.lookTrial = JSON.stringify(this.app.config);
+      if (!this.lookTrial) this.lookTrial = this.lookSnapshot();
       const knownTheme = look.theme === "custom" || Boolean(document.querySelector(`.theme-card[data-theme="${CSS.escape(look.theme || "")}"]`));
       this.wearLook(look, knownTheme);
       decide.hidden = false;
@@ -836,7 +853,7 @@ class SettingsController {
   // Put a look on the page, in memory only.
   wearLook(look, knownTheme = true) {
     const config = this.app.config;
-    for (const key of ["bgMode", "bgMotion", "bgIntensity", "bgSeed", "bgRealSky", "bgDaylight", "boardLayout", "glassLevel", "cardRadius", "tileSize", "cardGap", "boardGap", "boardWidth", "tileLabels", "cardGlow", "iconShape", "hoverEffect"]) {
+    for (const key of LOOK_SETTINGS) {
       if (key in look) config[key] = look[key];
     }
     if (look.fonts) config.fonts = { ...(config.fonts || {}), ...look.fonts };
@@ -860,11 +877,26 @@ class SettingsController {
     this.refreshLookEverywhere();
   }
 
+  /* What trying a look on can change, and so all that Revert puts back. The
+     whole config used to be kept and restored, so a bookmark added while a
+     look was being tried — or saved by another tab — went back with it. */
+  lookSnapshot() {
+    const config = this.app.config;
+    const keys = [...LOOK_SETTINGS, "fonts", "theme", "customTheme", "bgPalette", "bgPalettes"];
+    return JSON.stringify(Object.fromEntries(keys.map((key) => [key, config[key] === undefined ? null : config[key]])));
+  }
+
   revertLook() {
     if (!this.lookTrial) return;
-    this.app.config = JSON.parse(this.lookTrial);
+    const kept = JSON.parse(this.lookTrial);
+    for (const [key, value] of Object.entries(kept)) {
+      if (value === null) delete this.app.config[key];
+      else this.app.config[key] = value;
+    }
     this.lookTrial = null;
     document.getElementById("look-decide").hidden = true;
+    // Anything saved during the trial was saved wearing the look.
+    this.app.saveConfig();
     this.refreshLookEverywhere();
   }
 
@@ -1201,8 +1233,11 @@ class SettingsController {
       this.app.config.cardRadius = parseInt(e.target.value, 10);
       this.updateSliderLabels();
       this.updateMiniPreview();
-      this.app.saveConfig();
     });
+    /* A slider is drawn on every step and saved once, when it is let go: the
+       config is written whole — megabytes, with icons in it — and every other
+       open tab takes each write. */
+    for (const slider of [cardRadius, tileSize, cardGap]) slider?.addEventListener("change", () => this.app.saveConfig());
 
     /* Both go through applyGeometryTokens, the one place the page turns these
        settings into CSS — the slider used to write its own, different rule —
@@ -1211,7 +1246,6 @@ class SettingsController {
       this.app.config.tileSize = parseInt(e.target.value, 10);
       this.app.applyGeometryTokens();
       this.updateSliderLabels();
-      this.app.saveConfig();
       this.app.grid?.relayout();
     });
 
@@ -1219,7 +1253,6 @@ class SettingsController {
       this.app.config.cardGap = parseInt(e.target.value, 10);
       this.app.applyGeometryTokens();
       this.updateSliderLabels();
-      this.app.saveConfig();
       this.app.grid?.relayout();
     });
 
@@ -1245,8 +1278,8 @@ class SettingsController {
       document.documentElement.style.setProperty("--card-glow-intensity", `${val / 100}`);
       this.app.config.cardGlow = val;
       this.updateSliderLabels();
-      this.app.saveConfig();
     });
+    cardGlow?.addEventListener("change", () => this.app.saveConfig());
 
     hoverEffect?.addEventListener("change", (e) => {
       const val = e.target.value;
@@ -1342,7 +1375,7 @@ class SettingsController {
         card.innerHTML = `
           <div class="theme-preview" style="background: linear-gradient(135deg, ${esc(t.bg)}, ${esc(t.accent)});"></div>
           <b>${esc(t.name)}</b>
-          <button class="del-custom-thm-btn" title="Delete custom theme">✕</button>
+          <button class="del-custom-thm-btn" title="${esc(window.I18N?.t("customTheme.delete") || "Delete this theme")}" aria-label="${esc(window.I18N?.t("customTheme.deleteNamed", { name: t.name }) || `Delete ${t.name}`)}">✕</button>
         `;
 
         card.addEventListener("click", (e) => {
@@ -1694,16 +1727,15 @@ class SettingsController {
     blurSlider?.addEventListener("input", (e) => {
       this.app.config.bgBlur = parseInt(e.target.value, 10) || 0;
       this.app.applyWallpaperEffects();
-      this.app.saveConfig();
       if (lblBlur) lblBlur.textContent = `${this.app.config.bgBlur}px`;
     });
 
     dimSlider?.addEventListener("input", (e) => {
       this.app.config.bgDim = parseInt(e.target.value, 10) || 0;
       this.app.applyWallpaperEffects();
-      this.app.saveConfig();
       if (lblDim) lblDim.textContent = `${this.app.config.bgDim}%`;
     });
+    for (const slider of [blurSlider, dimSlider]) slider?.addEventListener("change", () => this.app.saveConfig());
 
     customMedia?.addEventListener("change", async (e) => {
       const file = e.target.files?.[0];
@@ -1767,6 +1799,14 @@ class SettingsController {
       this.close();
       this.app.grid?.arrange?.enter();
     });
+    // Size and spacing live where the board is arranged, with the board as
+    // their preview; this goes straight there.
+    document.getElementById("cfg-size")?.addEventListener("click", () => {
+      this.close();
+      const arrange = this.app.grid?.arrange;
+      arrange?.enter();
+      if (arrange?.active) arrange.showSize(true);
+    });
     document.getElementById("board-rows-auto")?.addEventListener("click", () => {
       this.app.grid?.arrange?.autoRows();
       this.syncBoardLayout();
@@ -1805,7 +1845,7 @@ class SettingsController {
     document.getElementById("cfg-add-group")?.addEventListener("click", () => {
       this.app.config.groups.push({
         id: `g_${Date.now()}`,
-        label: `Folder ${this.app.config.groups.length + 1}`,
+        label: window.I18N?.t("bookmarks.newFolder") || "New Folder",
         cols: 4,
         links: []
       });
@@ -2481,6 +2521,8 @@ class SettingsController {
       if (!removed) return;
       this.app.saveConfig();
       if (this.urlEditingFrom === url) setEditing(null);
+      // The address the icon claimed is gone, so the pane stops saying so.
+      if (removed.wasCurrent && urlInput?.value.trim() === url) showCurrent(link);
       const neighbour = item.nextElementSibling || item.previousElementSibling;
       const hadFocus = item.contains(document.activeElement);
       if (neighbour) rove(neighbour, hadFocus);
@@ -2492,13 +2534,12 @@ class SettingsController {
       const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
       if (reduced || !item.animate) gone();
       else {
-        const { duration, easing } = NordlysUI.motion("settle-fast");
-        const gap = parseFloat(getComputedStyle(urlStrip).columnGap) || 0;
+        /* Compositor-only, like everything else that moves here: the version
+           fades and shrinks where it stood, then leaves, and the ones after it
+           glide into the gap (FLIP) instead of the strip's width animating. */
         item.style.pointerEvents = "none";
-        item.animate([
-          { width: `${item.offsetWidth}px`, marginInlineEnd: "0px", opacity: 1, transform: "scale(1)" },
-          { width: "0px", marginInlineEnd: `${-gap}px`, opacity: 0, transform: "scale(.8)" }
-        ], { duration, easing }).finished.then(gone, gone);
+        item.animate([{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(.8)" }], NordlysUI.motion("fast"))
+          .finished.then(() => NordlysUI.animateReflow(urlStrip, gone), gone);
       }
       NordlysUI.showUndoToast({
         message: word("picker.urlRemoved", "Address removed; the icon stays as it is"),
@@ -2506,6 +2547,7 @@ class SettingsController {
           const back = targetLink() === link ? link : null;
           addresses.restore(link, removed);
           this.app.saveConfig();
+          if (back && removed.wasCurrent && !urlInput?.value.trim()) showCurrent(link);
           if (back) renderHistory(link, { arriving: url, focusUrl: urlStrip?.contains(document.activeElement) ? url : null });
         }
       });
@@ -2697,9 +2739,25 @@ class SettingsController {
     const monogramBox = document.getElementById("monogram-preview-box");
     const monogramApplyBtn = document.getElementById("icon-monogram-apply-btn");
 
+    /* The letters are shown the way the tile will draw them — on its plate,
+       in its tone — here and in the tile preview above, instead of white on
+       a gradient no tile ever wears. */
+    this.paintMonogram = (link, letters) => {
+      const source = { ...link, monogram: letters || (link?.name || "A").trim().charAt(0).toUpperCase() || "A" };
+      delete source.customImg;
+      delete source.icon;
+      for (const box of [monogramBox, document.querySelector("#icon-live-preview .box")]) {
+        if (!box || !window.NordlysIcons) continue;
+        const presentation = NordlysIcons.resolvePresentation({ source, metadata: {}, isLight: document.documentElement.classList.contains("light-ui") });
+        box.replaceChildren(NordlysIcons.renderIcon(presentation));
+        box.style.setProperty("--c", link?.color || "var(--nl-accent)");
+        NordlysIcons.applyIconContrast(box);
+      }
+    };
     monogramInput?.addEventListener("input", (e) => {
-      const val = e.target.value.toUpperCase();
-      if (monogramBox) monogramBox.textContent = val || "A";
+      const target = this.activeIconTarget;
+      const link = target ? this.app.config.groups[target.gIdx]?.links[target.lIdx] : null;
+      this.paintMonogram(link, e.target.value.trim().toUpperCase());
     });
 
     monogramApplyBtn?.addEventListener("click", () => {
@@ -2933,16 +2991,21 @@ class SettingsController {
      could leave no room to save anything. A raster is kept at 256 pixels on its
      longer side, as WebP; a vector is already small and stays a vector. */
   async iconSizedDataUrl(dataUrl, longest = 256) {
-    if (!dataUrl || /^data:image\/svg\+xml/i.test(dataUrl)) return dataUrl;
+    // A vector stays a vector unless it is heavy: an SVG fetched from an
+    // address can carry megabytes of embedded images or path data.
+    if (!dataUrl || (/^data:image\/svg\+xml/i.test(dataUrl) && dataUrl.length <= 150000)) return dataUrl;
     try {
       const image = new Image();
       image.src = dataUrl;
       await image.decode();
-      const scale = Math.min(1, longest / Math.max(image.naturalWidth, image.naturalHeight));
-      if (scale === 1 && dataUrl.length < 200000) return dataUrl;
+      const svg = /^data:image\/svg\+xml/i.test(dataUrl);
+      const width = image.naturalWidth || longest, height = image.naturalHeight || longest;
+      // A vector is drawn at the full icon size, whatever size it declares.
+      const scale = svg ? longest / Math.max(width, height) : Math.min(1, longest / Math.max(width, height));
+      if (!svg && scale === 1 && dataUrl.length < 200000) return dataUrl;
       const canvas = document.createElement("canvas");
-      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
       const context = canvas.getContext("2d");
       context.imageSmoothingQuality = "high";
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
@@ -3169,6 +3232,8 @@ class SettingsController {
     this.activeIconTarget = { gIdx, lIdx };
     const link = this.app.config.groups[gIdx]?.links[lIdx];
     if (!link) return;
+    // The bookmark itself, so another tab's save can find where it went.
+    this.activeIconLink = link;
 
     // 1. Update Modal Title with Bookmark Name
     const titleEl = document.querySelector("#icon-modal .modal-head b");
@@ -3219,8 +3284,11 @@ class SettingsController {
     const initialChar = link.monogram || (link.name || "A").trim().charAt(0).toUpperCase() || "A";
     if (monogramInput) monogramInput.value = initialChar;
     if (monogramBox) {
-      monogramBox.textContent = initialChar;
-      monogramBox.style.background = `linear-gradient(135deg, ${link.color || '#6366f1'}, #35d6c0)`;
+      const livePreview = document.querySelector("#icon-live-preview .box")?.cloneNode(true);
+      this.paintMonogram?.(link, initialChar);
+      // Only the square shows the letters on opening; the tile above keeps the
+      // icon the bookmark has now until the letters are being typed.
+      if (livePreview) document.querySelector("#icon-live-preview .box")?.replaceWith(livePreview);
     }
 
     // 6. Reset Cropper Workspace
@@ -3712,7 +3780,7 @@ class SettingsController {
                replaced, and the user's own setup would exist nowhere. Every
                export from 2.1.0 to 2.2.1 needs a migration. */
             const incoming = Object.assign({}, DEFAULT_CONFIG, imported);
-            window.NordlysConfigSchema.repairConfig(incoming);
+            window.NordlysConfigSchema.repairConfig(incoming, this.app.defaultConfig);
             this.app.normalizeStoredConfig(incoming);
             /* One commit for the whole file. A file of embedded icons can be
                megabytes, and it is written to four keys: when the write failed,

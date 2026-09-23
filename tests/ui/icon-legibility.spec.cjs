@@ -1,8 +1,10 @@
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
 
 /* Reduced Motion makes setTheme skip the view transition and swap the palette
-   synchronously, so a measurement can never race a half-applied theme. */
-test.use({ reducedMotion: 'reduce' });
+   synchronously, so a measurement can never race a half-applied theme. It has
+   to be a context option: the top-level `reducedMotion` is overridden by the
+   config's own, and this file had been measuring through cross-fades. */
+test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 /* Legibility is measured on rendered pixels, never on the same arithmetic the
    implementation uses: screenshot the icon plate, find the plate colour as the
@@ -97,7 +99,13 @@ test('every icon stays visible against its plate in every built-in theme', async
   const invisible = [];
   for (const theme of themes) {
     await page.evaluate(key => window.Nordlys.setTheme(key), theme);
-    await page.waitForTimeout(120);
+    // The icons are toned after the theme settles, each with a short fade of
+    // its own; a picture taken on a fixed wait sometimes caught that fade.
+    await page.evaluate(async () => {
+      await window.NordlysIcons.toned();
+      await window.NordlysUI.settled();
+      await new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)));
+    });
     const ratios = await plateVisibility(page);
     ratios.forEach((ratio, index) => {
       if (ratio < 0.03) invisible.push(`${theme} / ${HOSTILE_LINKS[index].name} = ${(ratio * 100).toFixed(1)}%`);

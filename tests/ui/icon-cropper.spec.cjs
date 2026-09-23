@@ -156,3 +156,20 @@ test('a large image used as an icon is stored at icon size', async ({ nordlysPag
   // A budget per icon, not a ratio: a flat test image compresses unusually well.
   expect(stored.length).toBeLessThan(60000);
 });
+
+/* A vector stays a vector — unless it is heavy. An SVG from an address can
+   run to megabytes, and the config it would live in is written whole. */
+test('a heavy vector is stored at icon size, a light one stays a vector', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const result = await page.evaluate(async () => {
+    const light = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><circle cx="32" cy="32" r="30" fill="#e33"/></svg>')}`;
+    const noise = Array.from({ length: 6000 }, (_, i) => `<rect x="${i % 64}" y="${(i * 7) % 64}" width="1" height="1" fill="#${(i * 2654435761 >>> 8).toString(16).padStart(6, '0').slice(0, 6)}"/>`).join('');
+    const heavy = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">${noise}</svg>`)}`;
+    const settings = window.Nordlys.settings;
+    return { light: await settings.iconSizedDataUrl(light), heavyIn: heavy.length, heavy: await settings.iconSizedDataUrl(heavy) };
+  });
+  expect(result.light).toMatch(/^data:image\/svg\+xml/);
+  expect(result.heavyIn).toBeGreaterThan(150000);
+  expect(result.heavy).toMatch(/^data:image\/webp/);
+  expect(result.heavy.length).toBeLessThan(result.heavyIn);
+});

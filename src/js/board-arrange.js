@@ -652,6 +652,8 @@
   /* The measures Size and spacing owns, and where Back to defaults puts
      them. boardGap absent means "follow the space between bookmarks". */
   const MEASURES = ["tileSize", "cardGap", "boardGap", "boardWidth", "tileLabels"];
+  // The narrowest board width (app.js BOARD_WIDTHS.narrow).
+  const BOARD_NARROWEST = 1080;
   const DEFAULT_MEASURES = { tileSize: 78, cardGap: 12, boardGap: undefined, boardWidth: "standard", tileLabels: true };
 
   class BoardArranger {
@@ -708,6 +710,16 @@
       document.getElementById("arrange-undo")?.addEventListener("click", () => this.undo());
       document.getElementById("arrange-done")?.addEventListener("click", () => this.exit());
       this.wireSize();
+      /* While arranging, Ctrl+Z (⌘Z) is the bar's Undo: the moves here keep
+         their own steps rather than notices, so the key would otherwise do
+         nothing. A notice's Undo, if one is showing, still comes first. */
+      window.addEventListener("keydown", (event) => {
+        if (!this.active || event.defaultPrevented || event.key.toLowerCase() !== "z" || !(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey) return;
+        if (event.target?.closest?.("input:not([type=range]), textarea")) return;
+        if (!this.history.length) return;
+        event.preventDefault();
+        this.undo();
+      });
       window.addEventListener("keydown", (event) => {
         if (!this.active || event.key !== "Escape" || this.grid.drag?.session) return;
         // A menu or a dialog open over the board closes first, then the panel.
@@ -774,6 +786,15 @@
     enter({ focusGroup } = {}) {
       if (!this.bar || this.active) {
         if (this.active && focusGroup) this.focusGrip(focusGroup);
+        return;
+      }
+      /* An empty board has nothing to arrange, and a bar of controls that
+         move nothing is a puzzle. It says so and hands over to the board's
+         own invitation to make a first folder. */
+      if (!layout()?.rowsOf(this.app.config.groups || []).length) {
+        this.app.settings?.close?.();
+        NordlysUI.announce(text("arrange.nothing", "There are no folders on the board to arrange yet"));
+        document.getElementById("board-empty-create")?.focus({ preventScroll: false });
         return;
       }
       this.app.settings?.close?.();
@@ -863,10 +884,12 @@
         let step = false;
         input.addEventListener("input", () => {
           if (!step) { this.remember(); step = true; }
-          this.setMeasure(key, value(input), { quiet: true });
+          this.setMeasure(key, value(input), { quiet: true, save: false });
         });
+        // Drawn on every step, saved once when the slider is let go.
         input.addEventListener("change", () => {
           step = false;
+          this.app.saveConfig();
           this.sayMeasure(key);
         });
       };
@@ -908,12 +931,16 @@
         NordlysUI.announce(text("arrange.sizeResetDone", "Size and spacing are back to the defaults"));
       });
       window.addEventListener("nordlys:languagechange", () => this.syncSize());
+      window.addEventListener("resize", () => { if (this.sizeOpen()) this.syncSize(); });
     }
 
     sizeOpen() { return Boolean(this.sizePanel && !this.sizePanel.hidden); }
 
     showSize(open, { focus = false } = {}) {
       if (!this.sizePanel) return;
+      // The panel may use the height the bar leaves above it, and no more.
+      const controls = this.bar.querySelector(".arrange-controls");
+      if (controls) this.bar.style.setProperty("--arrange-controls-h", `${Math.ceil(controls.getBoundingClientRect().height)}px`);
       this.sizePanel.hidden = !open;
       this.sizeToggle?.setAttribute("aria-expanded", String(open));
       if (open) {
@@ -932,12 +959,12 @@
       this.app.applyGeometryTokens();
     }
 
-    setMeasure(key, value, { quiet = false } = {}) {
+    setMeasure(key, value, { quiet = false, save = true } = {}) {
       const config = this.app.config;
       // The space between folders stops following the bookmarks' once set.
       config[key] = value;
       this.app.applyGeometryTokens();
-      this.app.saveConfig();
+      if (save) this.app.saveConfig();
       this.grid.relayout();
       this.syncSize();
       this.app.settings?.syncGeometry?.();
@@ -991,6 +1018,10 @@
       mark("[data-width]", (button) => button.dataset.width === width);
       const reset = document.getElementById("arrange-size-reset");
       if (reset) reset.disabled = this.measuresAreDefault();
+      /* Below the narrowest width the board is as wide as the window lets
+         it be whichever is chosen, so the choice would look broken. */
+      const note = document.getElementById("arrange-width-note");
+      if (note) note.hidden = window.innerWidth * 0.94 > BOARD_NARROWEST;
     }
 
     focusGrip(group) {
