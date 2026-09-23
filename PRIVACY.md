@@ -1,8 +1,8 @@
 # Privacy Policy for Nordlys
 
 **Effective Date:** August 16, 2026
-**Last Updated:** September 22, 2026
-**Version:** 2.2.3
+**Last Updated:** September 23, 2026
+**Version:** 2.5.0
 
 Nordlys ("the extension", "we", or "our") is designed with a strict **Privacy-by-Architecture** principle. Nordlys is a client-side, offline-capable New Tab override extension.
 
@@ -40,9 +40,11 @@ Nordlys performs **no background network requests**. The only network traffic it
 
 1. **Searching:** When you press Enter in the search bar, the text is handed to Chrome through its `chrome.search` API, which sends it to the search engine you have chosen in Chrome's own settings — exactly what the address bar does. Nordlys does not choose the engine, does not know which one answered, and sends nothing while you type. Earlier versions fetched live suggestions from a search engine as you typed; that no longer happens.
 2. **Brand icon search (user-initiated only):** Opening the icon picker and typing makes no request. Pressing Search sends only that brand/product phrase to Iconify's public API (`api.iconify.design`) and restricts results to the Simple Icons collection. The selected path-only SVG is rebuilt as inert image data and stored locally; new tabs never hotlink it. Bookmark URLs, folders, history, and other settings are not included.
-3. **Bookmark Icon Fetch (user-initiated only):** When you paste an image URL in the icon picker, that image is downloaded once (directly, or via the `images.weserv.nl` image proxy when the source blocks cross-origin loading) and stored locally as Base64.
+3. **Bookmark Icon Fetch (user-initiated only):** When you paste an image URL in the icon picker, that image is downloaded once (directly, or via the `images.weserv.nl` image proxy when the source blocks cross-origin loading) and stored locally as Base64. The address is kept with the bookmark, with the last few addresses it used and a small picture of each drawn from the saved icon, so you can go back to one; showing that list makes no request.
 4. **Website icons (only when you open that source):** Opening the icon picker makes no request. The "Website icon" tab reads from Chrome's **local** favicon cache by default — no network at all. Optional provider chips contact only the provider you explicitly choose, with only the domain you typed; a failed lookup never falls back to another provider on its own.
 5. **Support links (only when you click one):** The Support section in Settings holds ordinary links — a donation page, this repository, its issue tracker, and this policy. Opening the section requests nothing: no remote image, no script, no beacon, no counter. Following a link opens that site in a new tab with the referrer withheld and no identifier attached; nothing tells Nordlys that you did. Any wallet address shown there is copied by your browser's clipboard and goes nowhere else.
+
+**Time-of-day light** is worked out on your machine from the date and your time zone's city; it asks for no location and sends nothing.
 
 No background request sends your bookmark list or browsing activity. The extension requests no `<all_urls>` host permission and Iconify needs no host permission because its public API explicitly supports browser CORS.
 
