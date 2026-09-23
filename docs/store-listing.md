@@ -65,6 +65,8 @@ No account, no analytics, no telemetry, no remote code. Settings and bookmarks l
 Available in English, Russian, Spanish, German, French, Japanese, Chinese and Turkish.
 
 Open source under the MIT licence: https://github.com/sa1ntsinner/nordlys-tab
+
+Nordlys is free and always will be. If it earns a place in your day, Settings → Support has a link to buy its maker a coffee.
 ```
 
 ## Privacy practices
@@ -155,10 +157,18 @@ The generators are not part of `npm test`, since they assert nothing.
 
 | File | Size | Shows |
 | --- | --- | --- |
-| `screenshot-1-aurora.png` | 1280x800 | The board on the Aurora scene, with two folders in the dock |
-| `screenshot-2-themes.png` | 1280x800 | Settings, Appearance: the 11 dark theme presets |
-| `screenshot-3-scenes.png` | 1280x800 | Settings, Background: scene cards with Motion and Atmosphere |
-| `screenshot-4-light.png` | 1280x800 | The same board on Nordic Snow |
-| `screenshot-5-search.png` | 1280x800 | The search bar answering `45 * 12 + sqrt(144)` |
+| `screenshot-1-sky.png` | 1280x800 | "A new tab under a living sky": Aurora Void on the Nordlys scene |
+| `screenshot-2-arrange.png` | 1280x800 | "Arrange it the way you think": Catppuccin Mocha on Silk, Fitted, with Size & spacing open |
+| `screenshot-3-icons.png` | 1280x800 | "Every bookmark, the icon you want": Tokyo Night on Halo, and the icon picker's address history |
+| `screenshot-4-daylight.png` | 1280x800 | "Lit by the time of day": Dracula Velvet on Contour at dawn, day, sunset and night in Berlin |
+| `screenshot-5-themes.png` | 1280x800 | "Light or dark, always readable": Porcelain Light on Frost, and Gruvbox Dark on Silk with the theme grid |
 | `promo-marquee-1400x560.png` | 1400x560 | Marquee tile |
 | `promo-small-440x280.png` | 440x280 | Small tile |
+| `docs/brand/buymeacoffee-cover.png` | 2400x600 | Cover for the Buy Me a Coffee page (not uploaded to the store) |
+
+Each screenshot is a headline over the real product captured at twice its
+pixels (`store-shots.spec.cjs`) on a board of well-known sites
+(`store-board.cjs`), each in its own theme and scene; the layouts live in `compose.cjs`. Upload the
+screenshots in number order: the first is the one the store shows in search.
+To regenerate only these, without touching the README images:
+`npx playwright test --config=tools/artwork/playwright.config.cjs store-shots promo`.

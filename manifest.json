@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Nordlys",
-  "version": "2.2.3",
+  "version": "2.5.0",
   "description": "A new tab page with 21 themes, six living skies you can recolour, folders you arrange, and a search box that does arithmetic.",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"

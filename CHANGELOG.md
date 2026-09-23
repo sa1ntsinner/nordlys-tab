@@ -4,7 +4,7 @@ All user-visible changes, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow the
 Chrome Web Store's rule that they only ever go up.
 
-## [Unreleased]
+## [2.5.0] — 2026-09-23
 
 ### Added
 

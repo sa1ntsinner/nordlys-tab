@@ -27,7 +27,7 @@
      The four remaining links are files and pages of this repository, each one
      verified to exist at the path named here. */
   const SUPPORT_CONFIG = {
-    coffeeUrl: '',
+    coffeeUrl: 'https://buymeacoffee.com/sa1ntsinner',
     repositoryUrl: 'https://github.com/sa1ntsinner/nordlys-tab',
     issuesUrl: 'https://github.com/sa1ntsinner/nordlys-tab/issues/new',
     privacyUrl: 'https://github.com/sa1ntsinner/nordlys-tab/blob/main/PRIVACY.md',
