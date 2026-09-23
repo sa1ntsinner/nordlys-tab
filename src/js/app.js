@@ -2,6 +2,8 @@
    NORDLYS - MAIN ORCHESTRATOR & APPLICATION BOOTSTRAP
    ═══════════════════════════════════════════════════════════════════ */
 
+/* The widths the board may run to. Standard is the width it always had. */
+const BOARD_WIDTHS = { narrow: 1080, standard: 1400, wide: 1760 };
 const DEFAULT_CONFIG = {
   version: "2.2.3",
   theme: "aurora-void",
@@ -36,6 +38,11 @@ const DEFAULT_CONFIG = {
      runs every row edge to edge with folders of one height. Which folders
      share a row is each folder's own `row`, absent until somebody arranges. */
   boardLayout: "natural",
+  /* How wide the board may run ("narrow", "standard", "wide") and whether
+     the bookmarks carry their names. The space between folders follows the
+     space between bookmarks until somebody sets it (boardGap, absent). */
+  boardWidth: "standard",
+  tileLabels: true,
   cardGlow: 40,
   hoverEffect: "lift",
   iconShape: "squircle",
@@ -767,6 +774,10 @@ class NordlysApp {
   }
 
   init() {
+    // Where the last press was, so a theme chosen by it can grow from there.
+    window.addEventListener("pointerdown", (event) => {
+      this.lastPress = { x: event.clientX, y: event.clientY, at: performance.now() };
+    }, { capture: true, passive: true });
     // Initialize I18N (config -> saved pick -> browser language)
     const savedLang = localStorage.getItem("nordlys_language");
     const supported = window.I18N ? Object.keys(window.I18N.translations) : ["en"];
@@ -857,12 +868,25 @@ class NordlysApp {
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (document.startViewTransition && !reduceMotion) {
+      /* Chosen by a click, the new theme spreads across the page from the
+         point that chose it (motion.css); changed any other way — Auto at
+         dusk, a command — it crossfades. The circle's radius reaches the
+         farthest corner of the window from that point. */
+      const root = document.documentElement;
+      const point = this.lastPress && performance.now() - this.lastPress.at < 1500 ? this.lastPress : null;
+      if (point) {
+        const radius = Math.hypot(Math.max(point.x, innerWidth - point.x), Math.max(point.y, innerHeight - point.y));
+        root.style.setProperty("--reveal-x", `${point.x}px`);
+        root.style.setProperty("--reveal-y", `${point.y}px`);
+        root.style.setProperty("--reveal-r", `${Math.ceil(radius)}px`);
+        root.classList.add("theme-reveal");
+      }
       const transition = document.startViewTransition(apply);
       /* Choosing another theme before the first transition settles aborts it,
          and the rejected promise surfaces as an uncaught error in the console.
          The abort is the correct outcome here, not a failure. */
       transition.ready?.catch(() => {});
-      transition.finished?.catch(() => {});
+      transition.finished?.catch(() => {}).finally(() => root.classList.remove("theme-reveal"));
     } else {
       apply();
     }
@@ -1030,6 +1054,10 @@ class NordlysApp {
     // Preserve a usable 56px floor; narrow layouts reflow instead of collapsing controls.
     if (cfg.tileSize != null) root.setProperty("--tw", `clamp(56px, 12vw, ${Math.max(56, cfg.tileSize)}px)`);
     if (cfg.cardGap != null) root.setProperty("--grid-gap", `${cfg.cardGap}px`);
+    if (Number.isFinite(cfg.boardGap)) root.setProperty("--board-gap-set", `${cfg.boardGap}px`);
+    else root.removeProperty("--board-gap-set");
+    root.setProperty("--board-max", `${BOARD_WIDTHS[cfg.boardWidth] || BOARD_WIDTHS.standard}px`);
+    document.body.classList.toggle("tile-names-hidden", cfg.tileLabels === false);
     if (cfg.cardGlow != null) root.setProperty("--card-glow-intensity", `${cfg.cardGlow / 100}`);
 
     // Icon Shape

@@ -24,7 +24,7 @@
       if (resizer) { resizer.setAttribute('role', 'separator'); resizer.setAttribute('aria-orientation', 'vertical'); }
       this.buildLayout(); this.preparePanels(); this.roving = new NordlysUI.RovingTabs(this.nav, { orientation: this.orientation(), onSelect: id => this.select(id) });
       this.dialog = new NordlysUI.DialogController(root, { closeOnBackdrop: false, onClose: () => this.afterClose() });
-      this.dim = document.getElementById('dim'); this.onCloseClick = () => this.close(); this.onResize = () => this.syncOrientation();
+      this.dim = document.getElementById('dim'); this.onCloseClick = () => this.close(); this.onResize = () => { this.syncOrientation(); if (this.nav) { this.nav.dataset.indicator = 'still'; this.placeIndicator(); } };
       this.closeButton?.addEventListener('click', this.onCloseClick);
       this.dim?.addEventListener('click', this.onCloseClick);
       window.addEventListener('resize', this.onResize, { passive: true });
@@ -74,15 +74,45 @@
     }
     select(sectionId, { focus = true } = {}) {
       const tab = this.nav.querySelector(`[data-tab="${sectionId}"]`), panel = this.root.querySelector(`#sec-${sectionId}`); if (!tab || !panel) return;
+      // The new section arrives from the direction the choice went on the rail.
+      const tabs = [...this.nav.querySelectorAll('.ctab')];
+      const was = tabs.findIndex(item => item.classList.contains('active'));
+      this.root.dataset.travel = was > tabs.indexOf(tab) ? 'up' : 'down';
       this.nav.querySelectorAll('.ctab').forEach(item => { const active = item === tab; item.classList.toggle('active', active); item.setAttribute('aria-selected', String(active)); item.tabIndex = active ? 0 : -1; });
+      this.placeIndicator(tab);
       this.root.querySelectorAll('.csec').forEach(item => { const active = item === panel; item.classList.toggle('active', active); item.hidden = !active; });
       if (focus) tab.focus({ preventScroll: true }); this.onSectionChange?.(sectionId);
+    }
+    /* The rail's accent bar: one shape that travels to the chosen tab
+       (motion.css), along the rail when it stands, under the tabs when a
+       narrow window lays them in a row. Placed without motion while the
+       drawer is closed, so opening it never shows the bar flying in. */
+    placeIndicator(tab = this.nav.querySelector('.ctab.active')) {
+      if (!tab || !this.nav) return;
+      const nav = this.nav.getBoundingClientRect();
+      const box = tab.getBoundingClientRect();
+      if (!box.width || !nav.width) return;
+      const row = getComputedStyle(this.nav).flexDirection.startsWith('row');
+      const x = box.left - nav.left - this.nav.clientLeft + this.nav.scrollLeft;
+      const y = box.top - nav.top - this.nav.clientTop + this.nav.scrollTop;
+      const geometry = row
+        ? { x: x + 12, y: y + box.height - 3, w: box.width - 24, h: 3 }
+        : { x, y: y + 9, w: 3, h: box.height - 18 };
+      for (const [key, value] of Object.entries(geometry)) this.nav.style.setProperty(`--tab-${key}`, `${value}px`);
+      this.nav.classList.add('has-indicator');
+      const moving = this.root.classList.contains('open') || document.body.classList.contains('cfgopen');
+      this.nav.dataset.indicator = moving ? 'moving' : 'still';
     }
     /* The opener is whatever asked for the drawer, because that is where focus
        goes back to when it closes. It is the gear almost always — but the board's
        empty state opens it too, and sending focus to a gear the user never
        pressed loses their place on the page. */
-    open(sectionId = null, opener = this.opener) { if (sectionId) this.select(sectionId, { focus: false }); document.getElementById('dim')?.classList.add('on'); document.body.classList.add('cfgopen'); this.dialog.open(opener || this.opener); }
+    open(sectionId = null, opener = this.opener) {
+      if (sectionId) this.select(sectionId, { focus: false });
+      document.getElementById('dim')?.classList.add('on'); document.body.classList.add('cfgopen'); this.dialog.open(opener || this.opener);
+      // Measured once the drawer has its width; the bar is where it belongs before anything moves.
+      requestAnimationFrame(() => { this.nav.dataset.indicator = 'still'; this.placeIndicator(); requestAnimationFrame(() => { this.nav.dataset.indicator = 'moving'; }); });
+    }
     close() { this.dialog.close(); }
     afterClose() { document.getElementById('dim')?.classList.remove('on'); document.body.classList.remove('cfgopen'); this.onClosed?.(); }
     destroy() { this.close(); this.closeButton?.removeEventListener('click', this.onCloseClick); this.dim?.removeEventListener('click', this.onCloseClick); window.removeEventListener('resize', this.onResize); this.roving?.destroy(); }

@@ -128,3 +128,39 @@ test('rows and layouts are validated like every other field', () => {
   assert.equal(schema.repairConfig(stored), true);
   assert.equal(stored.boardLayout, 'natural');
 });
+
+/* The addresses an icon came from ride along in the config; a damaged list
+   is trimmed to what is sound, never a reason to refuse the rest. */
+test('icon addresses are kept when sound and trimmed when not', () => {
+  const config = good();
+  const link = config.groups[0].links[0];
+  link.iconUrl = 'https://cdn.test/a.png';
+  link.iconUrls = [{ url: 'https://cdn.test/a.png', thumb: 'data:image/webp;base64,AA', at: 1 }];
+  assert.equal(repairConfig(config), false);
+  assert.equal(validateConfig(config).ok, true);
+
+  link.iconUrl = 'javascript:alert(1)';
+  link.iconUrls = [{ url: 'https://cdn.test/a.png', thumb: 'data:text/html,<b>' }, { url: 'ftp://x' }, 'nope'];
+  assert.equal(repairConfig(config), true);
+  assert.equal(link.iconUrl, undefined);
+  assert.deepEqual(link.iconUrls, [{ url: 'https://cdn.test/a.png', thumb: '', at: 0 }]);
+
+  link.iconUrls = 'not a list';
+  assert.ok(validateConfig(config).errors.some(error => /iconUrls/.test(error)));
+  assert.equal(repairConfig(config), true);
+  assert.equal('iconUrls' in link, false);
+});
+
+/* Size and spacing: a width outside the three, or a folder gap outside the
+   slider's reach, is put back rather than drawn. */
+test('board width and folder spacing are repaired when out of range', () => {
+  const config = { ...good(), boardWidth: 'enormous', boardGap: 400, tileLabels: false };
+  assert.ok(validateConfig(config).errors.some(error => /boardWidth/.test(error)));
+  assert.equal(repairConfig(config), true);
+  assert.equal(config.boardWidth, 'standard');
+  assert.equal('boardGap' in config, false);
+  assert.equal(config.tileLabels, false);
+  const sound = { ...good(), boardWidth: 'wide', boardGap: 24 };
+  assert.equal(repairConfig(sound), false);
+  assert.equal(validateConfig({ ...good(), tileLabels: 'yes' }).ok, false);
+});

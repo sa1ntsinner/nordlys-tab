@@ -111,6 +111,24 @@
   --nl-transition-pop-fast: var(--nl-motion-fast) var(--nl-ease-pop);
   --nl-transition-pop-panel: var(--nl-motion-panel) var(--nl-ease-pop);
   --nl-ease-pop: cubic-bezier(.2, .9, .3, 1.25);
+  /* A third kind of motion: something being put down. A folder settling into
+     its row, a copy landing on its tile, a bar arriving at the bottom of the
+     window. It is sampled from a damped spring — damping ratio 0.78, two per
+     cent past the mark and back — instead of drawn as a Bézier, because a
+     placed thing should arrive the way an object does: quickly, with one
+     breath of settle. A spring spends the second half of its time within a
+     hair of rest, so its durations are longer than the travel it covers.
+     Colour and opacity never use it; they have nowhere to overshoot to. The
+     linear() form is below, behind @supports; this is the fallback. */
+  --nl-ease-spring: var(--nl-ease-emphasized);
+  --nl-motion-settle: 420ms;
+  --nl-transition-settle: var(--nl-motion-settle) var(--nl-ease-spring);
+  --nl-transition-settle-fast: var(--nl-motion-panel) var(--nl-ease-spring);
+  /* The one motion longer than a panel: a new theme spreading across the page
+     from the card that chose it. It happens a few times in a product's life,
+     and it is the only transition that covers the whole screen. */
+  --nl-motion-reveal: 460ms;
+  --nl-transition-reveal: var(--nl-motion-reveal) var(--nl-ease-emphasized);
   /* Three levels of one material. The four raw filter sliders that used to sit
      in settings were an unmade decision handed to the user, and they could be
      driven to states where text stopped being readable. */
@@ -140,6 +158,11 @@
   --nl-z-menu: 400;
   --nl-z-toast: 500;
   --nl-target-min: 40px;
+}
+
+/* The spring itself, forty samples of it (see --nl-ease-spring above). */
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --nl-ease-spring: linear(0, 0.0215, 0.0766, 0.1533, 0.2422, 0.3362, 0.4299, 0.5196, 0.6028, 0.6781, 0.7446, 0.8022, 0.8512, 0.892, 0.9253, 0.952, 0.973, 0.9889, 1.0007, 1.009, 1.0146, 1.0179, 1.0195, 1.0199, 1.0194, 1.0182, 1.0166, 1.0148, 1.0129, 1.0111, 1.0093, 1.0077, 1.0062, 1.0049, 1.0038, 1.0028, 1.002, 1.0014, 1.0009, 1); }
 }
 
 html[data-glass="subtle"] {
@@ -234,5 +257,5 @@ html.light-ui[data-legibility="high"] :is(#clock, #date, #greet) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root { --nl-motion-control: 80ms; --nl-motion-panel: 100ms; --nl-motion-enter: 100ms; }
+  :root { --nl-motion-control: 80ms; --nl-motion-panel: 100ms; --nl-motion-enter: 100ms; --nl-motion-settle: 100ms; --nl-motion-reveal: 100ms; }
 }

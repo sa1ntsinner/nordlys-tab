@@ -151,8 +151,13 @@
       if (!point) return;
       const wasHidden = this.root.hidden; if (wasHidden) { this.root.hidden = false; this.root.style.visibility = 'hidden'; }
       const width = this.root.offsetWidth || 220, height = this.root.offsetHeight || 220;
-      this.root.style.left = `${Math.max(10, Math.min(point.x, innerWidth - width - 10))}px`;
-      this.root.style.top = `${Math.max(10, Math.min(point.y, innerHeight - height - 10))}px`;
+      const left = Math.max(10, Math.min(point.x, innerWidth - width - 10));
+      const top = Math.max(10, Math.min(point.y, innerHeight - height - 10));
+      this.root.style.left = `${left}px`;
+      this.root.style.top = `${top}px`;
+      /* It grows out of the point it was opened from — the cursor, or the
+         corner of the button — even when the window's edge pushed it aside. */
+      this.root.style.setProperty('--origin', `${Math.max(0, Math.min(width, point.x - left))}px ${Math.max(0, Math.min(height, point.y - top))}px`);
       if (wasHidden) { this.root.hidden = true; this.root.style.removeProperty('visibility'); }
     }
     onKey(event) {
@@ -270,7 +275,10 @@
       // Flip above the trigger when the list would otherwise leave the viewport.
       const height = this.root.offsetHeight;
       const below = innerHeight - rect.bottom - 8;
-      this.root.style.top = height > below && rect.top > below ? `${Math.max(8, rect.top - height - 6)}px` : `${rect.bottom + 6}px`;
+      const above = height > below && rect.top > below;
+      this.root.style.top = above ? `${Math.max(8, rect.top - height - 6)}px` : `${rect.bottom + 6}px`;
+      // It grows out of its field: downwards from the top edge, or up from below.
+      this.root.style.setProperty('--origin', above ? 'bottom center' : 'top center');
     }
 
     open() {
@@ -389,21 +397,69 @@
   /* FLIP: read where things are, let the caller change the layout, then play each
      item back from where it was. Reflow becomes a movement you can follow instead
      of a jump, and it rides transform alone so it stays on the compositor. */
-  function animateReflow(container, mutate, { duration = 240 } = {}) {
+  function animateReflow(container, mutate) {
     if (!container) { mutate(); return; }
     const items = [...container.children];
     const before = items.map(item => item.getBoundingClientRect());
     mutate();
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // What moves because something else changed is being put down again.
+    const { duration, easing } = motion('settle-fast');
     items.forEach((item, index) => {
+      if (!item.isConnected) return;
       const after = item.getBoundingClientRect();
       const dx = before[index].left - after.left, dy = before[index].top - after.top;
       if (!dx && !dy) return;
       item.animate(
         [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }],
-        { duration, easing: 'cubic-bezier(.2, .8, .2, 1)' }
+        { duration, easing }
       );
     });
+  }
+
+  /* The motion language for animations started from script: the durations
+     and curves the stylesheets use, read from their tokens so the two cannot
+     drift (foundations.css). Reduced motion shortens the tokens themselves. */
+  const MOTIONS = {
+    fast: ['--nl-motion-fast', '--nl-ease-state'],
+    control: ['--nl-motion-control', '--nl-ease-state'],
+    enter: ['--nl-motion-control', '--nl-ease-emphasized'],
+    panel: ['--nl-motion-panel', '--nl-ease-emphasized'],
+    settle: ['--nl-motion-settle', '--nl-ease-spring'],
+    'settle-fast': ['--nl-motion-panel', '--nl-ease-spring']
+  };
+  function motion(name) {
+    const [durationToken, easingToken] = MOTIONS[name] || MOTIONS.enter;
+    const style = getComputedStyle(document.documentElement);
+    const raw = style.getPropertyValue(durationToken).trim();
+    const duration = raw.endsWith('ms') ? parseFloat(raw) : raw.endsWith('s') ? parseFloat(raw) * 1000 : 200;
+    return { duration: Number.isFinite(duration) ? duration : 200, easing: style.getPropertyValue(easingToken).trim() || 'ease' };
+  }
+
+  /* A segmented control's thumb: one shape behind the chosen option that
+     slides to the next choice (motion.css). Placed without motion the first
+     time, so a panel opening does not show it flying in from the corner. */
+  const thumbWatch = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(entries => {
+    for (const { target } of entries) if (target._thumbActive?.isConnected) trackThumb(target, target._thumbActive);
+  });
+  function trackThumb(container, active) {
+    if (!container) return;
+    // Nothing chosen — a value between the presets — and there is no thumb.
+    if (!active) { delete container.dataset.thumb; if (container._thumbActive !== undefined) container._thumbActive = null; return; }
+    // A control inside a closed panel has no size yet; it is placed when it gets one.
+    if (container._thumbActive === undefined) thumbWatch?.observe(container);
+    container._thumbActive = active;
+    const box = container.getBoundingClientRect();
+    const item = active.getBoundingClientRect();
+    if (!box.width || !item.width) return;
+    container.style.setProperty('--thumb-x', `${item.left - box.left - container.clientLeft}px`);
+    container.style.setProperty('--thumb-y', `${item.top - box.top - container.clientTop}px`);
+    container.style.setProperty('--thumb-w', `${item.width}px`);
+    container.style.setProperty('--thumb-h', `${item.height}px`);
+    if (!container.dataset.thumb) {
+      container.dataset.thumb = 'still';
+      requestAnimationFrame(() => requestAnimationFrame(() => { container.dataset.thumb = 'moving'; }));
+    }
   }
 
   function liveRegion() {
@@ -429,12 +485,21 @@
     const dock = document.getElementById('toast-dock') || document.body;
     /* A bare reference, not window.NordlysToast: ui-kit.js declares it with
        const, so it is a global binding and never a property of window. */
-    if (typeof NordlysToast !== 'undefined') NordlysToast.makeRoom(dock);
-    const item = document.createElement('div'); item.className = 'toast toast-info on'; item.setAttribute('role', 'status');
+    const item = document.createElement('div'); item.className = 'toast toast-info'; item.setAttribute('role', 'status');
     const text = document.createElement('span'); text.textContent = message;
     const button = document.createElement('button'); button.type = 'button'; button.className = 'toast-action'; button.textContent = actionLabel;
-    let active = true; const finish = action => { if (!active) return; active = false; clearTimeout(timer); item.remove(); if (action) onAction?.(); };
-    button.addEventListener('click', () => finish(true)); item.append(text, button); dock.append(item);
+    // It arrives and leaves the way every notice does, and the others make room by moving.
+    const reflow = change => (typeof NordlysToast !== 'undefined' && NordlysToast.reflow ? NordlysToast.reflow(dock, change) : change());
+    const leave = () => {
+      item.classList.remove('on');
+      const gone = () => { if (item.isConnected) reflow(() => item.remove()); };
+      item.addEventListener('transitionend', gone, { once: true });
+      setTimeout(gone, 400);
+    };
+    let active = true; const finish = action => { if (!active) return; active = false; clearTimeout(timer); leave(); if (action) onAction?.(); };
+    button.addEventListener('click', () => finish(true)); item.append(text, button);
+    reflow(() => { if (typeof NordlysToast !== 'undefined') NordlysToast.makeRoom(dock); dock.append(item); });
+    requestAnimationFrame(() => item.classList.add('on'));
     announce(message);
     const timer = setTimeout(() => finish(false), duration); return { dismiss: () => finish(false) };
   }
@@ -450,5 +515,5 @@
       .map(animation => animation.finished.catch(() => {})));
   }
 
-  window.NordlysUI = { FocusScope, DialogController, RovingTabs, MenuController, SelectMenu, enhanceSelect, enhanceSelects, refreshSelects, announce, showUndoToast, undoText, animateReflow, visibleFocusable, layers, settled };
+  window.NordlysUI = { FocusScope, DialogController, RovingTabs, MenuController, SelectMenu, enhanceSelect, enhanceSelects, refreshSelects, announce, showUndoToast, undoText, animateReflow, visibleFocusable, layers, settled, motion, trackThumb };
 })();

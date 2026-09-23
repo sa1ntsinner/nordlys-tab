@@ -66,7 +66,6 @@ const NordlysToast = {
   /* kind: "info" | "success" | "danger" */
   show(message, kind = "info", duration = 2600) {
     const dock = this.ensureDock();
-    this.makeRoom(dock);
 
     const el = document.createElement("div");
     el.className = `toast toast-${kind}`;
@@ -80,15 +79,22 @@ const NordlysToast = {
 
     el.innerHTML = `${icons[kind] || icons.info}<span></span>`;
     el.querySelector("span").textContent = message;
-    dock.appendChild(el);
+    // The notices already showing make room by moving, not by jumping.
+    this.reflow(dock, () => { this.makeRoom(dock); dock.appendChild(el); });
 
     // enter -> hold -> leave
     requestAnimationFrame(() => el.classList.add("on"));
     setTimeout(() => {
       el.classList.remove("on");
-      el.addEventListener("transitionend", () => el.remove(), { once: true });
-      setTimeout(() => el.remove(), 600); // fallback removal
+      const leave = () => { if (el.isConnected) this.reflow(dock, () => el.remove()); };
+      el.addEventListener("transitionend", leave, { once: true });
+      setTimeout(leave, 600); // fallback removal
     }, duration);
+  },
+
+  reflow(dock, change) {
+    if (window.NordlysUI?.animateReflow) window.NordlysUI.animateReflow(dock, change);
+    else change();
   }
 };
 

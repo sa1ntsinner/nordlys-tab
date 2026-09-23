@@ -30,7 +30,6 @@
     return value && value !== key ? value : fallback;
   };
   const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const EASE = "cubic-bezier(.2, .8, .2, 1)";
   const layout = () => window.NordlysBoardLayout;
 
   /* Where every folder on the board is, keyed by the folder itself: indices
@@ -67,9 +66,121 @@
       const from = resized ? `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})` : `translate(${dx}px, ${dy}px)`;
       card.animate(
         [{ transformOrigin: "0 0", transform: from }, { transformOrigin: "0 0", transform: "none" }],
-        { duration: 280, easing: EASE }
+        NordlysUI.motion("settle")
       );
     }
+  }
+
+  /* ── Folders that move together ─────────────────────────────────
+     A change to the whole board — a layout, Tidy up, a folder folded into
+     the dock, brought back or deleted — is one view transition. Every folder
+     and every chip in the dock is named by the folder it stands for, so the
+     browser carries each one from where it was to where it is, and a folder
+     folding away shrinks into its chip.
+
+     The folders change at once; only the drawing waits a frame, for the
+     old picture to be taken, and anything that reads the board before then
+     draws it first (grid.ensureRendered), so a quick second action never
+     acts on a board that is out of date. View transitions paint above the
+     whole page, so when the drawer or a dialog covers the board, the same
+     change glides in place instead (FLIP), under what covers it. Reduced
+     motion gets the change at once. */
+  const folderNames = new WeakMap();
+  const linkNames = new WeakMap();
+  let named = 0;
+  const nameFor = (map, key, prefix) => {
+    if (!map.has(key)) map.set(key, `${prefix}-${++named}`);
+    return map.get(key);
+  };
+  function tagBoard(grid, { clear = false, tilesOf = null } = {}) {
+    const groups = grid.app.config.groups || [];
+    for (const node of document.querySelectorAll("#board .card, #hiddenDock .restoreFolder")) {
+      const group = clear ? null : groups[Number(node.dataset.groupIdx)];
+      node.style.viewTransitionName = group ? nameFor(folderNames, group, "nl-folder") : "";
+      node.style.viewTransitionClass = group ? "nl-folder" : "";
+    }
+    if (!tilesOf && !clear) return;
+    const wanted = new Set(clear ? [] : tilesOf());
+    for (const tile of grid.board?.querySelectorAll(".tile") || []) {
+      const group = groups[Number(tile.dataset.groupIdx)];
+      const link = wanted.has(group) ? group.links?.[Number(tile.dataset.linkIdx)] : null;
+      tile.style.viewTransitionName = link ? nameFor(linkNames, link, "nl-tile") : "";
+      tile.style.viewTransitionClass = link ? "nl-tile" : "";
+    }
+  }
+  /* Where every tile of some folders is, keyed by the bookmark itself. */
+  function captureTiles(grid, folders) {
+    const groups = grid.app.config.groups || [];
+    const wanted = new Set(folders);
+    const rects = new Map();
+    for (const tile of grid.board?.querySelectorAll(".tile") || []) {
+      const group = groups[Number(tile.dataset.groupIdx)];
+      const link = wanted.has(group) ? group.links?.[Number(tile.dataset.linkIdx)] : null;
+      if (link) rects.set(link, { rect: tile.getBoundingClientRect(), node: tile });
+    }
+    return rects;
+  }
+
+  /* The tiles that stayed slide to their new places; a tile that went shrinks
+     away where it stood, as a copy, so the gap it leaves is seen to close. */
+  function settleTiles(grid, before) {
+    if (reduced() || !before?.size) return;
+    const groups = grid.app.config.groups || [];
+    const present = new Set();
+    for (const tile of grid.board?.querySelectorAll(".tile") || []) {
+      const link = groups[Number(tile.dataset.groupIdx)]?.links?.[Number(tile.dataset.linkIdx)];
+      const was = link && before.get(link);
+      if (!was) continue;
+      present.add(link);
+      const now = tile.getBoundingClientRect();
+      const dx = was.rect.left - now.left, dy = was.rect.top - now.top;
+      if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) tile.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], NordlysUI.motion("settle-fast"));
+    }
+    for (const [link, { rect, node }] of before) {
+      if (present.has(link)) continue;
+      const ghost = node.cloneNode(true);
+      ghost.removeAttribute("id");
+      ghost.setAttribute("aria-hidden", "true");
+      ghost.inert = true;
+      Object.assign(ghost.style, { position: "fixed", left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`, margin: "0", pointerEvents: "none", zIndex: "var(--nl-z-float)" });
+      document.body.append(ghost);
+      const leaving = ghost.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(.82)" }], { ...NordlysUI.motion("enter"), fill: "forwards" });
+      leaving.onfinish = () => ghost.remove();
+      leaving.oncancel = () => ghost.remove();
+    }
+  }
+
+  function boardTransition(grid, mutate, { after = null, tilesOf = null, glide = false } = {}) {
+    const redraw = () => {
+      grid.renderPending = false;
+      grid.render();
+      grid.app.settings?.renderBookmarksManager?.();
+    };
+    /* A view transition takes the page's clicks while it plays. So a change
+       that is followed by an Undo — a deletion — glides in place instead,
+       and its Undo can be pressed the instant it appears. */
+    const covered = document.body.classList.contains("cfgopen") || (NordlysUI.layers?.length || 0) > 0;
+    if (glide || !document.startViewTransition || reduced() || document.visibilityState !== "visible" || covered) {
+      const before = captureCards(grid);
+      const tiles = tilesOf ? captureTiles(grid, tilesOf()) : null;
+      mutate();
+      redraw();
+      settleCards(grid, before);
+      if (tiles) settleTiles(grid, tiles);
+      after?.();
+      return;
+    }
+    tagBoard(grid, { tilesOf });
+    mutate();
+    grid.renderPending = true;
+    const transition = document.startViewTransition(() => {
+      if (grid.renderPending) redraw();
+      tagBoard(grid, { tilesOf });
+    });
+    const done = () => after?.();
+    transition.updateCallbackDone.then(done, done);
+    transition.ready.catch(() => {});
+    transition.finished.catch(() => {}).finally(() => tagBoard(grid, { clear: true }));
   }
 
   function flipTiles(tiles, mutate) {
@@ -82,7 +193,7 @@
       const dx = was.left - now.left;
       const dy = was.top - now.top;
       if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) continue;
-      tile.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: 200, easing: EASE });
+      tile.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], NordlysUI.motion("settle-fast"));
     }
   }
 
@@ -538,6 +649,11 @@
   }
 
   /* ── Arranging ────────────────────────────────────────────────── */
+  /* The measures Size and spacing owns, and where Back to defaults puts
+     them. boardGap absent means "follow the space between bookmarks". */
+  const MEASURES = ["tileSize", "cardGap", "boardGap", "boardWidth", "tileLabels"];
+  const DEFAULT_MEASURES = { tileSize: 78, cardGap: 12, boardGap: undefined, boardWidth: "standard", tileLabels: true };
+
   class BoardArranger {
     constructor(grid) {
       this.grid = grid;
@@ -569,12 +685,18 @@
          focus will do — the same words its description gives a screen reader,
          so there is one sentence to translate — and goes back to how to move
          things otherwise. */
-      const rest = () => { if (this.hint) this.hint.textContent = text("arrange.hint", "Drag a folder by its name to move it, or its edge to widen it. Bookmarks move between folders the same way."); };
+      // A new sentence fades in over the last; the words never jump.
+      const say = (words) => {
+        if (!this.hint || this.hint.textContent === words) return;
+        this.hint.textContent = words;
+        if (!reduced()) this.hint.animate([{ opacity: 0.35 }, { opacity: 1 }], NordlysUI.motion("fast"));
+      };
+      const rest = () => say(text("arrange.hint", "Drag a folder by its name to move it, or its edge to widen it. Bookmarks move between folders the same way."));
       this.restHint = rest;
       for (const node of bar.querySelectorAll("[aria-describedby]")) {
         const explain = () => {
           const description = document.getElementById(node.getAttribute("aria-describedby"));
-          if (this.hint && description) this.hint.textContent = description.textContent;
+          if (description) say(description.textContent);
         };
         node.addEventListener("pointerenter", explain);
         node.addEventListener("focus", explain);
@@ -585,11 +707,13 @@
       document.getElementById("arrange-auto")?.addEventListener("click", () => this.autoRows());
       document.getElementById("arrange-undo")?.addEventListener("click", () => this.undo());
       document.getElementById("arrange-done")?.addEventListener("click", () => this.exit());
+      this.wireSize();
       window.addEventListener("keydown", (event) => {
         if (!this.active || event.key !== "Escape" || this.grid.drag?.session) return;
-        // A menu or a dialog open over the board closes first.
+        // A menu or a dialog open over the board closes first, then the panel.
         if (NordlysUI.layers?.length) return;
         event.preventDefault();
+        if (this.sizeOpen()) { this.showSize(false, { focus: true }); return; }
         this.exit();
       });
       window.addEventListener("nordlys:languagechange", () => { if (this.active) rest(); });
@@ -602,6 +726,7 @@
       const config = this.app.config;
       return {
         layout: config.boardLayout,
+        measures: Object.fromEntries(MEASURES.map((key) => [key, config[key]])),
         groups: (config.groups || []).map((group) => ({ group, cols: group.cols, row: group.row, hidden: group.hidden, links: [...(group.links || [])] }))
       };
     }
@@ -612,20 +737,19 @@
       const kept = shot.groups.filter((entry) => alive.has(entry.group));
       const known = new Set(kept.map((entry) => entry.group));
       const added = config.groups.filter((group) => !known.has(group));
-      const before = captureCards(this.grid);
-      config.groups.splice(0, config.groups.length, ...kept.map((entry) => entry.group), ...added);
-      for (const entry of kept) {
-        entry.group.cols = entry.cols;
-        if (entry.row === undefined) delete entry.group.row;
-        else entry.group.row = entry.row;
-        entry.group.hidden = entry.hidden;
-        entry.group.links = entry.links;
-      }
-      config.boardLayout = shot.layout;
-      this.app.saveConfig();
-      this.grid.render();
-      this.app.settings?.renderBookmarksManager?.();
-      settleCards(this.grid, before);
+      boardTransition(this.grid, () => {
+        config.groups.splice(0, config.groups.length, ...kept.map((entry) => entry.group), ...added);
+        for (const entry of kept) {
+          entry.group.cols = entry.cols;
+          if (entry.row === undefined) delete entry.group.row;
+          else entry.group.row = entry.row;
+          entry.group.hidden = entry.hidden;
+          entry.group.links = entry.links;
+        }
+        config.boardLayout = shot.layout;
+        if (shot.measures) this.putMeasures(shot.measures);
+        this.app.saveConfig();
+      }, { after: () => { this.app.settings?.syncBoardLayout?.(); this.syncSize(); } });
     }
 
     /* One step of Undo, taken before a change — or handed in, when the change
@@ -669,6 +793,7 @@
 
     exit() {
       if (!this.active) return;
+      this.showSize(false);
       this.active = false;
       document.body.classList.remove("arranging");
       this.bar.hidden = true;
@@ -715,8 +840,157 @@
       if (auto) auto.hidden = !layout()?.hasRows(config.groups || []);
       const undo = document.getElementById("arrange-undo");
       if (undo) undo.disabled = !this.history.length;
+      const layouts = this.bar.querySelector(".arrange-controls .arrange-layouts");
+      NordlysUI.trackThumb(layouts, layouts?.querySelector('[aria-checked="true"]'));
       if (!this.active) return;
       for (const tile of this.grid.board?.querySelectorAll(".tile") || []) tile.tabIndex = -1;
+    }
+
+    /* ── Size and spacing ───────────────────────────────────────────
+       Five measures, each written straight to the config and drawn at once,
+       so the board itself is the preview. A drag of a slider is one step of
+       Undo, not one per pixel. */
+    wireSize() {
+      const panel = document.getElementById("arrange-size-panel");
+      const toggle = document.getElementById("arrange-size");
+      if (!panel || !toggle) return;
+      this.sizePanel = panel;
+      this.sizeToggle = toggle;
+      toggle.addEventListener("click", () => this.showSize(!this.sizeOpen()));
+      const slider = (id, key, value = (input) => Number(input.value)) => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        let step = false;
+        input.addEventListener("input", () => {
+          if (!step) { this.remember(); step = true; }
+          this.setMeasure(key, value(input), { quiet: true });
+        });
+        input.addEventListener("change", () => {
+          step = false;
+          this.sayMeasure(key);
+        });
+      };
+      slider("arrange-tile-size", "tileSize");
+      slider("arrange-tile-gap", "cardGap");
+      slider("arrange-folder-gap", "boardGap");
+      const radios = (selector, key, read) => {
+        const buttons = [...panel.querySelectorAll(selector)];
+        for (const button of buttons) {
+          button.addEventListener("click", () => {
+            const next = read(button);
+            if (this.app.config[key] === next) return;
+            this.remember();
+            this.setMeasure(key, next);
+          });
+          button.addEventListener("keydown", (event) => {
+            const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+            if (!step) return;
+            event.preventDefault();
+            const next = buttons[(buttons.indexOf(button) + step + buttons.length) % buttons.length];
+            next.focus();
+            next.click();
+          });
+        }
+      };
+      radios("[data-tile]", "tileSize", (button) => Number(button.dataset.tile));
+      radios("[data-width]", "boardWidth", (button) => button.dataset.width);
+      document.getElementById("arrange-names")?.addEventListener("change", (event) => {
+        this.remember();
+        this.setMeasure("tileLabels", event.target.checked);
+      });
+      document.getElementById("arrange-size-reset")?.addEventListener("click", () => {
+        if (this.measuresAreDefault()) return;
+        this.remember();
+        boardTransition(this.grid, () => {
+          this.putMeasures(DEFAULT_MEASURES);
+          this.app.saveConfig();
+        }, { after: () => this.syncSize() });
+        NordlysUI.announce(text("arrange.sizeResetDone", "Size and spacing are back to the defaults"));
+      });
+      window.addEventListener("nordlys:languagechange", () => this.syncSize());
+    }
+
+    sizeOpen() { return Boolean(this.sizePanel && !this.sizePanel.hidden); }
+
+    showSize(open, { focus = false } = {}) {
+      if (!this.sizePanel) return;
+      this.sizePanel.hidden = !open;
+      this.sizeToggle?.setAttribute("aria-expanded", String(open));
+      if (open) {
+        this.syncSize();
+        (this.sizePanel.querySelector('[data-tile][aria-checked="true"]') || document.getElementById("arrange-tile-size"))?.focus({ preventScroll: true });
+      } else if (focus) this.sizeToggle?.focus({ preventScroll: true });
+    }
+
+    /* Writes the measures without drawing: the caller draws once. */
+    putMeasures(measures) {
+      const config = this.app.config;
+      for (const key of MEASURES) {
+        if (measures[key] === undefined) delete config[key];
+        else config[key] = measures[key];
+      }
+      this.app.applyGeometryTokens();
+    }
+
+    setMeasure(key, value, { quiet = false } = {}) {
+      const config = this.app.config;
+      // The space between folders stops following the bookmarks' once set.
+      config[key] = value;
+      this.app.applyGeometryTokens();
+      this.app.saveConfig();
+      this.grid.relayout();
+      this.syncSize();
+      this.app.settings?.syncGeometry?.();
+      if (!quiet) this.sayMeasure(key);
+    }
+
+    sayMeasure(key) {
+      const config = this.app.config;
+      const words = {
+        tileSize: () => text("arrange.saidTileSize", "Bookmark size {px}", { px: config.tileSize }),
+        cardGap: () => text("arrange.saidTileGap", "Space between bookmarks {px}", { px: config.cardGap }),
+        boardGap: () => text("arrange.saidFolderGap", "Space between folders {px}", { px: config.boardGap }),
+        boardWidth: () => text(`arrange.${config.boardWidth || "standard"}`, config.boardWidth || "standard"),
+        tileLabels: () => config.tileLabels === false ? text("arrange.namesOff", "Names hidden") : text("arrange.namesOn", "Names shown")
+      }[key];
+      if (words) NordlysUI.announce(words());
+    }
+
+    measuresAreDefault() {
+      const config = this.app.config;
+      return MEASURES.every((key) => (config[key] ?? DEFAULT_MEASURES[key]) === DEFAULT_MEASURES[key]);
+    }
+
+    /* The panel says what the board is, whoever changed it last. */
+    syncSize() {
+      const panel = this.sizePanel;
+      if (!panel) return;
+      const config = this.app.config;
+      const tile = Math.max(56, config.tileSize ?? DEFAULT_MEASURES.tileSize);
+      const gap = config.cardGap ?? DEFAULT_MEASURES.cardGap;
+      const folders = Number.isFinite(config.boardGap) ? config.boardGap : gap + 2;
+      const width = config.boardWidth || "standard";
+      const set = (id, value) => { const input = document.getElementById(id); if (input) input.value = String(value); };
+      set("arrange-tile-size", tile);
+      set("arrange-tile-gap", gap);
+      set("arrange-folder-gap", folders);
+      const output = document.getElementById("arrange-tile-size-value");
+      if (output) output.textContent = String(tile);
+      const names = document.getElementById("arrange-names");
+      if (names) names.checked = config.tileLabels !== false;
+      const mark = (selector, on) => {
+        const buttons = [...panel.querySelectorAll(selector)];
+        buttons.forEach((button) => button.setAttribute("aria-checked", String(on(button))));
+        // A size between the presets checks none of them; the group still
+        // keeps one way in for the keyboard.
+        const checked = buttons.find((button) => button.getAttribute("aria-checked") === "true");
+        buttons.forEach((button) => { button.tabIndex = button === (checked || buttons[0]) ? 0 : -1; });
+        NordlysUI.trackThumb(buttons[0]?.parentElement, checked || null);
+      };
+      mark("[data-tile]", (button) => Number(button.dataset.tile) === tile);
+      mark("[data-width]", (button) => button.dataset.width === width);
+      const reset = document.getElementById("arrange-size-reset");
+      if (reset) reset.disabled = this.measuresAreDefault();
     }
 
     focusGrip(group) {
@@ -726,6 +1000,7 @@
 
     /* The rows as they are drawn right now, as lists of folder indices. */
     currentLines() {
+      this.grid.ensureRendered();
       return [...(this.grid.board?.querySelectorAll(":scope > .board-row") || [])]
         .map((row) => [...row.querySelectorAll(".card")].map((card) => Number(card.dataset.groupIdx)))
         .filter((line) => line.length);
@@ -749,11 +1024,10 @@
       const next = name === "fitted" ? "fitted" : "natural";
       if ((config.boardLayout === "fitted" ? "fitted" : "natural") === next) return;
       this.remember();
-      const before = captureCards(this.grid);
-      config.boardLayout = next;
-      this.app.saveConfig();
-      this.grid.render();
-      settleCards(this.grid, before);
+      boardTransition(this.grid, () => {
+        config.boardLayout = next;
+        this.app.saveConfig();
+      });
       this.app.settings?.syncBoardLayout?.();
       NordlysUI.announce(next === "fitted"
         ? text("arrange.fittedHint", "Fitted: every row runs edge to edge, and folders in a row share one height.")
@@ -763,6 +1037,7 @@
     /* Folders of a similar height side by side, rows chosen for the window as
        it is now, and kept: they are the user's rows from here on. */
     tidy() {
+      this.grid.ensureRendered();
       const board = this.grid.board;
       const cards = [...board.querySelectorAll(".card")];
       if (cards.length < 2) return;
@@ -781,24 +1056,22 @@
         NordlysUI.announce(text("arrange.alreadyTidy", "Already tidy"));
         return;
       }
-      this.grid.commitLines(lines, -1, { say: text("arrange.tidied", "Tidied: folders of a similar height share a row") });
+      this.grid.commitLines(lines, -1, { say: text("arrange.tidied", "Tidied: folders of a similar height share a row"), together: true });
     }
 
     autoRows() {
       const groups = this.app.config.groups || [];
       if (!layout()?.hasRows(groups)) return;
       this.remember();
-      const before = captureCards(this.grid);
-      layout().clearRows(groups);
-      this.app.saveConfig();
-      this.grid.render();
-      settleCards(this.grid, before);
+      boardTransition(this.grid, () => {
+        layout().clearRows(groups);
+        this.app.saveConfig();
+      }, { after: () => this.app.settings?.syncBoardLayout?.() });
       NordlysUI.announce(text("arrange.rowsAuto", "The board chooses the rows again"));
-      this.app.settings?.syncBoardLayout?.();
     }
   }
 
   window.NordlysBoardDrag = BoardDrag;
   window.NordlysBoardArranger = BoardArranger;
-  window.NordlysBoardMotion = { captureCards, settleCards };
+  window.NordlysBoardMotion = { captureCards, settleCards, boardTransition };
 })();

@@ -40,17 +40,49 @@ class ClockWidget {
     setInterval(() => this.update(), 1000);
   }
 
-  /* Swap digit text with a soft blur-morph when the value changes */
-  setDigit(el, value) {
+  /* Each figure is its own box, and only the one that changed turns over:
+     the old figure rises and blurs away while the new one comes up into its
+     place (motion.css). Nine minutes past becoming ten moves one digit, not
+     the whole minute. A figure leaving is hidden from assistive technology,
+     which reads the time once, as it now is. */
+  setDigit(el, value, { still = false } = {}) {
     if (!el) return;
-    if (el.textContent !== value) {
-      el.textContent = value;
-      if (!this.firstPaint) {
-        el.classList.remove("digit-tick");
-        void el.offsetWidth; // restart the animation
-        el.classList.add("digit-tick");
-      }
+    const current = [...el.querySelectorAll(":scope > .digit")].map((digit) => digit.dataset.value).join("");
+    if (current === value && el.childElementCount === value.length) return;
+    const digits = [...el.querySelectorAll(":scope > .digit")];
+    if (digits.length !== value.length) {
+      el.replaceChildren(...[...value].map((figure) => this.makeDigit(figure)));
+      return;
     }
+    [...value].forEach((figure, index) => {
+      const digit = digits[index];
+      if (digit.dataset.value === figure) return;
+      const leaving = digit.querySelector(".digit-in")?.textContent || "";
+      digit.dataset.value = figure;
+      if (this.firstPaint || still) { digit.replaceChildren(this.figure(figure, "digit-in")); return; }
+      const out = this.figure(leaving, "digit-out");
+      out.setAttribute("aria-hidden", "true");
+      digit.replaceChildren(this.figure(figure, "digit-in"), out);
+      digit.classList.remove("rolling");
+      void digit.offsetWidth; // play again even if the last turn has not finished
+      digit.classList.add("rolling");
+      out.addEventListener("animationend", () => out.remove(), { once: true });
+    });
+  }
+
+  makeDigit(figure) {
+    const digit = document.createElement("span");
+    digit.className = "digit";
+    digit.dataset.value = figure;
+    digit.append(this.figure(figure, "digit-in"));
+    return digit;
+  }
+
+  figure(text, className) {
+    const span = document.createElement("span");
+    span.className = className;
+    span.textContent = text;
+    return span;
   }
 
   update() {
@@ -70,8 +102,8 @@ class ClockWidget {
 
     this.setDigit(this.elH, hStr);
     this.setDigit(this.elM, mins);
-    if (this.cfg.showSeconds) this.setDigit(this.elS, secs);
-    else if (this.elS) this.elS.textContent = secs;
+    // Seconds that are not shown still keep time, without turning over unseen.
+    this.setDigit(this.elS, secs, { still: !this.cfg.showSeconds });
 
     // AM/PM Indicator
     if (this.elAmpm) {

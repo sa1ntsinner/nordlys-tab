@@ -13,6 +13,10 @@ const { test, expect } = require('../helpers/nordlys-fixture.cjs');
 const { openIconPicker } = require('../helpers/flows.cjs');
 
 async function expectNoHighImpactViolations(page, context) {
+  /* Menus and dialogs fade in now. Axe reads colours as they are at the moment
+     it runs, and a button caught half-way through its entrance is a blend of
+     itself and the page — so the layer is judged once it has arrived. */
+  await page.evaluate(() => window.NordlysUI?.settled?.());
   const results = await new AxeBuilder({ page }).include(context).analyze();
   const highImpact = results.violations.filter(item => ['serious', 'critical'].includes(item.impact));
   expect(highImpact, highImpact.map(item => `${item.id}: ${item.help}`).join('\n')).toEqual([]);
