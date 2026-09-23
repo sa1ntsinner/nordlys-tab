@@ -44,7 +44,7 @@ export default [
     ignores: [
       "node_modules/**", "playwright-report/**", "test-results/**", ".playwright-artifacts/**",
       ".references/**", ".superpowers/**", "docs/**", "tools/artwork/.scratch/**",
-      "**/*.sweep.cjs", "sweeps.config.cjs", "scratch-*"
+      "**/*.sweep.cjs", "sweeps.config.cjs", "scratch-*", "_site/**"
     ]
   },
   js.configs.recommended,
@@ -67,6 +67,20 @@ export default [
       // document a callback's signature are fine too.
       "no-unused-vars": ["error", { vars: "local", args: "none", caughtErrors: "none" }],
       "no-empty": ["error", { allowEmptyCatch: true }],
+      "eqeqeq": ["error", "smart"],
+      "no-var": "error",
+      "prefer-const": ["error", { destructuring: "all" }]
+    }
+  },
+  {
+    // The project site: one classic script over the page's own sky.
+    files: ["site/**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2023,
+      sourceType: "script",
+      globals: { ...globals.browser, NordlysBackgroundEngine: "readonly" }
+    },
+    rules: {
       "eqeqeq": ["error", "smart"],
       "no-var": "error",
       "prefer-const": ["error", { destructuring: "all" }]

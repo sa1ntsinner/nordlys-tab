@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nordlys, a new tab page for Chrome</title>
+  <meta name="description" content="Nordlys replaces Chrome's new tab page with your bookmarks in folders you arrange, over a sky drawn on your own machine. Free, open source, no account.">
+  <meta name="theme-color" content="#060a14">
+  <meta name="color-scheme" content="dark">
+  <!-- The Chrome Web Store page. Empty, the install buttons fall back to
+       loading the extension from source. -->
+  <meta name="nordlys-store" content="">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon128.png">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Nordlys, a new tab page for Chrome">
+  <meta property="og:description" content="Your bookmarks in folders you arrange, over a sky drawn on your own machine.">
+  <meta property="og:url" content="https://sa1ntsinner.github.io/nordlys-tab/">
+  <meta property="og:image" content="https://sa1ntsinner.github.io/nordlys-tab/assets/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preload" href="fonts/outfit.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/instrument-sans.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav" id="nav">
+    <div class="nav-inner">
+      <a class="brand" href="#top" aria-label="Nordlys, back to top">
+        <img src="icon.svg" alt="" width="28" height="28">
+        <span>Nordlys</span>
+      </a>
+      <nav class="nav-links" aria-label="Sections">
+        <a href="#features">Features</a>
+        <a href="#privacy">Privacy</a>
+        <a href="https://github.com/sa1ntsinner/nordlys-tab">Source</a>
+      </nav>
+      <a class="button small" href="#install" data-install>Install</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">Version 2.5 · Free and open source</p>
+        <h1 id="hero-title">A quiet sky behind every new tab</h1>
+        <p class="lede" id="hero-lede">Nordlys replaces Chrome's new tab page with your bookmarks, in folders you arrange yourself, over a sky drawn on your own machine. It has no account and no analytics.</p>
+        <div class="actions">
+          <a class="button" href="#install" data-install>Install</a>
+          <a class="button ghost" href="https://github.com/sa1ntsinner/nordlys-tab">View on GitHub</a>
+        </div>
+      </div>
+
+      <div class="sky-panel" role="group" aria-labelledby="sky-label">
+        <p class="sky-note" id="sky-label">This sky is the one in the extension, running here in your browser. Try the others.</p>
+        <div class="scenes" role="radiogroup" aria-label="Scene">
+          <button type="button" role="radio" aria-checked="true" data-scene="aurora">Nordlys</button>
+          <button type="button" role="radio" aria-checked="false" data-scene="halo" tabindex="-1">Halo</button>
+          <button type="button" role="radio" aria-checked="false" data-scene="silk" tabindex="-1">Silk</button>
+          <button type="button" role="radio" aria-checked="false" data-scene="frost" tabindex="-1">Frost</button>
+          <button type="button" role="radio" aria-checked="false" data-scene="drift" tabindex="-1">Contour</button>
+          <button type="button" role="radio" aria-checked="false" data-scene="horizon" tabindex="-1">Fjord</button>
+        </div>
+        <button type="button" class="daylight" id="daylight" aria-pressed="false">
+          <span class="switch" aria-hidden="true"></span>
+          <span>Light it by your time of day</span>
+          <span class="daylight-now" id="daylight-now" aria-live="polite"></span>
+        </button>
+      </div>
+    </section>
+
+    <div class="showcase">
+      <figure class="frame hero-frame reveal">
+        <img src="assets/board.webp" width="2400" height="1500" alt="The Nordlys new tab: a clock, a search box and four folders of bookmarks (Daily, AI, Work, Social) over the Nordlys aurora.">
+      </figure>
+    </div>
+
+    <section class="features" id="features" aria-labelledby="features-title">
+      <h2 class="section-title reveal" id="features-title">What it does</h2>
+
+      <article class="feature reveal">
+        <div class="feature-copy">
+          <p class="kicker">Arrange</p>
+          <h3>Folders go where you put them</h3>
+          <p>Drag a folder between two others, or between rows to start a new one, and the board shows where it will land before you let go. Fitted makes every row run edge to edge.</p>
+          <p>Bookmark size, spacing and the width of the board are set in one panel, with the board itself as the preview and Undo for every step.</p>
+        </div>
+        <figure class="frame">
+          <img src="assets/arrange.webp" width="1800" height="1125" loading="lazy" alt="Arrange mode in the Catppuccin Mocha theme: folders in fitted rows, and the Size and spacing panel open over them.">
+        </figure>
+      </article>
+
+      <article class="feature flip reveal">
+        <div class="feature-copy">
+          <p class="kicker">Icons</p>
+          <h3>Icons that look like the site</h3>
+          <p>Search a brand by name and Nordlys offers a clean vector, then keeps it on your machine. Chrome's own favicon, a picture from any address, a file or a single letter work too.</p>
+          <p>An icon taken from a web address remembers it, and the last few before it, so you can go back to one.</p>
+        </div>
+        <figure class="frame stack">
+          <img src="assets/icons-board.webp" width="1800" height="1125" loading="lazy" alt="A board in the Tokyo Night theme with folders for Watch and listen and AI, over the Halo scene.">
+          <img class="float" src="assets/icon-history.webp" width="1200" height="654" loading="lazy" alt="The icon picker's web address section, with three earlier addresses this icon came from.">
+        </figure>
+      </article>
+
+      <article class="feature reveal">
+        <div class="feature-copy">
+          <p class="kicker">Time of day</p>
+          <h3>A sky that keeps your hours</h3>
+          <p>Turn on Follow the time of day and every scene is lit by where the sun is for you: warm at sunrise and sunset, pale by day, with stars after dark.</p>
+          <p>Nordlys works it out from the date and your time zone, so it never asks where you are.</p>
+        </div>
+        <div class="hours">
+          <figure class="frame"><img src="assets/daylight-dawn.webp" width="1000" height="625" loading="lazy" alt="The Contour scene at 06:50."><figcaption>Dawn</figcaption></figure>
+          <figure class="frame"><img src="assets/daylight-day.webp" width="1000" height="625" loading="lazy" alt="The Contour scene at 13:00."><figcaption>Day</figcaption></figure>
+          <figure class="frame"><img src="assets/daylight-sunset.webp" width="1000" height="625" loading="lazy" alt="The Contour scene at 19:05."><figcaption>Sunset</figcaption></figure>
+          <figure class="frame"><img src="assets/daylight-night.webp" width="1000" height="625" loading="lazy" alt="The Contour scene at 23:30."><figcaption>Night</figcaption></figure>
+        </div>
+      </article>
+
+      <article class="feature flip reveal">
+        <div class="feature-copy">
+          <p class="kicker">Themes</p>
+          <h3>21 themes, light and dark</h3>
+          <p>A theme sets the background, the glass and the colours of the sky behind it, so Gruvbox gets an amber sky and OLED Obsidian stays black.</p>
+          <p>The sky behind the clock and the search box is measured as it moves and held back just enough to keep the text readable. If none of the 21 fit, the theme studio makes one from three colours.</p>
+        </div>
+        <figure class="frame pair">
+          <img src="assets/theme-light.webp" width="1600" height="1000" loading="lazy" alt="The board in the Porcelain Light theme over the Frost scene.">
+          <img class="float" src="assets/theme-dark.webp" width="1600" height="1000" loading="lazy" alt="The board in Gruvbox Dark with Settings open on the theme presets.">
+        </figure>
+      </article>
+
+      <div class="grid reveal" aria-label="More features">
+        <div class="cell">
+          <h3>A search box that answers</h3>
+          <p>Type <code>45 * 12 + sqrt(144)</code> and the answer appears under the box. Enter sends your search to the engine you chose in Chrome.</p>
+        </div>
+        <div class="cell">
+          <h3>Commands</h3>
+          <p>Start with <code>&gt;</code> and the board takes instructions, like <code>theme nord</code> or <code>move YouTube to Daily</code>. You see the result before you press Enter.</p>
+        </div>
+        <div class="cell">
+          <h3>Folders that follow Chrome</h3>
+          <p>Point a folder at one of your Chrome bookmark folders and it keeps up with it. Nordlys asks to read bookmarks only when you do this.</p>
+        </div>
+        <div class="cell">
+          <h3>Six scenes</h3>
+          <p>Nordlys, Halo, Silk, Frost, Contour and Fjord, or your own picture or looping video. Still mode paints one frame and stops.</p>
+        </div>
+        <div class="cell">
+          <h3>Eight languages</h3>
+          <p>English, Russian, Spanish, German, French, Japanese, Chinese and Turkish.</p>
+        </div>
+        <div class="cell">
+          <h3>Your bookmarks, portable</h3>
+          <p>Bring bookmarks in from any browser as HTML, and take everything back out as HTML or JSON whenever you like.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="privacy" id="privacy" aria-labelledby="privacy-title">
+      <div class="privacy-inner reveal">
+        <h2 id="privacy-title">Your setup stays on your computer</h2>
+        <div class="privacy-body">
+          <p>Settings and bookmarks live in Chrome's local storage. There is no account, no analytics and no code loaded from anywhere else.</p>
+          <p>Nordlys goes online only when you ask it to. Icon search sends the name you typed to Iconify after you press Search, and an image address you paste is fetched so you can preview it. The search box sends nothing until you press Enter.</p>
+          <p><a class="link" href="https://github.com/sa1ntsinner/nordlys-tab/blob/main/PRIVACY.md">Read the privacy policy</a></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="install" id="install" aria-labelledby="install-title">
+      <div class="install-inner reveal">
+        <h2 id="install-title">Try it on your next new tab</h2>
+        <p class="lede">Nordlys works in Chrome, Edge, Brave and other Chromium browsers.</p>
+        <div class="actions">
+          <a class="button" href="#" data-store hidden>Add to Chrome</a>
+          <a class="button ghost" href="https://github.com/sa1ntsinner/nordlys-tab/archive/refs/heads/main.zip">Download the source</a>
+        </div>
+        <ol class="steps" aria-label="Installing from source">
+          <li>Unzip the download.</li>
+          <li>Open <code>chrome://extensions</code> and turn on Developer mode.</li>
+          <li>Choose Load unpacked and pick the folder.</li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <p><img src="icon.svg" alt="" width="18" height="18"> Nordlys is free and open source under the MIT licence.</p>
+      <nav aria-label="Elsewhere">
+        <a href="https://github.com/sa1ntsinner/nordlys-tab">GitHub</a>
+        <a href="https://github.com/sa1ntsinner/nordlys-tab/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/sa1ntsinner/nordlys-tab/blob/main/PRIVACY.md">Privacy</a>
+        <a href="https://buymeacoffee.com/sa1ntsinner">Buy me a coffee</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="sky/colour-tools.js"></script>
+  <script src="sky/sky-zones.js"></script>
+  <script src="sky/sky-clock.js"></script>
+  <script src="sky/background.js"></script>
+  <script src="site.js"></script>
+</body>
+</html>

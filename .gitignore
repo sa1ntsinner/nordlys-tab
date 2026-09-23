@@ -17,3 +17,4 @@ sweeps.config.cjs
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/
+_site/
