@@ -70,6 +70,49 @@
          straight into the folders; it is fixed to the bottom of the window. -->
     <div id="arrange-bar" class="arrange-bar" role="toolbar" aria-labelledby="arrange-title" hidden>
       <p id="arrange-hint" class="arrange-hint" data-i18n="arrange.hint">Drag a folder by its name to move it, or its edge to widen it. Bookmarks move between folders the same way.</p>
+      <!-- Size and spacing: the board above is the preview, so the panel
+           holds only the handful of measures that shape it, each named for
+           what it changes. -->
+      <div id="arrange-size-panel" class="arrange-size" role="group" aria-labelledby="arrange-size-title" hidden>
+        <div class="arrange-size-head">
+          <span id="arrange-size-title" class="arrange-size-title" data-i18n="arrange.size">Size &amp; spacing</span>
+          <button type="button" id="arrange-size-reset" class="arrange-size-reset" data-i18n="arrange.sizeReset">Back to defaults</button>
+        </div>
+        <div class="arrange-size-row">
+          <label for="arrange-tile-size" class="arrange-size-label" data-i18n="arrange.tileSize">Bookmark size</label>
+          <div class="arrange-size-presets arrange-layouts" role="radiogroup" aria-label="Bookmark size" data-i18n-aria="arrange.tileSize">
+            <button type="button" role="radio" class="arrange-layout" data-tile="60" aria-checked="false" data-i18n="arrange.small">Small</button>
+            <button type="button" role="radio" class="arrange-layout" data-tile="78" aria-checked="true" data-i18n="arrange.medium">Medium</button>
+            <button type="button" role="radio" class="arrange-layout" data-tile="96" aria-checked="false" data-i18n="arrange.large">Large</button>
+          </div>
+          <input id="arrange-tile-size" type="range" min="56" max="110" step="1" value="78" class="arrange-size-slider">
+          <output for="arrange-tile-size" class="arrange-size-value" id="arrange-tile-size-value">78</output>
+        </div>
+        <div class="arrange-size-row">
+          <label for="arrange-tile-gap" class="arrange-size-label" data-i18n="arrange.tileGap">Space between bookmarks</label>
+          <span class="arrange-size-end" aria-hidden="true" data-i18n="arrange.tight">Tight</span>
+          <input id="arrange-tile-gap" type="range" min="6" max="28" step="1" value="12" class="arrange-size-slider">
+          <span class="arrange-size-end" aria-hidden="true" data-i18n="arrange.airy">Airy</span>
+        </div>
+        <div class="arrange-size-row">
+          <label for="arrange-folder-gap" class="arrange-size-label" data-i18n="arrange.folderGap">Space between folders</label>
+          <span class="arrange-size-end" aria-hidden="true" data-i18n="arrange.tight">Tight</span>
+          <input id="arrange-folder-gap" type="range" min="6" max="48" step="1" value="14" class="arrange-size-slider">
+          <span class="arrange-size-end" aria-hidden="true" data-i18n="arrange.airy">Airy</span>
+        </div>
+        <div class="arrange-size-row">
+          <span id="arrange-width-label" class="arrange-size-label" data-i18n="arrange.width">Board width</span>
+          <div class="arrange-size-presets arrange-layouts" role="radiogroup" aria-labelledby="arrange-width-label">
+            <button type="button" role="radio" class="arrange-layout" data-width="narrow" aria-checked="false" data-i18n="arrange.narrow">Narrow</button>
+            <button type="button" role="radio" class="arrange-layout" data-width="standard" aria-checked="true" data-i18n="arrange.standard">Standard</button>
+            <button type="button" role="radio" class="arrange-layout" data-width="wide" aria-checked="false" data-i18n="arrange.wide">Wide</button>
+          </div>
+        </div>
+        <div class="arrange-size-row">
+          <span id="arrange-names-label" class="arrange-size-label" data-i18n="arrange.names">Names under bookmarks</span>
+          <label class="tg"><input type="checkbox" id="arrange-names" checked aria-labelledby="arrange-names-label"><i></i></label>
+        </div>
+      </div>
       <div class="arrange-controls">
         <span id="arrange-title" class="arrange-title" data-i18n="arrange.title">Arrange folders</span>
         <div class="arrange-layouts" role="radiogroup" aria-label="Layout" data-i18n-aria="arrange.layout">
@@ -91,6 +134,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/><path d="M17 14l3 3-3 3"/></svg>
           <span data-i18n="arrange.autoRows">Automatic rows</span>
         </button>
+        <button type="button" id="arrange-size" class="arrange-action" aria-expanded="false" aria-controls="arrange-size-panel" aria-describedby="arrange-size-desc">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+          <span data-i18n="arrange.size">Size &amp; spacing</span>
+        </button>
         <button type="button" id="arrange-undo" class="arrange-action" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>
           <span data-i18n="toast.undo">Undo</span>
@@ -102,6 +149,7 @@
       <span id="arrange-natural-desc" class="nl-visually-hidden" data-i18n="arrange.naturalHint">Natural: folders keep their own size and wrap like words.</span>
       <span id="arrange-fitted-desc" class="nl-visually-hidden" data-i18n="arrange.fittedHint">Fitted: every row runs edge to edge, and folders in a row share one height.</span>
       <span id="arrange-tidy-desc" class="nl-visually-hidden" data-i18n="arrange.tidyHint">Tidy up puts folders of a similar height side by side, so every row comes out even.</span>
+      <span id="arrange-size-desc" class="nl-visually-hidden" data-i18n="arrange.sizeHint">How big the bookmarks are, the space around them, and how wide the board runs.</span>
       <span id="arrange-auto-desc" class="nl-visually-hidden" data-i18n="arrange.autoRowsHint">Let the board choose the rows again, keeping the folders in their order.</span>
     </div>
     <span id="arrange-grip-help" class="nl-visually-hidden" data-i18n="arrange.gripHelp">Press to arrange folders. While arranging, the arrow keys move this folder, and up and down change its row.</span>

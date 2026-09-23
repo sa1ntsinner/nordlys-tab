@@ -379,3 +379,11 @@ details[open]::details-content {
 /* The picture being replaced dims while the next one is on its way. */
 #icon-url-preview-img-box { transition: opacity var(--nl-transition-control); }
 #icon-url-preview-img-box.is-loading { opacity: .4; }
+
+/* The size panel rises out of the bar it opens from and sinks back into it. */
+.arrange-size {
+  transform-origin: 50% 100%;
+  transition: opacity var(--nl-transition-control), transform var(--nl-transition-settle-fast), display var(--nl-motion-control) allow-discrete;
+  @starting-style { opacity: 0; transform: translateY(8px) scale(.98); }
+}
+.arrange-size[hidden] { opacity: 0; transform: translateY(8px) scale(.98); }

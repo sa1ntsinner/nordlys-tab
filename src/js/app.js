@@ -2,6 +2,8 @@
    NORDLYS - MAIN ORCHESTRATOR & APPLICATION BOOTSTRAP
    ═══════════════════════════════════════════════════════════════════ */
 
+/* The widths the board may run to. Standard is the width it always had. */
+const BOARD_WIDTHS = { narrow: 1080, standard: 1400, wide: 1760 };
 const DEFAULT_CONFIG = {
   version: "2.2.3",
   theme: "aurora-void",
@@ -36,6 +38,11 @@ const DEFAULT_CONFIG = {
      runs every row edge to edge with folders of one height. Which folders
      share a row is each folder's own `row`, absent until somebody arranges. */
   boardLayout: "natural",
+  /* How wide the board may run ("narrow", "standard", "wide") and whether
+     the bookmarks carry their names. The space between folders follows the
+     space between bookmarks until somebody sets it (boardGap, absent). */
+  boardWidth: "standard",
+  tileLabels: true,
   cardGlow: 40,
   hoverEffect: "lift",
   iconShape: "squircle",
@@ -1047,6 +1054,10 @@ class NordlysApp {
     // Preserve a usable 56px floor; narrow layouts reflow instead of collapsing controls.
     if (cfg.tileSize != null) root.setProperty("--tw", `clamp(56px, 12vw, ${Math.max(56, cfg.tileSize)}px)`);
     if (cfg.cardGap != null) root.setProperty("--grid-gap", `${cfg.cardGap}px`);
+    if (Number.isFinite(cfg.boardGap)) root.setProperty("--board-gap-set", `${cfg.boardGap}px`);
+    else root.removeProperty("--board-gap-set");
+    root.setProperty("--board-max", `${BOARD_WIDTHS[cfg.boardWidth] || BOARD_WIDTHS.standard}px`);
+    document.body.classList.toggle("tile-names-hidden", cfg.tileLabels === false);
     if (cfg.cardGlow != null) root.setProperty("--card-glow-intensity", `${cfg.cardGlow / 100}`);
 
     // Icon Shape

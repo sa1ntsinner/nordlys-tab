@@ -152,8 +152,8 @@ body.searching #search {
    and twenty pixels of empty glass under its tiles, which reads as something
    missing. Fitted asks for the matching heights on purpose, and gets them. */
 #board {
-  width: min(94vw, 1400px);
-  --board-gap: calc(var(--grid-gap, 12px) + 2px);
+  width: min(94vw, var(--board-max, 1400px));
+  --board-gap: var(--board-gap-set, calc(var(--grid-gap, 12px) + 2px));
 }
 
 .card {

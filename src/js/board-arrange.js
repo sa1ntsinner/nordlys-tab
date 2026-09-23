@@ -649,6 +649,11 @@
   }
 
   /* ── Arranging ────────────────────────────────────────────────── */
+  /* The measures Size and spacing owns, and where Back to defaults puts
+     them. boardGap absent means "follow the space between bookmarks". */
+  const MEASURES = ["tileSize", "cardGap", "boardGap", "boardWidth", "tileLabels"];
+  const DEFAULT_MEASURES = { tileSize: 78, cardGap: 12, boardGap: undefined, boardWidth: "standard", tileLabels: true };
+
   class BoardArranger {
     constructor(grid) {
       this.grid = grid;
@@ -702,11 +707,13 @@
       document.getElementById("arrange-auto")?.addEventListener("click", () => this.autoRows());
       document.getElementById("arrange-undo")?.addEventListener("click", () => this.undo());
       document.getElementById("arrange-done")?.addEventListener("click", () => this.exit());
+      this.wireSize();
       window.addEventListener("keydown", (event) => {
         if (!this.active || event.key !== "Escape" || this.grid.drag?.session) return;
-        // A menu or a dialog open over the board closes first.
+        // A menu or a dialog open over the board closes first, then the panel.
         if (NordlysUI.layers?.length) return;
         event.preventDefault();
+        if (this.sizeOpen()) { this.showSize(false, { focus: true }); return; }
         this.exit();
       });
       window.addEventListener("nordlys:languagechange", () => { if (this.active) rest(); });
@@ -719,6 +726,7 @@
       const config = this.app.config;
       return {
         layout: config.boardLayout,
+        measures: Object.fromEntries(MEASURES.map((key) => [key, config[key]])),
         groups: (config.groups || []).map((group) => ({ group, cols: group.cols, row: group.row, hidden: group.hidden, links: [...(group.links || [])] }))
       };
     }
@@ -739,8 +747,9 @@
           entry.group.links = entry.links;
         }
         config.boardLayout = shot.layout;
+        if (shot.measures) this.putMeasures(shot.measures);
         this.app.saveConfig();
-      }, { after: () => this.app.settings?.syncBoardLayout?.() });
+      }, { after: () => { this.app.settings?.syncBoardLayout?.(); this.syncSize(); } });
     }
 
     /* One step of Undo, taken before a change — or handed in, when the change
@@ -784,6 +793,7 @@
 
     exit() {
       if (!this.active) return;
+      this.showSize(false);
       this.active = false;
       document.body.classList.remove("arranging");
       this.bar.hidden = true;
@@ -830,10 +840,157 @@
       if (auto) auto.hidden = !layout()?.hasRows(config.groups || []);
       const undo = document.getElementById("arrange-undo");
       if (undo) undo.disabled = !this.history.length;
-      const layouts = this.bar.querySelector(".arrange-layouts");
+      const layouts = this.bar.querySelector(".arrange-controls .arrange-layouts");
       NordlysUI.trackThumb(layouts, layouts?.querySelector('[aria-checked="true"]'));
       if (!this.active) return;
       for (const tile of this.grid.board?.querySelectorAll(".tile") || []) tile.tabIndex = -1;
+    }
+
+    /* ── Size and spacing ───────────────────────────────────────────
+       Five measures, each written straight to the config and drawn at once,
+       so the board itself is the preview. A drag of a slider is one step of
+       Undo, not one per pixel. */
+    wireSize() {
+      const panel = document.getElementById("arrange-size-panel");
+      const toggle = document.getElementById("arrange-size");
+      if (!panel || !toggle) return;
+      this.sizePanel = panel;
+      this.sizeToggle = toggle;
+      toggle.addEventListener("click", () => this.showSize(!this.sizeOpen()));
+      const slider = (id, key, value = (input) => Number(input.value)) => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        let step = false;
+        input.addEventListener("input", () => {
+          if (!step) { this.remember(); step = true; }
+          this.setMeasure(key, value(input), { quiet: true });
+        });
+        input.addEventListener("change", () => {
+          step = false;
+          this.sayMeasure(key);
+        });
+      };
+      slider("arrange-tile-size", "tileSize");
+      slider("arrange-tile-gap", "cardGap");
+      slider("arrange-folder-gap", "boardGap");
+      const radios = (selector, key, read) => {
+        const buttons = [...panel.querySelectorAll(selector)];
+        for (const button of buttons) {
+          button.addEventListener("click", () => {
+            const next = read(button);
+            if (this.app.config[key] === next) return;
+            this.remember();
+            this.setMeasure(key, next);
+          });
+          button.addEventListener("keydown", (event) => {
+            const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+            if (!step) return;
+            event.preventDefault();
+            const next = buttons[(buttons.indexOf(button) + step + buttons.length) % buttons.length];
+            next.focus();
+            next.click();
+          });
+        }
+      };
+      radios("[data-tile]", "tileSize", (button) => Number(button.dataset.tile));
+      radios("[data-width]", "boardWidth", (button) => button.dataset.width);
+      document.getElementById("arrange-names")?.addEventListener("change", (event) => {
+        this.remember();
+        this.setMeasure("tileLabels", event.target.checked);
+      });
+      document.getElementById("arrange-size-reset")?.addEventListener("click", () => {
+        if (this.measuresAreDefault()) return;
+        this.remember();
+        boardTransition(this.grid, () => {
+          this.putMeasures(DEFAULT_MEASURES);
+          this.app.saveConfig();
+        }, { after: () => this.syncSize() });
+        NordlysUI.announce(text("arrange.sizeResetDone", "Size and spacing are back to the defaults"));
+      });
+      window.addEventListener("nordlys:languagechange", () => this.syncSize());
+    }
+
+    sizeOpen() { return Boolean(this.sizePanel && !this.sizePanel.hidden); }
+
+    showSize(open, { focus = false } = {}) {
+      if (!this.sizePanel) return;
+      this.sizePanel.hidden = !open;
+      this.sizeToggle?.setAttribute("aria-expanded", String(open));
+      if (open) {
+        this.syncSize();
+        (this.sizePanel.querySelector('[data-tile][aria-checked="true"]') || document.getElementById("arrange-tile-size"))?.focus({ preventScroll: true });
+      } else if (focus) this.sizeToggle?.focus({ preventScroll: true });
+    }
+
+    /* Writes the measures without drawing: the caller draws once. */
+    putMeasures(measures) {
+      const config = this.app.config;
+      for (const key of MEASURES) {
+        if (measures[key] === undefined) delete config[key];
+        else config[key] = measures[key];
+      }
+      this.app.applyGeometryTokens();
+    }
+
+    setMeasure(key, value, { quiet = false } = {}) {
+      const config = this.app.config;
+      // The space between folders stops following the bookmarks' once set.
+      config[key] = value;
+      this.app.applyGeometryTokens();
+      this.app.saveConfig();
+      this.grid.relayout();
+      this.syncSize();
+      this.app.settings?.syncGeometry?.();
+      if (!quiet) this.sayMeasure(key);
+    }
+
+    sayMeasure(key) {
+      const config = this.app.config;
+      const words = {
+        tileSize: () => text("arrange.saidTileSize", "Bookmark size {px}", { px: config.tileSize }),
+        cardGap: () => text("arrange.saidTileGap", "Space between bookmarks {px}", { px: config.cardGap }),
+        boardGap: () => text("arrange.saidFolderGap", "Space between folders {px}", { px: config.boardGap }),
+        boardWidth: () => text(`arrange.${config.boardWidth || "standard"}`, config.boardWidth || "standard"),
+        tileLabels: () => config.tileLabels === false ? text("arrange.namesOff", "Names hidden") : text("arrange.namesOn", "Names shown")
+      }[key];
+      if (words) NordlysUI.announce(words());
+    }
+
+    measuresAreDefault() {
+      const config = this.app.config;
+      return MEASURES.every((key) => (config[key] ?? DEFAULT_MEASURES[key]) === DEFAULT_MEASURES[key]);
+    }
+
+    /* The panel says what the board is, whoever changed it last. */
+    syncSize() {
+      const panel = this.sizePanel;
+      if (!panel) return;
+      const config = this.app.config;
+      const tile = Math.max(56, config.tileSize ?? DEFAULT_MEASURES.tileSize);
+      const gap = config.cardGap ?? DEFAULT_MEASURES.cardGap;
+      const folders = Number.isFinite(config.boardGap) ? config.boardGap : gap + 2;
+      const width = config.boardWidth || "standard";
+      const set = (id, value) => { const input = document.getElementById(id); if (input) input.value = String(value); };
+      set("arrange-tile-size", tile);
+      set("arrange-tile-gap", gap);
+      set("arrange-folder-gap", folders);
+      const output = document.getElementById("arrange-tile-size-value");
+      if (output) output.textContent = String(tile);
+      const names = document.getElementById("arrange-names");
+      if (names) names.checked = config.tileLabels !== false;
+      const mark = (selector, on) => {
+        const buttons = [...panel.querySelectorAll(selector)];
+        buttons.forEach((button) => button.setAttribute("aria-checked", String(on(button))));
+        // A size between the presets checks none of them; the group still
+        // keeps one way in for the keyboard.
+        const checked = buttons.find((button) => button.getAttribute("aria-checked") === "true");
+        buttons.forEach((button) => { button.tabIndex = button === (checked || buttons[0]) ? 0 : -1; });
+        NordlysUI.trackThumb(buttons[0]?.parentElement, checked || null);
+      };
+      mark("[data-tile]", (button) => Number(button.dataset.tile) === tile);
+      mark("[data-width]", (button) => button.dataset.width === width);
+      const reset = document.getElementById("arrange-size-reset");
+      if (reset) reset.disabled = this.measuresAreDefault();
     }
 
     focusGrip(group) {

@@ -1982,3 +1982,47 @@ body.hover-none .tile:hover .box {
    to need Custom CSS, which is a strange price for wanting less on screen. */
 body[data-header="compact"] #greet { display: none; }
 body[data-header="hidden"] #hero { display: none; }
+
+/* Names under bookmarks, turned off: the words leave the picture, never the
+   link, so a screen reader still hears each bookmark by name. */
+body.tile-names-hidden #board .tile .lbl {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* Size and spacing, over the bar it opens from. The board is its preview, so
+   the panel is narrow, holds five measures, and gets out of the way. */
+.arrange-size {
+  pointer-events: auto;
+  display: grid;
+  gap: 10px;
+  width: min(460px, calc(100vw - 32px));
+  padding: 12px 14px 10px;
+  border-radius: var(--nl-radius-xl);
+  border: 1px solid var(--nl-border);
+  background: color-mix(in srgb, var(--nl-surface-elevated) 94%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+  box-shadow: var(--nl-shadow-3);
+}
+.arrange-size[hidden] { display: none; }
+.arrange-bar:has(.arrange-size:not([hidden])) .arrange-hint { display: none; }
+.arrange-size-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 2px; }
+.arrange-size-title { color: var(--nl-text-primary); font-size: var(--nl-text-sm); font-weight: 650; }
+.arrange-size-reset {
+  min-height: 32px; padding: 0 10px; border: 0; border-radius: var(--nl-radius-sm);
+  background: none; color: var(--nl-text-secondary); font: inherit; font-size: var(--nl-text-xs); font-weight: 600; cursor: pointer;
+}
+.arrange-size-reset:hover:not(:disabled) { color: var(--nl-text-primary); background: color-mix(in srgb, var(--nl-text-primary) 8%, transparent); }
+.arrange-size-reset:disabled { opacity: .45; cursor: default; }
+.arrange-size-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.arrange-size-row + .arrange-size-row { padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--nl-border) 60%, transparent); }
+/* Whatever the panel covers can be scrolled out from under it. */
+body.arranging:has(.arrange-size:not([hidden])) #page { padding-bottom: 560px; }
+.arrange-size-label { flex: 1 0 100%; color: var(--nl-text-secondary); font-size: var(--nl-text-xs); font-weight: 600; }
+.arrange-size-row:has(.tg) .arrange-size-label { flex: 1 1 auto; }
+.arrange-size-presets .arrange-layout { padding-inline: 10px; font-size: var(--nl-text-xs); }
+.arrange-size-slider { flex: 1 1 120px; min-width: 0; accent-color: var(--nl-accent); }
+.arrange-size-value { min-width: 3ch; color: var(--nl-text-secondary); font-size: var(--nl-text-xs); font-variant-numeric: tabular-nums; text-align: end; }
+.arrange-size-end { color: var(--nl-text-tertiary); font-size: var(--nl-text-2xs); }
+#arrange-size[aria-expanded="true"] { color: var(--nl-text-primary); background: color-mix(in srgb, var(--nl-text-primary) 10%, transparent); }

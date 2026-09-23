@@ -27,13 +27,13 @@
      are allowed through: a newer build may have added one, and refusing it
      would make every upgrade path a validation failure. */
   const FIELDS = {
-    version: "string", theme: "string", colorMode: "string", bgMode: "string", bgPalette: "string", boardLayout: "string",
+    version: "string", theme: "string", colorMode: "string", bgMode: "string", bgPalette: "string", boardLayout: "string", boardWidth: "string",
     glassLevel: "string", headerStyle: "string", timeFormat: "string",
     userName: "string", customCss: "string", iconShape: "string",
     hoverEffect: "string", language: "string",
     bgBlur: "number", bgDim: "number", cardRadius: "number", tileSize: "number",
-    cardGap: "number", cardGlow: "number", bgMotion: "number", bgIntensity: "number", bgSeed: "number",
-    showSeconds: "boolean", openNewTab: "boolean", highLegibility: "boolean", bgRealSky: "boolean", bgDaylight: "boolean",
+    cardGap: "number", boardGap: "number", cardGlow: "number", bgMotion: "number", bgIntensity: "number", bgSeed: "number",
+    showSeconds: "boolean", openNewTab: "boolean", highLegibility: "boolean", bgRealSky: "boolean", bgDaylight: "boolean", tileLabels: "boolean",
     groups: "list", bgPalettes: "list", customTheme: "object"
   };
   const NUMERIC_FIELDS = Object.entries(FIELDS)
@@ -138,6 +138,7 @@
     if (Array.isArray(candidate.bgPalettes)) candidate.bgPalettes.forEach((palette, index) => validatePalette(palette, index, errors));
     if (typeof candidate.bgSeed === "number" && !isSeed(candidate.bgSeed)) errors.push("bgSeed should be a whole number from 0 to 4294967295");
     if (typeof candidate.boardLayout === "string" && !["natural", "fitted"].includes(candidate.boardLayout)) errors.push('boardLayout should be "natural" or "fitted"');
+    if (typeof candidate.boardWidth === "string" && !["narrow", "standard", "wide"].includes(candidate.boardWidth)) errors.push('boardWidth should be "narrow", "standard" or "wide"');
     return { ok: errors.length === 0, errors };
   }
 
@@ -163,6 +164,8 @@
     let repaired = false;
     if (config.bgSeed !== undefined && !isSeed(config.bgSeed)) { config.bgSeed = 0; repaired = true; }
     if (config.boardLayout !== undefined && !["natural", "fitted"].includes(config.boardLayout)) { config.boardLayout = "natural"; repaired = true; }
+    if (config.boardWidth !== undefined && !["narrow", "standard", "wide"].includes(config.boardWidth)) { config.boardWidth = "standard"; repaired = true; }
+    if (config.boardGap !== undefined && !(Number.isFinite(config.boardGap) && config.boardGap >= 6 && config.boardGap <= 48)) { delete config.boardGap; repaired = true; }
     if (!Array.isArray(config.groups)) { config.groups = []; repaired = true; }
     const groups = config.groups.filter(isObject);
     if (groups.length !== config.groups.length) { config.groups = groups; repaired = true; }

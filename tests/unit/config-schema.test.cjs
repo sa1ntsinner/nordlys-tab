@@ -150,3 +150,17 @@ test('icon addresses are kept when sound and trimmed when not', () => {
   assert.equal(repairConfig(config), true);
   assert.equal('iconUrls' in link, false);
 });
+
+/* Size and spacing: a width outside the three, or a folder gap outside the
+   slider's reach, is put back rather than drawn. */
+test('board width and folder spacing are repaired when out of range', () => {
+  const config = { ...good(), boardWidth: 'enormous', boardGap: 400, tileLabels: false };
+  assert.ok(validateConfig(config).errors.some(error => /boardWidth/.test(error)));
+  assert.equal(repairConfig(config), true);
+  assert.equal(config.boardWidth, 'standard');
+  assert.equal('boardGap' in config, false);
+  assert.equal(config.tileLabels, false);
+  const sound = { ...good(), boardWidth: 'wide', boardGap: 24 };
+  assert.equal(repairConfig(sound), false);
+  assert.equal(validateConfig({ ...good(), tileLabels: 'yes' }).ok, false);
+});

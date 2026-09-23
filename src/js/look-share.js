@@ -29,6 +29,9 @@
     cardRadius: number(6, 36),
     tileSize: number(50, 110),
     cardGap: number(6, 28),
+    boardGap: number(6, 48),
+    boardWidth: oneOf(['narrow', 'standard', 'wide']),
+    tileLabels: value => (typeof value === 'boolean' ? value : undefined),
     cardGlow: number(0, 100),
     iconShape: oneOf(['squircle', 'rounded', 'circle']),
     hoverEffect: oneOf(['lift', 'glow', 'scale', 'none'])

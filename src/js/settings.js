@@ -836,7 +836,7 @@ class SettingsController {
   // Put a look on the page, in memory only.
   wearLook(look, knownTheme = true) {
     const config = this.app.config;
-    for (const key of ["bgMode", "bgMotion", "bgIntensity", "bgSeed", "bgRealSky", "bgDaylight", "boardLayout", "glassLevel", "cardRadius", "tileSize", "cardGap", "cardGlow", "iconShape", "hoverEffect"]) {
+    for (const key of ["bgMode", "bgMotion", "bgIntensity", "bgSeed", "bgRealSky", "bgDaylight", "boardLayout", "glassLevel", "cardRadius", "tileSize", "cardGap", "boardGap", "boardWidth", "tileLabels", "cardGlow", "iconShape", "hoverEffect"]) {
       if (key in look) config[key] = look[key];
     }
     if (look.fonts) config.fonts = { ...(config.fonts || {}), ...look.fonts };
@@ -1090,6 +1090,16 @@ class SettingsController {
     this.syncBackgroundControls?.();
     // syncFormValues writes select.value directly, which fires no event.
     window.NordlysUI?.refreshSelects();
+  }
+
+  /* The Appearance sliders for the measures Arrange can change too. */
+  syncGeometry() {
+    const cfg = this.app.config;
+    const tile = document.getElementById("cfg-tile-size");
+    const gap = document.getElementById("cfg-card-gap");
+    if (tile) tile.value = String(cfg.tileSize ?? 78);
+    if (gap) gap.value = String(cfg.cardGap ?? 12);
+    this.updateSliderLabels();
   }
 
   updateSliderLabels() {
