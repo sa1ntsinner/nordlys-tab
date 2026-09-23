@@ -39,7 +39,7 @@
   const NUMERIC_FIELDS = Object.entries(FIELDS)
     .filter(([, type]) => type === "number")
     .map(([field]) => field);
-  const LINK_TEXT_FIELDS = ["name", "url", "icon", "iconSource", "color", "customImg", "monogram", "tone"];
+  const LINK_TEXT_FIELDS = ["name", "url", "icon", "iconSource", "color", "customImg", "monogram", "tone", "iconUrl"];
   // The same bounds the grid enforces on its resize handle.
   const COLUMNS = { min: 1, max: 8 };
   // The same bound board-layout.js keeps rows inside.
@@ -51,6 +51,32 @@
   function isForbiddenUrl(url) {
     const folded = Array.from(String(url)).filter((char) => char.charCodeAt(0) > 0x20).join("");
     return /^(javascript|data|vbscript):/i.test(folded);
+  }
+
+  /* The addresses an icon came from (icon-history.js). Only web addresses,
+     and only small raster pictures beside them; anything else is dropped
+     rather than refused, since the icon itself does not depend on them. */
+  const ICON_ADDRESS = /^https?:\/\/[^\s]+$/i;
+  const ICON_THUMB = /^data:image\/(png|webp|jpeg|gif);base64,/i;
+  function repairIconAddresses(link) {
+    let repaired = false;
+    if (link.iconUrl !== undefined && !(typeof link.iconUrl === "string" && ICON_ADDRESS.test(link.iconUrl) && link.iconUrl.length <= 2048)) {
+      delete link.iconUrl; repaired = true;
+    }
+    if (link.iconUrls === undefined) return repaired;
+    const kept = (Array.isArray(link.iconUrls) ? link.iconUrls : [])
+      .filter((entry) => isObject(entry) && typeof entry.url === "string" && ICON_ADDRESS.test(entry.url) && entry.url.length <= 2048)
+      .slice(0, 6)
+      .map((entry) => ({
+        url: entry.url,
+        thumb: typeof entry.thumb === "string" && ICON_THUMB.test(entry.thumb) && entry.thumb.length <= 40000 ? entry.thumb : "",
+        at: Number.isFinite(entry.at) ? entry.at : 0
+      }));
+    const same = Array.isArray(link.iconUrls) && kept.length === link.iconUrls.length
+      && kept.every((entry, index) => entry.thumb === link.iconUrls[index].thumb && entry.at === link.iconUrls[index].at);
+    if (!kept.length) { delete link.iconUrls; return true; }
+    if (!same) { link.iconUrls = kept; repaired = true; }
+    return repaired;
   }
 
   function validateGroup(group, index, errors) {
@@ -75,6 +101,7 @@
       for (const field of LINK_TEXT_FIELDS) {
         if (link[field] !== undefined && typeof link[field] !== "string") errors.push(`${at}: ${field} should be text`);
       }
+      if (link.iconUrls !== undefined && !Array.isArray(link.iconUrls)) errors.push(`${at}: iconUrls should be a list`);
     });
   }
 
@@ -157,6 +184,7 @@
       if (!Array.isArray(group.links)) { group.links = []; repaired = true; }
       const links = group.links.filter((link) => isObject(link) && typeof link.url === "string" && !isForbiddenUrl(link.url));
       if (links.length !== group.links.length) { group.links = links; repaired = true; }
+      for (const link of links) if (repairIconAddresses(link)) repaired = true;
     }
     return repaired;
   }

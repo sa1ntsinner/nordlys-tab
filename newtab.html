@@ -799,18 +799,24 @@
             <div style="flex: 1;">
               <b id="icon-file-name" style="font-size: var(--nl-text-xs); color: var(--ink);">image.png</b>
               <div style="display: flex; gap: 8px; margin-top: 8px;">
-                <button id="icon-file-crop-btn" type="button" class="glass-btn accent" style="flex: 1.2;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>Crop &amp; Adjust Icon</button>
-                <button id="icon-file-apply-btn" type="button" class="glass-btn" style="flex: 1;">Use Full Image</button>
+                <button id="icon-file-crop-btn" type="button" class="glass-btn accent" style="flex: 1.2;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg><span data-i18n="picker.cropAdjust">Crop &amp; adjust</span></button>
+                <button id="icon-file-apply-btn" type="button" class="glass-btn" style="flex: 1;" data-i18n="picker.useFull">Use full image</button>
               </div>
             </div>
           </div>
         </section>
-          <section class="custom-source">
+          <!-- The address an icon came from is kept with the bookmark, and so
+               are the last few it used, each shown by the picture it gave. -->
+          <section class="custom-source" id="icon-url-source">
             <h4 data-i18n="modal.customUrl">From a web address</h4>
-          <label style="display: block; font-size: var(--nl-text-xs); color: var(--dim); margin-bottom: 6px;">Image Web URL (SVG, PNG, JPG, WebP, GIF)</label>
-          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-            <input id="icon-url-input" type="url" class="glass-input" placeholder="https://example.com/icon.png" style="flex: 1;">
-            <button id="icon-url-check-btn" type="button" class="glass-btn accent">Preview</button>
+          <label for="icon-url-input" class="custom-source-note" data-i18n="picker.urlLabel">The address of an image: SVG, PNG, JPG, WebP or GIF</label>
+          <div class="icon-url-row">
+            <input id="icon-url-input" type="url" class="glass-input" placeholder="https://example.com/icon.png" autocomplete="off" spellcheck="false">
+            <button id="icon-url-check-btn" type="button" class="glass-btn accent" data-i18n="picker.urlPreview">Preview</button>
+          </div>
+          <div id="icon-url-editing" class="icon-url-editing" hidden>
+            <span data-i18n="picker.urlEditing">Changing an address you used. Preview the new one and use it: it takes the old one's place.</span>
+            <button id="icon-url-editing-cancel" type="button" class="icon-url-link" data-i18n="picker.urlEditCancel">Keep the old one</button>
           </div>
           <div class="url-preview-box">
             <div id="icon-url-preview-img-box" class="url-preview-square" title="Click to open Cropper" data-i18n-title="modal.openCropper">
@@ -819,10 +825,14 @@
             <div style="flex: 1;">
               <span id="icon-url-status" style="font-size: var(--nl-text-xs); color: var(--dim);" role="status" data-i18n="modal.urlHint">Enter an image address above to try it</span>
               <div id="icon-url-actions" style="display: none; gap: 8px; margin-top: 8px;">
-                <button id="icon-url-crop-btn" type="button" class="glass-btn accent" style="flex: 1.2;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>Crop &amp; Adjust Icon</button>
-                <button id="icon-url-apply-btn" type="button" class="glass-btn" style="flex: 1;">Use Full Image</button>
+                <button id="icon-url-crop-btn" type="button" class="glass-btn accent" style="flex: 1.2;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg><span data-i18n="picker.cropAdjust">Crop &amp; adjust</span></button>
+                <button id="icon-url-apply-btn" type="button" class="glass-btn" style="flex: 1;" data-i18n="picker.useFull">Use full image</button>
               </div>
             </div>
+          </div>
+          <div id="icon-url-history" class="icon-url-history" hidden>
+            <span id="icon-url-history-label" class="custom-source-note" data-i18n="picker.urlHistory">Addresses this icon has come from</span>
+            <ul class="icon-url-strip" aria-labelledby="icon-url-history-label"></ul>
           </div>
         </section>
           <section class="custom-source">
@@ -1249,6 +1259,7 @@
   <script src="src/js/settings-bookmarks.js"></script>
   <script src="src/js/settings-support.js"></script>
   <script src="src/js/icon-picker.js"></script>
+  <script src="src/js/icon-history.js"></script>
   <script src="src/js/settings.js"></script>
   <script src="src/js/config-schema.js"></script>
   <script src="src/js/app.js"></script>

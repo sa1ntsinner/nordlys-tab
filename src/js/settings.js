@@ -2072,6 +2072,7 @@ class SettingsController {
           link.iconSource = result.id;
           delete link.icon;
           delete link.monogram;
+          window.NordlysIconHistory?.leave(link);
           this.app.saveConfig();
           this.app.grid?.updateTileDOM(gIdx, lIdx);
           this.renderBookmarksManager();
@@ -2246,6 +2247,8 @@ class SettingsController {
           link.customImg = url;
           delete link.icon;
           delete link.monogram;
+          delete link.iconSource;
+          window.NordlysIconHistory?.leave(link);
           this.app.saveConfig();
           this.app.grid?.updateTileDOM(gIdx, lIdx);
           this.renderBookmarksManager();
@@ -2269,12 +2272,25 @@ class SettingsController {
     const urlActions = document.getElementById("icon-url-actions");
     const urlCropBtn = document.getElementById("icon-url-crop-btn");
     const urlApplyBtn = document.getElementById("icon-url-apply-btn");
+    const urlEditing = document.getElementById("icon-url-editing");
+    const urlHistory = document.getElementById("icon-url-history");
+    const urlStrip = urlHistory?.querySelector(".icon-url-strip");
+    const addresses = window.NordlysIconHistory;
     this.currentLoadedUrl = null;
+    /* The address the preview came from, and the remembered one being
+       changed, if any. The picture alone is what used to be kept. */
+    this.urlSource = null;
+    this.urlEditingFrom = null;
 
-    const word = (key, fallback) => {
-      const value = window.I18N?.t(key);
+    const word = (key, fallback, params) => {
+      const value = window.I18N?.t(key, params);
       return value && value !== key ? value : fallback;
     };
+    const targetLink = () => {
+      const target = this.activeIconTarget;
+      return target ? this.app.config.groups[target.gIdx]?.links[target.lIdx] : null;
+    };
+    const showActions = (shown) => { if (urlActions) urlActions.style.display = shown ? "flex" : "none"; };
     /* Success is said only once the image has actually decoded. The loader
        hands the address back unchanged when every way of fetching it failed,
        and this used to announce that as "loaded successfully" regardless. */
@@ -2287,8 +2303,9 @@ class SettingsController {
       });
       if (!decodes) {
         this.currentLoadedUrl = null;
+        this.urlSource = null;
         if (urlStatus) urlStatus.textContent = word("modal.imageFailed", "No image came back from that address");
-        if (urlActions) urlActions.style.display = "none";
+        showActions(false);
         return;
       }
       this.currentLoadedUrl = url;
@@ -2296,16 +2313,248 @@ class SettingsController {
         this.setPreviewImage(urlImgBox, url, () => this.openCropper(url, "url"));
       }
       if (urlStatus) urlStatus.textContent = word("modal.imageLoaded", "Image ready");
-      if (urlActions) urlActions.style.display = "flex";
+      showActions(true);
+    };
+    let previewSequence = 0;
+    const previewAddress = async (address) => {
+      if (!address) return;
+      const sequence = ++previewSequence;
+      // Until it arrives there is nothing to use: the buttons would have
+      // applied the picture that was there before.
+      this.currentLoadedUrl = null;
+      this.urlSource = null;
+      showActions(false);
+      urlImgBox?.classList.add("is-loading");
+      if (urlStatus) urlStatus.textContent = word("modal.imageLoading", "Loading the image…");
+      const cleanDataUrl = await this.loadImageAsCleanBase64(address);
+      // A newer address was asked for while this one was on its way.
+      if (sequence !== previewSequence) return;
+      urlImgBox?.classList.remove("is-loading");
+      this.urlSource = addresses?.isAddress(address) ? address.trim() : null;
+      await handleUrlLoaded(cleanDataUrl);
     };
 
-    urlCheckBtn?.addEventListener("click", async () => {
-      const url = urlInput?.value.trim();
-      if (!url) return;
+    /* Changing a remembered address: the field is where it is changed, and
+       what is used next takes the old one's place instead of joining it. */
+    const setEditing = (address) => {
+      this.urlEditingFrom = address || null;
+      if (urlEditing) urlEditing.hidden = !address;
+      urlStrip?.querySelectorAll(".icon-url-version").forEach((item) => item.classList.toggle("is-editing", item.dataset.url === address));
+    };
+    document.getElementById("icon-url-editing-cancel")?.addEventListener("click", () => {
+      const link = targetLink();
+      setEditing(null);
+      showCurrent(link);
+      urlInput?.focus();
+    });
 
-      if (urlStatus) urlStatus.textContent = word("modal.imageLoading", "Loading the image…");
-      const cleanDataUrl = await this.loadImageAsCleanBase64(url);
-      await handleUrlLoaded(cleanDataUrl);
+    /* What the pane shows for the icon the bookmark has now. */
+    const showCurrent = (link) => {
+      this.currentLoadedUrl = null;
+      this.urlSource = null;
+      previewSequence++;
+      urlImgBox?.classList.remove("is-loading");
+      const image = link?.customImg;
+      const address = link?.iconUrl || (/^https?:\/\//i.test(image || "") ? image : "");
+      if (urlInput) urlInput.value = address;
+      if (image && /^(https?:|data:)/i.test(image)) {
+        if (urlImgBox) this.setPreviewImage(urlImgBox, image, () => this.openCropper(image, "url"));
+        if (urlStatus) urlStatus.textContent = address
+          ? word("picker.urlCurrent", "In use, from this address")
+          : word("picker.urlCurrentImage", "The picture in use now");
+        showActions(true);
+        this.currentLoadedUrl = image;
+        this.urlSource = addresses?.isAddress(address) ? address : null;
+      } else {
+        if (urlImgBox) {
+          const empty = document.createElement("span");
+          empty.className = "icon-url-empty";
+          empty.textContent = word("modal.noImage", "No image");
+          urlImgBox.replaceChildren(empty);
+          urlImgBox.onclick = null;
+        }
+        if (urlStatus) urlStatus.textContent = word("modal.urlHint", "Enter an image address above to try it");
+        showActions(false);
+      }
+    };
+
+    const thumbOf = (entry, current) => {
+      const box = document.createElement("span");
+      box.className = "icon-url-thumb";
+      const picture = entry.thumb || (current ? targetLink()?.customImg : "");
+      if (picture) {
+        const image = document.createElement("img");
+        image.alt = "";
+        image.src = picture;
+        image.draggable = false;
+        box.append(image);
+      } else {
+        const letter = document.createElement("span");
+        letter.className = "icon-url-letter";
+        letter.textContent = (addresses.hostOf(entry.url).charAt(0) || "?").toUpperCase();
+        box.append(letter);
+      }
+      return box;
+    };
+    const toolButton = (tool, label, title, path) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "icon-url-tool";
+      button.dataset.tool = tool;
+      button.tabIndex = -1;
+      button.setAttribute("aria-label", label);
+      button.title = title;
+      button.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
+      return button;
+    };
+    const versionItem = (entry, link) => {
+      const current = link?.iconUrl === entry.url;
+      const host = addresses.hostOf(entry.url);
+      const item = document.createElement("li");
+      item.className = "icon-url-version";
+      item.classList.toggle("is-current", current);
+      item.classList.toggle("is-editing", this.urlEditingFrom === entry.url);
+      item.dataset.url = entry.url;
+      const pick = document.createElement("button");
+      pick.type = "button";
+      pick.className = "icon-url-pick";
+      pick.tabIndex = -1;
+      pick.title = current ? `${word("picker.urlInUse", "In use")} · ${entry.url}` : entry.url;
+      pick.setAttribute("aria-label", current ? word("picker.urlVersionInUse", `${host}, in use`, { host }) : host);
+      pick.setAttribute("aria-keyshortcuts", "Delete");
+      if (current) pick.setAttribute("aria-current", "true");
+      const name = document.createElement("span");
+      name.className = "icon-url-host";
+      name.textContent = host;
+      pick.append(thumbOf(entry, current), name);
+      const tools = document.createElement("span");
+      tools.className = "icon-url-tools";
+      tools.append(
+        toolButton("edit", word("picker.urlEditOf", `Change the address from ${host}`, { host }), word("picker.urlEdit", "Change the address"), '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>'),
+        toolButton("remove", word("picker.urlRemoveOf", `Remove ${host} from this list`, { host }), word("picker.urlRemove", "Remove from this list"), '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>')
+      );
+      item.append(pick, tools);
+      return item;
+    };
+    /* One stop in the tab order for the whole strip; the arrows walk it, and
+       the chosen version's own tools follow it. */
+    const rove = (item, focus = false) => {
+      urlStrip?.querySelectorAll(".icon-url-version").forEach((other) => {
+        const on = other === item;
+        other.querySelectorAll("button").forEach((button) => { button.tabIndex = on ? 0 : -1; });
+      });
+      if (focus) item?.querySelector(".icon-url-pick")?.focus();
+    };
+    const renderHistory = (link, { arriving = null, focusUrl = null } = {}) => {
+      if (!urlStrip || !urlHistory || !addresses) return;
+      const entries = addresses.list(link);
+      urlHistory.hidden = entries.length === 0;
+      urlStrip.replaceChildren(...entries.map((entry) => versionItem(entry, link)));
+      const items = [...urlStrip.children];
+      const focused = items.find((item) => item.dataset.url === focusUrl);
+      if (arriving) items.find((item) => item.dataset.url === arriving)?.classList.add("is-arriving");
+      rove(focused || items.find((item) => item.classList.contains("is-current")) || items[0], Boolean(focused));
+    };
+    this.renderIconUrlHistory = (link) => {
+      setEditing(null);
+      showCurrent(link);
+      renderHistory(link);
+    };
+
+    /* A version taken off the list folds away where it stood; the icon on the
+       tile is untouched, and the one Undo puts it back. */
+    const removeVersion = (item) => {
+      const link = targetLink();
+      const url = item?.dataset.url;
+      if (!link || !url || !addresses) return;
+      const removed = addresses.forget(link, url);
+      if (!removed) return;
+      this.app.saveConfig();
+      if (this.urlEditingFrom === url) setEditing(null);
+      const neighbour = item.nextElementSibling || item.previousElementSibling;
+      const hadFocus = item.contains(document.activeElement);
+      if (neighbour) rove(neighbour, hadFocus);
+      else if (hadFocus) urlInput?.focus();
+      const gone = () => {
+        item.remove();
+        if (urlHistory) urlHistory.hidden = !urlStrip?.children.length;
+      };
+      const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      if (reduced || !item.animate) gone();
+      else {
+        const { duration, easing } = NordlysUI.motion("settle-fast");
+        const gap = parseFloat(getComputedStyle(urlStrip).columnGap) || 0;
+        item.style.pointerEvents = "none";
+        item.animate([
+          { width: `${item.offsetWidth}px`, marginInlineEnd: "0px", opacity: 1, transform: "scale(1)" },
+          { width: "0px", marginInlineEnd: `${-gap}px`, opacity: 0, transform: "scale(.8)" }
+        ], { duration, easing }).finished.then(gone, gone);
+      }
+      NordlysUI.showUndoToast({
+        message: word("picker.urlRemoved", "Address removed; the icon stays as it is"),
+        onAction: () => {
+          const back = targetLink() === link ? link : null;
+          addresses.restore(link, removed);
+          this.app.saveConfig();
+          if (back) renderHistory(link, { arriving: url, focusUrl: urlStrip?.contains(document.activeElement) ? url : null });
+        }
+      });
+    };
+
+    urlStrip?.addEventListener("click", (event) => {
+      const item = event.target.closest(".icon-url-version");
+      if (!item) return;
+      const link = targetLink();
+      const url = item.dataset.url;
+      const tool = event.target.closest(".icon-url-tool")?.dataset.tool;
+      rove(item);
+      if (tool === "remove") { removeVersion(item); return; }
+      if (tool === "edit") {
+        setEditing(url);
+        if (urlInput) { urlInput.value = url; urlInput.focus(); urlInput.select(); }
+        previewAddress(url);
+        return;
+      }
+      setEditing(null);
+      if (link?.iconUrl === url) { showCurrent(link); return; }
+      if (urlInput) urlInput.value = url;
+      previewAddress(url);
+    });
+    urlStrip?.addEventListener("keydown", (event) => {
+      const item = event.target.closest(".icon-url-version");
+      if (!item) return;
+      const items = [...urlStrip.children];
+      const at = items.indexOf(item);
+      const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key] * (getComputedStyle(urlStrip).direction === "rtl" ? -1 : 1);
+      let next = null;
+      if (Number.isFinite(step)) next = items[Math.max(0, Math.min(items.length - 1, at + step))];
+      else if (event.key === "Home") next = items[0];
+      else if (event.key === "End") next = items[items.length - 1];
+      else if ((event.key === "Delete" || event.key === "Backspace") && event.target.classList.contains("icon-url-pick")) {
+        event.preventDefault();
+        removeVersion(item);
+        return;
+      }
+      if (!next) return;
+      event.preventDefault();
+      rove(next, true);
+    });
+
+    urlCheckBtn?.addEventListener("click", () => previewAddress(urlInput?.value.trim()));
+    urlInput?.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      previewAddress(urlInput.value.trim());
+    });
+    // What the buttons would use is what the preview shows, never a field that
+    // has since been changed under it.
+    urlInput?.addEventListener("input", () => {
+      if (urlInput.value.trim() === (this.urlSource || "")) return;
+      if (!this.currentLoadedUrl) return;
+      this.currentLoadedUrl = null;
+      this.urlSource = null;
+      showActions(false);
+      if (urlStatus) urlStatus.textContent = word("picker.urlChanged", "Press Preview to see this address");
     });
 
     urlCropBtn?.addEventListener("click", () => {
@@ -2314,20 +2563,27 @@ class SettingsController {
       }
     });
 
-    urlApplyBtn?.addEventListener("click", () => {
-      const url = this.currentLoadedUrl || urlInput?.value.trim();
-      if (url && this.activeIconTarget) {
-        const { gIdx, lIdx } = this.activeIconTarget;
-        const link = this.app.config.groups[gIdx]?.links[lIdx];
-        if (link) {
-          link.customImg = url;
-          delete link.icon;
-          delete link.monogram;
-          this.app.saveConfig();
-          this.app.grid?.updateTileDOM(gIdx, lIdx);
-          this.renderBookmarksManager();
-          this.closeIconModal();
-        }
+    urlApplyBtn?.addEventListener("click", async () => {
+      const url = this.currentLoadedUrl;
+      const link = targetLink();
+      if (!url || !link || urlApplyBtn.disabled) return;
+      const { gIdx, lIdx } = this.activeIconTarget;
+      urlApplyBtn.disabled = true;
+      try {
+        // The same size budget a file gets: a picture fetched from an address
+        // was stored whole, however large.
+        const image = await this.iconSizedDataUrl(url);
+        link.customImg = image;
+        delete link.icon;
+        delete link.monogram;
+        delete link.iconSource;
+        await this.noteIconAddress(link, this.urlSource, image);
+        this.app.saveConfig();
+        this.app.grid?.updateTileDOM(gIdx, lIdx);
+        this.renderBookmarksManager();
+        this.closeIconModal();
+      } finally {
+        urlApplyBtn.disabled = false;
       }
     });
 
@@ -2416,6 +2672,8 @@ class SettingsController {
           link.customImg = await this.iconSizedDataUrl(this.uploadedDataUrl);
           delete link.icon;
           delete link.monogram;
+          delete link.iconSource;
+          window.NordlysIconHistory?.leave(link);
           this.app.saveConfig();
           this.app.grid?.updateTileDOM(gIdx, lIdx);
           this.renderBookmarksManager();
@@ -2441,6 +2699,8 @@ class SettingsController {
         if (link) {
           delete link.customImg;
           delete link.icon;
+          delete link.iconSource;
+          window.NordlysIconHistory?.leave(link);
           link.monogram = monogramInput?.value.trim().toUpperCase() || (link.name || "A").charAt(0);
           this.app.saveConfig();
           this.app.grid?.updateTileDOM(gIdx, lIdx);
@@ -2587,6 +2847,8 @@ class SettingsController {
         link.customImg = finalUrl;
         delete link.icon;
         delete link.monogram;
+        delete link.iconSource;
+        await this.noteIconAddress(link, this.cropperAddress, exportCanvas);
         this.app.saveConfig();
         this.app.grid?.updateTileDOM(gIdx, lIdx);
         this.renderBookmarksManager();
@@ -2606,9 +2868,11 @@ class SettingsController {
           const { gIdx, lIdx } = this.activeIconTarget;
           const link = this.app.config.groups[gIdx]?.links[lIdx];
           if (link) {
-            link.customImg = this.cropperOriginalSource;
+            link.customImg = await this.iconSizedDataUrl(this.cropperOriginalSource);
             delete link.icon;
             delete link.monogram;
+            delete link.iconSource;
+            await this.noteIconAddress(link, this.cropperAddress, link.customImg);
             this.app.saveConfig();
             this.app.grid?.updateTileDOM(gIdx, lIdx);
             this.renderBookmarksManager();
@@ -2678,6 +2942,47 @@ class SettingsController {
     }
   }
 
+  /* The small picture a remembered address is shown by: drawn once, from the
+     icon that was saved, so the list never asks the network for anything. */
+  async iconThumb(source, size = 64) {
+    if (!source) return "";
+    try {
+      let image = source;
+      if (typeof source === "string") {
+        image = new Image();
+        image.src = source;
+        await image.decode();
+      }
+      const width = image.naturalWidth || image.width || size;
+      const height = image.naturalHeight || image.height || size;
+      const scale = Math.min(size / width, size / height);
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const context = canvas.getContext("2d");
+      context.imageSmoothingQuality = "high";
+      context.drawImage(image, (size - width * scale) / 2, (size - height * scale) / 2, width * scale, height * scale);
+      const webp = canvas.toDataURL("image/webp", 0.82);
+      return webp.startsWith("data:image/webp") ? webp : canvas.toDataURL("image/png");
+    } catch {
+      // A picture from another site that would not let itself be read.
+      return "";
+    }
+  }
+
+  /* After an icon is applied: the address it came from goes to the front of
+     the bookmark's list, or takes the place of the one being changed; any
+     other kind of icon means the tile no longer claims an address. */
+  async noteIconAddress(link, address, picture) {
+    const addresses = window.NordlysIconHistory;
+    if (!addresses) return;
+    if (!addresses.isAddress(address)) { addresses.leave(link); return; }
+    const thumb = await this.iconThumb(picture);
+    if (this.urlEditingFrom) addresses.replace(link, this.urlEditingFrom, address, thumb);
+    else addresses.remember(link, address, thumb);
+    this.urlEditingFrom = null;
+  }
+
   setPreviewImage(box, url, onClick) {
     box.replaceChildren();
     const img = document.createElement("img");
@@ -2730,6 +3035,8 @@ class SettingsController {
     const MERGED = ["url", "upload", "monogram"];
     this.cropperPrevSourceTab = MERGED.includes(sourceTab) ? "custom" : (sourceTab || "custom");
     this.cropperOriginalSource = imageSource;
+    // Only a picture that came from an address the person gave has one to keep.
+    this.cropperAddress = sourceTab === "url" ? this.urlSource : null;
 
     const modalTabs = document.querySelectorAll(".icon-tab-btn");
     const modalPanes = document.querySelectorAll(".modal-tab-pane");
@@ -2856,7 +3163,9 @@ class SettingsController {
     // 1. Update Modal Title with Bookmark Name
     const titleEl = document.querySelector("#icon-modal .modal-head b");
     if (titleEl) {
-      titleEl.textContent = `Choose Icon for "${link.name || 'Bookmark'}"`;
+      const name = link.name || "Bookmark";
+      const title = window.I18N?.t("picker.titleFor", { name });
+      titleEl.textContent = title && title !== "picker.titleFor" ? title : `Icon for “${name}”`;
     }
 
     /* 2. The website-icon pane is prepared, not loaded. Opening the picker used
@@ -2880,27 +3189,8 @@ class SettingsController {
         : (window.I18N ? window.I18N.t("picker.faviconNeedsUrl") : "Enter the site address above");
     }
 
-    // 3. Reset and Pre-fill URL Tab
-    const urlInput = document.getElementById("icon-url-input");
-    const urlImgBox = document.getElementById("icon-url-preview-img-box");
-    const urlStatus = document.getElementById("icon-url-status");
-    const urlActions = document.getElementById("icon-url-actions");
-    this.currentLoadedUrl = null;
-
-    if (link.customImg && (link.customImg.startsWith("http") || link.customImg.startsWith("data:"))) {
-      if (urlInput) urlInput.value = link.customImg.startsWith("data:") ? "" : link.customImg;
-      if (urlImgBox) {
-        this.setPreviewImage(urlImgBox, link.customImg, () => this.openCropper(link.customImg, "url"));
-      }
-      if (urlStatus) urlStatus.textContent = "Current bookmark icon loaded";
-      if (urlActions) urlActions.style.display = "flex";
-      this.currentLoadedUrl = link.customImg;
-    } else {
-      if (urlInput) urlInput.value = link.url || "";
-      if (urlImgBox) urlImgBox.innerHTML = `<span style="font-size: 11px; color: var(--dim);">No image</span>`;
-      if (urlStatus) urlStatus.textContent = link.url ? "Click 'Preview' to load image from URL" : "Enter an image URL above to test";
-      if (urlActions) urlActions.style.display = "none";
-    }
+    // 3. The address the icon came from, and the ones it came from before.
+    this.renderIconUrlHistory?.(link);
 
     // 4. Reset Local File Upload Tab
     const fileInput = document.getElementById("icon-file-input");

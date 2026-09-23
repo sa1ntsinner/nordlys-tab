@@ -352,3 +352,30 @@ details[open]::details-content {
   ::view-transition-old(*),
   ::view-transition-new(*) { animation: none !important; }
 }
+
+/* ── Icon addresses ─────────────────────────────────────────────────
+   A version answers the pointer the way a tile does; its tools arrive with
+   it; one put back by Undo grows into its place. Nothing here plays when the
+   picker opens: the list is already there. */
+@media (hover: hover) and (pointer: fine) {
+  .icon-url-thumb { transition: transform var(--nl-transition-settle-fast), box-shadow var(--nl-transition-control); }
+  .icon-url-pick:hover .icon-url-thumb { transform: translateY(-2px); }
+  .icon-url-pick:active .icon-url-thumb { transform: scale(.96); transition-duration: var(--nl-motion-fast); }
+  .icon-url-tools { transition: opacity var(--nl-transition-control), transform var(--nl-transition-settle-fast); }
+}
+.icon-url-host { transition: color var(--nl-transition-control); }
+.icon-url-version.is-arriving { animation: nl-version-in var(--nl-transition-settle) both; }
+@keyframes nl-version-in {
+  from { opacity: 0; transform: scale(.8); }
+}
+.icon-url-editing:not([hidden]) {
+  transition: opacity var(--nl-transition-control), translate var(--nl-transition-settle-fast);
+  @starting-style { opacity: 0; translate: 0 -4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .icon-url-version.is-arriving { animation: none; }
+  .icon-url-pick:hover .icon-url-thumb { transform: none; }
+}
+/* The picture being replaced dims while the next one is on its way. */
+#icon-url-preview-img-box { transition: opacity var(--nl-transition-control); }
+#icon-url-preview-img-box.is-loading { opacity: .4; }
