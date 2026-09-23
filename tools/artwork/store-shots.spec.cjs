@@ -2,18 +2,20 @@ const { test, expect } = require('../../tests/helpers/nordlys-fixture.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
 const compose = require('./compose.cjs');
+const { BOARDS } = require('./store-board.cjs');
 
 /* Regenerates the five Chrome Web Store screenshots. Each is a headline over
-   the real product: the extension is opened at a desktop size, captured at
-   twice its pixels, and the capture is set into a layout from compose.cjs.
-   Nothing in a screenshot is drawn by hand. */
+   the real product: the extension is opened on a board of well-known sites
+   (store-board.cjs) in its own theme, scene and arrangement, captured at twice
+   its pixels, and set into a layout from compose.cjs. Every look is one the
+   product's own settings make; nothing in a screenshot is drawn by hand. */
 
 const ROOT = path.resolve(__dirname, '../..');
 const OUT = path.join(ROOT, 'docs/store-assets');
 const SCRATCH = path.join(ROOT, 'tools/artwork/.scratch');
 
 test.use({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, timezoneId: 'Europe/Berlin' });
-test.setTimeout(420000);
+test.setTimeout(180000);
 
 /* The scene animates on a slow clock: in the first second the aurora is still a
    flat wash, and only after roughly a dozen does it draw the ribbons that make
@@ -59,37 +61,49 @@ async function iconVersions(page) {
   }));
 }
 
-test('regenerate the store screenshots', async ({ nordlysPage }) => {
-  const { page, origin } = nordlysPage;
-  const context = page.context();
-  fs.mkdirSync(OUT, { recursive: true });
-  fs.mkdirSync(SCRATCH, { recursive: true });
+const shot = name => `/tools/artwork/.scratch/${name}`;
 
-  // The board as it opens: a few folders out, the rest in the dock, and the
-  // aurora a little stronger than default so it reads in a still frame.
-  await page.evaluate(() => {
-    window.Nordlys.config.groups.slice(4).forEach(group => { group.hidden = true; });
-    window.Nordlys.config.bgIntensity = 1.4;
-    window.Nordlys.saveConfig();
-    window.Nordlys.bgEngine?.setAtmosphere({ motion: 1, intensity: 1.4 });
-    window.Nordlys.grid.render();
-    document.getElementById('board')?.classList.add('board-loaded');
+/* One screenshot per test, each opening its own board and look. */
+const scene = (key, run) => test.describe(key, () => {
+  test.use({ nordlysBoard: BOARDS[key] });
+  test(`screenshot: ${key}`, async ({ nordlysPage }) => {
+    fs.mkdirSync(OUT, { recursive: true });
+    fs.mkdirSync(SCRATCH, { recursive: true });
+    await nordlysPage.page.evaluate(() => document.getElementById('board')?.classList.add('board-loaded'));
+    await run(nordlysPage);
   });
-  const sky = await frame(page, 'sky.png', CANVAS_WARMUP);
+});
 
-  // Arrange, with the size panel open over the board it changes.
-  await page.mouse.click(40, 880, { button: 'right' });
+scene('sky', async ({ page, origin }) => {
+  const sky = await frame(page, 'sky.png', CANVAS_WARMUP);
+  await render(page.context(), origin, 'screenshot-1-sky.png', compose.slide({
+    title: 'A new tab under a living sky',
+    subtitle: 'Six moving scenes, drawn on your own machine, with your bookmarks in folders on top.',
+    image: sky
+  }));
+});
+
+scene('arrange', async ({ page, origin }) => {
+  await page.waitForTimeout(CANVAS_WARMUP - 4000);
+  await page.mouse.click(40, 890, { button: 'right' });
   await page.locator('#board-ctx-menu [data-action="arrange"]').click();
   await expect(page.locator('#arrange-bar')).toBeVisible();
+  await page.locator('.arrange-layout[data-layout="fitted"]').click();
+  await expect(page.locator('.arrange-layout[data-layout="fitted"]')).toHaveAttribute('aria-checked', 'true');
   await page.locator('#arrange-size').click();
   await expect(page.locator('#arrange-size-panel')).toBeVisible();
   await page.mouse.move(720, 20);
-  const arrange = await frame(page, 'arrange.png', 900);
-  await page.keyboard.press('Escape');
-  await page.keyboard.press('Escape');
-  await expect(page.locator('#arrange-bar')).toBeHidden();
+  const arrange = await frame(page, 'arrange.png', 1500);
+  await render(page.context(), origin, 'screenshot-2-arrange.png', compose.slide({
+    title: 'Arrange it the way you think',
+    subtitle: 'Fitted rows, or folders where you drop them. Set size and spacing, and one Undo takes it back.',
+    image: arrange
+  }));
+});
 
-  // The icon picker, with the addresses this icon has come from.
+scene('icons', async ({ page, origin }) => {
+  const board = await frame(page, 'icons-board.png', CANVAS_WARMUP);
+  // Three pictures one bookmark has come from, served as if from three addresses.
   const pictures = await iconVersions(page);
   await page.route('https://icons.example/**', route => {
     const index = Number(/v(\d)/.exec(route.request().url())?.[1] || 1) - 1;
@@ -121,68 +135,55 @@ test('regenerate the store screenshots', async ({ nordlysPage }) => {
   await page.addStyleTag({ content: STILL });
   const box = await source.boundingBox();
   await page.screenshot({ path: path.join(SCRATCH, 'icons.png'), animations: 'disabled', clip: { x: box.x - 22, y: box.y - 18, width: box.width + 44, height: box.height + 30 } });
-  const icons = '/tools/artwork/.scratch/icons.png';
-  await page.keyboard.press('Escape');
-  await page.keyboard.press('Escape');
-  await page.evaluate(() => document.activeElement?.blur());
+  await render(page.context(), origin, 'screenshot-3-icons.png', compose.feature({
+    title: 'Every bookmark, the icon you want',
+    subtitle: 'A site’s own icon, a letter, or a picture from any address — and the ones you used before stay in reach.',
+    back: board, detail: shot('icons.png')
+  }));
+});
 
-  // A light theme on the board, and a dark one with the theme grid open.
-  await page.evaluate(() => window.Nordlys.setTheme('nordic-snow'));
-  const light = await frame(page, 'light.png', CANVAS_WARMUP);
-  await page.evaluate(() => window.Nordlys.setTheme('aurora-void'));
-  await page.locator('#gear').click();
-  await page.locator('#settings-tab-appearance').click();
-  await expect(page.locator('#sec-appearance')).toBeVisible();
-  await page.evaluate(() => document.activeElement?.blur());
-  const themes = await frame(page, 'themes.png', CANVAS_WARMUP);
-
-  // The sky alone at four hours of an equinox day in Berlin, the clock
-  // saying which. Last, because the page's date stays where it was set.
-  await page.keyboard.press('Escape');
+scene('daylight', async ({ page, origin }) => {
+  // An equinox day in Berlin at four hours, the clock saying which. Only the
+  // date is held: Playwright's clock would also stop the frame timer, and the
+  // sky with it.
   await page.evaluate(() => {
-    document.activeElement?.blur();
-    document.getElementById('board').style.visibility = 'hidden';
-    document.getElementById('hiddenDock')?.style.setProperty('visibility', 'hidden');
     window.Nordlys.config.bgDaylight = true;
     window.Nordlys.saveConfig();
     window.Nordlys.bgEngine.setDaylight(true);
   });
+  await page.waitForTimeout(CANVAS_WARMUP - 6000);
   const hours = [['Dawn', '2026-09-22T04:50:00Z'], ['Day', '2026-09-22T11:00:00Z'], ['Sunset', '2026-09-22T17:05:00Z'], ['Night', '2026-09-22T21:30:00Z']];
-  const daylight = [];
+  const frames = [];
   for (const [label, iso] of hours) {
-    // Only the date is held: Playwright's clock would also stop the frame
-    // timer, and the sky with it.
     await page.evaluate(iso => {
       const Real = window.__RealDate ||= Date, fixed = new Real(iso).getTime();
       window.Date = class extends Real { constructor(...args) { super(...(args.length ? args : [fixed])); } static now() { return fixed; } };
       window.Nordlys.bgEngine.followSun();
     }, iso);
-    daylight.push({ label, image: await frame(page, `daylight-${label.toLowerCase()}.png`, 6000) });
+    frames.push({ label, image: await frame(page, `daylight-${label.toLowerCase()}.png`, 6000) });
   }
-
-  await render(context, origin, 'screenshot-1-sky.png', compose.slide({
-    title: 'A new tab under a living sky',
-    subtitle: 'Six moving scenes, drawn on your own machine, with your bookmarks in folders on top.',
-    image: sky
-  }));
-  await render(context, origin, 'screenshot-2-arrange.png', compose.slide({
-    title: 'Arrange it the way you think',
-    subtitle: 'Move folders, set size and spacing, and watch the board change as you go. One Undo takes it back.',
-    image: arrange, backdropImage: sky
-  }));
-  await render(context, origin, 'screenshot-3-icons.png', compose.feature({
-    title: 'Every bookmark, the icon you want',
-    subtitle: 'A site’s own icon, a letter, or a picture from any address — and the ones you used before stay in reach.',
-    back: sky, detail: icons
-  }));
-  await render(context, origin, 'screenshot-4-daylight.png', compose.mosaic({
+  await render(page.context(), origin, 'screenshot-4-daylight.png', compose.mosaic({
     title: 'Lit by the time of day',
     subtitle: 'Turn on daylight and every scene follows the sun where you are. No location asked, nothing sent.',
-    frames: daylight, backdropImage: daylight[3].image
+    frames, backdropImage: frames[2].image
   }));
-  await render(context, origin, 'screenshot-5-themes.png', compose.pair({
+});
+
+// The same board light, then dark with the theme grid open; the second
+// composes both.
+scene('light', async ({ page }) => {
+  await frame(page, 'light.png', CANVAS_WARMUP);
+});
+
+scene('dark', async ({ page, origin }) => {
+  await page.locator('#gear').click();
+  await page.locator('#settings-tab-appearance').click();
+  await expect(page.locator('#sec-appearance')).toBeVisible();
+  await page.evaluate(() => document.activeElement?.blur());
+  const dark = await frame(page, 'dark.png', CANVAS_WARMUP);
+  await render(page.context(), origin, 'screenshot-5-themes.png', compose.pair({
     title: 'Light or dark, always readable',
     subtitle: '21 themes, light and dark, each checked for contrast on every panel it paints.',
-    back: light, front: themes, backdropImage: sky
+    back: shot('light.png'), front: dark, backdropImage: dark
   }));
 });

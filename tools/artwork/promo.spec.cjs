@@ -2,6 +2,7 @@ const { test } = require('../../tests/helpers/nordlys-fixture.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
 const compose = require('./compose.cjs');
+const { BOARDS } = require('./store-board.cjs');
 
 /* Builds the two Chrome Web Store promo tiles and the cover for the Buy Me a
    Coffee page. The sky in each is the product's own canvas captured at that
@@ -14,9 +15,10 @@ const PIECES = [
   { name: 'docs/store-assets/promo-marquee-1400x560.png', width: 1400, height: 560, layout: 'marquee' },
   { name: 'docs/store-assets/promo-small-440x280.png', width: 440, height: 280, layout: 'small' },
   { name: 'docs/brand/buymeacoffee-cover.png', width: 2400, height: 600, layout: 'cover' }
-];
+].filter(piece => !process.env.ARTWORK_PIECES || process.env.ARTWORK_PIECES.split(',').includes(piece.layout));
 
-test.use({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
+// ARTWORK_PIECES=marquee (or small, cover) builds only those.
+test.use({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, nordlysBoard: BOARDS.marquee });
 test.setTimeout(420000);
 
 const hide = (page, hidden) => page.evaluate(hidden => {
@@ -46,13 +48,7 @@ test('build the promo tiles and the cover', async ({ nordlysPage }) => {
   fs.mkdirSync(SCRATCH, { recursive: true });
 
   // The board itself, for the marquee to lean in from the edge.
-  await page.evaluate(() => {
-    window.Nordlys.config.groups.slice(4).forEach(group => { group.hidden = true; });
-    window.Nordlys.saveConfig();
-    window.Nordlys.bgEngine?.setAtmosphere({ motion: 1, intensity: 1.45 });
-    window.Nordlys.grid.render();
-    document.getElementById('board')?.classList.add('board-loaded');
-  });
+  await page.evaluate(() => document.getElementById('board')?.classList.add('board-loaded'));
   await page.waitForTimeout(14000);
   await page.addStyleTag({ content: '*,*::before,*::after{transition:none!important}' });
   await page.screenshot({ path: path.join(SCRATCH, 'promo-product.png') });

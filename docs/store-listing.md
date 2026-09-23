@@ -157,17 +157,18 @@ The generators are not part of `npm test`, since they assert nothing.
 
 | File | Size | Shows |
 | --- | --- | --- |
-| `screenshot-1-sky.png` | 1280x800 | "A new tab under a living sky": the board on the Aurora scene |
-| `screenshot-2-arrange.png` | 1280x800 | "Arrange it the way you think": Arrange with the Size & spacing panel open |
-| `screenshot-3-icons.png` | 1280x800 | "Every bookmark, the icon you want": the board, and the icon picker's address history |
-| `screenshot-4-daylight.png` | 1280x800 | "Lit by the time of day": the sky at dawn, day, sunset and night in Berlin |
-| `screenshot-5-themes.png` | 1280x800 | "Light or dark, always readable": Nordic Snow, and Aurora Void with the theme grid |
+| `screenshot-1-sky.png` | 1280x800 | "A new tab under a living sky": Aurora Void on the Nordlys scene |
+| `screenshot-2-arrange.png` | 1280x800 | "Arrange it the way you think": Catppuccin Mocha on Silk, Fitted, with Size & spacing open |
+| `screenshot-3-icons.png` | 1280x800 | "Every bookmark, the icon you want": Tokyo Night on Halo, and the icon picker's address history |
+| `screenshot-4-daylight.png` | 1280x800 | "Lit by the time of day": Dracula Velvet on Contour at dawn, day, sunset and night in Berlin |
+| `screenshot-5-themes.png` | 1280x800 | "Light or dark, always readable": Porcelain Light on Frost, and Gruvbox Dark on Silk with the theme grid |
 | `promo-marquee-1400x560.png` | 1400x560 | Marquee tile |
 | `promo-small-440x280.png` | 440x280 | Small tile |
 | `docs/brand/buymeacoffee-cover.png` | 2400x600 | Cover for the Buy Me a Coffee page (not uploaded to the store) |
 
 Each screenshot is a headline over the real product captured at twice its
-pixels (`store-shots.spec.cjs`); the layouts live in `compose.cjs`. Upload the
+pixels (`store-shots.spec.cjs`) on a board of well-known sites
+(`store-board.cjs`), each in its own theme and scene; the layouts live in `compose.cjs`. Upload the
 screenshots in number order: the first is the one the store shows in search.
 To regenerate only these, without touching the README images:
 `npx playwright test --config=tools/artwork/playwright.config.cjs store-shots promo`.
