@@ -128,3 +128,44 @@ test('another kind of icon stops claiming an address but keeps the list', async 
   await expect(page.locator('#icon-url-input')).toHaveValue('');
   await expect(page.locator('.icon-url-version.is-current')).toHaveCount(0);
 });
+
+/* Before addresses were kept, an icon whose picture could not be fetched was
+   stored as its address. That address is the start of its history. */
+test('an icon stored as an address before this version starts its history with it', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => {
+    const config = JSON.parse(localStorage.getItem('nordlys_config'));
+    config.groups[0].links[0].customImg = 'https://icons.test/legacy.png';
+    config.groups[0].links[1].customImg = 'https://www.google.com/s2/favicons?domain=x.test&sz=128';
+    localStorage.setItem('nordlys_config', JSON.stringify(config));
+  });
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  const [legacy, favicon] = await page.evaluate(() => window.Nordlys.config.groups[0].links.slice(0, 2));
+  expect(legacy.iconUrl).toBe('https://icons.test/legacy.png');
+  expect(legacy.iconUrls.map(entry => entry.url)).toEqual(['https://icons.test/legacy.png']);
+  expect(favicon.iconUrl).toBeUndefined();
+  await page.evaluate(() => window.Nordlys.settings.openIconModal(0, 0));
+  await page.locator('.icon-tab-btn[data-tab="custom"]').click();
+  await expect(page.locator('.icon-url-version.is-current')).toHaveCount(1);
+});
+
+test('removing the address in use stops the pane claiming it, and Undo brings the claim back', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => {
+    const link = window.Nordlys.config.groups[0].links[0];
+    link.customImg = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+    link.iconUrls = [{ url: 'https://cdn.example.com/a.png', thumb: '', at: 2 }];
+    link.iconUrl = 'https://cdn.example.com/a.png';
+    window.Nordlys.settings.openIconModal(0, 0);
+  });
+  await page.locator('.icon-tab-btn[data-tab="custom"]').click();
+  await expect(page.locator('#icon-url-status')).toHaveText('In use, from this address');
+  await page.locator('.icon-url-version .icon-url-pick').focus();
+  await page.keyboard.press('Delete');
+  await expect(page.locator('#icon-url-input')).toHaveValue('');
+  await expect(page.locator('#icon-url-status')).toHaveText('The picture in use now');
+  await page.keyboard.press('Control+z');
+  await expect(page.locator('#icon-url-input')).toHaveValue('https://cdn.example.com/a.png');
+  await expect(page.locator('#icon-url-status')).toHaveText('In use, from this address');
+});

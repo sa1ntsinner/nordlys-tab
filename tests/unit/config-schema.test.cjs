@@ -164,3 +164,25 @@ test('board width and folder spacing are repaired when out of range', () => {
   assert.equal(repairConfig(sound), false);
   assert.equal(validateConfig({ ...good(), tileLabels: 'yes' }).ok, false);
 });
+
+/* Found by fuzzing stored configs: a setting of the wrong kind crashed the
+   page where it was used — a class name built from an object, a hash of a
+   name that was a number — so the page never started. */
+test('settings and bookmark fields of the wrong kind are put right, not crashed on', () => {
+  const defaults = { hoverEffect: 'lift', tileSize: 78, showSeconds: false };
+  const config = { ...good(), hoverEffect: { evil: true }, tileSize: 'huge', showSeconds: 'yes', customTheme: 7 };
+  config.groups[0].label = 42;
+  config.groups[0].cols = 'many';
+  config.groups[0].links[0].name = ['not', 'text'];
+  config.groups[0].links[0].color = 7;
+  assert.equal(repairConfig(config, defaults), true);
+  assert.equal(config.hoverEffect, 'lift');
+  assert.equal(config.tileSize, 78);
+  assert.equal(config.showSeconds, false);
+  assert.equal('customTheme' in config, false);
+  assert.equal('label' in config.groups[0], false);
+  assert.equal('cols' in config.groups[0], false);
+  assert.equal('name' in config.groups[0].links[0], false);
+  assert.equal(config.groups[0].links[0].url, 'https://github.com');
+  assert.equal(repairConfig(config, defaults), false, 'a repaired config needs nothing more');
+});

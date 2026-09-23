@@ -56,6 +56,36 @@
     });
   }
 
+
+  /* The browser owns a followed bookmark's name, address and place; Nordlys
+     owns how it looks. Every refresh used to rebuild the links from the
+     browser alone, so an icon, letters, a colour or a tone set on a followed
+     bookmark was gone by the next new tab. Each link now takes its look back
+     from the one it was before — matched by address, in order, so two
+     bookmarks to one page keep one look each. */
+  const LOOK = ["icon", "iconSource", "customImg", "monogram", "color", "tone", "iconUrl", "iconUrls"];
+  function keepLooks(fresh, previous) {
+    const byUrl = new Map();
+    const byId = new Map();
+    for (const link of previous) {
+      if (!link || typeof link.url !== "string") continue;
+      if (link.browserId) byId.set(link.browserId, link);
+      if (!byUrl.has(link.url)) byUrl.set(link.url, []);
+      byUrl.get(link.url).push(link);
+    }
+    const taken = new Set();
+    for (const link of fresh) {
+      let before = link.browserId ? byId.get(link.browserId) : null;
+      if (!before || taken.has(before)) before = (byUrl.get(link.url) || []).find((candidate) => !taken.has(candidate));
+      if (!before) continue;
+      taken.add(before);
+      for (const key of LOOK) {
+        if (before[key] !== undefined && before[key] !== "") link[key] = before[key];
+      }
+    }
+    return fresh;
+  }
+
   const NordlysBookmarks = {
     /* Whether the browser has already granted the permission. Never asks. */
     granted() {
@@ -108,7 +138,10 @@
           url: child.url,
           icon: "",
           color: "",
-          fromBrowser: true
+          fromBrowser: true,
+          // The browser's own id, so a look follows the bookmark even when
+          // its address is changed there.
+          browserId: String(child.id)
         }));
     },
 
@@ -133,6 +166,7 @@
         // "Stop following" may have landed while the read was in flight.
         if (!group.source?.folderId) continue;
         if (group.source.missing) { group.source.missing = false; changed = true; }
+        keepLooks(links, group.links || []);
         if (JSON.stringify(links) !== JSON.stringify(group.links || [])) {
           group.links = links;
           changed = true;

@@ -39,7 +39,7 @@
   const NUMERIC_FIELDS = Object.entries(FIELDS)
     .filter(([, type]) => type === "number")
     .map(([field]) => field);
-  const LINK_TEXT_FIELDS = ["name", "url", "icon", "iconSource", "color", "customImg", "monogram", "tone", "iconUrl"];
+  const LINK_TEXT_FIELDS = ["name", "url", "icon", "iconSource", "color", "customImg", "monogram", "tone", "iconUrl", "browserId"];
   // The same bounds the grid enforces on its resize handle.
   const COLUMNS = { min: 1, max: 8 };
   // The same bound board-layout.js keeps rows inside.
@@ -159,9 +159,22 @@
 
   /* Coerces a stored config into something the page can hold. Returns true when
      anything was changed, so the caller knows to keep the original. */
-  function repairConfig(config) {
+  function repairConfig(config, defaults = {}) {
     if (!isObject(config)) return false;
     let repaired = false;
+    /* A setting of the wrong kind — a hover style that is an object, a size
+       that is text — took the page down where it was used: one class name
+       built from an object stopped the page from starting. It goes back to
+       its default, or away when there is none. */
+    for (const [field, type] of Object.entries(FIELDS)) {
+      const value = config[field];
+      if (value === undefined || type === "list") continue;
+      const fits = type === "object" ? isObject(value) : type === "number" ? Number.isFinite(value) : typeof value === type;
+      if (fits) continue;
+      if (defaults[field] !== undefined) config[field] = JSON.parse(JSON.stringify(defaults[field]));
+      else delete config[field];
+      repaired = true;
+    }
     if (config.bgSeed !== undefined && !isSeed(config.bgSeed)) { config.bgSeed = 0; repaired = true; }
     if (config.boardLayout !== undefined && !["natural", "fitted"].includes(config.boardLayout)) { config.boardLayout = "natural"; repaired = true; }
     if (config.boardWidth !== undefined && !["narrow", "standard", "wide"].includes(config.boardWidth)) { config.boardWidth = "standard"; repaired = true; }
@@ -187,7 +200,18 @@
       if (!Array.isArray(group.links)) { group.links = []; repaired = true; }
       const links = group.links.filter((link) => isObject(link) && typeof link.url === "string" && !isForbiddenUrl(link.url));
       if (links.length !== group.links.length) { group.links = links; repaired = true; }
-      for (const link of links) if (repairIconAddresses(link)) repaired = true;
+      // A folder's own fields of the wrong kind go; each has a fallback.
+      if (group.label !== undefined && typeof group.label !== "string") { delete group.label; repaired = true; }
+      if (group.hidden !== undefined && typeof group.hidden !== "boolean") { delete group.hidden; repaired = true; }
+      if (group.cols !== undefined && !(Number.isInteger(group.cols) && group.cols >= COLUMNS.min && group.cols <= COLUMNS.max)) { delete group.cols; repaired = true; }
+      if (group.source !== undefined && !isObject(group.source)) { delete group.source; repaired = true; }
+      for (const link of links) {
+        // A name that is not text took the whole board down as it was drawn.
+        for (const field of LINK_TEXT_FIELDS) {
+          if (field !== "url" && link[field] !== undefined && typeof link[field] !== "string") { delete link[field]; repaired = true; }
+        }
+        if (repairIconAddresses(link)) repaired = true;
+      }
     }
     return repaired;
   }

@@ -353,3 +353,195 @@ test('an import that fits writes the config, the themes, the width and the way b
     width: localStorage.getItem('nordlys_drawer_width')
   }))).toEqual({ live: ['FROM FILE'], restorePoint: 'MY REAL SETUP', themes: 'Imported', width: '999px' });
 });
+
+/* Two new tabs open, a bookmark added in the second: the first still held
+   the board as it was, and the next change made in it wrote that over the
+   new bookmark. A tab now takes what another tab saved. */
+test('a change saved in another tab is not written over by this one', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const elsewhere = await page.evaluate(() => {
+    const config = JSON.parse(JSON.stringify(window.Nordlys.config));
+    config.groups[0].links.push({ name: 'Added elsewhere', url: 'https://elsewhere.test/' });
+    config.theme = 'nord-frost';
+    return JSON.stringify(config);
+  });
+  await page.evaluate(value => {
+    localStorage.setItem('nordlys_config', value);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'nordlys_config', newValue: value, storageArea: localStorage }));
+  }, elsewhere);
+  await expect(page.locator('#board .tile', { hasText: 'Added elsewhere' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe('nord-frost');
+
+  // Anything changed here from now on is written on top of it, not instead of it.
+  await page.evaluate(() => { window.Nordlys.config.showSeconds = true; window.Nordlys.saveConfig(); });
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('nordlys_config')));
+  expect(stored.groups[0].links.map(link => link.name)).toContain('Added elsewhere');
+  expect(stored.showSeconds).toBe(true);
+});
+
+/* Another tab changing only its own settings leaves this board, and whatever
+   is open over it, alone. */
+test('a save elsewhere that leaves the board alone does not close what is open here', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => window.Nordlys.settings.openIconModal(0, 0));
+  await expect(page.locator('#icon-modal')).toBeVisible();
+  await page.evaluate(() => {
+    const config = JSON.parse(JSON.stringify(window.Nordlys.config));
+    config.showSeconds = !config.showSeconds;
+    const value = JSON.stringify(config);
+    localStorage.setItem('nordlys_config', value);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'nordlys_config', newValue: value, storageArea: localStorage }));
+  });
+  await page.waitForTimeout(100);
+  await expect(page.locator('#icon-modal')).toBeVisible();
+  expect(await page.evaluate(() => window.Nordlys.settings.activeIconTarget)).toEqual({ gIdx: 0, lIdx: 0 });
+});
+
+/* A command being previewed keeps a copy of the config to put back on Escape
+   and to start from on Enter. A save from another tab in the meantime must
+   not be undone by either. */
+test('a command previewed while another tab saves does not put the old board back', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.locator('#q').click();
+  await page.locator('#q').fill('>theme nord');
+  await page.waitForTimeout(250);
+  await page.evaluate(() => {
+    const config = JSON.parse(localStorage.getItem('nordlys_config'));
+    config.groups[0].links.push({ name: 'Saved elsewhere', url: 'https://elsewhere.test/' });
+    const value = JSON.stringify(config);
+    localStorage.setItem('nordlys_config', value);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'nordlys_config', newValue: value, storageArea: localStorage }));
+  });
+  await page.keyboard.press('Escape');
+  const names = await page.evaluate(() => window.Nordlys.config.groups[0].links.map(link => link.name));
+  expect(names).toContain('Saved elsewhere');
+});
+
+/* The clock kept the config object it started with, so after anything
+   replaced the config — a restore, an import, another tab's save — its
+   format and greeting stopped following. */
+test('the clock follows a time format saved in another tab', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => {
+    const config = JSON.parse(localStorage.getItem('nordlys_config'));
+    config.timeFormat = '12h';
+    config.userName = 'Robin';
+    const value = JSON.stringify(config);
+    localStorage.setItem('nordlys_config', value);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'nordlys_config', newValue: value, storageArea: localStorage }));
+  });
+  await expect(page.locator('#ampm')).toHaveText(/AM|PM/);
+  await expect(page.locator('#greet')).toContainText('Robin');
+});
+
+/* A save from another tab while a name is being typed here used to rebuild
+   the field under the typing. The new board waits until the field is left. */
+test('typing in a field here is not interrupted by another tab saving', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.locator('#gear').click();
+  await page.locator('#settings-tab-bookmarks').click();
+  const folder = page.locator('.bookmark-folder-accordion').first();
+  await folder.locator('summary').click();
+  await folder.getByRole('button', { name: /More actions for/ }).first().click();
+  await page.locator('.nl-overflow-menu').getByRole('menuitem', { name: /Rename/ }).click();
+  const field = page.locator('.bookmark-folder-name-input').first();
+  await expect(field).toBeFocused();
+  await page.keyboard.type(' in progress');
+  await page.evaluate(() => {
+    const config = JSON.parse(localStorage.getItem('nordlys_config'));
+    config.groups[1].links.push({ name: 'Saved elsewhere', url: 'https://elsewhere.test/' });
+    const value = JSON.stringify(config);
+    localStorage.setItem('nordlys_config', value);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'nordlys_config', newValue: value, storageArea: localStorage }));
+  });
+  await page.waitForTimeout(150);
+  await expect(field).toBeFocused();
+  await expect(field).toHaveValue(/in progress$/);
+  expect(await page.evaluate(() => window.Nordlys.config.groups[1].links.some(link => link.name === 'Saved elsewhere'))).toBe(true);
+});
+
+/* The settings list holds the folder objects it drew. Taken from another tab,
+   a board of new objects left those behind, and a rename finished after it
+   was written into a folder that was no longer in the config. */
+test('a rename finished after another tab saved lands in the live board', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.locator('#gear').click();
+  await page.locator('#settings-tab-bookmarks').click();
+  const folder = page.locator('.bookmark-folder-accordion').first();
+  await folder.getByRole('button', { name: /More actions for/ }).first().click();
+  await page.locator('.nl-overflow-menu').getByRole('menuitem', { name: /Rename/ }).click();
+  const field = page.locator('.bookmark-folder-name-input').first();
+  await field.fill('Renamed after');
+  await page.evaluate(() => {
+    const config = JSON.parse(localStorage.getItem('nordlys_config'));
+    config.groups[1].links.push({ name: 'Saved elsewhere', url: 'https://elsewhere.test/' });
+    const value = JSON.stringify(config);
+    localStorage.setItem('nordlys_config', value);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'nordlys_config', newValue: value, storageArea: localStorage }));
+  });
+  await field.press('Enter');
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0].label)).toBe('Renamed after');
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('nordlys_config')));
+  expect(stored.groups[0].label).toBe('Renamed after');
+  expect(stored.groups[1].links.some(link => link.name === 'Saved elsewhere')).toBe(true);
+});
+
+/* Found by fuzzing: one wrong-kind value in storage stopped the page. */
+test('a stored config with settings and names of the wrong kind still opens the board', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.evaluate(() => {
+    const config = JSON.parse(localStorage.getItem('nordlys_config'));
+    config.hoverEffect = { evil: true };
+    config.tileSize = 'huge';
+    config.groups[0].links[0].name = 12345;
+    config.groups[0].label = ['x'];
+    localStorage.setItem('nordlys_config', JSON.stringify(config));
+  });
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  await expect(page.locator('#board .tile').first()).toBeVisible();
+  expect(errors).toEqual([]);
+  expect(await page.evaluate(() => document.body.classList.contains('hover-lift'))).toBe(true);
+});
+
+/* An editor open over a bookmark used to close when another tab changed the
+   board, and before that it could save into whatever bookmark had moved into
+   its place. It follows its own bookmark instead. */
+test('an open bookmark editor follows its bookmark when another tab adds a folder in front', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => window.Nordlys.grid.openQuickEditModal(0, 0));
+  await page.locator('#quick-title-input').fill('Edited while open');
+  await page.evaluate(() => {
+    const config = JSON.parse(localStorage.getItem('nordlys_config'));
+    config.groups.unshift({ label: 'Arrived elsewhere', cols: 4, links: [{ name: 'Other', url: 'https://other.test/' }] });
+    const value = JSON.stringify(config);
+    localStorage.setItem('nordlys_config', value);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'nordlys_config', newValue: value, storageArea: localStorage }));
+  });
+  await expect(page.locator('#quick-edit-modal')).toBeVisible();
+  await page.locator('#quick-save-btn').click();
+  const groups = await page.evaluate(() => window.Nordlys.config.groups.map(group => group.links.map(link => link.name)));
+  expect(groups[0]).toEqual(['Other']);
+  expect(groups[1][0]).toBe('Edited while open');
+});
+
+test('an open folder editor renames its own folder after another tab adds one in front', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const original = await page.evaluate(() => window.Nordlys.config.groups[0].label);
+  await page.evaluate(() => window.Nordlys.grid.openQuickFolderModal(0));
+  await page.locator('#quick-folder-name-input').fill('Renamed while open');
+  await page.evaluate(() => {
+    const config = JSON.parse(localStorage.getItem('nordlys_config'));
+    config.groups.unshift({ label: 'Arrived elsewhere', cols: 4, links: [] });
+    const value = JSON.stringify(config);
+    localStorage.setItem('nordlys_config', value);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'nordlys_config', newValue: value, storageArea: localStorage }));
+  });
+  await page.locator('#quick-folder-save-btn').click();
+  const labels = await page.evaluate(() => window.Nordlys.config.groups.map(group => group.label));
+  expect(labels[0]).toBe('Arrived elsewhere');
+  expect(labels[1]).toBe('Renamed while open');
+  expect(labels).not.toContain(original);
+});

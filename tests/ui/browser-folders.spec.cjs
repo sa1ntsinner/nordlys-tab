@@ -230,3 +230,100 @@ test('the folder picker lists every folder and narrows as you type', async ({ no
   await dialog.getByRole('button', { name: 'Follow' }).click();
   await expect.poll(() => nordlysPage.storageState.nordlys_config?.groups?.[0]?.source?.folderId).toBe('f41');
 });
+
+/* The browser owns what a followed bookmark is; Nordlys owns how it looks.
+   Every refresh rebuilt the links from the browser alone, so an icon or a
+   colour chosen for a followed bookmark was gone by the next new tab. */
+test('a look chosen for a followed bookmark survives the next refresh', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await withBookmarks(page);
+  await openManager(page);
+  const menu = await folderMenu(page);
+  await menu.getByRole('menuitem', { name: /Follow a browser folder/ }).click();
+  await chooseFolder(page, menu, 'Bookmarks bar / Reading');
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0].links.length)).toBe(2);
+
+  await page.evaluate(() => {
+    const [first, second] = window.Nordlys.config.groups[0].links;
+    first.customImg = 'data:image/png;base64,iVBORw0KGgo=';
+    first.iconUrl = 'https://cdn.test/a.png';
+    first.iconUrls = [{ url: 'https://cdn.test/a.png', thumb: '', at: 1 }];
+    second.monogram = 'AN';
+    second.color = '#ff8800';
+  });
+  // The browser renames one and reorders them.
+  await page.evaluate(() => {
+    const reading = window.__bookmarks.tree[0].children[0].children[0];
+    reading.children = [
+      { id: '102', title: 'Another, renamed', url: 'https://article.test/two' },
+      { id: '101', title: 'Some article', url: 'https://article.test/one' }
+    ];
+  });
+  await page.evaluate(() => window.NordlysBookmarks.refresh(window.Nordlys.config));
+  const links = await page.evaluate(() => window.Nordlys.config.groups[0].links);
+  expect(links.map(link => link.name)).toEqual(['Another, renamed', 'Some article']);
+  expect(links[0]).toMatchObject({ monogram: 'AN', color: '#ff8800' });
+  expect(links[1]).toMatchObject({ customImg: 'data:image/png;base64,iVBORw0KGgo=', iconUrl: 'https://cdn.test/a.png' });
+  // Nothing moved, so a second refresh changes nothing and saves nothing.
+  expect(await page.evaluate(() => window.NordlysBookmarks.refresh(window.Nordlys.config))).toBe(false);
+});
+
+/* Anything the next refresh would undo is not offered as an edit: the name,
+   the address, the folder, the order and deleting belong to the browser.
+   What the bookmark looks like is still set here. */
+test('a followed bookmark offers only what will last', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await withBookmarks(page);
+  await openManager(page);
+  const menu = await folderMenu(page);
+  await menu.getByRole('menuitem', { name: /Follow a browser folder/ }).click();
+  await chooseFolder(page, menu, 'Bookmarks bar / Reading');
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0].links.length)).toBe(2);
+  await page.keyboard.press('Escape');
+
+  // Quick edit: the fields say where they are changed, and the folder is fixed.
+  await page.evaluate(() => window.Nordlys.grid.openQuickEditModal(0, 0));
+  await expect(page.locator('#quick-title-input')).toHaveJSProperty('readOnly', true);
+  await expect(page.locator('#quick-url-input')).toHaveJSProperty('readOnly', true);
+  await expect(page.locator('#quick-edit-linked-note')).toBeVisible();
+  await page.evaluate(() => { document.getElementById('quick-color-input').value = '#123456'; });
+  await page.locator('#quick-save-btn').click();
+  const link = await page.evaluate(() => window.Nordlys.config.groups[0].links[0]);
+  expect(link).toMatchObject({ name: 'Some article', url: 'https://article.test/one', color: '#123456' });
+
+  // Another folder's bookmark cannot be moved into this one from quick edit.
+  const disabled = await page.evaluate(() => {
+    window.Nordlys.grid.openQuickEditModal(1, 0);
+    return [...document.querySelectorAll('#quick-folder-select option')].filter(option => option.disabled).map(option => Number(option.value));
+  });
+  expect(disabled).toEqual([0]);
+  await page.keyboard.press('Escape');
+
+  // The tile's menu does not offer to delete what the browser would bring back.
+  await page.locator('#board .card').first().locator('.tile').first().click({ button: 'right' });
+  await expect(page.locator('#tile-ctx-menu [data-action="delete"]')).toHaveAttribute('aria-disabled', 'true');
+  await page.keyboard.press('Escape');
+  await page.evaluate(() => window.Nordlys.grid.deleteBookmarkWithUndo(0, 0));
+  expect(await page.evaluate(() => window.Nordlys.config.groups[0].links.length)).toBe(2);
+});
+
+/* Matched by address alone, a look was lost the moment the address changed
+   in the browser. The browser's own id carries it now. */
+test('a look follows a followed bookmark whose address changes in the browser', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await withBookmarks(page);
+  await openManager(page);
+  const menu = await folderMenu(page);
+  await menu.getByRole('menuitem', { name: /Follow a browser folder/ }).click();
+  await chooseFolder(page, menu, 'Bookmarks bar / Reading');
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0].links.length)).toBe(2);
+  await page.evaluate(() => { window.Nordlys.config.groups[0].links[0].monogram = 'SA'; });
+  await page.evaluate(() => {
+    const reading = window.__bookmarks.tree[0].children[0].children[0];
+    reading.children[0].url = 'https://article.test/one-moved';
+  });
+  await page.evaluate(() => window.NordlysBookmarks.refresh(window.Nordlys.config));
+  const first = await page.evaluate(() => window.Nordlys.config.groups[0].links[0]);
+  expect(first.url).toBe('https://article.test/one-moved');
+  expect(first.monogram).toBe('SA');
+});
