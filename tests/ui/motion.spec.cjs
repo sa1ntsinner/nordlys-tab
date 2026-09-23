@@ -115,3 +115,22 @@ test('reduced motion keeps the press silent', async ({ nordlysPage }) => {
   await page.mouse.up();
   expect(pressed, 'reduced motion must not scale on press').toBe('none');
 });
+
+/* Under reduced motion every transition was stretched to 80ms, including a
+   menu's instant visibility, so for those 80ms it was hidden and focus could
+   not go into it: a keyboard menu opened with nothing focused. */
+test('with reduced motion a keyboard menu and a dialog still take focus', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const tile = page.locator('#board .tile').first();
+  await tile.focus();
+  await page.keyboard.press('Shift+F10');
+  await expect(page.locator('#tile-ctx-menu').getByRole('menuitem').first()).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#quick-title-input')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await page.locator('#gear').click();
+  await expect(page.locator('#cfg')).toBeVisible();
+  const inside = await page.evaluate(() => document.getElementById('cfg').contains(document.activeElement));
+  expect(inside).toBe(true);
+});

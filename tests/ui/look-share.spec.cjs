@@ -84,3 +84,22 @@ test('the picture of a look is a 1200 by 630 image', async ({ nordlysPage }) => 
   }, [...require('node:fs').readFileSync(path)]);
   expect(size).toEqual([1200, 630]);
 });
+
+/* Revert used to put the whole config back as it was when the look was
+   tried on, so a bookmark added in the meantime went with it. */
+test('reverting a look keeps a bookmark added while it was being tried', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await openShare(page);
+  await page.locator('#look-paste').fill(await page.evaluate(look => window.NordlysLook.encode(look), A_LOOK));
+  await page.locator('#look-try').click();
+  await page.evaluate(() => {
+    window.Nordlys.config.groups[0].links.push({ name: 'Added mid-try', url: 'https://mid.test/' });
+    window.Nordlys.saveConfig();
+  });
+  await page.locator('#look-revert').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'aurora-void');
+  const names = config => config.groups[0].links.map(link => link.name);
+  expect(names(await page.evaluate(() => window.Nordlys.config))).toContain('Added mid-try');
+  await expect.poll(() => nordlysPage.storageState.nordlys_config?.theme).toBe('aurora-void');
+  expect(names(nordlysPage.storageState.nordlys_config)).toContain('Added mid-try');
+});

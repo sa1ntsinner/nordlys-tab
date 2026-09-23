@@ -65,6 +65,14 @@
   };
 
   const root = document.documentElement;
+  /* Every menu and dialog is put into its closed state by a script, after
+     the browser has already styled it once — so, depending on timing, a
+     dozen hidden layers played their closing transition as the page opened.
+     Nothing transitions until the page has arrived (motion.css). */
+  root.classList.add("nl-arriving");
+  window.addEventListener("load", () => {
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("nl-arriving")));
+  }, { once: true });
   let theme = "aurora-void";
   let raw;
   let config = null;

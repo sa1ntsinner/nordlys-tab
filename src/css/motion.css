@@ -201,9 +201,12 @@ details[open]::details-content {
   background: var(--nl-surface-card);
   box-shadow: var(--nl-shadow-1);
 }
+/* The thumb is the chosen button's own surface (polish.css), moved: it had
+   been given the accent of an older rule, under text meant for the tint, and
+   "Dark" read at 1.6:1. */
 .color-mode-segmented[data-thumb]::before {
-  border-radius: 8px;
-  background: var(--accent);
+  border-radius: var(--nl-radius-sm);
+  background: color-mix(in srgb, var(--nl-accent) 20%, var(--nl-surface-elevated));
   box-shadow: var(--nl-shadow-1);
 }
 .arrange-layouts[data-thumb="moving"]::before,
@@ -274,7 +277,9 @@ details[open]::details-content {
   outline-offset: 9px;
   transition: outline-color var(--nl-transition-control);
 }
-#searchwrap { transition: width var(--nl-transition-panel), opacity var(--nl-transition-panel); }
+/* Only its fade: the bar keeps its width, and a width transition did nothing
+   but make it lag behind the window's edge while the window was resized. */
+#searchwrap { transition: opacity var(--nl-transition-panel); }
 
 /* Folders that move together — a new layout, Tidy up, a folder folded into
    the dock or brought back from it — are view transitions: each folder is
@@ -353,6 +358,12 @@ details[open]::details-content {
   ::view-transition-new(*) { animation: none !important; }
 }
 
+/* ── Arrival ────────────────────────────────────────────────────────
+   The page arrives still (boot.js holds this class until it has). */
+:root.nl-arriving *,
+:root.nl-arriving *::before,
+:root.nl-arriving *::after { transition: none !important; }
+
 /* ── Icon addresses ─────────────────────────────────────────────────
    A version answers the pointer the way a tile does; its tools arrive with
    it; one put back by Undo grows into its place. Nothing here plays when the
@@ -361,7 +372,7 @@ details[open]::details-content {
   .icon-url-thumb { transition: transform var(--nl-transition-settle-fast), box-shadow var(--nl-transition-control); }
   .icon-url-pick:hover .icon-url-thumb { transform: translateY(-2px); }
   .icon-url-pick:active .icon-url-thumb { transform: scale(.96); transition-duration: var(--nl-motion-fast); }
-  .icon-url-tools { transition: opacity var(--nl-transition-control), transform var(--nl-transition-settle-fast); }
+  .icon-url-tools { transition: opacity var(--nl-transition-control), transform var(--nl-transition-settle-fast), visibility var(--nl-transition-control); }
 }
 .icon-url-host { transition: color var(--nl-transition-control); }
 .icon-url-version.is-arriving { animation: nl-version-in var(--nl-transition-settle) both; }
@@ -387,3 +398,18 @@ details[open]::details-content {
   @starting-style { opacity: 0; transform: translateY(8px) scale(.98); }
 }
 .arrange-size[hidden] { opacity: 0; transform: translateY(8px) scale(.98); }
+
+/* Reduced motion drops the glass's blur (main.css), and a tint chosen to be
+   read with the blur behind it then shows the sky, or a busy photo, straight
+   through. The glass becomes solid instead — above every glass level. */
+@media (prefers-reduced-motion: reduce) {
+  html:root { --glass-opacity: 1; }
+}
+
+/* Asked of the system for less transparency (macOS "Reduce transparency",
+   Windows "Transparency effects" off), the glass is solid, as it is for high
+   legibility. The Glass choice then says why it changes nothing. */
+@media (prefers-reduced-transparency: reduce) {
+  html:root { --glass-blur: 0px; --glass-saturate: 100%; --glass-opacity: 1; --glass-border-sheen: 0; }
+  .glass-solid-note { display: block; }
+}

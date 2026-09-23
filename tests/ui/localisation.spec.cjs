@@ -91,3 +91,44 @@ test('titles, accessible names and placeholders are translated, not only the vis
     await page.keyboard.press('Escape');
   }
 });
+
+/* The icon picker, its cropper, the bookmark list's accessible names and the
+   font list were English in every language: written into the markup or the
+   script and never given a key. */
+test('the icon picker, the cropper and the bookmark list speak the chosen language', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => window.I18N.setLanguage('ru'));
+  await page.locator('#gear').click();
+  await page.locator('#settings-tab-bookmarks').click();
+  const folder = page.locator('.bookmark-folder-accordion').first();
+  await folder.locator('summary').click();
+  const names = await folder.locator('button, input, select, [aria-label]').evaluateAll(nodes =>
+    nodes.map(node => node.getAttribute('aria-label')).filter(Boolean));
+  const english = /\b(More actions|Folder name|Add bookmark|Choose icon|Save|bookmarks|Columns for|Bookmark title)\b/;
+  expect(names.filter(name => english.test(name))).toEqual([]);
+
+  const fonts = await page.locator('#cfg-font-display option, #cfg-font-display optgroup').evaluateAll(nodes =>
+    nodes.map(node => node.label || node.textContent));
+  expect(fonts.filter(label => /Default|Recommended|Bundled|All fonts/.test(label))).toEqual([]);
+
+  await page.evaluate(() => window.Nordlys.settings.openIconModal(0, 0));
+  const visible = async () => page.locator('#icon-modal').evaluate(root => {
+    const out = [];
+    const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    while (walk.nextNode()) {
+      const el = walk.currentNode.parentElement;
+      if (el.closest('[hidden], .modal-tab-pane:not(.active)') || !el.getClientRects().length) continue;
+      const text = walk.currentNode.textContent.trim();
+      if (/[A-Za-z]{4,}/.test(text) && !/[а-яё]/i.test(text)) out.push(text);
+    }
+    return out;
+  });
+  const brands = /^(YouTube|Bookmark|Google|DuckDuckGo|www\.[\w.]+|[\w.-]+\.[a-z]{2,})$/;
+  for (const tab of ['search', 'favicon', 'custom']) {
+    await page.locator(`.icon-tab-btn[data-tab="${tab}"]`).click();
+    expect((await visible()).filter(text => !brands.test(text)), `English left in the ${tab} pane`).toEqual([]);
+  }
+  await page.evaluate(() => window.Nordlys.settings.openCropper(`data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"/>')}`, 'url'));
+  await page.waitForFunction(() => Boolean(window.Nordlys.settings.cropperImage));
+  expect((await visible()).filter(text => !brands.test(text)), 'English left in the cropper').toEqual([]);
+});

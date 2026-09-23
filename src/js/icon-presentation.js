@@ -245,11 +245,18 @@
 
   /* A tone is only correct for the surface it was measured against, so every
      theme change re-decides all of them. */
+  /* Toning waits for the theme to settle and then changes each mark, with
+     its own short transition — so "the theme has settled" is not yet "the
+     icons have". toned() answers the latest pass, for anything that has to
+     look at the finished board. */
+  let toning = Promise.resolve();
   function refreshIconContrast(root = document) {
-    root.querySelectorAll('.nl-icon').forEach(wrapper => {
-      if (wrapper.parentElement) applyIconContrast(wrapper.parentElement, wrapper);
-    });
+    toning = Promise.all([...root.querySelectorAll('.nl-icon')]
+      .filter(wrapper => wrapper.parentElement)
+      .map(wrapper => applyIconContrast(wrapper.parentElement, wrapper)));
+    return toning;
   }
+  const toned = () => toning;
 
-  window.NordlysIcons = { classifyIcon, resolvePresentation, renderIcon, applyIconContrast, refreshIconContrast, readableAgainst, gradientAverage, MIN_ICON_CONTRAST };
+  window.NordlysIcons = { classifyIcon, resolvePresentation, renderIcon, applyIconContrast, refreshIconContrast, toned, readableAgainst, gradientAverage, MIN_ICON_CONTRAST };
 })();

@@ -25,8 +25,12 @@ const LOCALE_MAP = {
 
 /* ── Hero Clock & Date Controller ──────────────────────────────── */
 class ClockWidget {
-  constructor(cfg) {
-    this.cfg = cfg;
+  /* The config is read through the app each time, never kept: an import, a
+     restore or another tab's save replaces the object, and a clock holding
+     the first one kept its format, its seconds and its greeting from then on. */
+  constructor(cfg, app = null) {
+    this.app = app;
+    this.startCfg = cfg;
     this.elH = document.getElementById("hh");
     this.elM = document.getElementById("mm");
     this.elS = document.getElementById("ss");
@@ -39,6 +43,8 @@ class ClockWidget {
     this.firstPaint = false;
     setInterval(() => this.update(), 1000);
   }
+
+  get cfg() { return this.app?.config || this.startCfg; }
 
   /* Each figure is its own box, and only the one that changed turns over:
      the old figure rises and blurs away while the new one comes up into its
@@ -148,6 +154,7 @@ const COMMAND_KEYS = {
   mood: ["command.verb.mood", "command.help.mood"],
   shuffle: ["command.verb.shuffle", "command.help.shuffle"],
   arrange: ["command.verb.arrange", "command.help.arrange"],
+  size: ["command.verb.size", "command.help.size"],
   newFolder: ["command.verb.newFolder", "command.help.newFolder"],
   rename: ["command.verb.rename", "command.help.rename"],
   hide: ["command.verb.hide", "command.help.hide"],
@@ -158,7 +165,6 @@ const COMMAND_KEYS = {
 
 class SearchWidget {
   constructor(cfg, app) {
-    this.cfg = cfg;
     this.app = app;
     this.input = document.getElementById("q");
     this.sugg = document.getElementById("sugg");
@@ -290,7 +296,8 @@ class SearchWidget {
     }
 
     clearTimeout(this.suggDebounce);
-    this.suggDebounce = setTimeout(() => this.processQuery(val), 120);
+    this.suggPending = val;
+    this.suggDebounce = setTimeout(() => { this.suggPending = null; this.processQuery(val); }, 120);
   }
 
   /* Arithmetic lives in calc.js, a hand-written evaluator. The version that
@@ -362,7 +369,7 @@ class SearchWidget {
       calcRow.innerHTML = `
         <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-6 2h5v2h-5V5zm-7 0h5v2H6V5zm0 4h5v2H6V9zm7 0h5v2h-5V9zm-7 4h5v2H6v-2zm7 0h5v2h-5v-2zm-7 4h5v2H6v-2zm7 0h5v2h-5v-2z"/></svg>
         <span class="calc-val"></span>
-        <span class="sugg-badge sugg-calc-badge">Copy</span>
+        <span class="sugg-badge sugg-calc-badge">${this.say("search.copyAnswer", "Copy")}</span>
       `;
       calcRow.querySelector(".calc-val").textContent = calcResult;
       calcRow.addEventListener("mousedown", (e) => {
@@ -418,7 +425,7 @@ class SearchWidget {
         histRow.innerHTML = `
           <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
           <span class="hist-text"></span>
-          <button type="button" class="sugg-del-btn" title="Remove from history" aria-label="Remove">✕</button>
+          <button type="button" class="sugg-del-btn" title="${this.say("search.removeFromHistory", "Remove from history")}" aria-label="${this.say("search.removeFromHistory", "Remove from history")}">✕</button>
         `;
         histRow.querySelector(".hist-text").textContent = histItem;
         histRow.querySelector(".sugg-del-btn").addEventListener("mousedown", (e) => {
@@ -492,6 +499,7 @@ class SearchWidget {
       case "mood": return this.say("command.doMood", `Colour mood: ${name}`, { name });
       case "shuffle": return this.say("command.doShuffle", "Shuffle this sky");
       case "arrange": return this.say("command.doArrange", "Arrange folders");
+      case "size": return this.say("command.doSize", "Size & spacing");
       case "newFolder": return this.say("command.doNewFolder", `New folder: ${candidate.name}`, { name: candidate.name });
       case "rename": return candidate.name ? this.say("command.doRename", `Rename ${name} to ${candidate.name}`, { name, to: candidate.name }) : this.say("command.renameHow", `Rename ${name} to …`, { name });
       case "hide": return this.say("command.doHide", `Hide ${name}`, { name });
@@ -506,7 +514,7 @@ class SearchWidget {
   commandHelp() {
     return [
       ["theme", "theme nord"], ["sky", "sky frost"], ["mood", "mood ember"], ["shuffle", "shuffle"],
-      ["arrange", "arrange"], ["newFolder", "new folder Reading"], ["rename", "rename Daily to Morning"], ["hide", "hide Shopping"],
+      ["arrange", "arrange"], ["size", "size"], ["newFolder", "new folder Reading"], ["rename", "rename Daily to Morning"], ["hide", "hide Shopping"],
       ["show", "show Shopping"], ["move", "move YouTube to Daily"], ["settings", "settings background"]
     ].map(([verb, example]) => ({ kind: "verb", verb, example }));
   }
@@ -658,13 +666,17 @@ class SearchWidget {
       }
       /* Arranging is a place to go, not a change to undo: the arrangement
          keeps its own Undo, and says so when it is done. */
-      case "arrange": {
+      case "arrange":
+      case "size": {
         this.endCommandMode();
         this.input.value = "";
         this.input.blur();
         document.body.classList.remove("searching");
         this.closeSuggestions();
-        this.app.grid?.arrange?.enter();
+        const arrange = this.app.grid?.arrange;
+        arrange?.enter();
+        // Size and spacing are set where the board is arranged.
+        if (candidate.kind === "size" && arrange?.active) arrange.showSize(true);
         return;
       }
       default: done = false;
@@ -713,6 +725,14 @@ class SearchWidget {
   }
 
   onKeyDown(e) {
+    /* A command typed and entered faster than the list redraws used to find
+       no list (nothing happened) or the list for what was typed before (the
+       wrong thing happened). What is in the field is read now. */
+    if (e.key === "Enter" && this.suggPending != null && this.input.value.trim().startsWith(">")) {
+      clearTimeout(this.suggDebounce);
+      this.suggPending = null;
+      this.processCommand(this.input.value.trim().slice(1));
+    }
     const items = this.sugg ? Array.from(this.sugg.querySelectorAll(".sugg-item")) : [];
 
     if (e.key === "Escape") {
@@ -821,12 +841,11 @@ class SearchWidget {
 class WidgetsController {
   constructor(app) {
     this.app = app;
-    this.clock = new ClockWidget(app.config);
+    this.clock = new ClockWidget(app.config, app);
     this.search = new SearchWidget(app.config, app);
   }
 
   updateClock() {
-    this.clock.cfg = this.app.config;
     this.clock.update();
   }
 

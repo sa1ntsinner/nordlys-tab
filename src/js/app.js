@@ -179,6 +179,54 @@ const THEME_MIGRATIONS = {
   "boreal": "boreal-emerald"
 };
 
+/* Reuses the objects of `before` for the same folders and bookmarks in
+   `after`: a folder by its id, or else by name and place; a bookmark by its
+   address, in order. Returns `after`'s list, made of the old objects wherever
+   one matched, each updated to exactly what `after` says. */
+function keepIdentity(before, after) {
+  if (!Array.isArray(before) || !Array.isArray(after)) return after;
+  const becomes = (target, source) => {
+    for (const key of Object.keys(target)) if (!(key in source)) delete target[key];
+    return Object.assign(target, source);
+  };
+  const claimed = new Set();
+  const free = (old) => old && !claimed.has(old);
+  const urls = (group) => new Set((group?.links || []).map((link) => link?.url));
+  const folderFor = (group, index) => {
+    if (!group) return null;
+    // Its id; else its name where it stood; else its name anywhere (a folder
+    // added in front moves every one after it); else where it stood, if
+    // enough of its bookmarks are the same (renamed in the other tab).
+    const byId = group.id ? before.find((old) => free(old) && old.id === group.id) : null;
+    if (byId) return byId;
+    if (free(before[index]) && before[index].label === group.label) return before[index];
+    const byName = before.find((old) => free(old) && old.label === group.label);
+    if (byName) return byName;
+    const there = before[index];
+    if (free(there)) {
+      const theirs = urls(there), ours = [...urls(group)];
+      if (ours.length && ours.filter((url) => theirs.has(url)).length * 2 >= ours.length) return there;
+    }
+    return null;
+  };
+  return after.map((group, index) => {
+    const old = folderFor(group, index);
+    if (!old || !group || typeof group !== "object") return group;
+    claimed.add(old);
+    const spare = new Map();
+    for (const link of Array.isArray(old.links) ? old.links : []) {
+      if (!link || typeof link.url !== "string") continue;
+      if (!spare.has(link.url)) spare.set(link.url, []);
+      spare.get(link.url).push(link);
+    }
+    const links = (Array.isArray(group.links) ? group.links : []).map((link) => {
+      const same = link && spare.get(link.url)?.shift();
+      return same ? becomes(same, link) : link;
+    });
+    return becomes(old, { ...group, links });
+  });
+}
+
 class NordlysApp {
   constructor() {
     adoptLegacyLocalStorage();
@@ -517,6 +565,21 @@ class NordlysApp {
       if (config[dead] !== undefined) { delete config[dead]; changed = true; }
     }
     if (Number(config.tileSize) >= 50 && Number(config.tileSize) < 56) { config.tileSize = 56; changed = true; }
+    /* An icon taken from a web address before addresses were kept, and
+       stored as that address because the picture could not be fetched, still
+       says where it came from: it becomes the first entry of its history.
+       A favicon from the Website icon sources is not an address anyone typed. */
+    const FAVICON = /(?:_favicon|favicons\?|duckduckgo\.com\/ip3|apple-touch-icon)/i;
+    for (const group of Array.isArray(config.groups) ? config.groups : []) {
+      for (const link of Array.isArray(group?.links) ? group.links : []) {
+        const image = link?.customImg;
+        if (typeof image !== "string" || !/^https?:\/\/\S+$/i.test(image) || image.length > 2048 || FAVICON.test(image)) continue;
+        if (link.iconUrl !== undefined || link.iconUrls !== undefined) continue;
+        link.iconUrl = image;
+        link.iconUrls = [{ url: image, thumb: "", at: 0 }];
+        changed = true;
+      }
+    }
     return changed;
   }
 
@@ -589,7 +652,7 @@ class NordlysApp {
     if (!bundle || !bundle.config) return false;
     const previous = this.config;
     this.config = Object.assign({}, DEFAULT_CONFIG, bundle.config);
-    window.NordlysConfigSchema?.repairConfig(this.config);
+    window.NordlysConfigSchema?.repairConfig(this.config, DEFAULT_CONFIG);
     /* If it will not persist, nothing has happened: the page keeps the config
        it had rather than showing one that the next reload will contradict. */
     if (!this.saveConfig()) { this.config = previous; return false; }
@@ -643,7 +706,7 @@ class NordlysApp {
         /* Shapes that would crash the page — groups that is not a list — are
            coerced first, so the migrations below never meet them. Whatever was
            stored is kept before it is written over. */
-        const repaired = Boolean(window.NordlysConfigSchema?.repairConfig(cfg));
+        const repaired = Boolean(window.NordlysConfigSchema?.repairConfig(cfg, DEFAULT_CONFIG));
         if (this.normalizeStoredConfig(cfg) || repaired || aged) {
           // Keep what the user had, exactly as it was, before writing over it.
           this.snapshotBeforeMigration(original);
@@ -746,7 +809,7 @@ class NordlysApp {
             const original = JSON.parse(JSON.stringify(source));
             const aged = Boolean(window.NordlysConfigSchema?.migrateRaw(source));
             this.config = Object.assign({}, DEFAULT_CONFIG, source);
-            const repaired = Boolean(window.NordlysConfigSchema?.repairConfig(this.config));
+            const repaired = Boolean(window.NordlysConfigSchema?.repairConfig(this.config, DEFAULT_CONFIG));
             migrated = this.normalizeStoredConfig(this.config) || repaired || aged;
             source = original;
             if (migrated) this.snapshotBeforeMigration(source);
@@ -825,7 +888,142 @@ class NordlysApp {
     this.initGlobalShortcuts();
     this.initVisibilityListener();
     this.initColorModeListener();
+    this.watchOtherTabs();
     this.restoreFromChromeStorage();
+  }
+
+  /* Every open new tab holds its own copy of the config, and a save writes
+     the whole of it. A tab left open kept the board as it was when it opened,
+     so a bookmark added in another tab was written over the moment anything
+     was changed here. When another tab saves, this one takes what it saved —
+     through the same repairs a load makes — and redraws. */
+  watchOtherTabs() {
+    window.addEventListener("storage", (event) => {
+      if (event.key !== STORAGE_KEY || !event.newValue) return;
+      let parsed;
+      try { parsed = JSON.parse(event.newValue); } catch { return; }
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return;
+      window.NordlysConfigSchema?.migrateRaw(parsed);
+      const next = Object.assign({}, DEFAULT_CONFIG, parsed);
+      window.NordlysConfigSchema?.repairConfig(next, DEFAULT_CONFIG);
+      this.normalizeStoredConfig(next);
+      /* Another tab changing its clock or its sky leaves this board as it
+         is, and whatever is open over it stays open. Only a different board
+         lets go of the old one. */
+      const sameBoard = JSON.stringify(next.groups) === JSON.stringify(this.config.groups);
+      this.letGoOfTheOldBoard({ entirely: !sameBoard });
+      // The data is taken at once — that is what keeps it from being written
+      // over. Drawing it waits: one redraw a frame, however fast the other tab
+      // saves (a slider drag saves on every step), and none while hidden.
+      /* Folders and bookmarks this tab already holds are updated in place
+         rather than replaced, so everything still pointing at them — a list
+         row mid-rename, an open editor — writes into the live config instead
+         of an orphan that the next save would leave behind. */
+      next.groups = keepIdentity(this.config.groups, next.groups);
+      this.config = next;
+      this.loadedFromStore = true;
+      this.retargetEditors();
+      // Arrange, still open over the same board, starts its steps back from
+      // this one: the ones it had hold the folders just replaced.
+      const arrange = this.grid?.arrange;
+      if (sameBoard && arrange?.active) {
+        arrange.history = [];
+        arrange.entry = arrange.snapshot();
+        arrange.refresh();
+      }
+      this.redrawAdopted();
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden && this.adoptedPending) this.redrawAdopted();
+    });
+  }
+
+  redrawAdopted() {
+    this.adoptedPending = true;
+    if (document.hidden || this.adoptedFrame) return;
+    /* Someone typing in a field of their own — a folder's name, the CSS
+       editor — keeps what they are typing: the redraw would rebuild the field
+       under them. It waits until they leave it. */
+    const typing = document.activeElement?.closest?.("input:not([type=range]):not([type=checkbox]):not([type=radio]), textarea, [contenteditable=\"true\"]");
+    if (typing && !typing.closest("#board")) {
+      typing.addEventListener("blur", () => { if (this.adoptedPending) this.redrawAdopted(); }, { once: true });
+      return;
+    }
+    this.adoptedFrame = requestAnimationFrame(() => {
+      this.adoptedFrame = null;
+      this.adoptedPending = false;
+      const next = this.config;
+      if (window.I18N && next.language && next.language !== window.I18N.currentLang) window.I18N.setLanguage(next.language);
+      this.applyLegibility();
+      this.bgEngine?.setPalettes?.(Array.isArray(next.bgPalettes) ? next.bgPalettes : []);
+      this.applyLoadedConfig();
+      this.settings?.renderThemeCards?.();
+    });
+  }
+
+  /* What holds on to the board being replaced: a drag in flight, Arrange's
+     steps back (they point at folders that are no longer these), and the two
+     dialogs that name a bookmark by its position. */
+  letGoOfTheOldBoard({ entirely = true } = {}) {
+    this.grid?.drag?.cancel?.();
+    // A command being previewed holds a copy of the whole config to put back,
+    // and to start from on Enter; that copy is the old one now.
+    if (this.widgets?.search?.commandSnapshot) {
+      this.widgets.search.endCommandMode();
+      // Its rows name folders by where they were; the next key draws new ones.
+      this.widgets.search.closeSuggestions();
+    }
+    if (!entirely) return;
+    const arrange = this.grid?.arrange;
+    if (arrange?.active) {
+      arrange.history = [];
+      arrange.entry = null;
+      arrange.exit();
+    }
+  }
+
+  /* The icon picker and the bookmark editor remember their bookmark by where
+     it was. After another tab's board comes in, that place may hold another
+     bookmark, so each is pointed at where its own bookmark is now, and it
+     closes only if that bookmark is gone. */
+  retargetEditors() {
+    const groups = this.config.groups || [];
+    const find = (link) => {
+      for (let gIdx = 0; gIdx < groups.length; gIdx++) {
+        const lIdx = (groups[gIdx]?.links || []).indexOf(link);
+        if (lIdx >= 0) return { gIdx, lIdx };
+      }
+      return null;
+    };
+    const settings = this.settings;
+    if (settings?.activeIconTarget && settings.activeIconLink) {
+      const place = find(settings.activeIconLink);
+      if (place) settings.activeIconTarget = place;
+      else settings.closeIconModal?.();
+    }
+    const grid = this.grid;
+    /* A menu open on a bookmark or a folder, and the folder editor, act on
+       what they were opened for — or not at all once it is gone. */
+    const tileMenuOpen = grid?.tileCtxMenu && !grid.tileCtxMenu.hidden;
+    if (tileMenuOpen && grid.activeTileLink) {
+      const place = find(grid.activeTileLink);
+      if (place) grid.activeTileTarget = place; else grid.closeContextMenus?.();
+    }
+    const folderOpen = (grid?.folderCtxMenu && !grid.folderCtxMenu.hidden) || grid?.quickFolderDialog?.isOpen;
+    if (folderOpen && grid.activeFolderGroup) {
+      const at = groups.indexOf(grid.activeFolderGroup);
+      if (at >= 0) grid.activeFolderTarget = at;
+      else { grid.closeContextMenus?.(); grid.closeQuickFolderModal?.(); }
+    }
+    if (grid?.quickDialog?.isOpen && grid.activeTileLink) {
+      const place = find(grid.activeTileLink);
+      if (!place) { grid.closeQuickEditModal?.(); return; }
+      // The folder chosen in its list, by the folder rather than its place.
+      const select = document.getElementById("quick-folder-select");
+      const chosen = grid.quickFolderChoices?.[Number(select?.value)];
+      grid.activeTileTarget = place;
+      grid.fillQuickFolders?.(groups.includes(chosen) ? chosen : groups[place.gIdx]);
+    }
   }
 
   /* ── Theme Token Engine ─────────────────────────────────────────── */

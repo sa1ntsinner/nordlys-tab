@@ -84,29 +84,49 @@ surface was assembled rather than designed.
 
 ## Motion
 
-Four durations, two curves, and they travel together.
+Motion explains or it does not happen. The rules, in `src/css/motion.css`
+where every animation lives:
 
-| Token | Duration | For |
-| --- | ---: | --- |
-| `--nl-motion-fast` | 120ms | A state change on something already on screen |
-| `--nl-motion-control` | 170ms | A control answering a press |
-| `--nl-motion-panel` | 260ms | Something appearing or disappearing in place |
-| `--nl-motion-enter` | 320ms | A panel that travels |
+1. **Something moves to show where it came from, where it went, or that it
+   heard you** — never to decorate.
+2. **The more often a thing happens, the less it moves.** A new tab opens
+   finished: nothing plays on arrival, and nothing transitions until the page
+   has arrived. Search, its suggestions and every keyboard action are
+   immediate, because they happen hundreds of times a day.
+3. **Things grow out of where they were asked for:** a menu from the cursor,
+   a list from its field, a folder from its chip in the dock, a theme from the
+   click that chose it.
+4. **Arrivals take their time and departures do not.**
+5. **Only what the compositor can move is animated** — transform, opacity, a
+   clip. A disclosure opening is the one exception, because its height is the
+   whole point of it.
 
-`--nl-ease-emphasized` for everything. `--nl-ease-pop` is one deliberate
-overshoot, and the moment it is on three elements at once it reads as a
-template.
+Three kinds of motion, three curves, and the durations travel with them:
 
-Use the composed tokens — `--nl-transition-fast`, `--nl-transition-control`,
-`--nl-transition-panel` — so a duration cannot be paired with a bare `ease` by
-accident.
+| Kind | Curve | Tokens |
+| --- | --- | --- |
+| A state changing — a colour, an opacity | `--nl-ease-state` | `--nl-transition-fast`, `--nl-transition-control` |
+| Something travelling — a panel, a menu | `--nl-ease-emphasized` | `--nl-transition-panel`, `--nl-transition-enter`, `--nl-transition-reveal` |
+| Something put down — a folder settling, a tile landing | `--nl-ease-spring` | `--nl-transition-settle`, `--nl-transition-settle-fast` |
 
-**The page does not animate on arrival.** It is opened dozens of times a day and
-looked at for a second or two; a staged entrance at that frequency is a toll,
-not a flourish. Motion belongs to things the user starts.
+The spring is a damped spring sampled into `linear()`, about 2% overshoot; a
+browser without `linear()` gets the emphasized curve. Use the composed
+tokens: a unit test refuses a bare duration or a hand-paired curve outside
+`foundations.css`.
 
-Under `prefers-reduced-motion`, transforms, parallax and the canvas stop.
-Opacity and colour transitions stay: a 120ms crossfade is not vestibular.
+Entrances start from `@starting-style`; exits let `display` change at the
+end (`transition-behavior: allow-discrete`) so they can be seen. A change to
+the whole board — folding a folder, restoring one, a new arrangement — is one
+view transition; a delete glides in place instead, because a view transition
+swallows clicks and Undo must be pressable at once.
+
+Under `prefers-reduced-motion` the picture stays and the travel goes: a
+transition may only fade or recolour, briefly, so nothing slides, scales or
+reflows over time; transforms, parallax, view transitions and the canvas stop.
+Anything that must stay centred uses `translate`, which that leaves alone. The
+glass loses its blur, so it becomes solid rather than a tint chosen to be
+read with blur behind it — as it does for `prefers-reduced-transparency` and
+high legibility, and the Glass choice says so.
 
 ---
 
@@ -305,6 +325,9 @@ Escape puts it back. Every move outside the arrangement is one toast from undo.
 folder's menu, Settings → Bookmarks, `> arrange` — it dims the clock and search,
 outlines the rows, shows every handle and edge, takes the tiles out of the tab
 order, and holds the choices in one bar: the layout, Tidy up, Automatic rows,
-Undo, Done. The line above the bar says what the control under the pointer
+Size & spacing, Undo, Done. *Size & spacing* is five measures in a small panel
+over the bar — bookmark size, the space between bookmarks and between folders,
+the board's width, names under the icons — with the board as its preview; a
+slider drag is one step of Undo and one save. The line above the bar says what the control under the pointer
 does. Every choice in it is reachable from the keyboard: on a folder's grip the
 arrows move it, up and down change its row, and each step is said aloud.

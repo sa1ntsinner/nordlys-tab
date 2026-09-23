@@ -131,3 +131,46 @@ test('at 320px the undo stays inside the viewport', async ({ nordlysPage }) => {
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(320);
 });
+
+/* A dialog keeps focus inside itself, so the toast's Undo button is out of
+   the keyboard's reach while one is open. Ctrl+Z takes the newest Undo still
+   on offer, from anywhere but a text field. */
+test('Ctrl+Z takes back the newest change still on offer, even from inside a dialog', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => {
+    const link = window.Nordlys.config.groups[0].links[0];
+    link.iconUrls = [{ url: 'https://cdn.example.com/a.png', thumb: '', at: 2 }, { url: 'https://cdn.example.com/b.png', thumb: '', at: 1 }];
+    link.iconUrl = 'https://cdn.example.com/a.png';
+    window.Nordlys.settings.openIconModal(0, 0);
+  });
+  await page.locator('.icon-tab-btn[data-tab="custom"]').click();
+  const pick = page.locator('.icon-url-version').nth(1).locator('.icon-url-pick');
+  await pick.focus();
+  await page.keyboard.press('Delete');
+  await expect(page.locator('.icon-url-version')).toHaveCount(1);
+  await page.keyboard.press('Control+z');
+  await expect(page.locator('.icon-url-version')).toHaveCount(2);
+  expect(await page.evaluate(() => window.Nordlys.config.groups[0].links[0].iconUrls.length)).toBe(2);
+
+  // In a text field that has been typed in, Ctrl+Z is the field's own.
+  await page.locator('.icon-url-version').nth(1).locator('.icon-url-pick').focus();
+  await page.keyboard.press('Delete');
+  await page.locator('#icon-url-input').focus();
+  await page.keyboard.type('x');
+  await page.keyboard.press('Control+z');
+  await expect(page.locator('.icon-url-version')).toHaveCount(1);
+});
+
+/* A five-second Undo that left while the pointer was on its way to it took
+   the way back away. The clock stops while the notice is being attended to. */
+test('an undo notice waits while the pointer rests on it', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => window.NordlysUI.showUndoToast({ message: 'Something changed', duration: 600, onAction: () => {} }));
+  const notice = page.locator('#toast-dock .toast', { hasText: 'Something changed' });
+  await expect(notice).toBeVisible();
+  await notice.hover();
+  await page.waitForTimeout(1200);
+  await expect(notice, 'still there while the pointer rests on it').toBeVisible();
+  await page.mouse.move(5, 5);
+  await expect(notice).toBeHidden({ timeout: 4000 });
+});

@@ -5,6 +5,7 @@
     'textarea:not([disabled])', '[tabindex]:not([tabindex="-1"])'
   ].join(',');
   const layers = [];
+  let selectLabels = 0;
 
   function visibleFocusable(root) {
     return [...root.querySelectorAll(focusableSelector)].filter(node => {
@@ -199,7 +200,13 @@
       const inRow = select.closest('.row, .setting-row, .bookmark-summary-row, .bookmark-folder-actions');
       const nearby = rowLabel || select.closest('label') || inRow?.querySelector(':scope > span, :scope > label');
       const label = select.getAttribute('aria-label') || nearby?.textContent?.trim() || select.title;
+      /* A visible label beside the select is pointed at rather than copied: a
+         copy was taken before the page was translated, so every one of these
+         kept its English name in every other language. */
+      const pointAt = !labelledBy && !select.getAttribute('aria-label') && nearby && !nearby.contains(select);
+      if (pointAt && !nearby.id) nearby.id = `nl-select-label-${++selectLabels}`;
       if (labelledBy) this.trigger.setAttribute('aria-labelledby', labelledBy);
+      else if (pointAt) this.trigger.setAttribute('aria-labelledby', nearby.id);
       else if (label) this.trigger.setAttribute('aria-label', label);
       this.value = document.createElement('span'); this.value.className = 'nl-select-value';
       const caret = document.createElement('span'); caret.className = 'nl-select-caret'; caret.setAttribute('aria-hidden', 'true');
@@ -480,6 +487,27 @@
      reaches somebody who cannot see the dock, and it asks the dock for room the
      same way an ordinary notice does — a toast that appended past the cap was
      how three notices came to evict an Undo. */
+  /* Ctrl+Z (⌘Z) takes the newest Undo still on offer, from anywhere but a
+     field that has its own. An open dialog keeps focus inside itself, so for
+     a keyboard the toast's button is out of reach exactly when a dialog is
+     where the change was made. */
+  const liveUndos = new Set();
+  /* A field keeps its own Ctrl+Z only once something has been typed into it
+     since it was focused; before that it has nothing to undo, and focus often
+     lands in one right after the change the notice is about. */
+  const typedIn = new WeakSet();
+  document.addEventListener('focusin', event => typedIn.delete(event.target), true);
+  document.addEventListener('input', event => typedIn.add(event.target), true);
+  document.addEventListener('keydown', event => {
+    if (event.key.toLowerCase() !== 'z' || !(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey) return;
+    const target = event.target;
+    const field = target?.closest?.('input, textarea, select, [contenteditable=""], [contenteditable="true"]');
+    if (field && typedIn.has(field)) return;
+    const newest = [...liveUndos].pop();
+    if (!newest) return;
+    event.preventDefault();
+    newest(true);
+  }, true);
   function showUndoToast({ message, actionLabel, onAction, duration = 5000 }) {
     actionLabel = actionLabel || undoText('toast.undo') || 'Undo';
     const dock = document.getElementById('toast-dock') || document.body;
@@ -496,12 +524,18 @@
       item.addEventListener('transitionend', gone, { once: true });
       setTimeout(gone, 400);
     };
-    let active = true; const finish = action => { if (!active) return; active = false; clearTimeout(timer); leave(); if (action) onAction?.(); };
+    let active = true; const finish = action => { if (!active) return; active = false; stop(); liveUndos.delete(finish); leave(); if (action) onAction?.(); };
+    liveUndos.add(finish);
+    button.setAttribute('aria-keyshortcuts', 'Control+Z Meta+Z');
     button.addEventListener('click', () => finish(true)); item.append(text, button);
     reflow(() => { if (typeof NordlysToast !== 'undefined') NordlysToast.makeRoom(dock); dock.append(item); });
     requestAnimationFrame(() => item.classList.add('on'));
     announce(message);
-    const timer = setTimeout(() => finish(false), duration); return { dismiss: () => finish(false) };
+    // The clock stops while the pointer or the focus is on the notice.
+    let stop;
+    if (typeof NordlysToast !== 'undefined' && NordlysToast.hold) stop = NordlysToast.hold(item, duration, () => finish(false));
+    else { const timer = setTimeout(() => finish(false), duration); stop = () => clearTimeout(timer); }
+    return { dismiss: () => finish(false) };
   }
 
   /* Resolves once every finite CSS animation and transition on the page has

@@ -217,7 +217,9 @@ html[data-theme="oled-obsidian"] #veil {
   --glass-border: rgba(189, 147, 249, 0.30);
   --frost: rgba(255, 121, 198, 0.22);
   --ink: #f8f8f2;
-  --dim: #bd93f9;
+  /* A step lighter than the accent it was: secondary text on a raised
+     surface — a panel, a menu — read at 4.1:1, under the 4.5 floor. */
+  --dim: #caa6fa;
   --faint: #8395c9;
   --accent: #bd93f9;
   --accent-glow: rgba(189, 147, 249, 0.45);
@@ -1014,8 +1016,10 @@ html[data-theme="oled-obsidian"] #veil {
   color: #0f172a;
 }
 
+/* The tint and the underline say which tab is chosen; the words stay ink.
+   Accent words on the accent tint fell under 4.5:1 in three light themes. */
 .light-ui .icon-tab-btn.active {
-  color: var(--nl-accent-text);
+  color: var(--nl-text-primary);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
@@ -1041,8 +1045,10 @@ html[data-theme="oled-obsidian"] #veil {
   color: #0f172a;
 }
 
+/* White on a light theme's own accent was 3.2–4.2:1. The accent made to be
+   read on a light page is dark enough to carry white words as well. */
 .light-ui .icon-chip.active {
-  background: var(--accent);
+  background: var(--nl-accent-text);
   color: #ffffff;
 }
 

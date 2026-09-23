@@ -29,7 +29,7 @@ Chrome Web Store's rule that they only ever go up.
   reaches the first nine tiles on the whole board, not only the first folder.
 - **The board is a command line.** Type `>` in search: `theme nord`, `sky
   frost`, `mood ember`, `move YouTube to Daily`, `new folder Reading`,
-  `rename`, `hide`, `show`, `shuffle`, `settings`. The page shows the result
+  `rename`, `hide`, `show`, `shuffle`, `arrange`, `size`, `settings`. The page shows the result
   before Enter keeps it, with one undo; a bare `>` lists them all. The verbs
   work in all eight languages, and in English everywhere.
 - **Share a look.** Copy your theme, sky, mood, fonts and the shape of the
@@ -61,6 +61,28 @@ Chrome Web Store's rule that they only ever go up.
   sunrise and sunset, a pale calm sky by day, a cool blue hour, stars at night.
   *Watch a day go by* plays the next twenty-four hours in fourteen seconds.
   Nothing is sent anywhere; the place is your time zone's city.
+- **Size and spacing, set where you arrange.** Bookmark size (Small, Medium,
+  Large or anything between), the space between bookmarks and between
+  folders, how wide the board runs, and whether names show under the icons —
+  with the board itself as the preview, one Undo per change, and *Back to
+  defaults*.
+- **An icon remembers where it came from.** The address an icon was taken
+  from is kept with the bookmark and shown when the picker opens again, with
+  the last few it has used as a strip of small pictures: go back to one,
+  change its address, or remove it with undo. The pictures are drawn from the
+  saved icon, so showing them asks the network for nothing.
+- **Size and spacing from Settings.** Settings → Bookmarks opens the panel
+  directly.
+- **Ctrl+Z (⌘Z) takes back the last change** while its notice is showing, from
+  anywhere but a text field — including inside a dialog, where the notice's
+  own Undo button is out of the keyboard's reach.
+- **Motion that says what changed.** Menus grow from where they were opened
+  and dialogs settle into place; settings tabs share one travelling
+  indicator; a folder folds into its chip in the dock and grows back out of
+  it; a theme chosen with a click spreads from the pointer; the clock turns
+  over digit by digit. Anything done from the keyboard, or done again and
+  again, stays immediate, and reduced motion keeps the picture and drops the
+  travel.
 
 ### Changed
 
@@ -103,6 +125,53 @@ Chrome Web Store's rule that they only ever go up.
 
 ### Fixed
 
+- **Reduced motion is less motion again.** It had stretched every transition
+  on the page to 80ms, so layout began to glide instead of changing at once;
+  keyboard menus opened with nothing focused; the undo notice slid half off a
+  phone's screen; and text over the glass lost the blur it was measured
+  against. Menus take focus, things land at once, the notice stays centred,
+  and without its blur the glass is solid.
+- **High contrast mode shows what is chosen.** Tabs, segments, themes, scenes
+  and switches used to look unselected in Windows high contrast, because
+  each showed its state only by a background.
+- **A damaged setting in storage no longer stops the page.** Fuzzing thousands
+  of corrupted configs found two values that took it down; every setting,
+  folder field and bookmark field of the wrong kind is now put right on load.
+- **Reverting a tried-on look keeps what you did meanwhile.** It used to put
+  the whole board back, so a bookmark added during the trial was lost.
+- **Notices wait while you read them.** A notice, and its Undo, no longer
+  leaves while the pointer rests on it or focus is inside it.
+- **Another tab's save no longer interrupts typing here**, and an edit
+  finished after it lands in the live board instead of an orphaned copy. An
+  open editor or menu follows its own bookmark or folder, wherever the other
+  tab moved it.
+- **At 200% zoom** the size panel and the bookmark editor stay on the screen
+  and scroll inside instead of running off both edges.
+- **A system that asks for less transparency gets solid glass.** macOS
+  "Reduce transparency" and Windows "Transparency effects" off used to get the
+  frosted glass all the same.
+- **The Glass choice says why it changes nothing** while reduced motion,
+  reduced transparency or high legibility hold the glass solid.
+- **Arrange on an empty board says there is nothing to arrange** instead of
+  opening a bar of controls that move nothing, and Board width says when the
+  window is too narrow to show it.
+- **A tab left open no longer writes over another tab's changes.** Each new
+  tab kept the board it opened with, so a bookmark added in one tab was lost
+  the moment anything changed in another. Tabs now take each other's saves.
+- **A followed folder keeps the look you gave it.** Every refresh from the
+  browser dropped the icons, letters, colours and tones set on its bookmarks.
+  What a refresh would undo — renaming, moving, reordering, deleting — is no
+  longer offered there, with a line saying where to do it instead.
+- **Every panel reads in every theme.** In light themes the icon picker's
+  address box was near-black with dark words on it, under 2:1; a measured
+  pass over every overlay in all 21 themes fixed that and a handful of
+  smaller misses, and a test now keeps them there.
+- **The icon picker, the cropper, the font list and the bookmark list's
+  accessible names speak your language**; they had been English everywhere.
+- **A command entered faster than its list appeared ran nothing**, or ran
+  what had been typed before.
+- **Nothing moves as a new tab opens.** Hidden menus and dialogs sometimes
+  played their closing transition on arrival.
 - **Settings labels were nearly invisible in all ten light themes.** They were
   hard-coded near-white.
 - **Frosted Glass showed Aurora Void's colours.** Its own were declared but

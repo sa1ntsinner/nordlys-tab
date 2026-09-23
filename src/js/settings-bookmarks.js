@@ -84,6 +84,8 @@
       this.render();
     }
     moveBookmark(group, link, delta) {
+      // The browser keeps a followed folder's order; a refresh would put it back.
+      if (group.source?.folderId) return;
       const links = group.links || [], bookmarkIndex = links.indexOf(link), target = Math.max(0, Math.min(links.length - 1, bookmarkIndex + delta)); if (bookmarkIndex < 0 || target === bookmarkIndex) return;
       links.splice(bookmarkIndex, 1); links.splice(target, 0, link); this.expanded.add(group); this.save(this.text('announce.movedToPosition', `${link.name} moved to position ${target + 1}`, { name: link.name, position: target + 1 })); this.render();
     }
@@ -185,8 +187,8 @@
         const summary = document.createElement('summary'); summary.className = 'bookmark-folder-summary';
         summary.setAttribute('role', 'button'); summary.tabIndex = 0; summary.setAttribute('aria-expanded', String(open));
         const chevron = document.createElement('span'); chevron.className = 'bookmark-folder-chevron'; chevron.setAttribute('aria-hidden', 'true');
-        const name = document.createElement('strong'); name.textContent = group.label || 'Folder';
-        const count = document.createElement('span'); count.className = 'bookmark-folder-count'; count.textContent = String((group.links || []).length); count.setAttribute('aria-label', `${count.textContent} bookmarks`);
+        const name = document.createElement('strong'); name.textContent = group.label || this.text('bookmarks.newFolder', 'New Folder');
+        const count = document.createElement('span'); count.className = 'bookmark-folder-count'; count.textContent = String((group.links || []).length); count.setAttribute('aria-label', this.text('a11y.bookmarkCount', `${count.textContent} bookmarks`, { count: count.textContent }));
         /* The browser owns these, so the row says whose they are. Built here,
            attached with the rest of the summary below: an element that is not
            in the document yet cannot have a sibling inserted after it. */
@@ -211,7 +213,7 @@
           return node;
         };
 
-        const renameInput = document.createElement('input'); renameInput.className = 'bookmark-folder-name-input'; renameInput.setAttribute('aria-label', `Folder name for ${group.label}`); renameInput.value = group.label || '';
+        const renameInput = document.createElement('input'); renameInput.className = 'bookmark-folder-name-input'; renameInput.setAttribute('aria-label', this.text('a11y.folderNameFor', `Folder name for ${group.label}`, { name: group.label })); renameInput.value = group.label || '';
         renameInput.hidden = !this.renaming.has(group);
         const commitRename = () => { group.label = renameInput.value.trim() || this.text('bookmarks.newFolder', 'New Folder'); this.renaming.delete(group); this.save(this.text('announce.renamed', `${group.label} renamed`, { name: group.label })); this.render(); };
         renameInput.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); commitRename(); } });
@@ -223,7 +225,7 @@
           this.expanded.add(group); this.save(this.text('announce.bookmarkAdded', 'Bookmark added')); this.render();
         };
 
-        const folderMenu = button(`More actions for ${group.label}`, '⋯', node => this.openOverflow(node, [
+        const folderMenu = button(this.text('a11y.moreActionsFor', `More actions for ${group.label}`, { name: group.label }), '⋯', node => this.openOverflow(node, [
           { label: this.text('bookmarks.rename', 'Rename'), run: () => { this.renaming.add(group); this.render(); this.root.querySelector(`[data-group-index="${this.app.config.groups.indexOf(group)}"] .bookmark-folder-name-input`)?.focus(); } },
           { label: this.text('bookmarks.addBookmark', 'Add bookmark'), disabled: Boolean(group.source?.folderId), run: addBookmark },
           { label: group.hidden ? this.text('bookmarks.showOnBoard', 'Show on the board') : this.text('bookmarks.hideFromBoard', 'Hide from the board'), run: () => { group.hidden = !group.hidden; this.save(group.hidden ? this.text('announce.hidden', `${group.label} hidden`, { name: group.label }) : this.text('announce.shown', `${group.label} shown`, { name: group.label })); this.render(); } },
@@ -258,14 +260,14 @@
         /* Adding a bookmark used to be one identical grey button among seven.
            Inside the folder it is the obvious next thing to do. */
         const toolbar = document.createElement('div'); toolbar.className = 'bookmark-folder-toolbar';
-        const add = button(`Add bookmark to ${group.label}`, this.text('bookmarks.addBookmark', 'Add bookmark'), addBookmark, { className: 'glass-btn accent bookmark-add' });
+        const add = button(this.text('a11y.addBookmarkTo', `Add bookmark to ${group.label}`, { name: group.label }), this.text('bookmarks.addBookmark', 'Add bookmark'), addBookmark, { className: 'glass-btn accent bookmark-add' });
         if (group.source?.folderId) {
           add.disabled = true;
           add.title = this.text('bookmarks.linkedAddHint', 'Add it in the browser; this folder follows along');
         }
         const columnsLabel = document.createElement('label'); columnsLabel.className = 'bookmark-columns';
         const columnsText = document.createElement('span'); columnsText.textContent = this.text('bookmarks.columns', 'Columns');
-        const columns = document.createElement('select'); columns.setAttribute('aria-label', `Columns for ${group.label}`);
+        const columns = document.createElement('select'); columns.setAttribute('aria-label', this.text('hint.columnsFor', `Columns for ${group.label}`, { name: group.label }));
         for (let value = 1; value <= 8; value++) { const option = document.createElement('option'); option.value = String(value); option.textContent = `${value}`; option.selected = Number(group.cols) === value; columns.append(option); }
         columns.addEventListener('change', () => { group.cols = Number(columns.value); this.save(this.text('announce.columns', `${group.label}: ${group.cols} columns`, { name: group.label, count: group.cols })); });
         columnsLabel.append(columnsText, columns);
@@ -283,29 +285,38 @@
           meta.append(title, host);
 
           const editor = document.createElement('div'); editor.className = 'bookmark-editor'; editor.hidden = true;
-          const titleInput = document.createElement('input'); titleInput.value = link.name || ''; titleInput.setAttribute('aria-label', 'Bookmark title');
-          const urlInput = document.createElement('input'); urlInput.value = link.url || ''; urlInput.type = 'url'; urlInput.setAttribute('aria-label', 'Bookmark URL');
+          const titleInput = document.createElement('input'); titleInput.value = link.name || ''; titleInput.setAttribute('aria-label', this.text('modal.bookmarkName', 'Bookmark title'));
+          const urlInput = document.createElement('input'); urlInput.value = link.url || ''; urlInput.type = 'url'; urlInput.setAttribute('aria-label', this.text('modal.url', 'Bookmark URL'));
           const currentGroupIndex = () => this.app.config.groups.indexOf(group), currentBookmarkIndex = () => group.links.indexOf(link);
-          const iconButton = button(`Choose icon for ${link.name}`, this.text('modal.chooseIcon', 'Choose icon'), () => this.openIconPicker(currentGroupIndex(), currentBookmarkIndex(), iconButton));
-          const saveButton = button(`Save ${link.name}`, this.text('modal.saveChanges', 'Save'), () => {
-            link.name = titleInput.value.trim() || 'Bookmark';
-            link.url = /^https?:\/\//i.test(urlInput.value) ? urlInput.value : `https://${urlInput.value}`;
+          /* A followed bookmark's name and address belong to the browser; its
+             look is set here. Moving, reordering and deleting it happen there. */
+          const followed = Boolean(group.source?.folderId);
+          if (followed) {
+            const hint = this.text('bookmarks.linkedEditHint', 'This folder follows the browser: rename or change the address there. The icon and colour are yours to set here.');
+            for (const input of [titleInput, urlInput]) { input.readOnly = true; input.title = hint; }
+          }
+          const iconButton = button(this.text('a11y.chooseIconFor', `Choose icon for ${link.name}`, { name: link.name }), this.text('modal.chooseIcon', 'Choose icon'), () => this.openIconPicker(currentGroupIndex(), currentBookmarkIndex(), iconButton));
+          const saveButton = button(this.text('a11y.saveBookmark', `Save ${link.name}`, { name: link.name }), this.text('modal.saveChanges', 'Save'), () => {
+            if (!followed) {
+              link.name = titleInput.value.trim() || 'Bookmark';
+              link.url = /^https?:\/\//i.test(urlInput.value) ? urlInput.value : `https://${urlInput.value}`;
+            }
             this.save(this.text('announce.saved', `${link.name} saved`, { name: link.name })); this.render();
           });
           editor.append(titleInput, urlInput, iconButton, saveButton);
 
-          const rowMenu = button(`More actions for ${link.name}`, '⋯', node => this.openOverflow(node, [
+          const rowMenu = button(this.text('a11y.moreActionsFor', `More actions for ${link.name}`, { name: link.name }), '⋯', node => this.openOverflow(node, [
             { label: this.text('ctx.editBookmark', 'Edit'), run: () => { editor.hidden = false; titleInput.focus(); } },
-            { label: this.text('bookmarks.moveUp', 'Move up'), disabled: bookmarkIndex === 0, run: () => this.moveBookmark(group, link, -1) },
-            { label: this.text('bookmarks.moveDown', 'Move down'), disabled: bookmarkIndex === group.links.length - 1, run: () => this.moveBookmark(group, link, 1) },
+            { label: this.text('bookmarks.moveUp', 'Move up'), disabled: followed || bookmarkIndex === 0, run: () => this.moveBookmark(group, link, -1) },
+            { label: this.text('bookmarks.moveDown', 'Move down'), disabled: followed || bookmarkIndex === group.links.length - 1, run: () => this.moveBookmark(group, link, 1) },
             /* A folder that follows the browser is not a destination: anything
                moved into it would vanish on the next refresh. */
             { label: this.text('bookmarks.moveTo', 'Move to folder'),
-              disabled: groups.filter(candidate => candidate !== group && !candidate.source?.folderId).length === 0,
+              disabled: followed || groups.filter(candidate => candidate !== group && !candidate.source?.folderId).length === 0,
               submenu: () => groups
                 .filter(candidate => candidate !== group && !candidate.source?.folderId)
-                .map(candidate => ({ label: candidate.label || 'Folder', run: () => this.transferBookmark(group, link, candidate) })) },
-            { label: this.text('ctx.deleteBookmark', 'Delete'), danger: true, run: () => this.removeWithUndo({ group, link }) }
+                .map(candidate => ({ label: candidate.label || this.text('bookmarks.newFolder', 'New Folder'), run: () => this.transferBookmark(group, link, candidate) })) },
+            { label: this.text('ctx.deleteBookmark', 'Delete'), danger: true, disabled: followed, run: () => this.removeWithUndo({ group, link }) }
           ]), { className: 'bookmark-compact-action bookmark-overflow' });
 
           const rowActions = document.createElement('span'); rowActions.className = 'bookmark-row-actions'; rowActions.append(rowMenu);

@@ -250,7 +250,7 @@ test('the shortcut legend is collapsed, complete, and describes the keys that ex
 
   await page.locator('.support-shortcuts > summary').click();
   const rows = page.locator('.support-shortcut');
-  await expect(rows).toHaveCount(8);
+  await expect(rows).toHaveCount(9);
 
   const keys = await rows.locator('.support-shortcut-keys').allInnerTexts();
   const expected = await page.evaluate(() => (navigator.platform || '').toUpperCase().includes('MAC') ? ['⌘', '⌥'] : ['Ctrl', 'Alt']);
@@ -295,7 +295,7 @@ test('the legend prints the modifier the handler actually listens for', async ({
 test('every locale translates the About block and the legend', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   const keys = ['support.intro', 'support.aboutTitle', 'support.changelog', 'support.shortcuts',
-    'support.keySearch', 'support.keyCommand', 'support.keySearchAnywhere', 'support.keySettings', 'support.keyBookmark', 'support.keyBoard', 'support.keyMenu'];
+    'support.keySearch', 'support.keyCommand', 'support.keySearchAnywhere', 'support.keySettings', 'support.keyBookmark', 'support.keyBoard', 'support.keyMenu', 'support.keyUndo'];
 
   const report = await page.evaluate(wanted => {
     const missing = [], untranslated = [];
