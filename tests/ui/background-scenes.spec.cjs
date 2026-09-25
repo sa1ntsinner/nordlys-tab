@@ -30,7 +30,7 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
      one is compared by its pixels. Wallpaper, Video and Solid share a ground
      and differ by the mark drawn on it, so comparing their background alone
      would report them identical. */
-  await expect(page.locator('#bg-scene-grid .scene-preview.is-live')).toHaveCount(6);
+  await expect(page.locator('#bg-scene-grid .scene-preview.is-live')).toHaveCount(9);
   const stills = await page.locator('#bg-scene-grid canvas.scene-still').evaluateAll(
     nodes => nodes.map(node => {
       const data = node.getContext('2d').getImageData(0, 0, node.width, node.height).data;
@@ -40,7 +40,7 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
     })
   );
   for (const still of stills) expect(still.painted, 'a still must show its scene').toBeGreaterThan(0.02);
-  expect(new Set(stills.map(still => still.image)).size, 'each scene must look like itself').toBe(6);
+  expect(new Set(stills.map(still => still.image)).size, 'each scene must look like itself').toBe(9);
   const personal = await page.locator('#bg-personal-grid .scene-preview').evaluateAll(
     nodes => nodes.map(node => {
       const own = getComputedStyle(node);
@@ -49,7 +49,7 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
     })
   );
   expect(new Set(personal).size, 'each personal source must look like itself').toBe(personal.length);
-  await expect(page.locator('#bg-scene-grid .scene-card')).toHaveCount(6);
+  await expect(page.locator('#bg-scene-grid .scene-card')).toHaveCount(9);
   await expect(page.locator('#bg-personal-grid .scene-card')).toHaveCount(3);
 
   const solid = page.locator('.scene-card[data-scene="solid"]');
@@ -60,15 +60,17 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
 });
 
 /* The generated choices are compositions rather than effect-level variants:
-   curtains, an ice halo, a flow field, rime, contour cloth and a low horizon.
-   Personal media remains alongside them without pretending to be a shader. */
-test('the atmosphere gallery offers six distinct compositions and personal media', async ({ nordlysPage }) => {
+   curtains, star trails round the pole, an ice halo, pillars of light, a
+   mother-of-pearl cloud, a flow field, black ice, a contour map and a low
+   horizon. Personal media remains alongside them without pretending to be a
+   shader. */
+test('the atmosphere gallery offers nine distinct compositions and personal media', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await openBackground(page);
   const offered = await page.locator('#cfg-bg-mode option').evaluateAll(
     nodes => nodes.map(node => node.value)
   );
-  expect(offered).toEqual(['aurora', 'halo', 'silk', 'frost', 'drift', 'horizon', 'custom-image', 'custom-video', 'solid']);
+  expect(offered).toEqual(['aurora', 'polaris', 'halo', 'pillars', 'nacre', 'silk', 'baikal', 'drift', 'horizon', 'custom-image', 'custom-video', 'solid']);
   // And nothing anywhere still offers a composition to pick between.
   expect(await page.locator('#bg-gradient-grid').count()).toBe(0);
 });
@@ -79,7 +81,7 @@ test('scene previews repaint in the chosen colour mood', async ({ nordlysPage })
   const { page } = nordlysPage;
   await openBackground(page);
   const halo = page.locator('#bg-scene-grid canvas.scene-still[data-scene="halo"]');
-  await expect(page.locator('#bg-scene-grid .scene-preview.is-live')).toHaveCount(6);
+  await expect(page.locator('#bg-scene-grid .scene-preview.is-live')).toHaveCount(9);
   const before = await halo.evaluate(node => node.toDataURL());
   await page.locator('[data-palette="ember"]').click();
   await expect.poll(() => halo.evaluate(node => node.toDataURL())).not.toBe(before);
@@ -136,6 +138,17 @@ test('a stored scene that no longer exists migrates to its closest survivor', as
     expect(await page.evaluate(() => 'gradient' in window.Nordlys.config),
       'the composition key is not carried forward').toBe(false);
   }
+  // Frost was retired for Baikal, the other sky made of ice.
+  await page.evaluate(() => {
+    window.Nordlys.config.bgMode = 'frost';
+    window.Nordlys.config.bgMotion = 0.3;
+    window.Nordlys.saveConfig();
+  });
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  expect(await page.evaluate(() => window.Nordlys.config.bgMode), 'frost should become baikal').toBe('baikal');
+  expect(await page.evaluate(() => window.Nordlys.bgEngine.mode)).toBe('baikal');
+  expect(await page.evaluate(() => window.Nordlys.config.bgMotion), 'at the pace it was').toBe(0.3);
 });
 
 /* Before this the procedural scenes differed only in the particles they drew, so
@@ -192,6 +205,49 @@ test('zero motion paints the scene once and then stops', async ({ nordlysPage })
   await page.locator('#cfg-bg-motion').dispatchEvent('change');
   await page.waitForTimeout(200);
   expect(await page.evaluate(() => window.Nordlys.bgEngine.animId)).toBeTruthy();
+});
+
+/* Between paints the loop sleeps on a timer rather than taking a vsync callback
+   every refresh only to find the budget not yet spent. Asleep or not, it keeps
+   the thirty-a-second cadence, never has two frames on the way at once, and
+   pausing leaves nothing behind to wake it. (How few callbacks each paint
+   costs at each panel rate is pinned exactly in tests/unit/frame-budget.) */
+test('a moving sky sleeps between paints and keeps its cadence; a paused one does nothing', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const sample = () => page.evaluate(async () => {
+    const engine = window.Nordlys.bgEngine;
+    const { loop, wake } = engine;
+    const paints = [];
+    let callbacks = 0;
+    let wakes = 0;
+    engine.loop = now => {
+      callbacks++;
+      loop(now);
+      if (engine.lastFrame === now) paints.push(now);
+    };
+    engine.wake = () => { wakes++; wake(); };
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    Object.assign(engine, { loop, wake });
+    const gaps = paints.slice(1).map((time, i) => time - paints[i]).sort((a, b) => a - b);
+    return { paints: paints.length, callbacks, wakes, median: gaps[gaps.length >> 1] ?? null, scheduled: engine.animId !== null };
+  });
+
+  const moving = await sample();
+  expect(moving.scheduled).toBe(true);
+  expect(moving.paints, 'still about thirty paints a second').toBeGreaterThan(20);
+  expect(moving.paints).toBeLessThanOrEqual(48);
+  expect(moving.median, 'paints a budget apart, not a refresh or two budgets').toBeGreaterThan(30);
+  expect(moving.median).toBeLessThan(37);
+  // One frame on its way at a time: no second chain of callbacks or timers.
+  expect(moving.callbacks, `${moving.callbacks} callbacks for ${moving.paints} paints`).toBeLessThanOrEqual(moving.paints * 2 + 2);
+  expect(moving.wakes).toBeLessThanOrEqual(moving.paints + 1);
+
+  await page.evaluate(() => window.Nordlys.bgEngine.pause());
+  const paused = await sample();
+  expect(paused).toEqual({ paints: 0, callbacks: 0, wakes: 0, median: null, scheduled: false });
+
+  await page.evaluate(() => window.Nordlys.bgEngine.resume());
+  expect((await sample()).paints).toBeGreaterThan(20);
 });
 
 test('switching a still atmosphere repaints the new composition immediately', async ({ nordlysPage }) => {
@@ -279,16 +335,16 @@ test('every moving part keeps the pace the slider sets', async ({ nordlysPage })
 });
 
 /* The sky is scattered from a stored seed. A new tab used to scatter it again,
-   so the frost a person liked was gone the next time they looked; now reload
+   so the ice a person liked was gone the next time they looked; now reload
    is the same sky, Shuffle is a different one, and Undo is the last one. */
 test('the sky keeps its composition across reloads, and shuffle is one undo away', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   const still = async () => page.evaluate(async () => {
-    window.Nordlys.config.bgMode = 'frost';
+    window.Nordlys.config.bgMode = 'baikal';
     window.Nordlys.config.bgMotion = 0;
     await window.Nordlys.updateBackgroundMode();
     const engine = window.Nordlys.bgEngine;
-    engine.t = NORDLYS_REST_PHASE.frost;
+    engine.t = NORDLYS_REST_PHASE.baikal;
     engine.render(0);
     return document.getElementById('bg-canvas').toDataURL();
   });

@@ -35,8 +35,8 @@ test('a theme is shown before it is chosen, kept with Enter, and one undo away',
 
 test('Escape puts a previewed sky back', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  await type(page, '>sky frost');
-  await expect.poll(() => page.evaluate(() => window.Nordlys.bgEngine.mode)).toBe('frost');
+  await type(page, '>sky baikal');
+  await expect.poll(() => page.evaluate(() => window.Nordlys.bgEngine.mode)).toBe('baikal');
   await page.keyboard.press('Escape');
   await expect.poll(() => page.evaluate(() => window.Nordlys.bgEngine.mode)).toBe('aurora');
   expect(await page.evaluate(() => window.Nordlys.config.bgMode)).toBe('aurora');

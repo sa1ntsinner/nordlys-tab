@@ -25,7 +25,7 @@
     mongodb: "MongoDB", postgresql: "PostgreSQL", mysql: "MySQL", graphql: "GraphQL", devdotto: "DEV",
     bbc: "BBC", cnn: "CNN", nba: "NBA", nasa: "NASA", ibm: "IBM", hp: "HP", aws: "AWS", gmail: "Gmail",
     chatgpt: "ChatGPT", huggingface: "Hugging Face", googlechrome: "Google Chrome", xbox: "Xbox", dropbox: "Dropbox",
-    onedrive: "OneDrive", onenote: "OneNote", vk: "VK", ok: "OK", x: "X"
+    onedrive: "OneDrive", onenote: "OneNote", vk: "VK", ok: "OK", x: "X", tv: "TV"
   };
   const FAMILIES = ["google", "github", "microsoft", "amazon", "apple", "adobe", "youtube", "jetbrains", "atlassian",
     "mozilla", "samsung", "xbox", "nintendo", "playstation", "facebook", "discord", "spotify", "cloudflare", "oracle", "visualstudio"];

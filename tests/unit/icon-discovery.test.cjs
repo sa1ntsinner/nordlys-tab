@@ -26,7 +26,7 @@ test('search results are named the way the brands name themselves', () => {
   const expectations = {
     github: 'GitHub', githubactions: 'GitHub Actions', googledrive: 'Google Drive', microsoftteams: 'Microsoft Teams',
     stackoverflow: 'Stack Overflow', youtubemusic: 'YouTube Music', nodedotjs: 'Node.js', figma: 'Figma',
-    adobephotoshop: 'Adobe Photoshop', 'hacker-news': 'Hacker News', app: 'App', npm: 'npm'
+    adobephotoshop: 'Adobe Photoshop', 'hacker-news': 'Hacker News', app: 'App', npm: 'npm', googletv: 'Google TV'
   };
   for (const [slug, title] of Object.entries(expectations)) assert.equal(titleFromSlug(slug), title, slug);
 });

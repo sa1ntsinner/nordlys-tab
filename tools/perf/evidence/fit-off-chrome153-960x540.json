@@ -1,0 +1,248 @@
+{
+  "reportVersion": 2,
+  "timestamp": "2026-09-24T19:58:00.708Z",
+  "browser": "153.0.8010.53",
+  "channel": "chrome",
+  "extension": false,
+  "platform": "win32",
+  "gpu": {
+    "featureStatus": {
+      "2d_canvas": "enabled",
+      "direct_rendering_display_compositor": "disabled_off_ok",
+      "gpu_compositing": "enabled",
+      "multiple_raster_threads": "enabled_on",
+      "opengl": "enabled_on",
+      "rasterization": "enabled",
+      "raw_draw": "disabled_off_ok",
+      "skia_graphite": "disabled_off",
+      "trees_in_viz": "disabled_off",
+      "video_decode": "enabled",
+      "video_encode": "enabled",
+      "webgl": "enabled",
+      "webgpu": "enabled",
+      "webnn": "disabled_off"
+    },
+    "devices": [
+      {
+        "vendorId": 4098,
+        "deviceId": 5390,
+        "vendorString": "",
+        "deviceString": "AMD Radeon(TM) 890M Graphics"
+      },
+      {
+        "vendorId": 5140,
+        "deviceId": 140,
+        "vendorString": "",
+        "deviceString": "Microsoft Basic Render Driver"
+      }
+    ]
+  },
+  "probe": {
+    "only": "aurora",
+    "canvasDpr": null,
+    "skipMethod": "",
+    "noGlass": false,
+    "idle": false,
+    "fixedPhase": false,
+    "noDesynchronized": false,
+    "onePageFit": "off",
+    "cadence": "render",
+    "quietAlpha": null,
+    "forcedQuietZones": null,
+    "seed": null
+  },
+  "viewport": {
+    "width": 960,
+    "height": 540,
+    "dpr": 1
+  },
+  "board": "dense",
+  "secondsPerSample": 2,
+  "warmupSec": 0.5,
+  "wallStartupMs": 389,
+  "startup": {
+    "domContentLoadedMs": 335.3999999910593,
+    "loadMs": 361.3999999910593,
+    "boardCards": 9,
+    "mode": "aurora",
+    "canvasPixels": 518400,
+    "nodeCounts": {
+      "document": 1753,
+      "settings": 762,
+      "board": 301,
+      "iconPicker": null
+    },
+    "topResources": [
+      {
+        "name": "/src/fonts/outfit.woff2",
+        "durationMs": 140,
+        "transferSize": 32592
+      },
+      {
+        "name": "/src/fonts/instrument-sans.woff2",
+        "durationMs": 127,
+        "transferSize": 30392
+      },
+      {
+        "name": "/src/js/settings.js",
+        "durationMs": 51,
+        "transferSize": 183227
+      },
+      {
+        "name": "/src/js/config-schema.js",
+        "durationMs": 51,
+        "transferSize": 17779
+      },
+      {
+        "name": "/src/js/app.js",
+        "durationMs": 51,
+        "transferSize": 68995
+      },
+      {
+        "name": "/src/js/icon-history.js",
+        "durationMs": 50,
+        "transferSize": 4650
+      },
+      {
+        "name": "/src/js/icon-picker.js",
+        "durationMs": 48,
+        "transferSize": 3700
+      },
+      {
+        "name": "/src/js/settings-support.js",
+        "durationMs": 48,
+        "transferSize": 20226
+      }
+    ]
+  },
+  "pageFit": {
+    "requested": "off",
+    "supported": true,
+    "enabled": false,
+    "settled": true,
+    "attribute": null,
+    "stage": "off",
+    "t": 0,
+    "zoom": 1,
+    "surfaceCssZoom": 1,
+    "boardCssZoom": 1,
+    "scrollHeight": 1096,
+    "clientHeight": 540,
+    "scrollWidth": 960,
+    "clientWidth": 960,
+    "fitsVertically": false,
+    "fitsHorizontally": true,
+    "coldFit": null,
+    "passes": 2,
+    "activePasses": 0,
+    "activeFitMsTotal": 0,
+    "trials": 0
+  },
+  "errors": [],
+  "samples": [
+    {
+      "label": "aurora",
+      "elapsedSec": 2.02,
+      "canvasFps": 29.74,
+      "canvasFrames": 60,
+      "scratchFrames": 2,
+      "scratchRenderMsPerFrame": 0.35,
+      "quietZones": 4,
+      "quietAlphas": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "quiet": {
+        "solves": 2,
+        "nonzeroSolves": 0,
+        "alphaMax": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "meteorsSpawned": 0,
+      "canvasRenderMsPerFrame": 0.63,
+      "renderCadence": {
+        "loopFrames": 60,
+        "repaints": 0,
+        "intervals": 59,
+        "fps": 29.74,
+        "p50Ms": 33.4,
+        "p95Ms": 39.5,
+        "maxMs": 42.1,
+        "over50MsPct": 0,
+        "absent": false,
+        "reason": null,
+        "engine": {
+          "mode": "aurora",
+          "running": true,
+          "parked": false
+        }
+      },
+      "rafFps": null,
+      "rafP95Ms": null,
+      "rafOver25MsPct": null,
+      "rendererTaskMsPerSec": 68.66,
+      "scriptMsPerSec": 30.15,
+      "layoutMsPerSec": 0.47,
+      "styleMsPerSec": 0.07,
+      "jsHeapMiB": 4.51,
+      "domNodes": 5255,
+      "processes": [
+        {
+          "pid": 3732,
+          "type": "browser",
+          "cpuMsPerSec": 499.54,
+          "privateMiB": 42.78,
+          "workingSetMiB": 127.15
+        },
+        {
+          "pid": 24192,
+          "type": "renderer",
+          "cpuMsPerSec": 146.35,
+          "privateMiB": 69.65,
+          "workingSetMiB": 126.13
+        },
+        {
+          "pid": 25092,
+          "type": "network.mojom.NetworkService",
+          "cpuMsPerSec": 12.55,
+          "privateMiB": 14.55,
+          "workingSetMiB": 39.37
+        },
+        {
+          "pid": 26548,
+          "type": "renderer",
+          "cpuMsPerSec": 0.23,
+          "privateMiB": 18.14,
+          "workingSetMiB": 33.73
+        },
+        {
+          "pid": 31784,
+          "type": "storage.mojom.StorageService",
+          "cpuMsPerSec": 0.14,
+          "privateMiB": 8.5,
+          "workingSetMiB": 18.36
+        },
+        {
+          "pid": 37828,
+          "type": "renderer",
+          "cpuMsPerSec": 0.5,
+          "privateMiB": 42.75,
+          "workingSetMiB": 82
+        },
+        {
+          "pid": 38284,
+          "type": "GPU",
+          "cpuMsPerSec": 392.85,
+          "privateMiB": 213.17,
+          "workingSetMiB": 245.47
+        }
+      ]
+    }
+  ]
+}

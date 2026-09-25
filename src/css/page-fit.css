@@ -1,0 +1,90 @@
+/* ═══════════════════════════════════════════════════════════════════
+   NORDLYS - ONE PAGE FIT
+   ═══════════════════════════════════════════════════════════════════
+
+   Settings → Bookmarks → One page fit (page-fit.js does the measuring). Every
+   rule here waits for html[data-page-fit="on"], so with the switch off the
+   page is drawn by the other sheets alone and looks exactly as it did.
+
+   #fit-surface wraps the page's ordinary content. Off, it is display:
+   contents and has no box. On, it takes over #page's own column — the same
+   direction, alignment and gap — so it lays the content out exactly where
+   #page did, and it is the one element the second stage zooms. */
+
+.fit-surface { display: contents; }
+
+html[data-page-fit="on"] .fit-surface {
+  display: flex;
+  flex-direction: column;
+  align-items: inherit;
+  justify-content: inherit;
+  gap: inherit;
+  align-self: stretch;
+  min-width: 0;
+  /* Stage two: set only when compaction alone does not fit. Layout-aware, so
+     the page really is this much shorter and there is nothing to scroll. */
+  zoom: var(--fit-zoom, 1);
+}
+
+/* Stage one: the page's chrome and spacing close up toward their floors.
+   Values come from page-fit.js as custom properties on #page; the copy in
+   hand during a drag carries the same ones (PageFit.dress). */
+html[data-page-fit="on"] #page[data-fit-compact] {
+  padding-top: var(--fit-pad-top);
+  padding-bottom: var(--fit-pad-bottom);
+  gap: var(--fit-gap);
+}
+/* Declared on the surface rather than inherited from #page, so the gaps
+   between the clock, the search and the board scale with everything else. */
+html[data-page-fit="on"] #page[data-fit-compact] .fit-surface { gap: var(--fit-gap); }
+/* The clock is the scale's one deliberate exception (design-tokens test);
+   calc() keeps it one here too, at the size the fit worked out. */
+html[data-page-fit="on"] #page[data-fit-compact] #clock { font-size: calc(var(--fit-clock)); }
+html[data-page-fit="on"] #page[data-fit-compact] #date { margin-top: var(--fit-date-top); }
+html[data-page-fit="on"] #page[data-fit-compact] #searchwrap { margin-top: var(--fit-search-top); }
+html[data-page-fit="on"] :is(#page, .drag-lift)[data-fit-compact] .card {
+  padding-top: var(--fit-card-top);
+  padding-bottom: var(--fit-card-bottom);
+  gap: var(--fit-card-gap);
+}
+html[data-page-fit="on"] :is(#page, .drag-lift)[data-fit-compact] .tile { gap: var(--fit-tile-gap); }
+
+/* Stage two holds the board at the width it had on screen, so zoomed out it
+   has more room across and a dense board takes more folders to a line
+   rather than only getting smaller. */
+html[data-page-fit="on"] #page[data-fit-wide] #board { width: var(--fit-board-w); }
+/* In a narrow window the stylesheet stacks folders one to a line at full
+   width. When no stack fits at a zoom as large as flowing them does, the
+   zoomed board is laid out as a desktop board: folders at their own width,
+   columns as chosen (page-fit.js decides which).
+   :where() keeps these under the Fitted layout's own rules. A folder lifted
+   off such a board keeps its columns in hand (PageFit.dress); a Fitted one
+   keeps the lift's own Fitted tracks. */
+html[data-page-fit="on"] :where(#page[data-fit-wide]) .card { flex: 0 1 auto; width: auto; max-width: none; }
+html[data-page-fit="on"] :where(#page[data-fit-wide], .drag-lift[data-fit-wide]:not([data-layout="fitted"])) .grid[data-cols] { width: auto; justify-items: normal; }
+html[data-page-fit="on"] :where(#page[data-fit-wide], .drag-lift[data-fit-wide]:not([data-layout="fitted"])) .grid[data-cols="1"] { grid-template-columns: minmax(180px, 1fr); }
+html[data-page-fit="on"] :where(#page[data-fit-wide], .drag-lift[data-fit-wide]:not([data-layout="fitted"])) .grid[data-cols="2"] { grid-template-columns: repeat(2, var(--tw)); }
+html[data-page-fit="on"] :where(#page[data-fit-wide], .drag-lift[data-fit-wide]:not([data-layout="fitted"])) .grid[data-cols="3"] { grid-template-columns: repeat(3, var(--tw)); }
+html[data-page-fit="on"] :where(#page[data-fit-wide], .drag-lift[data-fit-wide]:not([data-layout="fitted"])) .grid[data-cols="4"] { grid-template-columns: repeat(4, var(--tw)); }
+html[data-page-fit="on"] :where(#page[data-fit-wide], .drag-lift[data-fit-wide]:not([data-layout="fitted"])) .grid[data-cols="5"] { grid-template-columns: repeat(5, var(--tw)); }
+html[data-page-fit="on"] :where(#page[data-fit-wide], .drag-lift[data-fit-wide]:not([data-layout="fitted"])) .grid[data-cols="6"] { grid-template-columns: repeat(6, var(--tw)); }
+html[data-page-fit="on"] :where(#page[data-fit-wide], .drag-lift[data-fit-wide]:not([data-layout="fitted"])) .grid[data-cols="7"] { grid-template-columns: repeat(7, var(--tw)); }
+html[data-page-fit="on"] :where(#page[data-fit-wide], .drag-lift[data-fit-wide]:not([data-layout="fitted"])) .grid[data-cols="8"] { grid-template-columns: repeat(8, var(--tw)); }
+
+/* Measuring must not grow a scrollbar: a classic one narrows the window the
+   board is measured in and costs a layout to come and go. body's overflow is
+   what reaches the viewport here (main.css), so it is set there, and only
+   for the length of one synchronous pass (PageFit.hold). */
+html[data-page-fit="on"][data-fit-measuring] body { overflow-y: hidden; }
+
+/* Measuring must read where things are, not where a transition has them on
+   the way. Only for the length of one synchronous pass. */
+html[data-page-fit="on"] #page.fit-measuring *,
+html[data-page-fit="on"] #page.fit-measuring { transition: none !important; }
+
+/* Suggestions scroll inside themselves rather than running off the window. */
+html[data-page-fit="on"] #sugg.on {
+  max-height: var(--fit-sugg-max, none);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}

@@ -702,38 +702,16 @@ html[data-theme="oled-obsidian"] #veil {
   box-shadow: var(--nl-shadow-2);
 }
 
-.light-ui #hiddenDock {
-  background: rgba(255, 255, 255, 0.65);
-  border-color: var(--glass-border);
-  box-shadow: var(--nl-shadow-2);
-}
-
-.light-ui #hiddenDock:hover {
-  background: rgba(255, 255, 255, 0.92);
-  border-color: rgba(0, 0, 0, 0.16);
-  box-shadow: var(--nl-shadow-2);
-}
-
+/* The folded folders' chips, in the gear's own light glass. */
 .light-ui .restoreFolder {
-  border-color: var(--glass-border);
-  background: rgba(0, 0, 0, 0.04);
-  color: var(--dim);
+  background: rgba(255, 255, 255, 0.75);
+  border-color: rgba(0, 0, 0, 0.12);
 }
 
-.light-ui .restoreFolder:hover {
-  color: var(--ink);
+.light-ui #hiddenDock .restoreFolder:hover {
+  background: rgba(255, 255, 255, 0.95);
   border-color: var(--accent);
-  background: var(--frost);
-}
-
-.light-ui .restoreFolder:hover .dockFolderCount {
   color: var(--ink);
-  background: rgba(0, 0, 0, 0.10);
-}
-
-.light-ui .dockFolderCount {
-  background: rgba(0, 0, 0, 0.06);
-  color: var(--dim);
 }
 
 .light-ui #gear {
@@ -753,6 +731,21 @@ html[data-theme="oled-obsidian"] #veil {
 
 .light-ui #gear:hover svg {
   fill: var(--ink);
+}
+
+/* Only once it has unfolded: at rest the switch is a star, with no glass. */
+.light-ui .fit-toggle:is(:hover, :focus-visible, .is-open) {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.light-ui .fit-toggle:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: var(--accent);
+}
+
+.light-ui .fit-toggle[aria-checked="true"] .fit-toggle-track::after {
+  background: #ffffff;
 }
 
 /* ── Light-Mode Drawer, Modals & Menus Tuning ─────────────────── */

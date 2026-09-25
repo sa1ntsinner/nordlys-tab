@@ -27,6 +27,8 @@ const pageGlobals = {
   ICONS_DB: "readonly", DOMAIN_MAP: "readonly", SECOND_LEVEL_SUFFIXES: "readonly",
   resolveIcon: "readonly", domainMatches: "readonly", getDeterministicHue: "readonly",
   NordlysIcons: "readonly", NordlysIconPicker: "readonly", NordlysIconDiscovery: "readonly",
+  // sky-gl.js
+  NordlysSkyGL: "readonly", NORDLYS_GL_FLOATS: "readonly",
   // background.js, calc.js, config-schema.js, bookmark-sync.js
   NordlysBackgroundEngine: "readonly", MediaVault: "readonly",
   NORDLYS_GENERATIVE_SCENES: "readonly", NORDLYS_BACKGROUND_PALETTES: "readonly",
@@ -42,8 +44,8 @@ const pageGlobals = {
 export default [
   {
     ignores: [
-      "node_modules/**", "playwright-report/**", "test-results/**", ".playwright-artifacts/**",
-      ".references/**", ".superpowers/**", "docs/**", "tools/artwork/.scratch/**",
+      "node_modules/**", "dist/**", "playwright-report/**", "test-results/**", ".playwright-artifacts/**",
+      ".*/**", "docs/**", "tools/artwork/.scratch/**",
       "**/*.sweep.cjs", "sweeps.config.cjs", "scratch-*", "_site/**"
     ]
   },

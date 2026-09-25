@@ -1,0 +1,246 @@
+{
+  "timestamp": "2026-09-24T11:32:18.439Z",
+  "browser": "Chrome/151.0.7922.34",
+  "channel": "chromium",
+  "extension": true,
+  "platform": "win32",
+  "gpu": {
+    "featureStatus": {
+      "2d_canvas": "enabled",
+      "direct_rendering_display_compositor": "disabled_off_ok",
+      "gpu_compositing": "enabled",
+      "multiple_raster_threads": "enabled_on",
+      "opengl": "enabled_on",
+      "rasterization": "enabled",
+      "raw_draw": "disabled_off_ok",
+      "skia_graphite": "disabled_off",
+      "trees_in_viz": "disabled_off",
+      "video_decode": "enabled",
+      "video_encode": "enabled",
+      "webgl": "enabled",
+      "webgpu": "enabled",
+      "webnn": "disabled_off"
+    },
+    "devices": [
+      {
+        "vendorId": 4098,
+        "deviceId": 5390,
+        "vendorString": "",
+        "deviceString": "AMD Radeon(TM) 890M Graphics"
+      },
+      {
+        "vendorId": 5140,
+        "deviceId": 140,
+        "vendorString": "",
+        "deviceString": "Microsoft Basic Render Driver"
+      }
+    ]
+  },
+  "probe": {
+    "only": "aurora",
+    "canvasDpr": null,
+    "skipMethod": "",
+    "noGlass": false,
+    "idle": false,
+    "noDesynchronized": false
+  },
+  "viewport": {
+    "width": 2048,
+    "height": 1152,
+    "dpr": 1.25
+  },
+  "board": "dense",
+  "secondsPerSample": 2,
+  "wallStartupMs": 127,
+  "startup": {
+    "domContentLoadedMs": 83.20000000298023,
+    "loadMs": 84.5,
+    "boardCards": 9,
+    "mode": "aurora",
+    "canvasPixels": 3686400,
+    "nodeCounts": {
+      "document": 1736,
+      "settings": 753,
+      "board": 299,
+      "iconPicker": null
+    },
+    "topResources": []
+  },
+  "errors": [],
+  "samples": [
+    {
+      "label": "aurora",
+      "elapsedSec": 2.01,
+      "canvasFps": 29.82,
+      "canvasFrames": 60,
+      "scratchFrames": 2,
+      "scratchRenderMsPerFrame": 0.25,
+      "quietZones": 4,
+      "quietAlphas": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "canvasRenderMsPerFrame": 0.46,
+      "rafFps": 119.29,
+      "rafP95Ms": 8.5,
+      "rafOver25MsPct": 0,
+      "rendererTaskMsPerSec": 54.56,
+      "scriptMsPerSec": 19.99,
+      "layoutMsPerSec": 0.21,
+      "styleMsPerSec": 0.04,
+      "jsHeapMiB": 7.86,
+      "domNodes": 9817,
+      "processes": [
+        {
+          "pid": 12940,
+          "type": "GPU",
+          "cpuMsPerSec": 370.79,
+          "privateMiB": 352.29,
+          "workingSetMiB": 383.51
+        },
+        {
+          "pid": 22532,
+          "type": "renderer",
+          "cpuMsPerSec": 0,
+          "privateMiB": 16.2,
+          "workingSetMiB": 32.09
+        },
+        {
+          "pid": 27804,
+          "type": "browser",
+          "cpuMsPerSec": 242.62,
+          "privateMiB": 45.82,
+          "workingSetMiB": 126.04
+        },
+        {
+          "pid": 29516,
+          "type": "renderer",
+          "cpuMsPerSec": 0.32,
+          "privateMiB": 32.33,
+          "workingSetMiB": 72.16
+        },
+        {
+          "pid": 34560,
+          "type": "renderer",
+          "cpuMsPerSec": 107.92,
+          "privateMiB": 79.72,
+          "workingSetMiB": 135.33
+        },
+        {
+          "pid": 37496,
+          "type": "storage.mojom.StorageService",
+          "cpuMsPerSec": 0,
+          "privateMiB": 10.09,
+          "workingSetMiB": 20.97
+        },
+        {
+          "pid": 37680,
+          "type": "network.mojom.NetworkService",
+          "cpuMsPerSec": 11.12,
+          "privateMiB": 15.99,
+          "workingSetMiB": 38.78
+        }
+      ]
+    }
+  ],
+  "multitab": {
+    "tabCount": 3,
+    "states": [
+      {
+        "visibility": "visible",
+        "running": true,
+        "canvasPixels": 3686400
+      },
+      {
+        "visibility": "visible",
+        "running": true,
+        "canvasPixels": 3686400
+      },
+      {
+        "visibility": "visible",
+        "running": true,
+        "canvasPixels": 3686400
+      }
+    ],
+    "oneTab": {
+      "totalPrivateMiB": 552.81,
+      "totalWorkingSetMiB": 809.24,
+      "gpu": [
+        {
+          "privateMiB": 352.29,
+          "workingSetMiB": 383.51
+        }
+      ],
+      "renderers": [
+        {
+          "privateMiB": 16.2,
+          "workingSetMiB": 32.09
+        },
+        {
+          "privateMiB": 32.33,
+          "workingSetMiB": 72.16
+        },
+        {
+          "privateMiB": 80.09,
+          "workingSetMiB": 135.65
+        }
+      ]
+    },
+    "manyTabs": {
+      "totalPrivateMiB": 877.63,
+      "totalWorkingSetMiB": 1141.7,
+      "gpu": [
+        {
+          "privateMiB": 618.41,
+          "workingSetMiB": 652.91
+        }
+      ],
+      "renderers": [
+        {
+          "privateMiB": 32.37,
+          "workingSetMiB": 72.48
+        },
+        {
+          "privateMiB": 132.76,
+          "workingSetMiB": 192.12
+        },
+        {
+          "privateMiB": 18.5,
+          "workingSetMiB": 33.18
+        }
+      ]
+    },
+    "processCpuMsPerSec": [
+      {
+        "type": "GPU",
+        "cpuMsPerSec": 633.05
+      },
+      {
+        "type": "browser",
+        "cpuMsPerSec": 31.93
+      },
+      {
+        "type": "renderer",
+        "cpuMsPerSec": 0.48
+      },
+      {
+        "type": "renderer",
+        "cpuMsPerSec": 201.28
+      },
+      {
+        "type": "renderer",
+        "cpuMsPerSec": 6.16
+      },
+      {
+        "type": "storage.mojom.StorageService",
+        "cpuMsPerSec": 0.43
+      },
+      {
+        "type": "network.mojom.NetworkService",
+        "cpuMsPerSec": 3.13
+      }
+    ]
+  }
+}

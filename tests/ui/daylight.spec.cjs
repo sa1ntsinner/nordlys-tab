@@ -41,7 +41,7 @@ test('turned on, every atmosphere is lit by the hour, and says which hour it is'
   expect(new Set([asMixed, night.palette, noon.palette, sunset.palette]).size, 'each hour lights the mood differently').toBe(4);
   await expect(page.locator('#bg-daylight-now')).toHaveText('Now: sunset');
   await expect(page.locator('#bg-daylight-play')).toBeVisible();
-  for (const scene of ['aurora', 'halo', 'silk', 'frost', 'drift', 'horizon']) {
+  for (const scene of ['aurora', 'polaris', 'halo', 'pillars', 'nacre', 'silk', 'baikal', 'drift', 'horizon']) {
     const lit = await page.evaluate(scene => { window.Nordlys.config.bgMode = scene; window.Nordlys.updateBackgroundMode(); return window.Nordlys.bgEngine.sky?.phase; }, scene);
     expect(lit, `${scene} follows the sun too`).toBe('sunset');
   }

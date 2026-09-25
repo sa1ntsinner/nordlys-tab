@@ -33,7 +33,7 @@
     hoverEffect: "string", language: "string",
     bgBlur: "number", bgDim: "number", cardRadius: "number", tileSize: "number",
     cardGap: "number", boardGap: "number", cardGlow: "number", bgMotion: "number", bgIntensity: "number", bgSeed: "number",
-    showSeconds: "boolean", openNewTab: "boolean", highLegibility: "boolean", bgRealSky: "boolean", bgDaylight: "boolean", tileLabels: "boolean",
+    showSeconds: "boolean", openNewTab: "boolean", highLegibility: "boolean", bgRealSky: "boolean", bgDaylight: "boolean", tileLabels: "boolean", onePageFit: "boolean",
     groups: "list", bgPalettes: "list", customTheme: "object"
   };
   const NUMERIC_FIELDS = Object.entries(FIELDS)

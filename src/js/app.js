@@ -43,6 +43,12 @@ const DEFAULT_CONFIG = {
      space between bookmarks until somebody sets it (boardGap, absent). */
   boardWidth: "standard",
   tileLabels: true,
+  /* One page fit (page-fit.js): the hero, the search field, every visible
+     folder and the dock inside the window, with no scrollbar. Not the Fitted
+     layout, which is about how folders share a row. Off until somebody
+     asks; what it works out to make room is never saved over the sizes
+     above. */
+  onePageFit: false,
   cardGlow: 40,
   hoverEffect: "lift",
   iconShape: "squircle",
@@ -143,7 +149,9 @@ const SIDE_STORAGE = {
 const OWNED_LOCAL_KEYS = [
   STORAGE_KEY, ...Object.values(SIDE_STORAGE).map((entry) => entry.key),
   "aether_tab_config", "aurora_tab_config", "aurora_custom_themes",
-  "aurora_drawer_width", "aurora_language", "aurora_search_history"
+  "aurora_drawer_width", "aurora_language", "aurora_search_history",
+  // What One page fit remembers for the next new tab (page-fit.js); never in a backup.
+  "nordlys_fit_hint"
 ];
 const LIGHT_THEMES = [
   "porcelain-light", "warm-ivory", "sage-light", "sakura-daylight",
@@ -166,7 +174,9 @@ const BACKGROUND_MIGRATIONS = {
   "cosmos": "aurora",
   "particles": "aurora",
   "mesh-gradient": "aurora",
-  "gradient": "aurora"
+  "gradient": "aurora",
+  // Frost was retired for Baikal: the other sky made of ice, and just as still.
+  "frost": "baikal"
 };
 const STILL_MIGRATIONS = new Set(["particles", "mesh-gradient", "gradient"]);
 
@@ -300,6 +310,7 @@ class NordlysApp {
   applyHeaderStyle() {
     document.body.dataset.header = this.config.headerStyle || "full";
     this.queueQuietZones?.();
+    this.pageFit?.request();
   }
 
   /* ── Quiet zones ──────────────────────────────────────────────────
@@ -878,6 +889,8 @@ class NordlysApp {
     // 3. Initialize widgets
     this.widgets = new WidgetsController(this);
     this.grid = new GridController(this);
+    // Before the first render, which is where the first fit happens.
+    this.pageFit = window.NordlysPageFit ? new window.NordlysPageFit.PageFit(this) : null;
     this.settings = new SettingsController(this);
 
     // 4. Render Grid
@@ -1274,6 +1287,8 @@ class NordlysApp {
 
     document.body.classList.toggle("seconds", !!cfg.showSeconds);
     this.applyWallpaperEffects();
+    // Every size above is one the fit starts from.
+    this.pageFit?.request();
   }
 
   applyWallpaperEffects() {
@@ -1367,6 +1382,8 @@ class NordlysApp {
       document.head.appendChild(styleEl);
     }
     styleEl.textContent = css;
+    // Custom CSS can change the height of anything on the page.
+    this.pageFit?.request();
   }
 
   async updateBackgroundMode() {

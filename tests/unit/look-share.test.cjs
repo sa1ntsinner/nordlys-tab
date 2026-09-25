@@ -12,7 +12,7 @@ function looks() {
 const plain = value => JSON.parse(JSON.stringify(value));
 
 const CONFIG = {
-  theme: 'nord-frost', bgMode: 'frost', bgPalette: 'mood-1', bgMotion: 0.4, bgIntensity: 1.2, bgSeed: 2654435761,
+  theme: 'nord-frost', bgMode: 'baikal', bgPalette: 'mood-1', bgMotion: 0.4, bgIntensity: 1.2, bgSeed: 2654435761,
   bgPalettes: [{ id: 'mood-1', name: 'Midwinter', colors: ['#aabbcc', '#334455', '#ffeedd'] }],
   fonts: { display: 'Outfit', interface: 'Instrument Sans' }, cardRadius: 20, iconShape: 'circle',
   userName: 'Alex', customCss: 'body { background: url(https://tracker.test/x) }',
@@ -24,7 +24,7 @@ test('a look carries the appearance and nothing the person keeps on the board', 
   const code = encode(capture(CONFIG));
   const { look } = decode(code);
   assert.equal(look.theme, 'nord-frost');
-  assert.equal(look.bgMode, 'frost');
+  assert.equal(look.bgMode, 'baikal');
   assert.equal(look.bgSeed, 2654435761);
   assert.deepEqual(plain(look.mood), { name: 'Midwinter', colors: ['#aabbcc', '#334455', '#ffeedd'] });
   assert.deepEqual(plain(look.fonts), { display: 'Outfit', interface: 'Instrument Sans' });
@@ -83,4 +83,13 @@ test('a look carries the size and spacing of the board, and refuses what it cann
   assert.equal('boardGap' in hostile, false);
   assert.equal('boardWidth' in hostile, false);
   assert.equal('tileLabels' in hostile, false);
+});
+
+/* Frost was retired for Baikal. A look shared before that still brings a sky,
+   the same one a stored Frost becomes, rather than quietly losing it. */
+test('a look shared with the retired Frost arrives as Baikal', () => {
+  const { encode, decode } = looks();
+  const { look } = decode(encode({ theme: 'nord-frost', bgMode: 'frost', bgSeed: 7 }));
+  assert.equal(look.bgMode, 'baikal');
+  assert.equal(look.bgSeed, 7);
 });

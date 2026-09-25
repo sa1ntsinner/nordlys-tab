@@ -37,7 +37,7 @@ async function main() {
   /* Every scene is a function of engine time, so each is photographed at its
      own rest phase — the frame a still sky holds — rather than at whatever
      moment the shutter happened to fall. */
-  for (const mode of process.argv.slice(2).length ? process.argv.slice(2) : ['aurora', 'halo', 'silk', 'frost', 'drift', 'horizon']) {
+  for (const mode of process.argv.slice(2).length ? process.argv.slice(2) : ['aurora', 'polaris', 'halo', 'pillars', 'nacre', 'silk', 'baikal', 'drift', 'horizon']) {
     await page.evaluate(async scene => {
       window.Nordlys.config.bgMode = scene;
       window.Nordlys.config.bgMotion = 0;

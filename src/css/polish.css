@@ -253,12 +253,6 @@ body.hover-glow .tile:hover .box {
   color: var(--nl-text-primary);
 }
 
-#hiddenDock {
-  border-color: var(--nl-polish-hairline);
-  background: color-mix(in srgb, var(--nl-surface-card-deep) 70%, transparent);
-  box-shadow: var(--nl-shadow-2);
-}
-
 #gear {
   right: 20px;
   bottom: 20px;
@@ -479,9 +473,11 @@ body.hover-glow .tile:hover .box {
 }
 
 @media (max-width: 759px) {
+  /* Narrower than this the clock reaches across under the One page fit
+     switch (and the gear, on a phone), so the band above it holds them. */
   #page {
     gap: 20px;
-    padding: 48px 14px 76px;
+    padding: 64px 14px 76px;
   }
 
   #clock {
@@ -528,6 +524,11 @@ body.hover-glow .tile:hover .box {
   #gear {
     right: 14px;
     bottom: 14px;
+  }
+
+  .fit-toggle {
+    right: 66px;
+    max-width: calc(100% - 78px);
   }
 }
 
