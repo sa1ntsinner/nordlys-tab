@@ -1,13 +1,10 @@
 # Chrome Web Store listing
 
-The exact text to paste into the Developer Dashboard. Keep this file and the
-dashboard in step; when one changes, change the other.
+Copy this text into the Chrome Web Store developer dashboard. Keep this file in
+step with the listing.
 
-**On the version number.** This is still a beta, and the number does not say so.
-It cannot: the store accepts only versions that increase, and this line started
-at 2.x before the product had earned it. Renumbering down to 0.x would be
-rejected on upload and would strand everyone already installed, so the word
-carries what the number cannot — the description below opens by saying it.
+Nordlys is still a beta. Its version is 2.x because the store only accepts
+higher version numbers. The description says it's a beta.
 
 ## Title
 
@@ -15,21 +12,18 @@ carries what the number cannot — the description below opens by saying it.
 Nordlys
 ```
 
-There is nothing to paste. The dashboard shows the title read-only and takes it
-from `name` in `manifest.json`, so the way to change it is to change the
-manifest and upload a new package.
+The dashboard takes the title from `name` in `manifest.json`. You can't edit it
+there.
 
-The name carries no keyword, which is the deliberate trade: someone browsing for
-"new tab" will not match on the title, and has to match on the summary and
-description instead. Both say it in their first line.
+The title doesn't say "new tab", so the summary and description say it early.
 
 ## Summary (132 characters maximum)
 
 ```
-A new tab page with 21 themes, six living skies you can recolour, folders you arrange, and a search box that does arithmetic.
+A Chrome new tab page with bookmark folders, 9 animated backgrounds, 21 themes, math and commands in the search box.
 ```
 
-125 characters. Identical to the `description` field in `manifest.json`, and a unit test keeps it so.
+116 characters. This is also the `description` in `manifest.json`.
 
 ## Category
 
@@ -38,35 +32,38 @@ Productivity.
 ## Detailed description
 
 ```
-Nordlys replaces the new tab page. It opens instantly, keeps everything on your machine, and is meant to be looked at rather than got past.
+Nordlys replaces Chrome's new tab page. I wanted my bookmarks and something nice to look at in one place, so I made this.
 
-This is a beta. Things get removed as well as added — two background scenes and four gradient variants have already gone, each one dropped because it measured as indistinguishable from another rather than because someone disliked it. What does not change without warning is your setup: every upgrade that migrates anything keeps a restore point you can go back to.
+It's still a beta. Before an update changes how your setup is stored, Nordlys keeps a restore point.
 
-Bookmarks live in folders you arrange yourself. Drag a bookmark into another folder and the tiles make room for it as it goes; drag a folder into a gap, or between two rows to start a new row, and the board shows exactly where it will land before you let go. Choose Fitted and every row runs edge to edge with folders of one height, or press Tidy up and folders of a similar height line up side by side. Pull a folder's edge to change how many columns it has, and fold the ones you rarely open into a dock at the bottom. Bookmark size, the space between bookmarks and between folders, the board's width and the names under the icons are set in the same place, with the board itself as the preview. All of it works from the keyboard, and all of it has Undo. Right click anything to edit it in place.
+Bookmarks
+Put bookmarks in folders and move the folders around. You can see where one will land before you drop it. Fitted mode lines rows up edge to edge; Tidy up puts folders of similar height together. Adjust tile size, spacing, board width and icon labels in one panel. Fold folders you rarely use under the board, or turn on One page fit to keep everything on screen. You can use the keyboard, undo changes and right-click to edit.
 
-Search for a brand or product and Nordlys offers clean Simple Icons vectors, then saves your choice locally instead of hotlinking it. Chrome's favicon cache, an image URL, a local file and a monogram remain available; an icon taken from an address remembers it, and the last few it used, so you can go back to one. A black logo on a black theme used to disappear; Nordlys now measures every icon against its plate and re-tones only marks that would vanish, so coloured logos keep their colour. You can override that decision on any bookmark.
+Icons
+Press Search to look up brand icons from Iconify's Simple Icons set. The icon you pick is saved on your device. You can also use Chrome's favicon, an image link, a file or a letter. Dark logos are adjusted on dark themes, and you can turn that off per bookmark.
 
-21 themes, 11 dark and 10 light. Each one sets the background, the glass tint and the colours of the canvas behind it, so Gruvbox gets an amber sky and OLED Obsidian stays properly black. Follow the system, or pin it to dark or light. If none of the 21 fit, build your own in the theme studio or write CSS directly.
+Backgrounds
+Choose from 9 animated backgrounds: Nordlys (the aurora), Polaris (star trails round the pole star), Halo (a moon inside an ice ring), Pillars (columns of light over a frozen town), Nacre (mother-of-pearl clouds at dusk), Silk (threads in a slow current), Baikal (black lake ice with frozen bubbles), Contour (a map of slowly moving hills) and Fjord. You can also use your own picture, a looping video or a plain colour. Colour moods tint the background, and you can mix one from three colours. Slow the motion down to Still; it switches to Still automatically if your system asks for reduced motion. Follow the time of day uses your clock and time zone to change the light. It doesn't ask for your location.
 
-Type is split into three slots: the clock and headings, the interface, and monospace. Choose from the bundled faces or from the fonts already installed on your computer.
+Themes
+There are 21 themes: 11 dark and 10 light. Each also recolours the background, so Gruvbox gets an amber sky and OLED Obsidian stays black. You can follow the system setting, choose dark or light, make a theme or write CSS. Pick bundled fonts or fonts on your computer for the clock, interface and monospace text. Nordlys dims the area behind the clock, date and search box when needed, including over your own wallpaper.
 
-Six living skies, each its own composition: Nordlys, the aurora it is named after; Halo, a moon inside its ice ring; Silk, threads drawn through a slow current; Frost, fern ice growing in from the edges; Contour, a survey map of slowly wandering hills; and Fjord. Or your own image or looping video, stored locally, or a flat theme colour. Colour moods tint any sky, and you can mix your own from three colours while the sky follows your picks. Motion and Atmosphere dial a scene from a slow shimmer down to Still, where it is painted once and held; if your system asks for reduced motion, that is what you get automatically. Shuffle a sky you like into a new arrangement, and it stays that way on every new tab. Turn on Follow the time of day and every sky is lit by where the sun is in your time zone: a warm glow at sunrise and sunset, a pale calm sky by day, a cool blue hour, stars at night — worked out on your machine, with no location permission.
+Search
+The search box uses the search engine set in Chrome. It shows your bookmarks, recent searches and answers to math like 45 * 12 + sqrt(144) as you type. It sends nothing while you type; pressing Enter sends the search through Chrome.
 
-Text stays readable on every sky. Behind the clock, the date and the search field, Nordlys measures the sky it has just painted and quiets it exactly as much as the text needs, and every theme's text colours are held above the contrast readable text requires on each surface they sit on. Your own wallpaper is measured too: a bright photo gets a soft shade from the top and more solid glass where the words are, and stays itself everywhere else.
+Type > for commands such as theme nord, sky polaris or move YouTube to Daily. You can see the result before you press Enter and undo it afterward. Copy your theme, background, mood and fonts as one line of text, or save the look as a picture. Bookmarks aren't included.
 
-Type > in the search box and the board takes commands: theme nord, sky frost, mood ember, move YouTube to Daily, new folder Reading. The page shows the result before you press Enter, and one undo takes it back. And a look — theme, sky, mood, fonts — can be copied as one line of text or saved as a picture, without a single bookmark in it.
+Chrome bookmarks
+A folder can mirror one of your Chrome bookmark folders. Nordlys only reads it. It asks for bookmark access when you link the folder, not at install.
 
-The search box uses whichever search engine you have set in Chrome — it does not have one of its own and does not ask you to pick. As you type it offers your own bookmarks, your recent searches, and arithmetic: 45 * 12 + sqrt(144) gets its answer right there, one click to copy. Nothing you type is sent anywhere until you press Enter.
+Privacy
+No account, analytics, tracking or remote code. Settings and bookmarks stay on your device. Brand icon search contacts Iconify only after you press Search, sending only the phrase you typed. You can export your setup as JSON.
 
-A folder can follow one of your browser's bookmark folders instead of being filled in by hand. It mirrors one way, so the browser keeps the data — which also means an update here cannot lose it. Nordlys asks for permission to read bookmarks at the moment you link a folder, never at install.
+Nordlys is available in English, Russian, Spanish, German, French, Japanese, Chinese and Turkish.
 
-No account, no analytics, no telemetry, no remote code. Settings and bookmarks live in local storage. Brand-icon search contacts Iconify only after Search is pressed, sends only the phrase in that field, and stores the selected vector locally. Export the lot to JSON whenever you want.
+It's free and open source under the MIT licence: https://github.com/sa1ntsinner/nordlys-tab
 
-Available in English, Russian, Spanish, German, French, Japanese, Chinese and Turkish.
-
-Open source under the MIT licence: https://github.com/sa1ntsinner/nordlys-tab
-
-Nordlys is free and always will be. If it earns a place in your day, Settings → Support has a link to buy its maker a coffee.
+There's a Buy me a coffee link in Settings → Support.
 ```
 
 ## Privacy practices
@@ -147,28 +144,27 @@ None. All JavaScript ships in the package. The content security policy is "scrip
 
 ## Artwork
 
-Run `npm run artwork`. Everything in `docs/store-assets/` and `docs/assets/` is
-generated from the running extension by `tools/artwork/`, so a picture cannot
-claim a feature the code no longer has. It takes a few minutes, most of it
-deliberate canvas warm-up: the aurora needs roughly fourteen seconds before it
-draws ribbons worth showing. The README animations also need `ffmpeg` on PATH.
+Run `npm run artwork` to capture the extension for `docs/store-assets/`, the
+link preview and `site/assets/`. It takes about five minutes. The aurora needs
+about fourteen seconds to settle, and the icon close-up needs a connection to
+Iconify.
 
-The generators are not part of `npm test`, since they assert nothing.
+The artwork generators aren't part of `npm test`; they don't check a result.
 
 | File | Size | Shows |
 | --- | --- | --- |
-| `screenshot-1-sky.png` | 1280x800 | "A new tab under a living sky": Aurora Void on the Nordlys scene |
-| `screenshot-2-arrange.png` | 1280x800 | "Arrange it the way you think": Catppuccin Mocha on Silk, Fitted, with Size & spacing open |
-| `screenshot-3-icons.png` | 1280x800 | "Every bookmark, the icon you want": Tokyo Night on Halo, and the icon picker's address history |
-| `screenshot-4-daylight.png` | 1280x800 | "Lit by the time of day": Dracula Velvet on Contour at dawn, day, sunset and night in Berlin |
-| `screenshot-5-themes.png` | 1280x800 | "Light or dark, always readable": Porcelain Light on Frost, and Gruvbox Dark on Silk with the theme grid |
+| `screenshot-1-sky.png` | 1280x800 | "Bookmarks on your new tab": Aurora Void on Nordlys, with two folders folded under the board |
+| `screenshot-2-skies.png` | 1280x800 | "9 animated backgrounds": every background, each in a different theme |
+| `screenshot-3-arrange.png` | 1280x800 | "Move folders around": Catppuccin Mocha on Silk, Fitted, with Size & spacing open |
+| `screenshot-4-extras.png` | 1280x800 | "Search, icons and time of day": math and commands, brand icon search, and Boreal Emerald through a day in Berlin |
+| `screenshot-5-themes.png` | 1280x800 | "21 themes": Porcelain Light on Baikal, and Gruvbox Dark on Silk with the themes open |
 | `promo-marquee-1400x560.png` | 1400x560 | Marquee tile |
 | `promo-small-440x280.png` | 440x280 | Small tile |
 | `docs/brand/buymeacoffee-cover.png` | 2400x600 | Cover for the Buy Me a Coffee page (not uploaded to the store) |
+| `site/assets/og.png` | 1200x630 | The picture chats and social sites show for a link to the website |
 
-Each screenshot is a headline over the real product captured at twice its
-pixels (`store-shots.spec.cjs`) on a board of well-known sites
-(`store-board.cjs`), each in its own theme and scene; the layouts live in `compose.cjs`. Upload the
-screenshots in number order: the first is the one the store shows in search.
-To regenerate only these, without touching the README images:
+`store-board.cjs` sets up the boards. `store-shots.spec.cjs` and `promo.spec.cjs`
+take the captures; `compose.cjs` lays them out. `site-assets.cjs` makes the
+WebP files for the site and README. Upload the screenshots in number order.
+The store shows the first one in search. To retake only the store pictures:
 `npx playwright test --config=tools/artwork/playwright.config.cjs store-shots promo`.

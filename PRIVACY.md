@@ -1,87 +1,86 @@
-# Privacy Policy for Nordlys
+# Nordlys privacy policy
 
-**Effective Date:** August 16, 2026
-**Last Updated:** September 23, 2026
-**Version:** 2.5.0
+Effective date: August 16, 2026
+Last updated: September 25, 2026
+Version: 2.5.1
 
-Nordlys ("the extension", "we", or "our") is designed with a strict **Privacy-by-Architecture** principle. Nordlys is a client-side, offline-capable New Tab override extension.
+Nordlys runs as a new tab page in your browser. It has no server or account.
 
-**Your bookmarks, themes, and settings never leave your browser.**
-
----
-
-## 1. Zero Telemetry & Data Collection
-
-- **Zero Analytics or Trackers:** Nordlys does not include Google Analytics, Mixpanel, Sentry, PostHog, or any tracking telemetry.
-- **No Remote Servers:** We do not operate external API servers, backend databases, or logging endpoints.
-- **No Third-Party Trackers or Ads:** Zero tracking pixels, cookies, or advertising SDKs.
-- **No Keystroke or Input Logging by us:** Your bookmarks, custom themes, and settings remain strictly on your local machine.
+Your bookmarks, themes and settings stay in your browser.
 
 ---
 
-## 2. 100% Client-Side Local Storage
+## 1. What Nordlys doesn't do
 
-All user preferences, custom themes, custom CSS, bookmarks, and folder layouts are stored exclusively on your device using Chrome's local storage API (`chrome.storage.local` and `localStorage`):
+- It has no analytics or tracking, including Google Analytics, Mixpanel, Sentry and PostHog.
+- It has no server, database or logging endpoint.
+- It has no ads, tracking pixels, cookies or ad SDKs.
+- It doesn't log what you type, and your bookmarks, themes and settings stay on your machine.
 
-| Data Type | Storage Location | Purpose | Transmitted Externally? |
+---
+
+## 2. What it stores, and where
+
+Everything is saved on your device. Settings and bookmarks use Chrome's extension storage (`chrome.storage.local`) and `localStorage`. Your own wallpaper uses IndexedDB:
+
+| What | Where | What it's for | Sent anywhere? |
 | :--- | :--- | :--- | :--- |
-| **Theme & Shaders Settings** | `chrome.storage.local` / `localStorage` | Saves selected palette, glass blur, and background mode | **NO (100% Local)** |
-| **Clock & Greeting Config** | `chrome.storage.local` / `localStorage` | 12h/24h toggle, name greeting, seconds display | **NO (100% Local)** |
-| **Custom Bookmarks & Folders** | `chrome.storage.local` / `localStorage` | User-defined bookmark links, titles, colors, and icons | **NO (100% Local)** |
-| **Search History** | `localStorage` | Optional recent-searches list shown when the search bar is focused (deletable per item, wiped by Reset) | **NO (100% Local)** |
-| **Custom CSS Snippets** | `chrome.storage.local` / `localStorage` | Injected custom stylesheets | **NO (100% Local)** |
-| **Custom Wallpapers** | `IndexedDB (MediaVault)` | Persists custom background image/video loop locally | **NO (100% Local)** |
+| Theme and background settings | `chrome.storage.local` / `localStorage` | Your palette, glass blur and background | No |
+| Clock and greeting | `chrome.storage.local` / `localStorage` | 12 or 24 hours, the name in the greeting, seconds | No |
+| Bookmarks and folders | `chrome.storage.local` / `localStorage` | Your links, titles, colours and icons | No |
+| Search history | `localStorage` | The optional list of recent searches shown when you click into the search box. You can delete each one, and Reset clears them all | No |
+| Custom CSS | `chrome.storage.local` / `localStorage` | Stylesheets you added | No |
+| One page fit sizes | `localStorage` | With One page fit on, the sizes it last worked out for up to four window sizes, so a new tab opens already fitted. Never in backups, cleared by Reset | No |
+| Your own wallpaper | IndexedDB | The picture or video loop you picked as the background | No |
 
 ---
 
-## 3. Optional Network Features (Transparent & User-Controlled)
+## 3. When it goes online
 
-Nordlys performs **no background network requests**. The only network traffic it can ever generate is triggered directly by you:
+Nordlys makes no network requests in the background. These actions can take it online:
 
-1. **Searching:** When you press Enter in the search bar, the text is handed to Chrome through its `chrome.search` API, which sends it to the search engine you have chosen in Chrome's own settings — exactly what the address bar does. Nordlys does not choose the engine, does not know which one answered, and sends nothing while you type. Earlier versions fetched live suggestions from a search engine as you typed; that no longer happens.
-2. **Brand icon search (user-initiated only):** Opening the icon picker and typing makes no request. Pressing Search sends only that brand/product phrase to Iconify's public API (`api.iconify.design`) and restricts results to the Simple Icons collection. The selected path-only SVG is rebuilt as inert image data and stored locally; new tabs never hotlink it. Bookmark URLs, folders, history, and other settings are not included.
-3. **Bookmark Icon Fetch (user-initiated only):** When you paste an image URL in the icon picker, that image is downloaded once (directly, or via the `images.weserv.nl` image proxy when the source blocks cross-origin loading) and stored locally as Base64. The address is kept with the bookmark, with the last few addresses it used and a small picture of each drawn from the saved icon, so you can go back to one; showing that list makes no request.
-4. **Website icons (only when you open that source):** Opening the icon picker makes no request. The "Website icon" tab reads from Chrome's **local** favicon cache by default — no network at all. Optional provider chips contact only the provider you explicitly choose, with only the domain you typed; a failed lookup never falls back to another provider on its own.
-5. **Support links (only when you click one):** The Support section in Settings holds ordinary links — a donation page, this repository, its issue tracker, and this policy. Opening the section requests nothing: no remote image, no script, no beacon, no counter. Following a link opens that site in a new tab with the referrer withheld and no identifier attached; nothing tells Nordlys that you did. Any wallet address shown there is copied by your browser's clipboard and goes nowhere else.
+1. When you press Enter in the search box, the text goes through Chrome's `chrome.search` API to the search engine set in Chrome, as it does from the address bar. Nordlys doesn't choose the engine or know which one answered. Nothing is sent while you type. Older versions fetched live suggestions; this one doesn't.
+2. Opening the icon picker and typing sends nothing. When you press Search, only your phrase goes to Iconify's public API (`api.iconify.design`) for the Simple Icons set. The chosen icon is rebuilt as plain image data and saved locally, so new tabs don't load it online. Bookmark addresses, folders, history and settings aren't included.
+3. When you paste an image address for an icon, Nordlys downloads it once and saves it locally. It tries the address directly, or uses `images.weserv.nl` if the site blocks cross-origin loading. The address stays with the bookmark, along with the last few addresses used and a small copy of each icon, so you can switch back. Showing that list makes no request.
+4. Opening the icon picker sends nothing. The Website icon tab uses Chrome's local favicon cache. Optional provider buttons send only the domain you typed, and only to the provider you click. A failed lookup doesn't try another provider on its own.
+5. Settings → Support contains plain links to a donation page, the repository, its issue tracker and this policy. Opening the section loads no remote image, script, beacon or counter. Clicking a link opens a new tab without a referrer or identifier, and Nordlys doesn't learn that you clicked it. A wallet address shown there is copied by your browser's clipboard and goes nowhere else.
 
-**Time-of-day light** is worked out on your machine from the date and your time zone's city; it asks for no location and sends nothing.
+The time-of-day light uses the date and your time zone on your device. It doesn't ask for your location or send anything.
 
-No background request sends your bookmark list or browsing activity. The extension requests no `<all_urls>` host permission and Iconify needs no host permission because its public API explicitly supports browser CORS.
-
----
-
-## 4. Extension Permissions Explanation
-
-In accordance with the Principle of Least Privilege, Nordlys requests only the minimum necessary permissions:
-
-- **`storage`**: Used strictly to persist user customizations (bookmarks, themes, folders) locally.
-- **`unlimitedStorage`**: Allows saving custom user wallpaper images and video loops inside client-side IndexedDB without hitting strict browser storage limits.
-- **`favicon`**: Allows displaying website favicons from Chrome's local favicon cache on bookmark tiles.
-- **`bookmarks` (optional, never requested at install)**: Only asked for at the moment you point a folder at one of your browser's bookmark folders, and only used to read that folder's contents so the tiles can mirror it. Nordlys never writes to your browser bookmarks and never sends them anywhere. Revoking it in `chrome://extensions` stops the mirroring; the tiles already on screen stay.
-- **One host permission**: `images.weserv.nl`, used only for an icon you paste the address of. Nordlys cannot read, alter, or transmit data from web pages you visit.
-- **No `tabs` History Access**: Nordlys does not inspect your browsing history, active tabs, or open URLs.
-- **Nothing exposed to websites**: Nordlys declares no web-accessible resources, so a page you visit cannot load a file from the extension to find out that you have it installed.
+Nordlys never sends your bookmark list or browsing activity anywhere. It doesn't ask for access to all sites (`<all_urls>`). Iconify's public API allows browser requests (CORS), so it needs no host permission.
 
 ---
 
-## 5. Content Security Policy (CSP)
+## 4. Permissions
 
-Nordlys enforces the strict Manifest V3 Content Security Policy:
-- All scripts, icons, and shaders are bundled locally within the extension.
-- Dynamic remote code loading is disallowed.
+Nordlys uses these permissions:
 
----
-
-## 6. Data Retention, Portability & Deletion
-
-You have complete control over your data:
-- **Instant Export:** Export your entire setup as a portable `.json` backup or universal Netscape `.html` bookmarks file anytime in Settings.
-- **Instant Deletion:** Click "Reset to Defaults" in Settings (also purges stored wallpapers and search history) or uninstall the extension from `chrome://extensions` to permanently purge all stored data.
+- `storage` saves your bookmarks, themes and folders on your device.
+- `unlimitedStorage` lets you keep your own wallpaper pictures and video loops in IndexedDB without hitting the browser's storage limit.
+- `favicon` shows site icons from Chrome's local favicon cache on your tiles.
+- `bookmarks` is optional and isn't requested at install. Nordlys asks for it only when you link a folder to a Chrome bookmark folder. It only reads that folder to mirror its tiles. It never changes or sends your Chrome bookmarks. If you revoke access in `chrome://extensions`, mirroring stops and the tiles already on screen stay.
+- The one host permission, `images.weserv.nl`, is used only for an icon address you pasted. Nordlys can't read, change or send data from pages you visit.
+- Nordlys has no tabs or history access. It doesn't look at your browsing history, open tabs or their addresses.
+- Nordlys has no web-accessible resources. Sites you visit can't load an extension file to check whether it's installed.
 
 ---
 
-## 7. Contact & Open Source Auditing
+## 5. Content security policy
 
-Nordlys is 100% transparent and open source.
-- **Repository:** https://github.com/sa1ntsinner/nordlys-tab
-- **License:** MIT License
+Nordlys uses the strict Manifest V3 content security policy. Its scripts, icons and shaders are in the extension package. It can't load or run code from elsewhere.
+
+---
+
+## 6. Keeping and deleting your data
+
+- You can export your whole setup from Settings at any time as a `.json` backup or a standard `.html` bookmarks file.
+- Reset to Defaults in Settings deletes everything, including stored wallpapers and search history. Uninstalling from `chrome://extensions` also deletes it all.
+
+---
+
+## 7. Contact
+
+You can check these details in the source code.
+
+- Repository: https://github.com/sa1ntsinner/nordlys-tab
+- Licence: MIT
