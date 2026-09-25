@@ -7,7 +7,7 @@
    to start the engine and settings.js decides which controls apply, and all
    three used to keep their own copy of this list — so adding a composition
    meant finding three places and the third one was always the one missed. */
-const NORDLYS_GENERATIVE_SCENES = new Set(["aurora", "halo", "silk", "frost", "drift", "horizon"]);
+const NORDLYS_GENERATIVE_SCENES = new Set(["aurora", "polaris", "halo", "pillars", "nacre", "silk", "baikal", "drift", "horizon"]);
 const NORDLYS_BACKGROUND_PALETTES = {
   polar: ["#68e1d1", "#6ea8fe", "#9d8cff"],
   violet: ["#8be9fd", "#8b7cff", "#cf78ff"],
@@ -19,7 +19,7 @@ const NORDLYS_BACKGROUND_PALETTES = {
    motion, the settings thumbnails — and the moment a moving one starts from.
    Chosen by looking, scene by scene, so a still sky is the best frame of it
    rather than whichever frame the clock happened to be on. */
-const NORDLYS_REST_PHASE = { aurora: 12, halo: 7.4, silk: 31.7, frost: 7.4, drift: 7.4, horizon: 7.4 };
+const NORDLYS_REST_PHASE = { aurora: 12, polaris: 20, halo: 7.4, pillars: 9, nacre: 14, silk: 31.7, baikal: 6, drift: 7.4, horizon: 7.4 };
 const NORDLYS_STILLS = new WeakMap();
 // A minute without input and the sky paints at its idle rate.
 const NORDLYS_IDLE_AFTER = 60000;
@@ -31,12 +31,45 @@ const NORDLYS_SILK_PASSES = [
   { width: 2.4, alpha: 0.5 },
   { width: 1, alpha: 1 }
 ];
+// The same passes as the GPU layer draws them: bands across one strip.
+const NORDLYS_SILK_BANDS = NORDLYS_SILK_PASSES.map((pass) => [pass.width, pass.alpha]);
+/* Polaris: how long the exposure has been open, as an angle of the sky's turn;
+   how fast the sky turns, per unit of the scene clock; and each trail's two
+   bands, a faint glow either side of a fine core. */
+const NORDLYS_POLARIS = { length: 0.5, turn: 0.012, bands: [[3.4, 0.14], [1, 1]] };
+// Where Pillars puts its horizon, as a share of the height.
+const NORDLYS_HORIZON = 0.8;
+/* How a light falls off from its centre, as [offset, share] stops: a soft
+   glow; a column of light, held longer than a glint since it is a column;
+   a streak of cloud, long and thin; the body of a cloud, full nearly to its edge. */
+const NORDLYS_SOFT = [[0, 1], [0.32, 0.34], [1, 0]];
+const NORDLYS_PILLAR = [[0, 1], [0.25, 0.86], [0.55, 0.52], [0.8, 0.2], [1, 0]];
+const NORDLYS_STREAK = [[0, 1], [0.35, 0.6], [0.7, 0.18], [1, 0]];
+const NORDLYS_LOBE = [[0, 1], [0.4, 0.72], [0.75, 0.26], [1, 0]];
+// The scenes that are a night thing, and step back further by day.
+const NORDLYS_NIGHT_SCENES = new Set(["aurora", "polaris", "pillars"]);
 
 class NordlysBackgroundEngine {
   constructor() {
     this.canvas = document.getElementById("bg-canvas");
     this.ctx = this.canvas ? this.canvas.getContext("2d", { alpha: true, desynchronized: true }) : null;
-    this.animId = null;
+    /* The screen's own context. `ctx` is swapped for a small sample while the
+       quiet zones are solved, and the GPU layer (skyGL) serves only this one.
+       The layer itself is made when a scene first needs it: undefined until
+       then, null where there is none. */
+    this.screen = this.ctx;
+    this.gl = undefined;
+    /* The next frame is either a timer sleeping until shortly before it is
+       due, or a vsync callback already asked for — never both (see animId). */
+    this.frameRequest = null;
+    this.frameTimer = null;
+    this.frameWakeAt = 0;
+    this.frameWakeBudget = 0;
+    // The panel's refresh, measured from back-to-back callbacks; 60 Hz until then.
+    this.refreshMs = 1000 / 60;
+    this.chainedFrom = -Infinity;
+    // How late the timer has lately woken, so the lead covers it.
+    this.timerSlack = 0;
     this.stars = [];
     this.meteors = [];
     this.nebulae = [];
@@ -45,7 +78,7 @@ class NordlysBackgroundEngine {
     /* What the sky is scattered from. Zero is the authored composition every
        install starts with; "Shuffle this sky" stores another. The same seed at
        the same size is the same world, so a new tab no longer rearranges the
-       stars and the frost. */
+       stars and the ice. */
     this.seed = 0;
     this.rng = null;
     /* The date the sky is drawn for, and whether it follows the real one. The
@@ -74,15 +107,22 @@ class NordlysBackgroundEngine {
        four and resolves a name through both. */
     this.customPalettes = {};
     this.silk = [];
-    this.frost = [];
-    this.frostTips = [];
-    this.frostPatches = [];
+    this.polaris = [];
+    this.pillars = [];
+    this.dust = [];
+    this.towns = [];
+    this.nacre = [];
+    this.baikal = null;
+    // Baikal's ice, drawn once on the screen and laid down each frame.
+    this.iceLayer = null;
     this.terrain = [];
     this.contours = null;
     this.quietZones = [];
     this.quietAlphas = [];
     this.quietSolvedAt = -Infinity;
     this.quietGround = [6, 10, 20];
+    // True while the scene is repainted into the quiet sample, not the screen.
+    this.solvingQuiet = false;
     this.isMousePending = false;
     this.mouseX = 50;
     this.mouseY = 50;
@@ -259,12 +299,12 @@ class NordlysBackgroundEngine {
     }, { passive: true });
 
     // Someone is here: the frame budget goes back up from its idle rate.
-    const present = () => { this.lastInput = performance.now(); };
+    const present = () => this.noteInput();
     for (const type of ["pointerdown", "keydown", "wheel"]) window.addEventListener(type, present, { passive: true });
 
     // Throttled High-Frequency Mouse Tracking (rAF-synced CSS vars + particle field)
     window.addEventListener("pointermove", (e) => {
-      this.lastInput = performance.now();
+      this.noteInput();
       if (this.motionQuery.matches) return;
       this.mouseX = (e.clientX / window.innerWidth) * 100;
       this.mouseY = (e.clientY / window.innerHeight) * 100;
@@ -310,8 +350,11 @@ class NordlysBackgroundEngine {
     this.initStars();
     this.initNebulae();
     this.initSilk();
-    this.initFrost();
     this.initTerrain();
+    this.initPolaris();
+    this.initPillars();
+    this.initNacre();
+    this.initBaikal();
     this.rng = null;
   }
 
@@ -343,14 +386,14 @@ class NordlysBackgroundEngine {
 
   /* A still of one scene at any size, painted by the same code that paints the
      sky. The settings thumbnails used to be CSS imitations, and each time a
-     scene changed its imitation fell behind: Frost's kept showing a sunburst
-     long after the scene had grown fronds. A rendering of the scene cannot
-     drift from the scene.
+     scene changed its imitation fell behind: the old frost scene's kept showing
+     a sunburst long after the scene had grown fronds. A rendering of the scene
+     cannot drift from the scene.
 
      The composition is laid out on a virtual viewport three times the size of
      the thumbnail and scaled down, so a hairline stays a hairline instead of
      turning into a bar. Each canvas keeps its seeded world, so a new colour
-     mood repaints the same stars and fronds rather than a new scatter. */
+     mood repaints the same stars and bubbles rather than a new scatter. */
   paintStill(canvas, scene, { width = canvas?.clientWidth, height = canvas?.clientHeight, dpr = Math.min(window.devicePixelRatio || 1, 2), zoom = 3 } = {}) {
     if (!canvas || !NORDLYS_GENERATIVE_SCENES.has(scene)) return false;
     if (!width || !height) return false;
@@ -359,7 +402,7 @@ class NordlysBackgroundEngine {
       still = Object.assign(Object.create(NordlysBackgroundEngine.prototype), {
         canvas, ctx: canvas.getContext("2d"), w: width * zoom, h: height * zoom, mode: scene,
         t: NORDLYS_REST_PHASE[scene], ink: 1, motion: 0, intensity: 1, customPalettes: {}, seed: this.seed, rng: null,
-        stars: [], meteors: [], nebulae: [], silk: [], frost: [], frostTips: [], frostPatches: [], terrain: [], quietZones: [],
+        stars: [], meteors: [], nebulae: [], silk: [], polaris: [], pillars: [], dust: [], towns: [], nacre: [], baikal: null, terrain: [], quietZones: [],
         // A still is at rest by definition: nothing in it is mid-fall.
         atRest: () => true
       });
@@ -429,6 +472,14 @@ class NordlysBackgroundEngine {
     const changed = mode !== this.mode;
     this.mode = mode;
     this.quietSolvedAt = -Infinity;
+    /* The GPU layer lives only as long as the scene that asked for it, so a
+       scene without long lines keeps no surface the size of the window; and
+       choosing a scene again is how a lost context gets another try. */
+    if (changed) {
+      this.gl?.release();
+      this.gl = undefined;
+      this.iceLayer = null;
+    }
     if (changed && NORDLYS_REST_PHASE[mode] !== undefined) this.t = NORDLYS_REST_PHASE[mode];
     if (NORDLYS_GENERATIVE_SCENES.has(mode)) {
       if (this.canvas) this.canvas.style.display = "block";
@@ -459,16 +510,20 @@ class NordlysBackgroundEngine {
     this.running = true;
     this.lastFrame = performance.now();
     this.loop = (now) => {
+      this.frameRequest = null;
       if (!this.running) return;
+      // A callback asked for from the one before lands one refresh later.
+      const gap = now - this.chainedFrom;
+      if (gap >= 4 && gap <= 50) this.refreshMs = gap;
+      this.chainedFrom = -Infinity;
       /* A frame budget. The scenes move a few pixels a second, so painting at
          the panel's rate mostly repaints the same picture, and every painted
          frame makes each glass surface above the canvas blur what is behind it
          again. Thirty a second is smooth for motion this slow; after a minute
          with no input, fifteen. The pace is unchanged, because dt is still the
          real time elapsed. */
-      const budget = now - this.lastInput > NORDLYS_IDLE_AFTER ? 1000 / 15 : 1000 / 30;
-      if (now - this.lastFrame < budget - 2) {
-        this.animId = requestAnimationFrame(this.loop);
+      if (now - this.lastFrame < this.frameBudget(now) - 2) {
+        this.scheduleFrame(now, true);
         return;
       }
       // dt in 60fps units, capped so a long stall cannot jump the sky ahead.
@@ -478,10 +533,59 @@ class NordlysBackgroundEngine {
       /* Nothing in the scene advances at rest, so a second frame would paint
          the same pixels. Holding the last one costs nothing to keep and lets
          every backdrop-filter above it sample a layer that never invalidates. */
-      if (this.atRest()) { this.animId = null; return; }
-      this.animId = requestAnimationFrame(this.loop);
+      if (this.atRest()) return;
+      // Late wakes are remembered for a while, then forgotten, timer or none.
+      this.timerSlack *= 0.97;
+      this.scheduleFrame(now, true);
     };
-    this.animId = requestAnimationFrame(this.loop);
+    this.wake = () => {
+      this.frameTimer = null;
+      if (!this.running) return;
+      const late = Math.max(0, performance.now() - this.frameWakeAt);
+      this.timerSlack = Math.min(Math.max(late, this.timerSlack), 1000 / 30);
+      this.frameRequest = requestAnimationFrame(this.loop);
+    };
+    this.frameRequest = requestAnimationFrame(this.loop);
+  }
+
+  frameBudget(now) {
+    return now - this.lastInput > NORDLYS_IDLE_AFTER ? 1000 / 15 : 1000 / 30;
+  }
+
+  /* Waiting out the budget with a callback every vsync woke the page three
+     times in four at 120 Hz to paint nothing. A timer sleeps until shortly
+     before the paint is due, and only then is a vsync asked for. The budget
+     check in the loop still picks the vsync that paints, so a timer that wakes
+     early costs one empty callback; the lead, half a refresh plus however late
+     timers have lately been, keeps one that wakes late from missing it. */
+  scheduleFrame(now, fromFrame = false) {
+    const budget = this.frameBudget(now);
+    const wakeAt = this.lastFrame + budget - 2 - this.refreshMs / 2 - this.timerSlack;
+    const delay = wakeAt - performance.now();
+    if (delay < 1) {
+      if (fromFrame) this.chainedFrom = now;
+      this.frameRequest = requestAnimationFrame(this.loop);
+      return;
+    }
+    this.frameWakeAt = wakeAt;
+    this.frameWakeBudget = budget;
+    this.frameTimer = setTimeout(this.wake, delay);
+  }
+
+  /* The frame on its way, whether it is still a timer or already a vsync
+     callback; null when the scene is parked or stopped. */
+  get animId() {
+    return this.frameRequest ?? this.frameTimer ?? null;
+  }
+
+  /* Someone is here: the budget goes back up from its idle rate, and a frame
+     the idle rate put to sleep is woken for the sooner one. */
+  noteInput() {
+    this.lastInput = performance.now();
+    if (this.frameTimer === null || this.frameWakeBudget <= 1000 / 30) return;
+    clearTimeout(this.frameTimer);
+    this.frameTimer = null;
+    this.scheduleFrame(this.lastInput);
   }
 
   /* A parked scene has no next frame coming, so anything that changes what the
@@ -493,15 +597,15 @@ class NordlysBackgroundEngine {
   resumeIfMoving() {
     if (!this.running || this.animId !== null || this.atRest()) return;
     this.lastFrame = performance.now();
-    this.animId = requestAnimationFrame(this.loop);
+    this.frameRequest = requestAnimationFrame(this.loop);
   }
 
   stop() {
     this.running = false;
-    if (this.animId) {
-      cancelAnimationFrame(this.animId);
-      this.animId = null;
-    }
+    if (this.frameRequest !== null) cancelAnimationFrame(this.frameRequest);
+    if (this.frameTimer !== null) clearTimeout(this.frameTimer);
+    this.frameRequest = null;
+    this.frameTimer = null;
   }
 
   pause() {
@@ -580,8 +684,8 @@ class NordlysBackgroundEngine {
        scene that sets globalAlpha per stroke overwrites it — so the scenes
        multiply by `ink` instead, and the canvas default covers the rest. */
     this.ink = this.intensity ?? 1;
-    // By day the sky steps back, the aurora most of all: it is a night thing.
-    if (this.sky) this.ink *= 1 - this.sky.day * (this.mode === "aurora" ? 0.45 : 0.18);
+    // By day the sky steps back, and the night skies most of all: aurora, stars, pillars of light.
+    if (this.sky) this.ink *= 1 - this.sky.day * (NORDLYS_NIGHT_SCENES.has(this.mode) ? 0.45 : 0.18);
     this.ctx.globalAlpha = this.ink;
 
     switch (this.mode) {
@@ -605,8 +709,17 @@ class NordlysBackgroundEngine {
       case "silk":
         this.renderSilk();
         break;
-      case "frost":
-        this.renderFrost();
+      case "polaris":
+        this.renderPolaris(dt);
+        break;
+      case "pillars":
+        this.renderPillars();
+        break;
+      case "nacre":
+        this.renderNacre();
+        break;
+      case "baikal":
+        this.renderBaikal();
         break;
       case "drift":
         this.renderDrift();
@@ -616,7 +729,7 @@ class NordlysBackgroundEngine {
         break;
     }
     if (this.sky) this.renderSunlight();
-    if (this.quietZones.length) this.quieten();
+    if (this.quietZones.length && !this.solvingQuiet) this.quieten();
     this.ctx.globalAlpha = 1;
   }
 
@@ -642,8 +755,8 @@ class NordlysBackgroundEngine {
 
   quieten() {
     const now = performance.now();
-    /* Solving reads the canvas back, which stalls the GPU, so it happens once
-       a second while the sky moves and once, exactly, when it is held. */
+    /* Solving repaints a small CPU-backed sample, so it happens once a second
+       while the sky moves and once, exactly, when it is held. */
     if (now - this.quietSolvedAt > 1000) {
       this.quietAlphas = this.solveQuiet();
       this.quietSolvedAt = now;
@@ -687,8 +800,21 @@ class NordlysBackgroundEngine {
       scratch.height = sh;
     }
     const sctx = scratch.getContext("2d", { willReadFrequently: true });
-    sctx.clearRect(0, 0, sw, sh);
-    sctx.drawImage(this.canvas, 0, 0, sw, sh);
+    /* Reading pixels from the visible canvas forces Chromium to finish and
+       copy its GPU surface back to the CPU. Paint the same scene directly at
+       sample size in a CPU-backed canvas instead. A dt of zero leaves the
+       phase, the meteors and every cache as they were, so this is the frame
+       on screen at a lower resolution, and it takes no quiet zones of its own. */
+    const mainCtx = this.ctx;
+    try {
+      this.ctx = sctx;
+      this.solvingQuiet = true;
+      sctx.setTransform(sw / this.w, 0, 0, sh / this.h, 0, 0);
+      this.render(0);
+    } finally {
+      this.ctx = mainCtx;
+      this.solvingQuiet = false;
+    }
     const data = sctx.getImageData(0, 0, sw, sh).data;
     const sx = sw / this.w;
     const sy = sh / this.h;
@@ -996,16 +1122,18 @@ class NordlysBackgroundEngine {
   }
 
   /* A shaft of light: a radial gradient squashed on one axis. Softer at both
-     ends than a rectangle with a gradient, and one fill either way. */
+     ends than a rectangle with a gradient, and one fill either way.  is a
+     palette index, or a colour of its own as [r, g, b]. */
   drawShaft(cx, cy, reach, sx, sy, tone, alpha) {
     const ctx = this.ctx;
+    const colour = Array.isArray(tone) ? (a) => `rgba(${tone[0]}, ${tone[1]}, ${tone[2]}, ${a})` : (a) => this.rgba(tone, a);
     ctx.save();
     ctx.translate(cx, cy);
     ctx.scale(sx, sy);
     const shaft = ctx.createRadialGradient(0, 0, 0, 0, 0, reach);
-    shaft.addColorStop(0, this.rgba(tone, alpha));
-    shaft.addColorStop(0.32, this.rgba(tone, alpha * 0.34));
-    shaft.addColorStop(1, this.rgba(tone, 0));
+    shaft.addColorStop(0, colour(alpha));
+    shaft.addColorStop(0.32, colour(alpha * 0.34));
+    shaft.addColorStop(1, colour(0));
     ctx.fillStyle = shaft;
     ctx.fillRect(-reach, -reach, reach * 2, reach * 2);
     ctx.restore();
@@ -1070,48 +1198,69 @@ class NordlysBackgroundEngine {
       + Math.sin((nx * 1.7 - ny * 2.2) * 2.1 + this.t * 0.12) * 0.55) * 0.62;
   }
 
+  /* One thread's walk through the field: steps + 1 points into `out`,
+     [x0, y0, x1, y1, ...], in CSS pixels. */
+  walkSilk(thread, step, out) {
+    let x = thread.x * this.w;
+    let y = thread.y * this.h;
+    out[0] = x;
+    out[1] = y;
+    for (let i = 0; i < thread.steps; i++) {
+      const angle = this.silkAngle(x, y, thread.swirl);
+      x += Math.cos(angle) * step;
+      y += Math.sin(angle) * step;
+      out[2 * i + 2] = x;
+      out[2 * i + 3] = y;
+    }
+    return thread.steps + 1;
+  }
+
+  /* The GPU line layer (sky-gl.js), for the screen only. A thumbnail and the
+     quiet-zone sample are painted in 2D, which is quick at their size; so is
+     everything where there is no WebGL2, or once the context is lost. */
+  skyGL() {
+    if (this.ctx !== this.screen || typeof NordlysSkyGL === "undefined") return null;
+    if (this.gl === undefined) this.gl = NordlysSkyGL.create();
+    if (this.gl?.lost) this.gl = null;
+    return this.gl;
+  }
+
   renderSilk() {
     const ctx = this.ctx;
     const light = this.lightMode;
     const unit = Math.min(this.w, this.h);
     const step = unit * 0.034;
+    const shade = light ? 0.8 : 1;
+    const gl = this.skyGL();
 
     ctx.save();
-    ctx.globalCompositeOperation = light ? "multiply" : "screen";
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-
-    const shade = light ? 0.8 : 1;
-    const points = [];
-    for (const thread of this.silk) {
-      let x = thread.x * this.w;
-      let y = thread.y * this.h;
-      points.length = 0;
-      points.push(x, y);
-      for (let i = 0; i < thread.steps; i++) {
-        const angle = this.silkAngle(x, y, thread.swirl);
-        x += Math.cos(angle) * step;
-        y += Math.sin(angle) * step;
-        points.push(x, y);
-      }
-      /* The colour travels along the strand rather than across the weave, and
-         both ends fade to nothing: a thread with a visible start is a line
-         somebody drew, a thread that arrives out of the dark is silk. */
-      const strand = ctx.createLinearGradient(points[0], points[1], x, y);
-      const a = thread.alpha * shade;
-      strand.addColorStop(0, this.rgba(thread.tone, 0));
-      strand.addColorStop(0.22, this.rgba(thread.tone, a));
-      strand.addColorStop(0.62, this.rgba(thread.tone + 1, a * 0.9));
-      strand.addColorStop(1, this.rgba(thread.tone + 2, 0));
-      ctx.strokeStyle = strand;
-      ctx.beginPath();
-      ctx.moveTo(points[0], points[1]);
-      for (let i = 2; i < points.length; i += 2) ctx.lineTo(points[i], points[i + 1]);
-      // Bloom underneath, core on top: the same two passes the curtains use.
-      for (const pass of NORDLYS_SILK_PASSES) {
-        ctx.globalAlpha = pass.alpha * this.ink;
-        ctx.lineWidth = thread.width * pass.width;
-        ctx.stroke();
+    if (gl) this.weaveSilk(gl, step, shade, light);
+    else {
+      ctx.globalCompositeOperation = light ? "multiply" : "screen";
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      const points = [];
+      for (const thread of this.silk) {
+        const n = this.walkSilk(thread, step, points);
+        /* The colour travels along the strand rather than across the weave, and
+           both ends fade to nothing: a thread with a visible start is a line
+           somebody drew, a thread that arrives out of the dark is silk. */
+        const strand = ctx.createLinearGradient(points[0], points[1], points[2 * n - 2], points[2 * n - 1]);
+        const a = thread.alpha * shade;
+        strand.addColorStop(0, this.rgba(thread.tone, 0));
+        strand.addColorStop(0.22, this.rgba(thread.tone, a));
+        strand.addColorStop(0.62, this.rgba(thread.tone + 1, a * 0.9));
+        strand.addColorStop(1, this.rgba(thread.tone + 2, 0));
+        ctx.strokeStyle = strand;
+        ctx.beginPath();
+        ctx.moveTo(points[0], points[1]);
+        for (let i = 2; i < n * 2; i += 2) ctx.lineTo(points[i], points[i + 1]);
+        // Bloom underneath, core on top: the same two passes the curtains use.
+        for (const pass of NORDLYS_SILK_PASSES) {
+          ctx.globalAlpha = pass.alpha * this.ink;
+          ctx.lineWidth = thread.width * pass.width;
+          ctx.stroke();
+        }
       }
     }
 
@@ -1141,180 +1290,707 @@ class NordlysBackgroundEngine {
     ctx.restore();
   }
 
-  /* Rime on the inside of a window. It is anchored to the edges and grows
-     inward, so the middle of the page — where the clock and the board live —
-     stays clear of it by construction rather than by luck. */
-  initFrost() {
-    this.frost = [];
-    this.frostTips = [];
-    this.frostPatches = [];
+  /* Silk's threads as one strip on the GPU layer: the same walk through the
+     field, and each point given the colour the thread's gradient has there.
+     The canvas gradient runs straight from a thread's first point to its
+     last, so a point takes it where it falls along that line, stop for stop
+     as the 2D strokes above are given it. The canvas is still clear when
+     Silk paints, so the frame is laid on as it is. */
+  weaveSilk(gl, step, shade, light) {
+    const scale = this.dpr || 1;
+    const counts = this.silk.map((thread) => thread.steps + 1);
+    const room = NordlysSkyGL.room(counts) * NORDLYS_GL_FLOATS;
+    if (!(this.silkStrip?.length >= room)) this.silkStrip = new Float32Array(room);
+    const most = Math.max(0, ...counts) * 2;
+    if (!(this.silkPoints?.length >= most)) this.silkPoints = new Float32Array(most);
+    const points = this.silkPoints;
+    const palette = this.paletteRgb.map((colour) => colour.map((value) => value / 255));
+    let at = 0;
+    for (const thread of this.silk) {
+      const n = this.walkSilk(thread, step, points);
+      const x0 = points[0];
+      const y0 = points[1];
+      const gx = points[2 * n - 2] - x0;
+      const gy = points[2 * n - 1] - y0;
+      const along = gx * gx + gy * gy || 1;
+      const a = thread.alpha * shade;
+      const [c0, c1, c2] = [0, 1, 2].map((k) => palette[(thread.tone + k) % palette.length]);
+      at = NordlysSkyGL.strip(this.silkStrip, at, points, n, scale, thread.width * scale, 3 * thread.width * scale + 1, (i, rgba) => {
+        const t = Math.max(0, Math.min(1, ((points[2 * i] - x0) * gx + (points[2 * i + 1] - y0) * gy) / along));
+        let from = c0, to = c0, k = 0, alpha;
+        if (t < 0.22) alpha = a * (t / 0.22);
+        else if (t < 0.62) { k = (t - 0.22) / 0.4; to = c1; alpha = a * (1 - 0.1 * k); }
+        else { k = (t - 0.62) / 0.38; from = c1; to = c2; alpha = a * 0.9 * (1 - k); }
+        rgba[0] = from[0] + (to[0] - from[0]) * k;
+        rgba[1] = from[1] + (to[1] - from[1]) * k;
+        rgba[2] = from[2] + (to[2] - from[2]) * k;
+        rgba[3] = alpha;
+      });
+    }
+    gl.begin(this.canvas.width, this.canvas.height);
+    gl.strips(gl.stream(this.silkStrip, at), { bands: NORDLYS_SILK_BANDS, blend: light ? "over" : "screen", light, ink: this.ink });
+    gl.paint(this.ctx, "source-over");
+  }
+
+  /* A palette colour taken `k` of the way to white, as [r, g, b]. */
+  pale(index, k = 0) {
+    const [r, g, b] = this.paletteRgb[index % this.paletteRgb.length];
+    return [Math.round(r + (255 - r) * k), Math.round(g + (255 - g) * k), Math.round(b + (255 - b) * k)];
+  }
+
+  /* A soft ellipse of light, rx by ry, turned by `angle`, its alpha falling off
+     from the centre along `stops` ([offset, share] pairs). One radial gradient
+     squashed to shape and one fill over its own box, like drawShaft, whatever
+     the size: the cheapest light the canvas has. */
+  glow(cx, cy, rx, ry, angle, rgb, alpha, stops = NORDLYS_SOFT) {
+    if (!(alpha > 0.002) || !(rx > 0) || !(ry > 0)) return;
+    const ctx = this.ctx;
+    const colour = `${rgb[0]}, ${rgb[1]}, ${rgb[2]}`;
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (angle) ctx.rotate(angle);
+    ctx.scale(rx / ry, 1);
+    const light = ctx.createRadialGradient(0, 0, 0, 0, 0, ry);
+    for (const [offset, share] of stops) light.addColorStop(offset, `rgba(${colour}, ${Math.min(1, alpha * share)})`);
+    ctx.fillStyle = light;
+    ctx.fillRect(-ry, -ry, ry * 2, ry * 2);
+    ctx.restore();
+  }
+
+  /* ── Polaris: the turning sky ───────────────────────────────────────
+     A long exposure. Every star has dragged an arc of its circle around the
+     celestial pole, which sits high on the right where the page keeps nothing,
+     and every arc is the same stretch of time — so the eye reads one sky
+     turning rather than a scatter of lines. Each is faint where it began and
+     brightest where the star is now, and the brightest stars carry a point of
+     light at their heads. The stars are strewn over the whole disc the pole
+     sweeps across the window, so however far the sky has turned the window is
+     as full as it was.
+
+     An arc never changes shape, only its angle. On the GPU the whole field is
+     built once and turned by a matrix (sky-gl.js); in 2D — a still, the
+     quiet-zone sample, a machine without WebGL2 — each arc is stroked round
+     the pole with a conic gradient that fades it the same way. */
+  initPolaris() {
+    this.polaris = [];
     if (!this.w) return;
-    const up = -Math.PI / 2;
-    const down = Math.PI / 2;
-    const quarter = Math.PI / 4;
-    /* Corners first and largest, because that is where glass is coldest and
-       where frost actually starts; then smaller growths along the edges. The
-       top centre is left bare on purpose: that is where the clock sits. */
-    const anchors = [
-      { x: 0, y: 0, a: quarter, s: 1.15, fronds: 3 }, { x: 1, y: 0, a: Math.PI - quarter, s: 1, fronds: 3 },
-      { x: 0, y: 1, a: -quarter, s: 1.25, fronds: 3 }, { x: 1, y: 1, a: -Math.PI + quarter, s: 1.15, fronds: 3 },
-      { x: 0.21, y: 0, a: down, s: 0.6, fronds: 2 }, { x: 0.79, y: 0, a: down, s: 0.56, fronds: 2 },
-      { x: 0.32, y: 1, a: up, s: 0.78, fronds: 2 }, { x: 0.53, y: 1, a: up, s: 0.64, fronds: 2 }, { x: 0.73, y: 1, a: up, s: 0.74, fronds: 2 },
-      { x: 0, y: 0.47, a: 0, s: 0.7, fronds: 2 }, { x: 1, y: 0.53, a: Math.PI, s: 0.68, fronds: 2 }
-    ];
-    const unit = Math.min(this.w, this.h);
-    for (const anchor of anchors) {
-      const crystal = this.frostPatches.length;
-      const x = anchor.x * this.w;
-      const y = anchor.y * this.h;
-      const reach = unit * 0.3 * anchor.s;
-      // Fronds fan out from one root, the longest down the middle.
-      for (let frond = 0; frond < anchor.fronds; frond++) {
-        const spread = anchor.fronds === 1 ? 0 : (frond / (anchor.fronds - 1) - 0.5) * 1.05;
-        const length = reach * (1 - Math.abs(spread) * 0.42) * (0.82 + this.random() * 0.3);
-        // Each frond leans one way; a straight one reads as a stick.
-        const bend = (spread === 0 ? (this.random() < 0.5 ? -1 : 1) : Math.sign(spread)) * (0.006 + this.random() * 0.012);
-        this.growFrost(x, y, anchor.a + spread + (this.random() - 0.5) * 0.18, length, 0, 0, bend, crystal);
-      }
-      this.frostPatches.push({ x, y, r: reach * 1.1, phase: crystal * 0.83 });
+    // Its own stream, so the stars stay put whatever the other scenes scatter.
+    const random = NordlysBackgroundEngine.stream((this.seed ^ 0x3c6ef372) >>> 0);
+    const pole = this.polarisPole();
+    const reach = Math.max(...[[0, 0], [this.w, 0], [0, this.h], [this.w, this.h]]
+      .map(([x, y]) => Math.hypot(x - pole.x, y - pole.y)));
+    // Even over the disc; about three hundred of them in the window at a time.
+    const count = Math.round(Math.min(2400, Math.max(600, (Math.PI * reach * reach) / 5000)));
+    for (let i = 0; i < count; i++) {
+      const bright = random() < 0.05;
+      this.polaris.push({
+        r: reach * Math.sqrt(random()) + 3,
+        at: random() * Math.PI * 2,
+        tone: Math.floor(random() * 3),
+        white: 0.3 + random() * 0.55,
+        alpha: bright ? 0.55 + random() * 0.35 : 0.1 + Math.pow(random(), 1.7) * 0.42,
+        width: bright ? 1.3 + random() * 0.7 : 0.55 + random() * 0.6,
+        bright
+      });
     }
   }
 
-  /* One frond, grown the way fern frost grows: a stem with short barbs leaning
-     forward off both sides, the barbs shortening towards the tip, and now and
-     then a smaller frond branching off to do the same. Dense short barbs are
-     what separates a frost feather from a web; long sparse branches were the
-     first attempt, and they read as cobweb.
-
-     `order` records how far along the growth a segment sits, which lets the
-     render soften the growing edge without rebuilding anything per frame, and
-     `weight` tapers the stroke from the root to the tip. */
-  growFrost(x, y, angle, length, depth, order, bend, crystal) {
-    if (depth > 1 || length < 14) return;
-    const nodes = depth === 0 ? 24 : 13;
-    const stride = length / nodes;
-    const stem = depth === 0 ? 1 : 0.55;
-    const barbReach = length * (depth === 0 ? 0.13 : 0.18);
-    // Side fronds leave the main stem at a few nodes, alternating sides.
-    const offshoots = depth === 0 ? new Map([[6, -1], [10, 1], [14, -1], [17, 1]]) : new Map();
-    let px = x;
-    let py = y;
-    let heading = angle;
-    for (let node = 0; node < nodes; node++) {
-      heading += bend + (this.random() - 0.5) * 0.05;
-      const nx = px + Math.cos(heading) * stride;
-      const ny = py + Math.sin(heading) * stride;
-      const along = (node + 1) / nodes;
-      const at = Math.min(1, order + along * (depth === 0 ? 1 : 0.3));
-      this.frost.push({ x1: px, y1: py, x2: nx, y2: ny, order: at, weight: (1 - along * 0.7) * stem, crystal });
-      if (node > 1) {
-        const barb = barbReach * Math.pow(1 - along, 0.65) * (0.75 + this.random() * 0.5);
-        for (const side of [-1, 1]) {
-          const lean = heading + side * (0.92 + (this.random() - 0.5) * 0.12);
-          const bx = nx + Math.cos(lean) * barb;
-          const by = ny + Math.sin(lean) * barb;
-          this.frost.push({ x1: nx, y1: ny, x2: bx, y2: by, order: at, weight: 0.2 * (1 - along * 0.5) * stem, crystal });
-          if (depth === 0 && node % 5 === 3 && side === 1) {
-            this.frostTips.push({ x: bx, y: by, order: at, crystal, phase: this.frostTips.length * 2.39 });
-          }
-        }
-      }
-      const side = offshoots.get(node);
-      if (side) this.growFrost(nx, ny, heading + side * 0.95, length * 0.46 * (1 - along * 0.6), depth + 1, at, bend * 0.8, crystal);
-      px = nx;
-      py = ny;
-    }
+  polarisPole() {
+    return { x: this.w * 0.83, y: this.h * 0.15 };
   }
 
-  renderFrost() {
+  // How far the sky has turned: anticlockwise, as it turns about the north pole.
+  polarisTurn() {
+    return -this.t * NORDLYS_POLARIS.turn;
+  }
+
+  /* A star's light, 0 to 1: the mood's colour taken towards white on a dark
+     sky; on a light one the colour as it is, since white would vanish. */
+  starlight(star, light) {
+    const rgb = this.pale(star.tone, light ? 0 : star.white);
+    return [rgb[0] / 255, rgb[1] / 255, rgb[2] / 255];
+  }
+
+  /* The field as one strip, unturned: each arc from its head, where the star
+     is now, back along its circle to its tail, fading as it goes. */
+  polarisStrip() {
+    const scale = this.dpr || 1;
+    const light = this.lightMode;
+    const pole = this.polarisPole();
+    const { length } = NORDLYS_POLARIS;
+    const steps = Math.ceil(length / 0.02);
+    const n = steps + 1;
+    const data = new Float32Array(NordlysSkyGL.room(this.polaris.map(() => n)) * NORDLYS_GL_FLOATS);
+    const points = new Float32Array(n * 2);
+    let at = 0;
+    for (const star of this.polaris) {
+      for (let i = 0; i < n; i++) {
+        const angle = star.at + (length * i) / steps;
+        points[2 * i] = pole.x + Math.cos(angle) * star.r;
+        points[2 * i + 1] = pole.y + Math.sin(angle) * star.r;
+      }
+      const [r, g, b] = this.starlight(star, light);
+      const alpha = star.alpha * (light ? 1.15 : 1);
+      at = NordlysSkyGL.strip(data, at, points, n, scale, star.width * scale, 1.7 * star.width * scale + 1, (i, rgba) => {
+        rgba[0] = r;
+        rgba[1] = g;
+        rgba[2] = b;
+        rgba[3] = alpha * Math.pow(1 - i / steps, 1.6);
+      });
+    }
+    return { data, count: at };
+  }
+
+  renderPolaris(dt) {
     const ctx = this.ctx;
     const light = this.lightMode;
-    const unit = Math.min(this.w, this.h);
+    const pole = this.polarisPole();
+    const turn = this.polarisTurn();
+    const gl = this.skyGL();
+    ctx.save();
+    if (gl) {
+      const scale = this.dpr || 1;
+      const field = gl.layer("polaris", `${this.seed}:${this.w}x${this.h}:${scale}:${this.palette.join()}:${light}`, () => this.polarisStrip());
+      gl.begin(this.canvas.width, this.canvas.height);
+      gl.strips(field, { bands: NORDLYS_POLARIS.bands, blend: light ? "over" : "screen", light, ink: this.ink,
+        matrix: NordlysSkyGL.turn(turn, pole.x * scale, pole.y * scale) });
+      gl.paint(ctx, "source-over");
+    } else this.tracePolaris(turn, light);
 
+    ctx.globalCompositeOperation = light ? "multiply" : "screen";
+    // A town far off under the horizon, the only light the sky has.
+    const low = ctx.createLinearGradient(0, this.h, 0, this.h * 0.55);
+    low.addColorStop(0, this.rgba(2, light ? 0.06 : 0.09));
+    low.addColorStop(1, this.rgba(2, 0));
+    ctx.fillStyle = low;
+    ctx.fillRect(0, this.h * 0.55, this.w, this.h * 0.45);
+    // The pole star itself, which barely moves at all.
+    const polar = this.pale(0, light ? 0 : 0.85);
+    this.glow(pole.x, pole.y, 26, 26, 0, polar, light ? 0.14 : 0.2);
+    this.glow(pole.x, pole.y, 3.2, 3.2, 0, polar, light ? 0.6 : 0.9);
+    // Where the brightest stars are now: a point of light at each head.
+    for (const star of this.polaris) {
+      if (!star.bright) continue;
+      const angle = star.at + turn;
+      const x = pole.x + Math.cos(angle) * star.r;
+      const y = pole.y + Math.sin(angle) * star.r;
+      if (x < -12 || y < -12 || x > this.w + 12 || y > this.h + 12) continue;
+      const rgb = this.pale(star.tone, light ? 0 : star.white);
+      this.glow(x, y, 2.4 + star.width * 2.2, 2.4 + star.width * 2.2, 0, rgb, star.alpha * (light ? 0.35 : 0.5));
+    }
+    this.renderMeteors(0.0025, dt);
+    ctx.restore();
+  }
+
+  /* The field in 2D: each arc that reaches the window, stroked round the pole
+     with a conic gradient that fades from its head to its tail as the strip
+     does. */
+  tracePolaris(turn, light) {
+    const ctx = this.ctx;
+    const pole = this.polarisPole();
+    const { length } = NORDLYS_POLARIS;
+    const span = length / (Math.PI * 2);
+    const margin = 6;
+    const within = (angle, r) => {
+      const x = pole.x + Math.cos(angle) * r;
+      const y = pole.y + Math.sin(angle) * r;
+      return x > -margin && y > -margin && x < this.w + margin && y < this.h + margin;
+    };
+    ctx.globalCompositeOperation = light ? "multiply" : "screen";
+    ctx.lineCap = "round";
+    /* The quiet-zone sample is about ninety pixels across, where a trail a
+       pixel wide would come out a fifteenth of one and all but vanish: the
+       solver would never see a bright trail behind the greeting. There each
+       trail is at least one sample pixel wide, at its own brightness. */
+    const least = this.solvingQuiet ? 1 / (ctx.getTransform?.().a || 1) : 0;
+    for (const star of this.polaris) {
+      const head = star.at + turn;
+      if (!within(head, star.r) && !within(head + length / 2, star.r) && !within(head + length, star.r)) continue;
+      const colour = this.pale(star.tone, light ? 0 : star.white).join(", ");
+      const alpha = star.alpha * (light ? 1.15 : 1);
+      const fade = ctx.createConicGradient(head, pole.x, pole.y);
+      for (const f of [0, 0.25, 0.5, 0.75, 1]) fade.addColorStop(f * span, `rgba(${colour}, ${alpha * Math.pow(1 - f, 1.6)})`);
+      fade.addColorStop(1, `rgba(${colour}, 0)`);
+      ctx.strokeStyle = fade;
+      ctx.lineWidth = Math.max(star.width, least);
+      ctx.beginPath();
+      ctx.arc(pole.x, pole.y, star.r, head, head + length);
+      ctx.stroke();
+    }
+  }
+
+  /* ── Pillars: light over the frost ──────────────────────────────────
+     On a still night far below freezing, flat ice crystals settle level in the
+     air, and every light of a distant town throws a column straight up off
+     them into the sky. The columns stand over a low horizon in two or three
+     clusters, brightest at their feet and mirrored faintly in the snow, and
+     they breathe as the crystals drift. Nearer by, the crystals glint in the
+     air themselves — diamond dust — each lit in the colour of the column
+     nearest it. All of it is soft gradients, the cheapest thing the canvas
+     draws; nothing is stroked. */
+  initPillars() {
+    this.pillars = [];
+    this.dust = [];
+    this.towns = [];
+    if (!this.w) return;
+    const random = NordlysBackgroundEngine.stream((this.seed ^ 0x1b873593) >>> 0);
+    const towns = random() < 0.3 ? 2 : 3;
+    for (let town = 0; town < towns; town++) {
+      const centre = 0.08 + ((town + 0.2 + random() * 0.6) / towns) * 0.84;
+      const spread = 0.05 + random() * 0.06;
+      this.towns.push({ x: centre, spread, tone: Math.floor(random() * 3) });
+      const lights = 3 + Math.floor(random() * 3);
+      for (let i = 0; i < lights; i++) {
+        this.pillars.push({
+          x: centre + (random() - 0.5) * spread * 2,
+          height: 0.38 + random() * 0.36,
+          width: 1 + random() * 1.4,
+          alpha: 0.26 + random() * 0.2,
+          tone: Math.floor(random() * 3),
+          white: 0.5 + random() * 0.38,
+          phase: random() * Math.PI * 2,
+          rate: 0.5 + random() * 0.7
+        });
+      }
+    }
+    const count = Math.round(Math.min(170, Math.max(60, (this.w * this.h) / 11000)));
+    for (let i = 0; i < count; i++) {
+      this.dust.push({ x: random(), y: random(), z: 0.35 + random() * 0.65, sway: random() * Math.PI * 2, glint: random() * Math.PI * 2, rate: 0.6 + random() * 1.2 });
+    }
+  }
+
+  renderPillars() {
+    const ctx = this.ctx;
+    const light = this.lightMode;
+    if (!this.pillars.length) return;
+    const unit = Math.min(this.w, this.h);
+    const horizon = this.h * NORDLYS_HORIZON;
+    ctx.save();
+    ctx.globalCompositeOperation = light ? "multiply" : "screen";
+
+    // The cold air over the horizon, lit from below by the town.
+    const air = ctx.createLinearGradient(0, horizon, 0, horizon - this.h * 0.55);
+    air.addColorStop(0, this.rgba(1, light ? 0.07 : 0.1));
+    air.addColorStop(1, this.rgba(1, 0));
+    ctx.fillStyle = air;
+    ctx.fillRect(0, horizon - this.h * 0.55, this.w, this.h * 0.55);
+    // The snow under it, paler than the sky where the town lights it.
+    const snow = ctx.createLinearGradient(0, horizon, 0, this.h);
+    snow.addColorStop(0, this.rgba(1, light ? 0.07 : 0.09));
+    snow.addColorStop(1, this.rgba(2, light ? 0.015 : 0.02));
+    ctx.fillStyle = snow;
+    ctx.fillRect(0, horizon, this.w, this.h - horizon);
+    // Each town a low band of light along the horizon.
+    for (const town of this.towns) {
+      this.glow(town.x * this.w, horizon, town.spread * this.w * 1.6, unit * 0.02, 0, this.pale(town.tone, light ? 0 : 0.6), light ? 0.16 : 0.24);
+    }
+
+    const columns = this.pillars.map((pillar) => ({
+      pillar,
+      x: pillar.x * this.w,
+      breath: 0.8 + 0.2 * Math.sin(this.t * 0.42 * pillar.rate + pillar.phase),
+      height: pillar.height * this.h * (0.95 + 0.05 * Math.sin(this.t * 0.23 * pillar.rate + pillar.phase * 1.7)),
+      half: unit * 0.0055 * pillar.width,
+      rgb: this.pale(pillar.tone, light ? 0 : pillar.white)
+    }));
+
+    /* Above the horizon: a thin spread of stars, then the columns — a wide haze,
+       a softer glow, and the column itself. */
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, this.w, horizon);
+    ctx.clip();
+    this.renderStars({ share: 0.35 });
+    for (const column of columns) {
+      const alpha = column.pillar.alpha * column.breath;
+      this.glow(column.x, horizon, column.half * 12, column.height * 0.7, 0, column.rgb, alpha * 0.14, NORDLYS_PILLAR);
+      this.glow(column.x, horizon, column.half * 3.2, column.height * 0.9, 0, column.rgb, alpha * 0.42, NORDLYS_PILLAR);
+      this.glow(column.x, horizon, column.half, column.height, 0, column.rgb, alpha, NORDLYS_PILLAR);
+    }
+    ctx.restore();
+
+    // Below it, each column again in the snow, short and dim.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, horizon, this.w, this.h - horizon);
+    ctx.clip();
+    for (const column of columns) {
+      const alpha = column.pillar.alpha * column.breath;
+      this.glow(column.x, horizon, column.half * 3, column.height * 0.2, 0, column.rgb, alpha * 0.22, NORDLYS_PILLAR);
+      this.glow(column.x, horizon, column.half * 1.1, column.height * 0.14, 0, column.rgb, alpha * 0.4, NORDLYS_PILLAR);
+    }
+    ctx.restore();
+
+    // The lights themselves, on the horizon.
+    for (const column of columns) {
+      this.glow(column.x, horizon, column.half * 7, column.half * 2.4, 0, column.rgb, column.pillar.alpha * column.breath * 2.2);
+    }
+
+    // Diamond dust: falling slowly, swaying, glinting, lit by the nearest column.
+    for (const dust of this.dust) {
+      const fall = (dust.y + this.t * 0.01 * dust.rate) % 1;
+      const x = ((((dust.x + Math.sin(this.t * 0.15 * dust.rate + dust.sway) * 0.01) % 1) + 1) % 1) * this.w;
+      const y = this.h * (0.06 + fall * 0.9);
+      let near = columns[0];
+      let gap = Infinity;
+      for (const column of columns) {
+        const away = Math.abs(column.x - x);
+        if (away < gap) { gap = away; near = column; }
+      }
+      const lit = Math.max(0, 1 - gap / (unit * 0.3)) * near.breath;
+      const glint = Math.pow(Math.max(0, Math.sin(this.t * 1.6 * dust.rate + dust.glint)), 16);
+      const alpha = dust.z * Math.sin(Math.PI * fall) * (0.14 + 0.7 * lit) * (0.4 + 0.6 * glint);
+      if (alpha < 0.015) continue;
+      const rgb = light ? near.rgb : this.pale(near.pillar.tone, 0.75);
+      const size = 0.7 + dust.z * 1.2;
+      ctx.fillStyle = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${Math.min(1, alpha).toFixed(3)})`;
+      ctx.fillRect(x - size / 2, y - size / 2, size, size);
+      if (glint > 0.5 && lit > 0.25) {
+        const reach = 3 + glint * 6 * dust.z;
+        this.drawShaft(x, y, reach, 1, 0.1, rgb, alpha * 0.8);
+        this.drawShaft(x, y, reach, 0.1, 1, rgb, alpha * 0.8);
+      }
+    }
+    ctx.restore();
+  }
+
+  /* ── Nacre: mother-of-pearl cloud ───────────────────────────────────
+     Nacreous clouds form high in the stratosphere over the Arctic in the
+     depth of winter, and just after sunset they shine with the colours of
+     mother-of-pearl: smooth lenses, banded like a film of oil. Each cloud here
+     is lenses one inside the next, each a step further round the mood, so the
+     colour runs in rings from its thin edge to its thick middle; soft lobes
+     break the outline, and long thin streaks give it a grain. The colours
+     drift slowly round the mood, the way the real ones shift as the sun goes
+     down. Soft gradients only. */
+  initNacre() {
+    this.nacre = [];
+    if (!this.w) return;
+    const random = NordlysBackgroundEngine.stream((this.seed ^ 0x2545f491) >>> 0);
+    const clouds = 4 + Math.floor(random() * 2);
+    for (let i = 0; i < clouds; i++) {
+      const cloud = {
+        x: ((i + 0.2 + random() * 0.6) / clouds) * 1.6,
+        y: 0.1 + ((i % 3) * 0.12) + random() * 0.2,
+        length: 0.26 + random() * 0.3,
+        thick: 0.16 + random() * 0.12,
+        tilt: (random() - 0.5) * 0.18,
+        drift: 0.6 + random() * 0.8,
+        phase: random(),
+        lobes: [],
+        streaks: []
+      };
+      /* The body: a few soft lobes along the lens, largest in the middle, so
+         the cloud has a thickness that varies like a real one. */
+      const lobes = 6 + Math.floor(random() * 5);
+      for (let j = 0; j < lobes; j++) {
+        const along = (j / (lobes - 1) - 0.5) * 1.5 + (random() - 0.5) * 0.12;
+        cloud.lobes.push({
+          along,
+          u: (random() - 0.5) * 0.7,
+          length: (0.28 + random() * 0.22) * (1 - Math.abs(along) * 0.35),
+          thick: (0.35 + random() * 0.45) * (1 - Math.abs(along) * 0.45),
+          alpha: 0.6 + random() * 0.4
+        });
+      }
+      // The grain: long thin streaks over it.
+      const streaks = 16 + Math.floor(random() * 12);
+      for (let j = 0; j < streaks; j++) {
+        const u = random() * 2 - 1;
+        cloud.streaks.push({
+          u,
+          along: (random() - 0.5) * 1.2 * (1 - Math.abs(u) * 0.5),
+          length: (1 - u * u * 0.7) * (0.3 + random() * 0.4),
+          thick: 0.05 + random() * 0.1,
+          band: random() * 0.2,
+          alpha: 0.45 + random() * 0.55,
+          wave: random() * Math.PI * 2
+        });
+      }
+      this.nacre.push(cloud);
+    }
+  }
+
+  /* Mother-of-pearl: a colour that walks round the mood's three smoothly and
+     comes back — `k` is where on that walk, `white` how pale. */
+  iridescent(k, white) {
+    const f = (((k % 1) + 1) % 1) * 3;
+    const i = Math.floor(f) % 3;
+    const m = f - Math.floor(f);
+    const s = m * m * (3 - 2 * m);
+    const a = this.paletteRgb[i];
+    const b = this.paletteRgb[(i + 1) % 3];
+    return [0, 1, 2].map((c) => {
+      const v = a[c] + (b[c] - a[c]) * s;
+      return Math.round(v + (255 - v) * white);
+    });
+  }
+
+  renderNacre() {
+    const ctx = this.ctx;
+    const light = this.lightMode;
+    ctx.save();
+    ctx.globalCompositeOperation = light ? "multiply" : "screen";
+    /* The twilight they shine in: the sun just under the horizon, warm at the
+       bottom of the sky and cooling upward into the night. */
+    const dusk = ctx.createLinearGradient(0, this.h, 0, this.h * 0.2);
+    dusk.addColorStop(0, this.rgba(0, light ? 0.1 : 0.17));
+    dusk.addColorStop(0.35, this.rgba(1, light ? 0.05 : 0.08));
+    dusk.addColorStop(1, this.rgba(2, 0));
+    ctx.fillStyle = dusk;
+    ctx.fillRect(0, this.h * 0.2, this.w, this.h * 0.8);
+    const shift = this.t * 0.01;
+    const pale = light ? 0 : 1;
+    for (const cloud of this.nacre) {
+      const span = 1.6;
+      const along = ((((cloud.x + this.t * 0.0035 * cloud.drift) % span) + span) % span) - 0.3;
+      const length = cloud.length * this.w * 0.5;
+      const thick = Math.max(8, cloud.thick * this.h * 0.5);
+      ctx.save();
+      ctx.translate(along * this.w, cloud.y * this.h);
+      ctx.rotate(cloud.tilt);
+      /* The bands: lenses one inside the next, each a step further round the
+         mood and a little paler, and each lifted a touch, so the colour runs in
+         rings from the thin edge to the thick middle as it does in a film of
+         oil — the thing that makes the cloud read as nacre, not as mist. */
+      for (let band = 0; band < 5; band++) {
+        const size = 1 - band * 0.17;
+        const colour = this.iridescent(cloud.phase + shift + band * 0.17, (0.12 + band * 0.05) * pale);
+        this.glow(0, -band * thick * 0.06, length * size, thick * (0.35 + 0.65 * size), 0, colour, (light ? 0.1 : 0.16) + band * 0.02, NORDLYS_LOBE);
+      }
+      // The lobes give it an edge that is not a perfect lens.
+      for (const lobe of cloud.lobes) {
+        const colour = this.iridescent(cloud.phase + shift + lobe.along * 0.22, 0.28 * pale);
+        this.glow(lobe.along * length, lobe.u * thick, length * lobe.length, thick * lobe.thick, 0, colour, lobe.alpha * (light ? 0.14 : 0.2), NORDLYS_LOBE);
+      }
+      // The streaks, finer and paler, are the grain of it.
+      for (const streak of cloud.streaks) {
+        const y = (streak.u + Math.sin(this.t * 0.16 + streak.wave) * 0.05) * thick * 0.8;
+        const colour = this.iridescent(cloud.phase + shift + streak.along * 0.22 + streak.u * 0.12 + streak.band, 0.3 * pale);
+        const alpha = streak.alpha * (light ? 0.16 : 0.26) * (1 - streak.u * streak.u * 0.6);
+        this.glow(streak.along * length, y, length * streak.length, thick * streak.thick, 0, colour, alpha, NORDLYS_STREAK);
+      }
+      // And a bright core down the middle, where the lens is thickest.
+      this.glow(0, 0, length * 0.62, thick * 0.12, 0, this.pale(0, 0.85 * pale), light ? 0.1 : 0.15, NORDLYS_STREAK);
+      ctx.restore();
+    }
+    /* The words sit on clear sky: a cloud thins out as it passes behind the
+       clock and the search field, as the ice clears there in Baikal. A bright
+       lens behind a pale glass field is the one thing here a reader loses. */
+    ctx.globalCompositeOperation = "destination-out";
+    this.glow(this.w * 0.5, this.h * 0.25, this.w * 0.3, this.h * 0.2, 0, [0, 0, 0], 0.5, NORDLYS_LOBE);
+    ctx.restore();
+  }
+
+  /* ── Baikal: black ice ──────────────────────────────────────────────
+     In late winter the ice on Lake Baikal is clear enough to see a metre
+     down, and it holds what the lake breathed out as it froze: flat white
+     bubbles of gas, stacked one under the next in columns, each smaller and
+     dimmer with depth; and the long cracks the ice splits along as it moves.
+     Nothing in it moves but the light — a low sun sweeping slowly over the
+     ice, picking out the bubbles and the cracks it passes, and the water
+     glowing faintly underneath.
+
+     Because the ice holds still, on the screen it is drawn once into a layer
+     of its own and laid down each frame in one drawImage; the moving light
+     goes on top of it. A still and the quiet-zone sample draw it directly. */
+  initBaikal() {
+    this.baikal = { bubbles: [], cracks: [] };
+    if (!this.w) return;
+    const random = NordlysBackgroundEngine.stream((this.seed ^ 0x68e31da4) >>> 0);
+    const unit = Math.min(this.w, this.h);
+    const columns = Math.round(Math.max(9, Math.min(20, (this.w * this.h) / 80000)));
+    for (let c = 0; c < columns; c++) {
+      let x = random();
+      const y = random();
+      // The clock, the date and the search field sit top centre; the ice there is clear.
+      if (y < 0.46 && Math.abs(x - 0.5) < 0.2) x += x < 0.5 ? -0.24 : 0.24;
+      const top = unit * (0.012 + random() * 0.022);
+      const depth = 2 + Math.floor(random() * 4);
+      /* A column goes down into the ice, so seen from above each bubble lies a
+         little further along one way than the one over it, like a stack of
+         coins leaning — close, not a chain. */
+      const heading = random() * Math.PI * 2;
+      const spacing = top * (0.28 + random() * 0.3);
+      const squash = 0.36 + random() * 0.3;
+      const tilt = (random() - 0.5) * 0.6;
+      // Deepest first, so the nearest bubble is drawn over the rest.
+      for (let k = depth - 1; k >= 0; k--) {
+        this.baikal.bubbles.push({
+          x: x * this.w + Math.cos(heading) * spacing * k,
+          y: y * this.h + Math.sin(heading) * spacing * k,
+          r: top * Math.pow(0.86, k) * (0.85 + random() * 0.3),
+          squash: squash * (0.9 + random() * 0.2),
+          tilt: tilt + (random() - 0.5) * 0.25,
+          alpha: Math.pow(0.62, k),
+          glint: random() * Math.PI * 2
+        });
+      }
+    }
+    // Loose bubbles, small and alone.
+    for (let i = 0; i < 30; i++) {
+      this.baikal.bubbles.push({
+        x: random() * this.w, y: random() * this.h, r: unit * (0.003 + random() * 0.006),
+        squash: 0.55 + random() * 0.35, tilt: random() * Math.PI, alpha: 0.4 + random() * 0.4, glint: random() * Math.PI * 2
+      });
+    }
+    const cracks = 4 + Math.floor(random() * 3);
+    for (let i = 0; i < cracks; i++) this.growCrack(random, unit, null);
+  }
+
+  /* A crack runs in from an edge, jagged but keeping a direction, and now and
+     then splits off a short branch. */
+  growCrack(random, unit, from) {
+    const branch = Boolean(from);
+    let x, y, heading;
+    if (branch) ({ x, y, heading } = from);
+    else {
+      const side = Math.floor(random() * 4);
+      const along = 0.1 + random() * 0.8;
+      [x, y] = [[along * this.w, -4], [this.w + 4, along * this.h], [along * this.w, this.h + 4], [-4, along * this.h]][side];
+      heading = [Math.PI / 2, Math.PI, -Math.PI / 2, 0][side] + (random() - 0.5) * 1.1;
+    }
+    /* Ice splits in long, nearly straight runs with a sudden kink now and
+       then; a wander at every step reads as a root or a vein, not a crack. */
+    const steps = branch ? 4 + Math.floor(random() * 7) : 24 + Math.floor(random() * 22);
+    const stride = unit * (branch ? 0.018 : 0.03);
+    const points = [x, y];
+    for (let i = 0; i < steps; i++) {
+      heading += (random() - 0.5) * 0.12 + (random() < 0.12 ? (random() - 0.5) * 0.9 : 0);
+      x += Math.cos(heading) * stride * (0.7 + random() * 0.6);
+      y += Math.sin(heading) * stride * (0.7 + random() * 0.6);
+      points.push(x, y);
+      if (x < -20 || y < -20 || x > this.w + 20 || y > this.h + 20) break;
+      if (!branch && i > 2 && random() < 0.08) {
+        this.growCrack(random, unit, { x, y, heading: heading + (random() < 0.5 ? -1 : 1) * (0.6 + random() * 0.6) });
+      }
+    }
+    // Here and there a crack is a sheet turned to the light, and shines along its length.
+    this.baikal.cracks.push({ points, weight: branch ? 0.5 : 1, sheet: !branch && random() < 0.5 });
+  }
+
+  /* Everything in the ice that holds still: the cracks, a faint sheet of light
+     either side of a fine bright line, and the bubbles, each a disc of white
+     with a brighter rim. */
+  drawIce(ctx, light) {
+    const white = (light ? this.pale(1, 0) : this.pale(0, 0.8)).join(", ");
     ctx.save();
     ctx.globalCompositeOperation = light ? "multiply" : "screen";
     ctx.lineCap = "round";
-
-    // Cold gathering at the edges, where the crystals are.
-    const chill = ctx.createRadialGradient(
-      this.w * 0.5, this.h * 0.5, unit * 0.34,
-      this.w * 0.5, this.h * 0.5, unit * 1.08);
-    chill.addColorStop(0, this.rgba(1, 0));
-    chill.addColorStop(1, this.rgba(1, light ? 0.07 : 0.12));
-    ctx.fillStyle = chill;
-    ctx.fillRect(0, 0, this.w, this.h);
-
-    /* Each crystal grows out of a patch of fogged glass, and the patch is what
-       makes the needles read as ice on a pane instead of lines on a page. */
-    for (const patch of this.frostPatches) {
-      const fog = ctx.createRadialGradient(patch.x, patch.y, 0, patch.x, patch.y, patch.r);
-      fog.addColorStop(0, this.rgba(1, light ? 0.06 : 0.1));
-      fog.addColorStop(0.55, this.rgba(2, light ? 0.025 : 0.04));
-      fog.addColorStop(1, this.rgba(2, 0));
-      ctx.fillStyle = fog;
-      ctx.fillRect(patch.x - patch.r, patch.y - patch.r, patch.r * 2, patch.r * 2);
-    }
-
-    /* Every crystal breathes at its outer edge rather than appearing and
-       vanishing: at rest this frame has to be a whole picture, not a half-drawn
-       one. */
-    const grown = this.frostPatches.map(patch => 0.9 + Math.sin(this.t * 0.17 + patch.phase) * 0.1);
-
-    /* Segments are stroked in batches that share a width and an alpha — four
-       weights by four stages of growth. Sixteen paths a frame instead of one
-       per segment, which is roughly three thousand. */
-    const batches = Array.from({ length: 16 }, () => []);
-    for (const segment of this.frost) {
-      const reach = (grown[segment.crystal] - segment.order) / 0.16;
-      if (reach <= 0) continue;
-      const stage = Math.min(3, Math.floor(Math.min(1, reach) * 4));
-      const weight = segment.weight > 0.62 ? 0 : segment.weight > 0.34 ? 1 : segment.weight > 0.17 ? 2 : 3;
-      batches[weight * 4 + stage].push(segment);
-    }
-    /* Ice is pale. On a dark pane the stems are the palette's first colour
-       taken most of the way to white, so a warm mood still reads as frost and
-       not as a drawing in orange; the finest barbs keep more of the hue. On a
-       light pane white would vanish, so there the palette stands as it is. */
-    const inks = [0.62, 0.45, 0.3, 0.18].map((pale, weight) => {
-      const [r, g, b] = this.paletteRgb[weight === 0 ? 0 : weight === 3 ? 2 : 1];
-      const lift = light ? 0 : pale;
-      return `rgb(${Math.round(r + (255 - r) * lift)}, ${Math.round(g + (255 - g) * lift)}, ${Math.round(b + (255 - b) * lift)})`;
-    });
-    for (let slot = 0; slot < batches.length; slot++) {
-      const group = batches[slot];
-      if (!group.length) continue;
-      const weight = Math.floor(slot / 4);
-      const stage = slot % 4;
+    ctx.lineJoin = "round";
+    for (const crack of this.baikal.cracks) {
       ctx.beginPath();
-      for (const segment of group) {
-        ctx.moveTo(segment.x1, segment.y1);
-        ctx.lineTo(segment.x2, segment.y2);
-      }
-      ctx.strokeStyle = inks[weight];
-      const alpha = (light ? 0.26 : 0.36) * ((stage + 1) / 4) * (1 - weight * 0.12) * this.ink;
-      // The two heaviest weights carry a soft bloom, which is the cold glow.
-      if (weight < 2) {
-        ctx.globalAlpha = alpha * 0.22;
-        ctx.lineWidth = [7, 4.5][weight];
+      ctx.moveTo(crack.points[0], crack.points[1]);
+      for (let i = 2; i < crack.points.length; i += 2) ctx.lineTo(crack.points[i], crack.points[i + 1]);
+      if (crack.sheet) {
+        ctx.strokeStyle = `rgba(${white}, ${light ? 0.035 : 0.05})`;
+        ctx.lineWidth = 14;
         ctx.stroke();
       }
-      ctx.globalAlpha = alpha;
-      ctx.lineWidth = [2, 1.35, 0.9, 0.65][weight];
+      ctx.strokeStyle = `rgba(${white}, ${(light ? 0.05 : 0.08) * crack.weight})`;
+      ctx.lineWidth = 4 * crack.weight;
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(${white}, ${(light ? 0.34 : 0.45) * crack.weight})`;
+      ctx.lineWidth = 0.9;
       ctx.stroke();
     }
+    /* A bubble is a flat disc of gas: white, brightest just inside its edge
+       where the ice curves round it, a little clearer in the middle. */
+    for (const bubble of this.baikal.bubbles) {
+      ctx.save();
+      ctx.translate(bubble.x, bubble.y);
+      ctx.rotate(bubble.tilt);
+      ctx.scale(1, bubble.squash);
+      const disc = ctx.createRadialGradient(0, 0, 0, 0, 0, bubble.r);
+      disc.addColorStop(0, `rgba(${white}, ${(light ? 0.18 : 0.3) * bubble.alpha})`);
+      disc.addColorStop(0.8, `rgba(${white}, ${(light ? 0.3 : 0.5) * bubble.alpha})`);
+      disc.addColorStop(1, `rgba(${white}, ${(light ? 0.14 : 0.22) * bubble.alpha})`);
+      ctx.fillStyle = disc;
+      ctx.beginPath();
+      ctx.arc(0, 0, bubble.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(${white}, ${(light ? 0.45 : 0.7) * bubble.alpha})`;
+      ctx.lineWidth = Math.max(0.7, bubble.r * 0.05);
+      ctx.stroke();
+      ctx.restore();
+    }
+    /* The ice is clear where the clock, the date and the search field sit: a
+       crack through a word reads as a strike-through, whatever the contrast. */
+    ctx.globalCompositeOperation = "destination-out";
+    const clear = this.w * 0.27;
+    ctx.save();
+    ctx.translate(this.w * 0.5, this.h * 0.22);
+    ctx.scale(1, (this.h * 0.25) / clear);
+    const hole = ctx.createRadialGradient(0, 0, 0, 0, 0, clear);
+    hole.addColorStop(0, "rgba(0, 0, 0, 0.88)");
+    hole.addColorStop(0.6, "rgba(0, 0, 0, 0.6)");
+    hole.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = hole;
+    ctx.fillRect(-clear, -clear, clear * 2, clear * 2);
+    ctx.restore();
+    ctx.restore();
+  }
 
-    /* Glints where a barb catches the light: a four-point sparkle, never a
-       round drop — round drops on fine lines were the other half of what made
-       the first attempt read as dew on a web. Each on its own slow phase, so
-       the pane sparkles here and there instead of all over. */
-    ctx.globalAlpha = this.ink;
-    for (const tip of this.frostTips) {
-      if (grown[tip.crystal] < tip.order) continue;
-      const shine = Math.max(0, Math.sin(this.t * 1.1 + tip.phase)) ** 4;
-      if (shine < 0.06) continue;
-      const reach = 3 + shine * 7;
-      this.drawShaft(tip.x, tip.y, reach, 1, 0.12, 0, (light ? 0.3 : 0.55) * shine);
-      this.drawShaft(tip.x, tip.y, reach, 0.12, 1, 0, (light ? 0.3 : 0.55) * shine);
+  renderBaikal() {
+    const ctx = this.ctx;
+    const light = this.lightMode;
+    if (!this.baikal) return;
+    const unit = Math.min(this.w, this.h);
+    ctx.save();
+    if (ctx === this.screen && this.canvas && typeof document.createElement === "function") {
+      const key = `${this.seed}:${this.w}x${this.h}:${this.dpr}:${this.palette.join()}:${light}`;
+      if (this.iceLayer?.key !== key) {
+        const layer = document.createElement("canvas");
+        layer.width = this.canvas.width;
+        layer.height = this.canvas.height;
+        const paint = layer.getContext("2d");
+        paint.setTransform(this.dpr || 1, 0, 0, this.dpr || 1, 0, 0);
+        this.drawIce(paint, light);
+        this.iceLayer = { key, canvas: layer };
+      }
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(this.iceLayer.canvas, 0, 0);
+      ctx.restore();
+    } else this.drawIce(ctx, light);
+
+    // The low sun, sweeping over the ice: "atop", so it lands only on what is in it.
+    const sweep = ((this.t * 0.03) % 1.6) - 0.3;
+    const x = this.w * sweep;
+    const sun = ctx.createLinearGradient(x - unit * 0.6, this.h, x + unit * 0.6, 0);
+    sun.addColorStop(0, "rgba(255, 255, 255, 0)");
+    sun.addColorStop(0.5, light ? this.rgba(0, 0.35) : "rgba(236, 246, 255, 0.5)");
+    sun.addColorStop(1, "rgba(255, 255, 255, 0)");
+    ctx.globalCompositeOperation = "source-atop";
+    ctx.fillStyle = sun;
+    ctx.fillRect(0, 0, this.w, this.h);
+
+    // A few bubbles catch it, one glint at a time.
+    ctx.globalCompositeOperation = light ? "multiply" : "screen";
+    const sparkle = this.pale(0, light ? 0 : 0.9);
+    for (const bubble of this.baikal.bubbles) {
+      if (bubble.r < unit * 0.012) continue;
+      const glint = Math.pow(Math.max(0, Math.sin(this.t * 0.8 + bubble.glint)), 8);
+      if (glint < 0.08) continue;
+      const angle = bubble.tilt - 2.3;
+      const gx = bubble.x + Math.cos(angle) * bubble.r * 0.7;
+      const gy = bubble.y + Math.sin(angle) * bubble.r * 0.7 * bubble.squash;
+      const reach = bubble.r * (0.35 + glint * 0.5);
+      this.drawShaft(gx, gy, reach, 1, 0.12, sparkle, glint * 0.5 * bubble.alpha);
+      this.drawShaft(gx, gy, reach, 0.12, 1, sparkle, glint * 0.5 * bubble.alpha);
+    }
+
+    // The water under the ice, laid behind everything.
+    ctx.globalCompositeOperation = "destination-over";
+    for (let i = 0; i < 3; i++) {
+      const cx = this.w * (0.2 + i * 0.3 + Math.sin(this.t * 0.05 + i * 2.1) * 0.05);
+      const cy = this.h * (0.35 + (i % 2) * 0.3 + Math.cos(this.t * 0.04 + i) * 0.04);
+      const r = Math.max(this.w, this.h) * 0.55;
+      const deep = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      deep.addColorStop(0, this.rgba(1 + (i % 2), light ? 0.06 : 0.12));
+      deep.addColorStop(1, this.rgba(1 + (i % 2), 0));
+      ctx.fillStyle = deep;
+      ctx.fillRect(0, 0, this.w, this.h);
     }
     ctx.restore();
   }
@@ -1355,8 +2031,9 @@ class NordlysBackgroundEngine {
     }
   }
 
-  /* The contour lines of the ground at time t, one Path2D per level, by
-     marching squares over a grid about ninety cells across. */
+  /* The contour lines of the ground at time t, by marching squares over a grid
+     about ninety cells across: for each level, its segments as a flat list,
+     [x1, y1, x2, y2, ...], for the GPU layer or a Path2D to draw. */
   traceTerrain(t) {
     const size = Math.max(this.w, this.h);
     const hills = this.terrain.map((hill) => ({
@@ -1388,7 +2065,7 @@ class NordlysBackgroundEngine {
     const levels = [];
     for (let level = Math.ceil(low / step); level <= Math.floor(high / step); level++) {
       const v = level * step;
-      const path = new Path2D();
+      const lines = [];
       const at = (a, b) => (v - a) / (b - a || 1e-6);
       for (let j = 0; j < rows - 1; j++) {
         const y0 = (j - 1) * cell;
@@ -1402,7 +2079,7 @@ class NordlysBackgroundEngine {
           const R = () => [x0 + cell, y0 + cell * at(tr, br)];
           const B = () => [x0 + cell * at(bl, br), y0 + cell];
           const L = () => [x0, y0 + cell * at(tl, bl)];
-          const segment = (a, b) => { path.moveTo(a[0], a[1]); path.lineTo(b[0], b[1]); };
+          const segment = (a, b) => { lines.push(a[0], a[1], b[0], b[1]); };
           switch (code) {
             case 1: case 14: segment(L(), B()); break;
             case 2: case 13: segment(B(), R()); break;
@@ -1420,7 +2097,7 @@ class NordlysBackgroundEngine {
           }
         }
       }
-      levels.push({ level, v, path });
+      levels.push({ level, v, lines });
     }
     return { levels, low, high, hills };
   }
@@ -1432,11 +2109,12 @@ class NordlysBackgroundEngine {
     if (!this.w || !this.h) return;
     // The ground moves slowly; its lines are traced again only as it does.
     if (!this.contours || Math.abs(this.contours.t - this.t) > 0.03 || this.contours.w !== this.w || this.contours.h !== this.h || this.contours.terrain !== this.terrain) {
-      this.contours = { t: this.t, w: this.w, h: this.h, terrain: this.terrain, ...this.traceTerrain(this.t) };
+      // Numbered, so the GPU layer builds its lines again exactly when these change.
+      const serial = (this.contours?.serial || 0) + 1;
+      this.contours = { serial, t: this.t, w: this.w, h: this.h, terrain: this.terrain, ...this.traceTerrain(this.t) };
     }
     const { levels, low, high, hills } = this.contours;
-    const [c1, c2, c3] = this.paletteRgb;
-    const mix = (a, b, k) => a.map((value, index) => Math.round(value + (b[index] - value) * k));
+    const [c1] = this.paletteRgb;
     ctx.save();
     ctx.globalCompositeOperation = light ? "multiply" : "screen";
     // A faint light on each summit, so the rings have something to rise to.
@@ -1452,18 +2130,77 @@ class NordlysBackgroundEngine {
       ctx.globalAlpha = this.ink;
       ctx.fillRect(at.x - reach, at.y - reach, reach * 2, reach * 2);
     });
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    for (const { level, v, path } of levels) {
-      const height = (v - low) / (high - low || 1);
-      const tone = height < 0.5 ? mix(c3, c2, height * 2) : mix(c2, c1, (height - 0.5) * 2);
-      const index = level % 5 === 0;
-      ctx.strokeStyle = `rgb(${tone.join(", ")})`;
-      ctx.lineWidth = index ? 1.6 : 1;
-      ctx.globalAlpha = (index ? (light ? 0.3 : 0.5) : (light ? 0.15 : 0.26)) * this.ink;
-      ctx.stroke(path);
+    const gl = this.skyGL();
+    if (gl) {
+      const scale = this.dpr || 1;
+      const version = `${this.contours.serial}:${this.palette.join()}:${light}:${scale}`;
+      const field = gl.layer("drift", version, () => this.contourStrip(levels, low, high, light, scale));
+      gl.begin(this.canvas.width, this.canvas.height);
+      gl.strips(field, { bands: [[1, 1]], blend: "max", light, ink: this.ink });
+      gl.paint(ctx, light ? "multiply" : "screen");
+    } else {
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      for (const entry of levels) {
+        if (!entry.path) {
+          entry.path = new Path2D();
+          const { lines } = entry;
+          for (let i = 0; i < lines.length; i += 4) {
+            entry.path.moveTo(lines[i], lines[i + 1]);
+            entry.path.lineTo(lines[i + 2], lines[i + 3]);
+          }
+        }
+        const { rgb, width, alpha } = this.contourInk(entry, low, high, light);
+        ctx.strokeStyle = `rgb(${rgb.join(", ")})`;
+        ctx.lineWidth = width;
+        ctx.globalAlpha = alpha * this.ink;
+        ctx.stroke(entry.path);
+      }
     }
     ctx.restore();
+  }
+
+  /* A contour line's ink: the mood's colours by elevation, low ground in the
+     third and the peaks in the first; every fifth line an index contour,
+     heavier and brighter, so height reads at a glance. */
+  contourInk({ level, v }, low, high, light) {
+    const [c1, c2, c3] = this.paletteRgb;
+    const mix = (a, b, k) => a.map((value, index) => Math.round(value + (b[index] - value) * k));
+    const height = (v - low) / (high - low || 1);
+    const index = level % 5 === 0;
+    return {
+      rgb: height < 0.5 ? mix(c3, c2, height * 2) : mix(c2, c1, (height - 0.5) * 2),
+      width: index ? 1.6 : 1,
+      alpha: index ? (light ? 0.3 : 0.5) : (light ? 0.15 : 0.26)
+    };
+  }
+
+  /* Every contour line as pieces of one strip on the GPU layer. A piece of
+     marching squares is two points with square ends, so two pieces of one line
+     overlap where they meet, and the layer's "max" makes one line of them
+     where brightening would string it with beads. */
+  contourStrip(levels, low, high, light, scale) {
+    const pieces = levels.reduce((sum, entry) => sum + entry.lines.length / 4, 0);
+    const room = pieces * 6 * NORDLYS_GL_FLOATS;
+    if (!(this.contourData?.length >= room)) this.contourData = new Float32Array(room);
+    const data = this.contourData;
+    const pair = new Float32Array(4);
+    let at = 0;
+    for (const entry of levels) {
+      const { rgb, width, alpha } = this.contourInk(entry, low, high, light);
+      const [r, g, b] = rgb.map((value) => value / 255);
+      const core = width * scale;
+      const tint = (i, rgba) => { rgba[0] = r; rgba[1] = g; rgba[2] = b; rgba[3] = alpha; };
+      const { lines } = entry;
+      for (let i = 0; i < lines.length; i += 4) {
+        pair[0] = lines[i];
+        pair[1] = lines[i + 1];
+        pair[2] = lines[i + 2];
+        pair[3] = lines[i + 3];
+        at = NordlysSkyGL.strip(data, at, pair, 2, scale, core, core / 2 + 1, tint, core / 2);
+      }
+    }
+    return { data, count: at };
   }
 
   /* A low luminous horizon keeps the centre calm for the clock and search.
@@ -1511,8 +2248,13 @@ class NordlysBackgroundEngine {
     const alphaMultiplier = light ? 0.8 : 1;
     this.ctx.globalAlpha = baseAlpha * alphaMultiplier * (0.85 + Math.sin(this.t * 0.9 + baseYFactor * 8) * 0.15) * this.ink;
 
+    /* Below this edge the gradient is fully transparent, and the wave never
+       reaches it. Closing the curtain there instead of at the foot of the
+       screen leaves every painted pixel as it was, and stops six curtains a
+       frame from blending the whole lower sky with nothing. */
+    const fadeY = cy + 160 * spread;
     this.ctx.beginPath();
-    this.ctx.moveTo(0, this.h);
+    this.ctx.moveTo(0, fadeY);
 
     const step = 24;
     const limit = this.w + step;
@@ -1524,7 +2266,7 @@ class NordlysBackgroundEngine {
       this.ctx.lineTo(x, y);
     }
 
-    this.ctx.lineTo(this.w, this.h);
+    this.ctx.lineTo(this.w, fadeY);
     this.ctx.closePath();
     this.ctx.fill();
     this.ctx.restore();

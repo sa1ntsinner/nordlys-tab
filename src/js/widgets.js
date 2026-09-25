@@ -513,7 +513,7 @@ class SearchWidget {
   // Every verb, with an example of it, for a bare ">".
   commandHelp() {
     return [
-      ["theme", "theme nord"], ["sky", "sky frost"], ["mood", "mood ember"], ["shuffle", "shuffle"],
+      ["theme", "theme nord"], ["sky", "sky polaris"], ["mood", "mood ember"], ["shuffle", "shuffle"],
       ["arrange", "arrange"], ["size", "size"], ["newFolder", "new folder Reading"], ["rename", "rename Daily to Morning"], ["hide", "hide Shopping"],
       ["show", "show Shopping"], ["move", "move YouTube to Daily"], ["settings", "settings background"]
     ].map(([verb, example]) => ({ kind: "verb", verb, example }));
@@ -785,6 +785,12 @@ class SearchWidget {
         item.classList.add("sel");
         item.setAttribute("aria-selected", "true");
         this.input.setAttribute("aria-activedescendant", item.id);
+        /* Under One page fit the list scrolls inside itself, so the arrow
+           keys bring the chosen row into it. The ordinary list never
+           overflows, and nothing on it moves. */
+        if (document.documentElement.dataset.pageFit === "on" && this.sugg && this.sugg.scrollHeight > this.sugg.clientHeight) {
+          item.scrollIntoView({ block: "nearest" });
+        }
         const span = item.querySelector("span");
         if (span && !item.classList.contains("sugg-bookmark") && !item.classList.contains("sugg-calc") && !item.classList.contains("sugg-command")) {
           this.input.value = span.textContent;

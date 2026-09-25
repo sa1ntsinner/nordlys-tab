@@ -39,7 +39,7 @@ const args = Object.fromEntries(process.argv.slice(2).map(arg => {
 }));
 const list = value => (value && value !== 'true' ? value.split(',').filter(Boolean) : null);
 
-const SCENES = ['aurora', 'halo', 'silk', 'frost', 'drift', 'horizon'];
+const SCENES = ['aurora', 'polaris', 'halo', 'pillars', 'nacre', 'silk', 'baikal', 'drift', 'horizon'];
 const MOODS = ['theme', 'polar', 'violet', 'ember', 'mono'];
 // The fonts pass is opt-in (--surfaces=fonts): it re-renders every tab per face.
 const SURFACES = list(args.surfaces) || ['home', 'search', 'settings', 'menus', 'panels'];

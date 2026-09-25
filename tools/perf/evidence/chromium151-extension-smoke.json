@@ -1,0 +1,137 @@
+{
+  "timestamp": "2026-09-24T11:26:11.679Z",
+  "browser": "Chrome/151.0.7922.34",
+  "channel": "chromium",
+  "extension": true,
+  "platform": "win32",
+  "gpu": {
+    "featureStatus": {
+      "2d_canvas": "enabled",
+      "direct_rendering_display_compositor": "disabled_off_ok",
+      "gpu_compositing": "enabled",
+      "multiple_raster_threads": "enabled_on",
+      "opengl": "enabled_on",
+      "rasterization": "enabled",
+      "raw_draw": "disabled_off_ok",
+      "skia_graphite": "disabled_off",
+      "trees_in_viz": "disabled_off",
+      "video_decode": "enabled",
+      "video_encode": "enabled",
+      "webgl": "enabled",
+      "webgpu": "enabled",
+      "webnn": "disabled_off"
+    },
+    "devices": [
+      {
+        "vendorId": 4098,
+        "deviceId": 5390,
+        "vendorString": "",
+        "deviceString": "AMD Radeon(TM) 890M Graphics"
+      },
+      {
+        "vendorId": 5140,
+        "deviceId": 140,
+        "vendorString": "",
+        "deviceString": "Microsoft Basic Render Driver"
+      }
+    ]
+  },
+  "probe": {
+    "only": "aurora",
+    "canvasDpr": 1,
+    "skipMethod": "",
+    "noGlass": false,
+    "noDesynchronized": false
+  },
+  "viewport": {
+    "width": 1920,
+    "height": 1080,
+    "dpr": 1
+  },
+  "secondsPerSample": 2,
+  "wallStartupMs": 185,
+  "startup": {
+    "domContentLoadedMs": 121.3999999910593,
+    "loadMs": 145.29999999701977,
+    "boardCards": 5,
+    "mode": "aurora",
+    "canvasPixels": 2073600,
+    "nodeCounts": {
+      "document": 1642,
+      "settings": 753,
+      "board": 205,
+      "iconPicker": null
+    },
+    "topResources": []
+  },
+  "errors": [],
+  "samples": [
+    {
+      "label": "aurora",
+      "elapsedSec": 2.02,
+      "canvasFps": 30.66,
+      "canvasFrames": 62,
+      "canvasRenderMsPerFrame": 0.54,
+      "rafFps": 117.22,
+      "rafP95Ms": 8.5,
+      "rafOver25MsPct": 0.42,
+      "rendererTaskMsPerSec": 58,
+      "scriptMsPerSec": 22.14,
+      "layoutMsPerSec": 0.31,
+      "styleMsPerSec": 0.05,
+      "jsHeapMiB": 7.63,
+      "domNodes": 9636,
+      "processes": [
+        {
+          "pid": 3264,
+          "type": "renderer",
+          "cpuMsPerSec": 0.17,
+          "privateMiB": 16.17,
+          "workingSetMiB": 32.14
+        },
+        {
+          "pid": 4788,
+          "type": "renderer",
+          "cpuMsPerSec": 10.04,
+          "privateMiB": 33.1,
+          "workingSetMiB": 70.22
+        },
+        {
+          "pid": 8844,
+          "type": "renderer",
+          "cpuMsPerSec": 115.21,
+          "privateMiB": 75.84,
+          "workingSetMiB": 131.27
+        },
+        {
+          "pid": 23212,
+          "type": "storage.mojom.StorageService",
+          "cpuMsPerSec": 0.07,
+          "privateMiB": 10.04,
+          "workingSetMiB": 21
+        },
+        {
+          "pid": 26248,
+          "type": "browser",
+          "cpuMsPerSec": 356.04,
+          "privateMiB": 47.71,
+          "workingSetMiB": 128.57
+        },
+        {
+          "pid": 30472,
+          "type": "network.mojom.NetworkService",
+          "cpuMsPerSec": 13.66,
+          "privateMiB": 16.18,
+          "workingSetMiB": 38.7
+        },
+        {
+          "pid": 34464,
+          "type": "GPU",
+          "cpuMsPerSec": 380.7,
+          "privateMiB": 340.93,
+          "workingSetMiB": 366.89
+        }
+      ]
+    }
+  ]
+}

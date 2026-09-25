@@ -24,7 +24,9 @@ Nordlys provides an embedded, real-time Custom CSS injector that allows you to c
 | `.tile` | Bookmark tile anchor container |
 | `.box` | Glassmorphic icon container tile box |
 | `.lbl` | Bookmark title text |
-| `#hiddenDock` | Dock holding folded / hidden folders |
+| `#hiddenDock` | Dock holding folded / hidden folders; `.dock-fold` is the quiet mark it shows until it opens (`:hover`, `:focus-within` or `.is-open`) |
+| `#fit-surface` | Wraps the clock, search, board and dock. Draws no box unless One page fit is on (`html[data-page-fit="on"]`), when it may be zoomed to fit the window |
+| `#fit-toggle` | The One page fit switch above the clock; `[aria-checked="true"]` while the fit is on. At rest only `.fit-toggle-star` shows |
 | `#gear` | Settings trigger gear icon |
 | `#cfg` | Sliding settings drawer |
 

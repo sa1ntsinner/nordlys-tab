@@ -1,0 +1,962 @@
+{
+  "timestamp": "2026-09-24T12:39:20.105Z",
+  "browser": "153.0.8010.53",
+  "channel": "chrome",
+  "platform": "win32",
+  "gpuDevices": [
+    "AMD Radeon(TM) 890M Graphics",
+    "Microsoft Basic Render Driver"
+  ],
+  "gpuFeatureStatus": {
+    "2d_canvas": "enabled",
+    "direct_rendering_display_compositor": "disabled_off_ok",
+    "gpu_compositing": "enabled",
+    "multiple_raster_threads": "enabled_on",
+    "opengl": "enabled_on",
+    "rasterization": "enabled",
+    "raw_draw": "disabled_off_ok",
+    "skia_graphite": "disabled_off",
+    "trees_in_viz": "disabled_off",
+    "video_decode": "enabled",
+    "video_encode": "enabled",
+    "webgl": "enabled",
+    "webgpu": "enabled",
+    "webnn": "disabled_off"
+  },
+  "viewport": {
+    "width": 2048,
+    "height": 1152,
+    "dpr": 1.25
+  },
+  "board": "dense",
+  "secondsPerSample": 8,
+  "warmupSec": 2,
+  "runsPerBuild": 3,
+  "order": "ABBA interleaved",
+  "probeArgs": [
+    "--channel",
+    "chrome",
+    "--board",
+    "dense",
+    "--width",
+    "2048",
+    "--height",
+    "1152",
+    "--dpr",
+    "1.25",
+    "--seconds",
+    "8",
+    "--warmup",
+    "2",
+    "--only",
+    "all"
+  ],
+  "base": {
+    "ref": "origin/main",
+    "sha": "1537da4e2f90ef7044a7eebcc51c668068c03516",
+    "fingerprint": "dc426a8b49769593"
+  },
+  "current": {
+    "path": "..\\..\\..",
+    "head": "1537da4e2f90ef7044a7eebcc51c668068c03516",
+    "uncommitted": [
+      "M src/css/components.css",
+      " M src/css/main.css",
+      " M src/js/background.js"
+    ],
+    "fingerprint": "8eacd93644c59dfd",
+    "unchangedDuringRuns": false
+  },
+  "runs": {
+    "base": [
+      {
+        "machineLoadPct": 3.25,
+        "startupWallMs": 288,
+        "domContentLoadedMs": 250.9,
+        "canvasPixels": 3686400
+      },
+      {
+        "machineLoadPct": 5.25,
+        "startupWallMs": 296,
+        "domContentLoadedMs": 194.8,
+        "canvasPixels": 3686400
+      },
+      {
+        "machineLoadPct": 1.5,
+        "startupWallMs": 292,
+        "domContentLoadedMs": 192.8,
+        "canvasPixels": 3686400
+      }
+    ],
+    "current": [
+      {
+        "machineLoadPct": 4.75,
+        "startupWallMs": 294,
+        "domContentLoadedMs": 251.8,
+        "canvasPixels": 3686400
+      },
+      {
+        "machineLoadPct": 3.75,
+        "startupWallMs": 293,
+        "domContentLoadedMs": 251.2,
+        "canvasPixels": 3686400
+      },
+      {
+        "machineLoadPct": 3.75,
+        "startupWallMs": 288,
+        "domContentLoadedMs": 248.4,
+        "canvasPixels": 3686400
+      }
+    ]
+  },
+  "scenes": {
+    "aurora": {
+      "gpuCpuMsPerSec": {
+        "base": 297.68,
+        "current": 240.4,
+        "deltaPct": -19.2,
+        "baseRuns": [
+          295.41,
+          297.68,
+          338.9
+        ],
+        "currentRuns": [
+          236.26,
+          240.4,
+          250.63
+        ]
+      },
+      "rendererCpuMsPerSec": {
+        "base": 88.62,
+        "current": 88.47,
+        "deltaPct": -0.2,
+        "baseRuns": [
+          88.62,
+          87.4,
+          89.88
+        ],
+        "currentRuns": [
+          81.15,
+          88.47,
+          91.29
+        ]
+      },
+      "browserCpuMsPerSec": {
+        "base": 59.61,
+        "current": 60.16,
+        "deltaPct": 0.9,
+        "baseRuns": [
+          59.61,
+          59,
+          81.74
+        ],
+        "currentRuns": [
+          60.16,
+          59.55,
+          60.31
+        ]
+      },
+      "gpuPrivateMiB": {
+        "base": 304.97,
+        "current": 317.04,
+        "deltaPct": 4,
+        "baseRuns": [
+          304.68,
+          310.71,
+          304.97
+        ],
+        "currentRuns": [
+          323.57,
+          317.04,
+          289.96
+        ]
+      },
+      "pageRendererPrivateMiB": {
+        "base": 74.04,
+        "current": 74.29,
+        "deltaPct": 0.3,
+        "baseRuns": [
+          72.89,
+          75.25,
+          74.04
+        ],
+        "currentRuns": [
+          74.29,
+          75.22,
+          71.79
+        ]
+      },
+      "totalPrivateMiB": {
+        "base": 506.18,
+        "current": 522.51,
+        "deltaPct": 3.2,
+        "baseRuns": [
+          503.34,
+          510.5,
+          506.18
+        ],
+        "currentRuns": [
+          525.6,
+          522.51,
+          488.53
+        ]
+      },
+      "jsHeapMiB": {
+        "base": 4.41,
+        "current": 4.44,
+        "deltaPct": 0.7,
+        "baseRuns": [
+          4.41,
+          4.33,
+          4.41
+        ],
+        "currentRuns": [
+          4.41,
+          5.28,
+          4.44
+        ]
+      },
+      "canvasFps": {
+        "base": 30.06,
+        "current": 29.95,
+        "deltaPct": -0.4,
+        "baseRuns": [
+          30.06,
+          30.07,
+          30.01
+        ],
+        "currentRuns": [
+          30.07,
+          29.94,
+          29.95
+        ]
+      },
+      "rafFps": {
+        "base": 119.54,
+        "current": 119.77,
+        "deltaPct": 0.2,
+        "baseRuns": [
+          119.74,
+          119.54,
+          118.8
+        ],
+        "currentRuns": [
+          119.76,
+          119.77,
+          119.8
+        ]
+      },
+      "rafP95Ms": {
+        "base": 8.9,
+        "current": 9,
+        "deltaPct": 1.1,
+        "baseRuns": [
+          8.9,
+          8.9,
+          8.8
+        ],
+        "currentRuns": [
+          8.9,
+          9,
+          9
+        ]
+      },
+      "rafOver25MsPct": {
+        "base": 0,
+        "current": 0,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0
+        ],
+        "currentRuns": [
+          0,
+          0,
+          0
+        ]
+      },
+      "canvasRenderMsPerFrame": {
+        "base": 0.64,
+        "current": 0.4,
+        "deltaPct": -37.5,
+        "baseRuns": [
+          0.64,
+          0.75,
+          0.63
+        ],
+        "currentRuns": [
+          0.38,
+          0.4,
+          0.42
+        ]
+      },
+      "rendererTaskMsPerSec": {
+        "base": 51.25,
+        "current": 42.23,
+        "deltaPct": -17.6,
+        "baseRuns": [
+          50.58,
+          53.03,
+          51.25
+        ],
+        "currentRuns": [
+          38.67,
+          42.23,
+          43.3
+        ]
+      },
+      "scratchRenderMsPerFrame": {
+        "base": 0,
+        "current": 0.22,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0
+        ],
+        "currentRuns": [
+          0.21,
+          0.22,
+          0.25
+        ]
+      }
+    },
+    "paused": {
+      "gpuCpuMsPerSec": {
+        "base": 37.3,
+        "current": 40.03,
+        "deltaPct": 7.3,
+        "baseRuns": [
+          37.3,
+          35.79,
+          41.59
+        ],
+        "currentRuns": [
+          41.6,
+          40.03,
+          39.03
+        ]
+      },
+      "rendererCpuMsPerSec": {
+        "base": 70.12,
+        "current": 75.06,
+        "deltaPct": 7,
+        "baseRuns": [
+          70.12,
+          69.05,
+          78.84
+        ],
+        "currentRuns": [
+          75.56,
+          75.06,
+          72.16
+        ]
+      },
+      "browserCpuMsPerSec": {
+        "base": 1.65,
+        "current": 1.94,
+        "deltaPct": 17.6,
+        "baseRuns": [
+          1.84,
+          1.6,
+          1.65
+        ],
+        "currentRuns": [
+          2.03,
+          1.51,
+          1.94
+        ]
+      },
+      "gpuPrivateMiB": {
+        "base": 211.11,
+        "current": 191.21,
+        "deltaPct": -9.4,
+        "baseRuns": [
+          211.11,
+          210.55,
+          214.76
+        ],
+        "currentRuns": [
+          192.41,
+          188.71,
+          191.21
+        ]
+      },
+      "pageRendererPrivateMiB": {
+        "base": 75.64,
+        "current": 73.16,
+        "deltaPct": -3.3,
+        "baseRuns": [
+          74.48,
+          76.5,
+          75.64
+        ],
+        "currentRuns": [
+          73.16,
+          75.33,
+          70.8
+        ]
+      },
+      "totalPrivateMiB": {
+        "base": 411.62,
+        "current": 393.35,
+        "deltaPct": -4.4,
+        "baseRuns": [
+          411.43,
+          411.62,
+          417.63
+        ],
+        "currentRuns": [
+          393.35,
+          394.34,
+          388.83
+        ]
+      },
+      "jsHeapMiB": {
+        "base": 4.57,
+        "current": 4.35,
+        "deltaPct": -4.8,
+        "baseRuns": [
+          4.94,
+          4.5,
+          4.57
+        ],
+        "currentRuns": [
+          4.31,
+          5.45,
+          4.35
+        ]
+      },
+      "canvasFps": {
+        "base": 0,
+        "current": 0,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0
+        ],
+        "currentRuns": [
+          0,
+          0,
+          0
+        ]
+      },
+      "rafFps": {
+        "base": 119.86,
+        "current": 119.91,
+        "deltaPct": 0,
+        "baseRuns": [
+          119.82,
+          119.95,
+          119.86
+        ],
+        "currentRuns": [
+          119.9,
+          119.91,
+          119.96
+        ]
+      },
+      "rafP95Ms": {
+        "base": 9.2,
+        "current": 9.1,
+        "deltaPct": -1.1,
+        "baseRuns": [
+          9.2,
+          9.1,
+          9.2
+        ],
+        "currentRuns": [
+          9.1,
+          9.1,
+          9.1
+        ]
+      },
+      "rafOver25MsPct": {
+        "base": 0,
+        "current": 0,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0
+        ],
+        "currentRuns": [
+          0,
+          0,
+          0
+        ]
+      },
+      "canvasRenderMsPerFrame": {
+        "base": 0,
+        "current": 0,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0
+        ],
+        "currentRuns": [
+          0,
+          0,
+          0
+        ]
+      },
+      "rendererTaskMsPerSec": {
+        "base": 28.65,
+        "current": 30.73,
+        "deltaPct": 7.3,
+        "baseRuns": [
+          28.65,
+          28.63,
+          31.89
+        ],
+        "currentRuns": [
+          30.96,
+          30.73,
+          29.61
+        ]
+      },
+      "scratchRenderMsPerFrame": {
+        "base": 0,
+        "current": 0,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0
+        ],
+        "currentRuns": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "solid": {
+      "gpuCpuMsPerSec": {
+        "base": 39.57,
+        "current": 39.22,
+        "deltaPct": -0.9,
+        "baseRuns": [
+          63.32,
+          36.03,
+          39.57
+        ],
+        "currentRuns": [
+          37.08,
+          39.22,
+          40.75
+        ]
+      },
+      "rendererCpuMsPerSec": {
+        "base": 90.02,
+        "current": 89.54,
+        "deltaPct": -0.5,
+        "baseRuns": [
+          90.63,
+          84.25,
+          90.02
+        ],
+        "currentRuns": [
+          84.2,
+          89.54,
+          92.61
+        ]
+      },
+      "browserCpuMsPerSec": {
+        "base": 8.54,
+        "current": 7.97,
+        "deltaPct": -6.7,
+        "baseRuns": [
+          9.85,
+          8.54,
+          7.96
+        ],
+        "currentRuns": [
+          7.64,
+          7.97,
+          8.66
+        ]
+      },
+      "gpuPrivateMiB": {
+        "base": 213.98,
+        "current": 192.48,
+        "deltaPct": -10,
+        "baseRuns": [
+          216,
+          210.63,
+          213.98
+        ],
+        "currentRuns": [
+          192.48,
+          188.75,
+          195.51
+        ]
+      },
+      "pageRendererPrivateMiB": {
+        "base": 62.73,
+        "current": 63.63,
+        "deltaPct": 1.4,
+        "baseRuns": [
+          61.77,
+          62.8,
+          62.73
+        ],
+        "currentRuns": [
+          64.09,
+          63.63,
+          60.25
+        ]
+      },
+      "totalPrivateMiB": {
+        "base": 396.09,
+        "current": 375.57,
+        "deltaPct": -5.2,
+        "baseRuns": [
+          396.09,
+          392.05,
+          398.26
+        ],
+        "currentRuns": [
+          377,
+          375.15,
+          375.57
+        ]
+      },
+      "jsHeapMiB": {
+        "base": 3.48,
+        "current": 3.47,
+        "deltaPct": -0.3,
+        "baseRuns": [
+          3.47,
+          3.48,
+          3.5
+        ],
+        "currentRuns": [
+          3.46,
+          3.47,
+          3.47
+        ]
+      },
+      "canvasFps": {
+        "base": 0,
+        "current": 0,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0
+        ],
+        "currentRuns": [
+          0,
+          0,
+          0
+        ]
+      },
+      "rafFps": {
+        "base": 119.86,
+        "current": 119.98,
+        "deltaPct": 0.1,
+        "baseRuns": [
+          119.14,
+          119.92,
+          119.86
+        ],
+        "currentRuns": [
+          119.99,
+          119.97,
+          119.98
+        ]
+      },
+      "rafP95Ms": {
+        "base": 9.1,
+        "current": 9,
+        "deltaPct": -1.1,
+        "baseRuns": [
+          9.2,
+          9,
+          9.1
+        ],
+        "currentRuns": [
+          9,
+          9,
+          9.2
+        ]
+      },
+      "rafOver25MsPct": {
+        "base": 0,
+        "current": 0,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0
+        ],
+        "currentRuns": [
+          0,
+          0,
+          0
+        ]
+      },
+      "canvasRenderMsPerFrame": {
+        "base": 0,
+        "current": 0,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0
+        ],
+        "currentRuns": [
+          0,
+          0,
+          0
+        ]
+      },
+      "rendererTaskMsPerSec": {
+        "base": 31.96,
+        "current": 31.59,
+        "deltaPct": -1.2,
+        "baseRuns": [
+          32.36,
+          29.73,
+          31.96
+        ],
+        "currentRuns": [
+          29.56,
+          31.59,
+          32.09
+        ]
+      },
+      "scratchRenderMsPerFrame": {
+        "base": 0,
+        "current": 0,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0
+        ],
+        "currentRuns": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "solid-no-glass": {
+      "gpuCpuMsPerSec": {
+        "base": 38,
+        "current": 41.24,
+        "deltaPct": 8.5,
+        "baseRuns": [
+          38,
+          37.3,
+          40.8
+        ],
+        "currentRuns": [
+          61.55,
+          37.36,
+          41.24
+        ]
+      },
+      "rendererCpuMsPerSec": {
+        "base": 72.49,
+        "current": 71.5,
+        "deltaPct": -1.4,
+        "baseRuns": [
+          72.49,
+          70.26,
+          77.59
+        ],
+        "currentRuns": [
+          71.5,
+          71.37,
+          79.08
+        ]
+      },
+      "browserCpuMsPerSec": {
+        "base": 1.71,
+        "current": 1.95,
+        "deltaPct": 14,
+        "baseRuns": [
+          1.71,
+          1.32,
+          1.73
+        ],
+        "currentRuns": [
+          3.33,
+          1.95,
+          1.49
+        ]
+      },
+      "gpuPrivateMiB": {
+        "base": 213.62,
+        "current": 180.25,
+        "deltaPct": -15.6,
+        "baseRuns": [
+          213.62,
+          213.43,
+          234.57
+        ],
+        "currentRuns": [
+          265.4,
+          177.26,
+          180.25
+        ]
+      },
+      "pageRendererPrivateMiB": {
+        "base": 63.79,
+        "current": 63.63,
+        "deltaPct": -0.3,
+        "baseRuns": [
+          63.03,
+          64.13,
+          63.79
+        ],
+        "currentRuns": [
+          64.3,
+          63.63,
+          61.49
+        ]
+      },
+      "totalPrivateMiB": {
+        "base": 396.15,
+        "current": 363.64,
+        "deltaPct": -8.2,
+        "baseRuns": [
+          394.93,
+          396.15,
+          419.88
+        ],
+        "currentRuns": [
+          450.2,
+          363.64,
+          361.5
+        ]
+      },
+      "jsHeapMiB": {
+        "base": 3.66,
+        "current": 3.64,
+        "deltaPct": -0.5,
+        "baseRuns": [
+          3.65,
+          3.66,
+          3.68
+        ],
+        "currentRuns": [
+          3.64,
+          3.65,
+          3.64
+        ]
+      },
+      "canvasFps": {
+        "base": 0,
+        "current": 0,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0
+        ],
+        "currentRuns": [
+          0,
+          0,
+          0
+        ]
+      },
+      "rafFps": {
+        "base": 119.91,
+        "current": 119.84,
+        "deltaPct": -0.1,
+        "baseRuns": [
+          119.8,
+          119.91,
+          119.92
+        ],
+        "currentRuns": [
+          118.97,
+          119.91,
+          119.84
+        ]
+      },
+      "rafP95Ms": {
+        "base": 9.2,
+        "current": 9.2,
+        "deltaPct": 0,
+        "baseRuns": [
+          9.3,
+          9.1,
+          9.2
+        ],
+        "currentRuns": [
+          9.1,
+          9.2,
+          9.2
+        ]
+      },
+      "rafOver25MsPct": {
+        "base": 0,
+        "current": 0,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0
+        ],
+        "currentRuns": [
+          0.21,
+          0,
+          0
+        ]
+      },
+      "canvasRenderMsPerFrame": {
+        "base": 0,
+        "current": 0,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0
+        ],
+        "currentRuns": [
+          0,
+          0,
+          0
+        ]
+      },
+      "rendererTaskMsPerSec": {
+        "base": 28.97,
+        "current": 28.81,
+        "deltaPct": -0.6,
+        "baseRuns": [
+          28.97,
+          27.58,
+          30.52
+        ],
+        "currentRuns": [
+          28.81,
+          28.47,
+          31.47
+        ]
+      },
+      "scratchRenderMsPerFrame": {
+        "base": 0,
+        "current": 0,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0
+        ],
+        "currentRuns": [
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  }
+}

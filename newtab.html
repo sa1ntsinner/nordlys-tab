@@ -26,6 +26,7 @@
   <link rel="stylesheet" href="src/css/settings.css">
   <link rel="stylesheet" href="src/css/polish.css">
   <link rel="stylesheet" href="src/css/motion.css">
+  <link rel="stylesheet" href="src/css/page-fit.css">
 </head>
 <body>
   <a class="skip-link" href="#board" data-i18n="a11y.skipToBoard">Skip to bookmarks</a>
@@ -42,7 +43,13 @@
 
   <!-- Main Viewport Page Frame -->
   <main id="page">
-    
+    <!-- What One page fit may scale when even its compacted measures do not
+         fit (page-fit.js). With the switch off it is display: contents, so
+         it draws no box and the page is laid out exactly as it always was.
+         Nothing fixed to the window lives in here except the arrange bar,
+         and the fit stands down while the board is being arranged. -->
+    <div id="fit-surface" class="fit-surface">
+
     <!-- Hero Header: Clock · Date · Greeting -->
     <header id="hero">
       <time id="clock">
@@ -161,7 +168,22 @@
     <!-- Hidden Folders Dock -->
     <div id="hiddenDock"></div>
 
+    </div>
   </main>
+
+  <!-- One page fit, one press from the page: the same saved switch as
+       Settings → Bookmarks → One page fit (settings.js keeps the two in step).
+       It sits in the empty band above the clock rather than beside the gear,
+       where it would lie over the last row of bookmarks. It is outside #page,
+       so the fit never scales it, and it scrolls away with the ordinary page
+       instead of floating over it; page-fit.js keeps a fitted page clear of it. -->
+  <button id="fit-toggle" class="fit-toggle" type="button" role="switch" aria-checked="false" aria-describedby="fit-toggle-state">
+    <span class="fit-toggle-label" data-i18n="bookmarks.onePageFit">One page fit</span>
+    <span class="fit-toggle-track" aria-hidden="true"></span>
+    <!-- At rest the switch is only this: the Nordlys star (components.css). -->
+    <span class="fit-toggle-star" aria-hidden="true"><svg viewBox="12 12 40 40" focusable="false"><path d="M32 12c2.4 12 8 17.6 20 20-12 2.4-17.6 8-20 20-2.4-12-8-17.6-20-20 12-2.4 17.6-8 20-20Z"/></svg></span>
+  </button>
+  <span id="fit-toggle-state" class="nl-visually-hidden"></span>
 
   <!-- Settings Trigger Gear -->
   <button id="gear" type="button" title="Customize Nordlys" data-i18n-title="a11y.customize" aria-label="Settings" data-i18n-aria="a11y.openSettings">
@@ -548,9 +570,12 @@
         <div class="scene-block" id="bg-scene-picker" role="radiogroup" aria-label="Background" data-i18n-aria="nav.background">
           <select id="cfg-bg-mode" class="ipt" hidden data-native aria-hidden="true" tabindex="-1">
             <option value="aurora">Nordlys</option>
+            <option value="polaris">Polaris</option>
             <option value="halo">Halo</option>
+            <option value="pillars">Pillars</option>
+            <option value="nacre">Nacre</option>
             <option value="silk">Silk</option>
-            <option value="frost">Frost</option>
+            <option value="baikal">Baikal</option>
             <option value="drift">Contour</option>
             <option value="horizon">Fjord</option>
             <option value="custom-image">Wallpaper</option>
@@ -669,6 +694,17 @@
             <button type="button" id="board-rows-auto" class="palette-action" hidden data-i18n="arrange.autoRows">Automatic rows</button>
             <button type="button" id="cfg-size" class="palette-action" data-i18n="arrange.size">Size &amp; spacing</button>
             <button type="button" id="cfg-arrange" class="glass-btn accent board-arrange-btn" data-i18n="bookmarks.arrange">Arrange on the board</button>
+          </div>
+          <!-- One page fit (page-fit.js). Beside the layouts because it is
+               easy to mistake for Fitted, and the note says the difference:
+               Fitted is how folders share a row, this is how much of the
+               window the whole page may take. -->
+          <div class="page-fit-block">
+            <div class="row setting-row page-fit-row">
+              <span><span id="page-fit-label" data-i18n="bookmarks.onePageFit">One page fit</span><small id="page-fit-state" class="setting-note-inline" hidden></small></span>
+              <label class="tg"><input id="cfg-one-page-fit" type="checkbox" aria-labelledby="page-fit-label" aria-describedby="page-fit-state page-fit-note"><i></i></label>
+            </div>
+            <p id="page-fit-note" class="page-fit-note" data-i18n="bookmarks.onePageFitNote">Keeps the clock, the search and every folder in the window, with nothing to scroll. Spacing closes up first, then the bookmarks get smaller, and only then is the whole board shown smaller. Your sizes stay as you set them. Not the same as Fitted, which only decides how folders share a row.</p>
           </div>
         </div>
         <div id="cfg-groups-editor"></div>
@@ -1002,6 +1038,8 @@
             <li><code>.tile</code> — Bookmark tile (<code>--c</code> holds its accent color)</li>
             <li><code>.box</code> — Icon glass box, <code>.lbl</code> — bookmark label</li>
             <li><code>#hiddenDock</code>, <code>.restoreFolder</code> — Hidden folder dock & chips</li>
+            <li><code>#fit-surface</code> — Wraps the clock, search and board; One page fit scales it (<code>html[data-page-fit="on"]</code> while it is on)</li>
+            <li><code>#fit-toggle</code> — The One page fit switch above the clock (<code>[aria-checked="true"]</code> while it is on)</li>
             <li><code>#gear</code> — Settings gear button</li>
             <li><code>#cfg</code>, <code>.ctab</code>, <code>.csec</code> — Settings drawer components</li>
           </ul>
@@ -1300,6 +1338,7 @@
   <script src="src/js/sky-zones.js"></script>
   <script src="src/js/sky-clock.js"></script>
   <script src="src/js/look-share.js"></script>
+  <script src="src/js/sky-gl.js"></script>
   <script src="src/js/background.js"></script>
   <script src="src/js/calc.js"></script>
   <script src="src/js/commands.js"></script>
@@ -1307,6 +1346,7 @@
   <script src="src/js/board-layout.js"></script>
   <script src="src/js/board-arrange.js"></script>
   <script src="src/js/grid.js"></script>
+  <script src="src/js/page-fit.js"></script>
   <script src="src/js/settings-shell.js"></script>
   <script src="src/js/settings-bookmarks.js"></script>
   <script src="src/js/settings-support.js"></script>

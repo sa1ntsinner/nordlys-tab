@@ -31,6 +31,9 @@
   };
   const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
   const layout = () => window.NordlysBoardLayout;
+  /* Boxes are measured as drawn; One page fit may draw the board zoomed, and a
+     distance measured there is written back in the element's own lengths. */
+  const zoomOf = (node) => node?.currentCSSZoom || 1;
 
   /* Where every folder on the board is, keyed by the folder itself: indices
      change when folders move, objects do not. */
@@ -63,7 +66,8 @@
       const moved = Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5;
       const resized = Math.abs(sx - 1) > 0.02 || Math.abs(sy - 1) > 0.02;
       if (!moved && !resized) continue;
-      const from = resized ? `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})` : `translate(${dx}px, ${dy}px)`;
+      const zoom = zoomOf(card);
+      const from = resized ? `translate(${dx / zoom}px, ${dy / zoom}px) scale(${sx}, ${sy})` : `translate(${dx / zoom}px, ${dy / zoom}px)`;
       card.animate(
         [{ transformOrigin: "0 0", transform: from }, { transformOrigin: "0 0", transform: "none" }],
         NordlysUI.motion("settle")
@@ -133,7 +137,8 @@
       if (!was) continue;
       present.add(link);
       const now = tile.getBoundingClientRect();
-      const dx = was.rect.left - now.left, dy = was.rect.top - now.top;
+      const zoom = zoomOf(tile);
+      const dx = (was.rect.left - now.left) / zoom, dy = (was.rect.top - now.top) / zoom;
       if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) tile.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], NordlysUI.motion("settle-fast"));
     }
     for (const [link, { rect, node }] of before) {
@@ -142,7 +147,8 @@
       ghost.removeAttribute("id");
       ghost.setAttribute("aria-hidden", "true");
       ghost.inert = true;
-      Object.assign(ghost.style, { position: "fixed", left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`, margin: "0", pointerEvents: "none", zIndex: "var(--nl-z-float)" });
+      const zoom = grid.app.pageFit?.dress(ghost) || 1;
+      Object.assign(ghost.style, { position: "fixed", left: `${rect.left / zoom}px`, top: `${rect.top / zoom}px`, width: `${rect.width / zoom}px`, height: `${rect.height / zoom}px`, margin: "0", pointerEvents: "none", zIndex: "var(--nl-z-float)" });
       document.body.append(ghost);
       const leaving = ghost.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(.82)" }], { ...NordlysUI.motion("enter"), fill: "forwards" });
       leaving.onfinish = () => ghost.remove();
@@ -190,8 +196,9 @@
     for (const [tile, was] of before) {
       if (!tile.isConnected || tile.classList.contains("drag-source")) continue;
       const now = tile.getBoundingClientRect();
-      const dx = was.left - now.left;
-      const dy = was.top - now.top;
+      const zoom = zoomOf(tile);
+      const dx = (was.left - now.left) / zoom;
+      const dy = (was.top - now.top) / zoom;
       if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) continue;
       tile.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], NordlysUI.motion("settle-fast"));
     }
@@ -344,7 +351,10 @@
         lift.dataset.layout = this.grid.board?.dataset.layout || "natural";
         lift.append(copy);
       }
-      Object.assign(lift.style, { left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px` });
+      /* Zoomed like the board it came from, so it is the same size in hand;
+         its position is then in its own zoomed lengths. */
+      const zoom = this.grid.app.pageFit?.dress(lift) || 1;
+      Object.assign(lift.style, { left: `${rect.left / zoom}px`, top: `${rect.top / zoom}px`, width: `${rect.width / zoom}px`, height: `${rect.height / zoom}px` });
       document.body.append(lift);
       return lift;
     }
@@ -353,7 +363,8 @@
       const session = this.session;
       session.x = x;
       session.y = y;
-      session.lift.style.transform = `translate3d(${x - session.startX}px, ${y - session.startY}px, 0)`;
+      const zoom = parseFloat(session.lift.style.zoom) || 1;
+      session.lift.style.transform = `translate3d(${(x - session.startX) / zoom}px, ${(y - session.startY) / zoom}px, 0)`;
       this.edgeScroll();
       if (!session.frame) {
         session.frame = requestAnimationFrame(() => {
@@ -520,7 +531,7 @@
        leaving it never pulls the rows below up under the pointer. */
     reserve(gridEl) {
       if (!gridEl || this.session.reserved.has(gridEl)) return;
-      gridEl.style.minHeight = `${gridEl.getBoundingClientRect().height}px`;
+      gridEl.style.minHeight = `${gridEl.getBoundingClientRect().height / zoomOf(gridEl)}px`;
       this.session.reserved.add(gridEl);
     }
 
@@ -643,6 +654,8 @@
       const grid = this.grid;
       grid.isDragging = false;
       grid.frozen = false;
+      // A fit that was asked for while the board was held happens now.
+      grid.app.pageFit?.request();
       // The click that ends a drag belongs to the drag, not to the tile under it.
       setTimeout(() => { grid.justDragged = false; }, 60);
     }
@@ -803,6 +816,10 @@
       this.active = true;
       this.history = [];
       this.entry = this.snapshot();
+      /* Arranging edits the very sizes One page fit borrows smaller copies
+         of, and drags on a board at its own scale: the page stands down to
+         the ordinary one until Done. */
+      this.app.pageFit?.suspend("arrange", true);
       document.body.classList.add("arranging");
       this.bar.hidden = false;
       this.refresh();
@@ -818,6 +835,7 @@
       this.active = false;
       document.body.classList.remove("arranging");
       this.bar.hidden = true;
+      this.app.pageFit?.suspend("arrange", false);
       this.stopWatchingOutside();
       const changed = this.history.length > 0;
       const entry = this.entry;

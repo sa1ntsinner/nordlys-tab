@@ -20,7 +20,7 @@ for (const [width, height] of viewports) {
         const box = element.getBoundingClientRect();
         return style.display !== 'none' && style.visibility !== 'hidden' && box.width > 0 && box.height > 0;
       };
-      const controls = [...document.querySelectorAll('#page button, #page a.tile, #gear')]
+      const controls = [...document.querySelectorAll('#page button, #page a.tile, #gear, #fit-toggle')]
         .filter(visible)
         .map(element => ({ name: element.getAttribute('aria-label') || element.textContent.trim(), box: element.getBoundingClientRect().toJSON() }));
       const labels = [...document.querySelectorAll('#board .lbl')].filter(visible).map(label => {
@@ -63,7 +63,7 @@ for (const width of [320, 768, 1440]) {
     const { page } = nordlysPage; await page.setViewportSize({ width, height: width === 320 ? 568 : 900 }); await page.waitForTimeout(350);
     const collisions = await page.evaluate(() => {
       const intersects = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
-      const blockers = [...document.querySelectorAll('#gear, .card-resize-controls')];
+      const blockers = [...document.querySelectorAll('#gear, #fit-toggle, .card-resize-controls')];
       const content = [...document.querySelectorAll('#board .box, #board .lbl')];
       const controls = [...document.querySelectorAll('.card-resize-controls button')];
       return blockers.flatMap(blocker => [...content, ...controls]

@@ -10,6 +10,7 @@ class GridController {
     this.app = app;
     this.board = document.getElementById("board");
     this.dock = document.getElementById("hiddenDock");
+    this.initDockTouch();
     // Which tile of each folder is its one stop for Tab, by folder index.
     this.rovingIndex = new Map();
     // Faces arrive late, and a window can narrow: both can cut a name short.
@@ -72,6 +73,8 @@ class GridController {
        may have left them in any order. The board reads them row by row, so
        they are put back into that order before anything is drawn. */
     if (layout?.normalise(groups)) this.app.saveConfig();
+    // A new tab's board is laid out as its window last fitted it, from the first layout.
+    this.app.pageFit?.prepare();
 
     const boardFragment = document.createDocumentFragment();
     const dockFragment = document.createDocumentFragment();
@@ -99,8 +102,21 @@ class GridController {
     this.board.dataset.rows = layout?.hasRows(groups) ? "yours" : "auto";
     this.board.replaceChildren(boardFragment);
     if (this.dock) {
+      /* Closed, the dock is one quiet mark — a folder and how many are folded
+         — and it opens into the chips at a pointer, the keyboard or a tap
+         (components.css). The mark is only a picture of them: the chips are
+         what a screen reader and the Tab key reach. */
+      const folded = dockFragment.childElementCount;
+      if (folded) {
+        const mark = document.createElement("span");
+        mark.className = "dock-fold";
+        mark.setAttribute("aria-hidden", "true");
+        mark.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><span class="dock-fold-count">${folded}</span>`;
+        dockFragment.appendChild(mark);
+      }
       this.dock.replaceChildren(dockFragment);
       this.dock.style.display = hasHidden ? "inline-flex" : "none";
+      this.dock.classList.remove("is-open");
     }
 
     /* The board used to animate itself in over as much as two seconds, and this
@@ -112,6 +128,8 @@ class GridController {
     this.numberShortcuts();
     this.wireRovingTiles();
     this.arrange?.refresh();
+    // A new board is fitted before it is ever painted (page-fit.js).
+    this.app.pageFit?.request({ now: true });
     requestAnimationFrame(() => this.titleCutNames());
   }
 
@@ -149,12 +167,15 @@ class GridController {
     const cardsOf = (line) => [...line.children].filter((child) => child.classList.contains("card"));
     const focused = this.board.contains(document.activeElement) ? document.activeElement : null;
     this.board.classList.add("is-measuring");
+    /* Boxes are measured as they are drawn, and One page fit may draw the
+       board zoomed; lengths the layout uses are the board's own, unzoomed. */
+    const zoom = this.board.currentCSSZoom || 1;
     const plans = runs.map((run) => {
       const lines = run.flatMap((row) => [...row.querySelectorAll(":scope > .board-line")]);
       const cards = lines.flatMap(cardsOf);
       const gap = parseFloat(getComputedStyle(lines[0]).columnGap) || 0;
-      const capacity = lines[0].getBoundingClientRect().width;
-      const widths = cards.map((card) => card.getBoundingClientRect().width);
+      const capacity = lines[0].getBoundingClientRect().width / zoom;
+      const widths = cards.map((card) => card.getBoundingClientRect().width / zoom);
       return { run, lines, cards, widths, counts: capacity ? layout.balance(widths, gap, capacity) : [cards.length] };
     });
     this.board.classList.remove("is-measuring");
@@ -219,6 +240,7 @@ class GridController {
   relayout() {
     this.flowRows();
     this.titleCutNames();
+    this.app.pageFit?.request();
   }
 
   /* A board transition changes the folders at once and draws them a frame
@@ -662,6 +684,38 @@ class GridController {
     });
 
     return a;
+  }
+
+  /* The folded folders open at a pointer or the keyboard (components.css). A
+     touch has no hover, so there the first tap only opens the dock — whatever
+     chip it lands on keeps its folder folded — and the dock closes again a few
+     seconds later, or at a tap anywhere else. */
+  initDockTouch() {
+    const dock = this.dock;
+    if (!dock) return;
+    let fold = null;
+    // The tap that opened the dock, whose click must bring nothing back; only for as long as a tap takes.
+    let opening = 0;
+    const close = () => {
+      clearTimeout(fold);
+      dock.classList.remove("is-open");
+    };
+    dock.addEventListener("pointerdown", (event) => {
+      if (event.pointerType === "mouse" || dock.classList.contains("is-open")) return;
+      dock.classList.add("is-open");
+      opening = performance.now();
+      clearTimeout(fold);
+      fold = setTimeout(close, 6000);
+    });
+    dock.addEventListener("click", (click) => {
+      if (!opening) return;
+      const fresh = performance.now() - opening < 800;
+      opening = 0;
+      if (fresh) { click.stopPropagation(); click.preventDefault(); }
+    }, { capture: true });
+    document.addEventListener("pointerdown", (event) => {
+      if (!dock.contains(event.target)) close();
+    }, { passive: true });
   }
 
   /* ── Discreet Minimalist Floating Dock Chip ─────────────────── */
@@ -1536,12 +1590,14 @@ class GridController {
     const height = parseFloat(lift.style.height) || 1;
     const baseLeft = parseFloat(lift.style.left) || 0;
     const baseTop = parseFloat(lift.style.top) || 0;
+    // A copy zoomed to the board's scale (PageFit.dress) moves in its own lengths.
+    const zoom = parseFloat(lift.style.zoom) || 1;
     const from = getComputedStyle(lift).transform;
     let to;
     if (target?.isConnected) {
       target.classList.add("drag-landing");
       const box = target.getBoundingClientRect();
-      to = `translate3d(${box.left - baseLeft}px, ${box.top - baseTop}px, 0) scale(${box.width / width}, ${box.height / height})`;
+      to = `translate3d(${box.left / zoom - baseLeft}px, ${box.top / zoom - baseTop}px, 0) scale(${box.width / (width * zoom)}, ${box.height / (height * zoom)})`;
     }
     lift.classList.add("is-landing");
     const frames = to

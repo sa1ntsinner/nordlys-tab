@@ -10,8 +10,11 @@
 const SCENE_NAMES = {
   "aurora": "Nordlys",
   "halo": "Halo",
+  "polaris": "Polaris",
+  "pillars": "Pillars",
+  "nacre": "Nacre",
   "silk": "Silk",
-  "frost": "Frost",
+  "baikal": "Baikal",
   "drift": "Contour",
   "horizon": "Fjord",
   "custom-image": "Wallpaper",
@@ -21,8 +24,11 @@ const SCENE_NAMES = {
 const SCENE_KEYS = {
   "aurora": "scene.aurora",
   "halo": "scene.halo",
+  "polaris": "scene.polaris",
+  "pillars": "scene.pillars",
+  "nacre": "scene.nacre",
   "silk": "scene.silk",
-  "frost": "scene.frost",
+  "baikal": "scene.baikal",
   "drift": "scene.drift",
   "horizon": "scene.horizon",
   "custom-image": "scene.wallpaper",
@@ -617,7 +623,7 @@ class SettingsController {
     });
     sayDaylight();
 
-    /* A new scatter of the same scene — other stars, other frost, another
+    /* A new scatter of the same scene — other stars, other ice, another
        weave — kept until shuffled again, and one undo away from the last. */
     document.getElementById("bg-shuffle")?.addEventListener("click", () => {
       const previous = this.app.config.bgSeed ?? 0;
@@ -1811,8 +1817,114 @@ class SettingsController {
       this.app.grid?.arrange?.autoRows();
       this.syncBoardLayout();
     });
+    /* One page fit has two switches, this one and the one on the page
+       (#fit-toggle), and one saved value between them. */
+    document.getElementById("cfg-one-page-fit")?.addEventListener("change", (event) => this.setPageFit(event.target.checked));
+    this.initFitStar(document.getElementById("fit-toggle"));
+    window.addEventListener("nordlys:pagefit", () => this.syncPageFit());
     window.addEventListener("nordlys:languagechange", () => this.syncBoardLayout());
     this.syncBoardLayout();
+  }
+
+  /* The switch on the page, which rests as a star until a pointer or the
+     keyboard comes to it (components.css). A touch has no hover to unfold it,
+     so there the first tap only opens the star and the next one works the
+     switch; it folds again a few seconds later, or at a tap anywhere else. And
+     it glints once as the page opens, so the eye finds it (glintStar). */
+  initFitStar(quick) {
+    if (!quick) return;
+    // The tap that opened the star, whose click must not work the switch; only for as long as a tap takes.
+    let opening = 0;
+    let fold = null;
+    const close = () => {
+      clearTimeout(fold);
+      quick.classList.remove("is-open");
+    };
+    quick.addEventListener("pointerdown", (event) => {
+      if (event.pointerType === "mouse" || quick.classList.contains("is-open")) return;
+      opening = performance.now();
+      quick.classList.add("is-open");
+      clearTimeout(fold);
+      fold = setTimeout(close, 5000);
+    });
+    quick.addEventListener("click", () => {
+      const fresh = opening && performance.now() - opening < 800;
+      opening = 0;
+      if (fresh) return;
+      this.setPageFit(this.app.config.onePageFit !== true);
+    });
+    document.addEventListener("pointerdown", (event) => {
+      if (!quick.contains(event.target)) close();
+    }, { passive: true });
+    // Found, it needs no glint: one still playing stops where the pointer or the keyboard arrives.
+    const found = () => quick.classList.remove("glint");
+    quick.addEventListener("pointerenter", found);
+    quick.addEventListener("focus", found);
+    if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      setTimeout(() => this.glintStar(), 1200);
+    }
+  }
+
+  /* Only for a star nobody has found yet. A glint over the open switch would
+     draw the star on top of its knob, and a pointer or the keyboard already on
+     it has found it. */
+  glintStar() {
+    const quick = document.getElementById("fit-toggle");
+    if (!quick || quick.matches(":hover, :focus-visible, .is-open")) return;
+    quick.addEventListener("animationend", () => quick.classList.remove("glint"), { once: true });
+    quick.classList.add("glint");
+  }
+
+  /* The switch is saved; what the fit works out never is. The state line
+     describes the switch, so it is read whenever the switch is; it is spoken
+     once, here, when somebody turns the fit on, and never again as a window
+     is dragged and the percentage follows it. */
+  setPageFit(on) {
+    this.app.config.onePageFit = on === true;
+    this.app.saveConfig();
+    this.app.pageFit?.request({ now: true });
+    this.syncPageFit();
+    const words = on === true ? document.getElementById("page-fit-state")?.textContent : "";
+    if (words) NordlysUI.announce(words);
+  }
+
+  /* Both switches, and a line under the drawer's saying what the fit is doing
+     for this window right now — so a board shown at a third of its size says
+     so where the way back to the ordinary page is. The switch on the page
+     says the same as its description, or what it would do while it is off. */
+  syncPageFit() {
+    const on = this.app.config.onePageFit === true;
+    const input = document.getElementById("cfg-one-page-fit");
+    if (input) input.checked = on;
+    const state = document.getElementById("page-fit-state");
+    const quick = document.getElementById("fit-toggle");
+    const quickState = document.getElementById("fit-toggle-state");
+    const say = (key, fallback, params) => {
+      const value = window.I18N?.t(key, params || {});
+      return value && value !== key ? value : fallback;
+    };
+    const fit = this.app.pageFit?.state;
+    let words = "";
+    if (on && fit) {
+      if (this.app.pageFit.suspended.size) words = say("bookmarks.onePageFitPaused", "Paused while you arrange the board.");
+      else if (fit.stage === "natural") words = say("bookmarks.onePageFitNatural", "Everything fits this window as it is.");
+      else if (fit.stage === "compact") words = say("bookmarks.onePageFitCompact", "Spacing and bookmarks are closed up to fit this window.");
+      else if (fit.stage === "scaled") {
+        const percent = Math.round(fit.zoom * 100);
+        words = say("bookmarks.onePageFitScaled", `Shown at ${percent}% to fit this window.`, { percent });
+      }
+    }
+    if (state) {
+      if (state.textContent !== words) state.textContent = words;
+      state.hidden = !words;
+    }
+    if (quick) {
+      const checked = String(on);
+      if (quick.getAttribute("aria-checked") !== checked) quick.setAttribute("aria-checked", checked);
+      const hint = words || say("bookmarks.onePageFitHint", "Keeps the clock, the search and every folder in the window, with nothing to scroll.");
+      if (quick.title !== hint) quick.title = hint;
+      if (quickState && quickState.textContent !== hint) quickState.textContent = hint;
+    }
   }
 
   syncBoardLayout() {
@@ -1838,6 +1950,7 @@ class SettingsController {
     }
     const auto = document.getElementById("board-rows-auto");
     if (auto) auto.hidden = !yours;
+    this.syncPageFit();
   }
 
   initBookmarksManager() {
@@ -3435,7 +3548,7 @@ class SettingsController {
 
     // Download Docs (.md)
     document.getElementById("btn-download-docs")?.addEventListener("click", () => {
-      const mdContent = `# Nordlys Custom CSS Guide\n\n## Core Selectors & Hierarchy\n- \`#hero\`, \`#clock\`, \`#date\`, \`#greet\` — Clock, date & greeting\n- \`#hh\`, \`#mm\`, \`#ss\` — Individual clock digits\n- \`#searchwrap\`, \`#search\`, \`#q\` — Search bar & input\n- \`#sugg\`, \`.sugg-item\` — Suggestions dropdown rows\n- \`#board\` — Bento board container\n- \`.card\` — Folder glass container\n- \`.cat\`, \`.cat b\` — Folder header & title text\n- \`.grid\` — Tile grid (\`[data-cols="1..8"]\`)\n- \`.tile\` — Bookmark tile (\`--c\` holds its accent color)\n- \`.box\` — Icon glass box, \`.lbl\` — bookmark label\n- \`#hiddenDock\`, \`.restoreFolder\` — Hidden folder dock & chips\n- \`#gear\` — Settings gear button\n- \`#cfg\`, \`.ctab\`, \`.csec\` — Settings drawer components\n\n## CSS Variables & Theming Tokens (override on :root)\n- \`--void\` — page background color\n- \`--void-gradient\` — page background gradient\n- \`--card-tint\` / \`--card-tint-deep\` — folder card glass tints\n- \`--glass\` — search bar / gear glass fill\n- \`--glass-border\` — card border color\n- \`--accent\` / \`--accent-glow\`\n- \`--ink\` / \`--dim\` / \`--faint\` — text colors\n- \`--font-main\` / \`--font-display\`\n- \`--tw\` (tile size), \`--tile-radius\`, \`--card-radius\`\n- \`--glass-blur\`, \`--glass-saturate\`, \`--glass-opacity\` (0-1), \`--glass-border-sheen\` (0-1)\n- \`--bg-blur\`, \`--bg-dim\` — custom wallpaper effects\n\n## Recipes\n\n### Transparent Minimal Cards\n\`\`\`css\n.card { background: transparent !important; box-shadow: none !important; border: none !important; }\n\`\`\`\n\n### Cyberpunk Neon Borders\n\`\`\`css\n.card { border: 2px solid #ff007f !important; box-shadow: 0 0 10px #00f3ff, inset 0 0 10px #00f3ff !important; }\n\`\`\`\n\n### Compact Grid & Hover Zoom\n\`\`\`css\n.tile { transition: transform 0.2s !important; } .tile:hover { transform: scale(1.1) !important; z-index: 10; }\n\`\`\`\n\n### Square Sharp Modernist\n\`\`\`css\n:root { --card-radius: 0px !important; --tile-radius: 0px !important; }\n\`\`\`\n\n### Monochrome Matte Black\n\`\`\`css\n:root { --card-tint: #111 !important; --card-tint-deep: #0a0a0a !important; --glass-border: #333 !important; } .tile { filter: grayscale(100%); }\n\`\`\`\n\n### Floating Gradient Text Header\n\`\`\`css\n#clock { background: linear-gradient(90deg, #ff8a00, #e52e71); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }\n\`\`\`\n\n### Hide Clock & Center Bento\n\`\`\`css\n#hero { display: none !important; } #board { margin: auto; }\n\`\`\`\n`;
+      const mdContent = `# Nordlys Custom CSS Guide\n\n## Core Selectors & Hierarchy\n- \`#hero\`, \`#clock\`, \`#date\`, \`#greet\` — Clock, date & greeting\n- \`#hh\`, \`#mm\`, \`#ss\` — Individual clock digits\n- \`#searchwrap\`, \`#search\`, \`#q\` — Search bar & input\n- \`#sugg\`, \`.sugg-item\` — Suggestions dropdown rows\n- \`#board\` — Bento board container\n- \`.card\` — Folder glass container\n- \`.cat\`, \`.cat b\` — Folder header & title text\n- \`.grid\` — Tile grid (\`[data-cols="1..8"]\`)\n- \`.tile\` — Bookmark tile (\`--c\` holds its accent color)\n- \`.box\` — Icon glass box, \`.lbl\` — bookmark label\n- \`#hiddenDock\`, \`.restoreFolder\` — Hidden folder dock & chips\n- \`#fit-toggle\` — One page fit switch above the clock (\`[aria-checked="true"]\` while on)\n- \`#gear\` — Settings gear button\n- \`#cfg\`, \`.ctab\`, \`.csec\` — Settings drawer components\n\n## CSS Variables & Theming Tokens (override on :root)\n- \`--void\` — page background color\n- \`--void-gradient\` — page background gradient\n- \`--card-tint\` / \`--card-tint-deep\` — folder card glass tints\n- \`--glass\` — search bar / gear glass fill\n- \`--glass-border\` — card border color\n- \`--accent\` / \`--accent-glow\`\n- \`--ink\` / \`--dim\` / \`--faint\` — text colors\n- \`--font-main\` / \`--font-display\`\n- \`--tw\` (tile size), \`--tile-radius\`, \`--card-radius\`\n- \`--glass-blur\`, \`--glass-saturate\`, \`--glass-opacity\` (0-1), \`--glass-border-sheen\` (0-1)\n- \`--bg-blur\`, \`--bg-dim\` — custom wallpaper effects\n\n## Recipes\n\n### Transparent Minimal Cards\n\`\`\`css\n.card { background: transparent !important; box-shadow: none !important; border: none !important; }\n\`\`\`\n\n### Cyberpunk Neon Borders\n\`\`\`css\n.card { border: 2px solid #ff007f !important; box-shadow: 0 0 10px #00f3ff, inset 0 0 10px #00f3ff !important; }\n\`\`\`\n\n### Compact Grid & Hover Zoom\n\`\`\`css\n.tile { transition: transform 0.2s !important; } .tile:hover { transform: scale(1.1) !important; z-index: 10; }\n\`\`\`\n\n### Square Sharp Modernist\n\`\`\`css\n:root { --card-radius: 0px !important; --tile-radius: 0px !important; }\n\`\`\`\n\n### Monochrome Matte Black\n\`\`\`css\n:root { --card-tint: #111 !important; --card-tint-deep: #0a0a0a !important; --glass-border: #333 !important; } .tile { filter: grayscale(100%); }\n\`\`\`\n\n### Floating Gradient Text Header\n\`\`\`css\n#clock { background: linear-gradient(90deg, #ff8a00, #e52e71); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }\n\`\`\`\n\n### Hide Clock & Center Bento\n\`\`\`css\n#hero { display: none !important; } #board { margin: auto; }\n\`\`\`\n`;
       const blob = new Blob([mdContent], { type: "text/markdown" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");

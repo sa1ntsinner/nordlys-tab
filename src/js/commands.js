@@ -1,5 +1,5 @@
 /* The board as a command line. A leading ">" in the search box turns what
-   follows into an instruction — "theme nord", "sky frost", "move youtube to
+   follows into an instruction — "theme nord", "sky polaris", "move youtube to
    daily" — and the page shows the result before Enter makes it so.
 
    This file only reads the words: it knows nothing about the page, and turns

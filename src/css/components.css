@@ -443,8 +443,7 @@ body.minimal #board {
     0 0 34px color-mix(in srgb, var(--accent) calc(var(--card-glow-intensity, 0.4) * 22%), transparent),
     inset 0 1px 0 rgba(255, 255, 255, calc(0.02 + var(--glass-border-sheen, 0.45) * 0.16));
   contain: layout style;
-  transform: translate3d(0, 0, 0);
-  transition: transform var(--nl-transition-control), box-shadow var(--nl-transition-control), border-color var(--nl-transition-control);
+  transition: box-shadow var(--nl-transition-control), border-color var(--nl-transition-control);
   position: relative;
 }
 
@@ -1242,102 +1241,140 @@ body.hover-none .tile:hover .box {
   box-shadow: var(--nl-shadow-3), var(--nl-ring);
 }
 
-/* ── Minimalist Discreet Hidden Folders Tray ──────────────────── */
+/* ── Folded folders ─────────────────────────────────────────────── */
+/* A folder somebody folded away is one they chose not to see, so the dock does
+   not show them either. At rest it is one quiet mark under the board — a
+   folder and how many are folded, a little dimmer than the text, with no glass
+   of its own — and a pointer, the keyboard or a tap opens it into chips of the
+   same glass as the gear and the fit switch. The chips keep their places while
+   it is closed, so opening it moves nothing and the fit measures the same dock
+   either way; until it opens, only the middle of it, where the mark is,
+   answers the pointer. It closes a moment after it is left. */
 #hiddenDock {
+  position: relative;
   display: none;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
   gap: 8px;
   margin: 14px auto 0;
-  padding: 6px 14px;
-  border-radius: 9999px;
-  background: rgba(10, 16, 32, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  box-shadow: var(--nl-shadow-2);
-  opacity: 0.7;
-  transition: opacity var(--nl-transition-control), transform var(--nl-transition-control), background var(--nl-transition-control), border-color var(--nl-transition-control);
+  padding: 4px;
+  border-radius: var(--nl-radius-md);
   animation: fadeIn var(--nl-transition-panel) both;
   z-index: var(--nl-z-chrome);
+  clip-path: inset(0 calc(50% - 44px) round var(--nl-radius-md));
+  transition: clip-path var(--nl-transition-enter);
+  transition-delay: var(--nl-motion-panel);
 }
-
-#hiddenDock:hover {
-  opacity: 1;
-  background: rgba(14, 22, 44, 0.75);
-  border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: var(--nl-shadow-2);
+#hiddenDock:is(:hover, :focus-within, .is-open) {
+  clip-path: inset(-8px round calc(var(--nl-radius-md) + 8px));
+  transition-delay: 0s;
 }
-
 #hiddenDock:empty {
   display: none !important;
+}
+
+/* The mark: over the middle of the chips, and gone into them when they open. */
+.dock-fold {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  translate: -50% -50%;
+  color: var(--nl-text-secondary);
+  font-size: var(--nl-text-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  opacity: .55;
+  transition: opacity var(--nl-transition-control), transform var(--nl-transition-enter);
+  transition-delay: var(--nl-motion-panel);
+}
+.dock-fold svg {
+  width: 15px;
+  height: 15px;
+}
+#hiddenDock:is(:hover, :focus-within, .is-open) .dock-fold {
+  opacity: 0;
+  transform: scale(.8);
+  pointer-events: none;
+  transition-delay: 0s;
 }
 
 .restoreFolder {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 12px 5px 10px;
-  border-radius: 9999px;
-  cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--dim);
+  gap: 8px;
+  padding: 0 14px 0 12px;
+  border-radius: var(--nl-radius-md);
+  border: 1px solid var(--nl-polish-hairline);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 76%, transparent);
+  box-shadow: var(--nl-shadow-2);
+  color: var(--nl-text-secondary);
   font-family: inherit;
-  font-size: var(--nl-text-xs);
-  font-weight: 500;
-  letter-spacing: var(--nl-track-tight);
-  transition: color var(--nl-transition-control), background-color var(--nl-transition-control), border-color var(--nl-transition-control), opacity var(--nl-motion-control), transform var(--nl-transition-control);
+  font-size: var(--nl-text-sm);
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
   user-select: none;
+  opacity: 0;
+  /* A shift, not a shrink: closed, a chip is still its full 40px target. */
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity var(--nl-transition-control), transform var(--nl-transition-enter), color var(--nl-transition-control), background-color var(--nl-transition-control), border-color var(--nl-transition-control);
+  transition-delay: var(--nl-motion-fast);
 }
-
-.restoreFolder:hover {
-  color: #ffffff;
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
-  box-shadow: var(--nl-shadow-1);
-  transform: translateY(-1.5px);
+#hiddenDock:is(:hover, :focus-within, .is-open) .restoreFolder {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  backdrop-filter: blur(16px) saturate(125%);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
 }
-
-.restoreFolder:active {
-  transform: scale(0.96);
+#hiddenDock .restoreFolder:hover {
+  color: var(--nl-text-primary);
+  border-color: color-mix(in srgb, var(--nl-accent) 44%, var(--nl-border));
+  background: var(--nl-polish-surface-solid);
 }
 
 .dockFolderIcon {
-  width: 14px;
-  height: 14px;
-  color: var(--accent);
+  width: 15px;
+  height: 15px;
+  color: var(--nl-text-tertiary);
   flex-shrink: 0;
-  transition: transform var(--nl-transition-control);
+  transition: color var(--nl-transition-control);
 }
-
 .restoreFolder:hover .dockFolderIcon {
-  transform: scale(1.1);
+  color: var(--accent);
 }
 
 .dockFolderName {
-  font-weight: 550;
-  max-width: 140px;
+  max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .dockFolderCount {
-  font-size: var(--nl-text-2xs);
+  font-size: var(--nl-text-xs);
   font-weight: 600;
-  color: var(--faint);
-  background: rgba(255, 255, 255, 0.08);
-  padding: 1px 6px;
-  border-radius: 9999px;
-  margin-left: 2px;
-  transition: color var(--nl-motion-control), background var(--nl-motion-control);
+  font-variant-numeric: tabular-nums;
+  color: var(--nl-text-tertiary);
+  transition: color var(--nl-transition-control);
+}
+.restoreFolder:hover .dockFolderCount {
+  color: var(--nl-text-secondary);
 }
 
-.restoreFolder:hover .dockFolderCount {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.2);
+@media (prefers-reduced-motion: reduce) {
+  #hiddenDock .restoreFolder, #hiddenDock .dock-fold { transform: none; }
+}
+@media (forced-colors: active) {
+  /* With the system's colours there is no mark to find: the chips are there. */
+  #hiddenDock { clip-path: none; }
+  .dock-fold { display: none; }
+  .restoreFolder { opacity: 1; transform: none; pointer-events: auto; border-color: ButtonText; }
 }
 
 /* ── Settings Gear Button ─────────────────────────────────────── */
@@ -1392,6 +1429,182 @@ body.hover-none .tile:hover .box {
   transform: translateY(-2px) scale(.97);
 }
 
+/* ── One page fit, on the page ────────────────────────────────── */
+/* The drawer's switch, one press from the page, with its name on it and a
+   small switch that says which way it is. It sits in the band above the
+   clock, which is empty at every size. Beside the gear it would lie over the
+   last row of a board that runs under the corner. Absolute, not fixed: on the
+   ordinary page it scrolls away with the band instead of floating over the
+   bookmarks. On a fitted page nothing scrolls, and page-fit.js keeps the
+   page clear of it.
+
+   Most people turn the fit on once and never touch it again, so at rest the
+   switch is a star: the Nordlys mark, a little dimmer than the text, one more
+   star in the sky. A pointer or the keyboard turns it into the switch — the
+   glass unfolds leftward out of the star while the star turns and shrinks
+   into the knob — and it folds back a moment after it is left. It glints once
+   as the page opens, so the eye finds it, and then holds still: an animation
+   that ran for ever would keep the page painting at the display's rate, which
+   is what the sky's frame budget exists to stop, and a star at rest blurs
+   nothing behind it. Lit in the accent while the fit is on. Its box never
+   changes, so the room the fit keeps clear is the same either way. */
+.fit-toggle {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  z-index: var(--nl-z-chrome);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  min-height: var(--nl-target-min);
+  max-width: calc(100% - 40px);
+  padding: 0 12px 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--nl-radius-md);
+  background: transparent;
+  box-shadow: none;
+  color: var(--nl-text-secondary);
+  font: inherit;
+  font-size: var(--nl-text-sm);
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  /* Folded, only the star's corner of the switch is drawn. */
+  clip-path: inset(0 0 0 calc(100% - var(--nl-target-min)) round var(--nl-radius-md));
+  transition: clip-path var(--nl-transition-enter), color var(--nl-transition-control), background-color var(--nl-transition-control), border-color var(--nl-transition-control), box-shadow var(--nl-transition-control), backdrop-filter var(--nl-transition-control);
+  transition-delay: var(--nl-motion-panel);
+}
+.fit-toggle:is(:hover, :focus-visible, .is-open) {
+  /* Past the box on every side, so the focus ring is not cut off. */
+  clip-path: inset(-6px round calc(var(--nl-radius-md) + 6px));
+  border-color: var(--nl-polish-hairline);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 76%, transparent);
+  box-shadow: var(--nl-shadow-2);
+  backdrop-filter: blur(16px) saturate(125%);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+  transition-delay: 0s;
+}
+.fit-toggle:hover {
+  color: var(--nl-text-primary);
+  border-color: color-mix(in srgb, var(--nl-accent) 44%, var(--nl-border));
+  background: var(--nl-polish-surface-solid);
+}
+.fit-toggle-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(8px);
+  transition: opacity var(--nl-transition-control), transform var(--nl-transition-enter);
+  transition-delay: var(--nl-motion-fast);
+}
+.fit-toggle:is(:hover, :focus-visible, .is-open) .fit-toggle-label {
+  opacity: 1;
+  transform: none;
+}
+.fit-toggle-track {
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  width: 28px;
+  height: 16px;
+  border: 1.5px solid color-mix(in srgb, currentColor 70%, transparent);
+  border-radius: 9999px;
+  opacity: 0;
+  transform: scale(.5);
+  transition: opacity var(--nl-transition-control), transform var(--nl-transition-pop-panel), background-color var(--nl-transition-control), border-color var(--nl-transition-control);
+  transition-delay: var(--nl-motion-fast);
+}
+.fit-toggle:is(:hover, :focus-visible, .is-open) .fit-toggle-track {
+  opacity: 1;
+  transform: none;
+}
+/* The star sits on the track, and becomes its knob: towards the knob's left
+   end while the fit is off, its right end while it is on. */
+.fit-toggle-star {
+  --knob: -7.5px;
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  display: grid;
+  place-items: center;
+  color: var(--nl-text-secondary);
+  opacity: .55;
+  pointer-events: none;
+  transition: transform var(--nl-transition-enter), opacity var(--nl-transition-control), color var(--nl-transition-control);
+  transition-delay: var(--nl-motion-panel);
+}
+.fit-toggle-star svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+.fit-toggle[aria-checked="true"] .fit-toggle-star {
+  --knob: 4.5px;
+  color: var(--accent);
+  opacity: .9;
+}
+.fit-toggle:is(:hover, :focus-visible, .is-open) .fit-toggle-star {
+  opacity: 0;
+  transform: translateX(var(--knob)) rotate(135deg) scale(.35);
+  transition-delay: 0s;
+}
+.fit-toggle.glint .fit-toggle-star {
+  animation-name: fitStarGlint;
+  animation-duration: calc(var(--nl-motion-enter) * 4);
+  animation-timing-function: var(--nl-ease-state);
+}
+@keyframes fitStarGlint {
+  40% { opacity: 1; transform: rotate(45deg) scale(1.4); }
+  100% { transform: rotate(90deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fit-toggle:is(:hover, :focus-visible, .is-open) .fit-toggle-star { transform: none; }
+  .fit-toggle.glint .fit-toggle-star { animation: none; }
+}
+.fit-toggle-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: currentColor;
+  transition: transform var(--nl-transition-pop), background-color var(--nl-transition-control);
+}
+.fit-toggle[aria-checked="true"] {
+  color: var(--nl-text-primary);
+}
+.fit-toggle[aria-checked="true"]:is(:hover, :focus-visible, .is-open) {
+  border-color: color-mix(in srgb, var(--nl-accent) 55%, var(--nl-border));
+}
+.fit-toggle[aria-checked="true"] .fit-toggle-track {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.fit-toggle[aria-checked="true"] .fit-toggle-track::after {
+  transform: translateX(12px);
+  background: #060c1a;
+}
+/* Arranging pauses the fit and has a bar of its own. */
+body.arranging .fit-toggle { display: none; }
+@media (forced-colors: active) {
+  /* No star to find: with the system's colours the switch is simply there. */
+  .fit-toggle { clip-path: none; border-color: ButtonText; }
+  .fit-toggle-label, .fit-toggle-track { opacity: 1; transform: none; }
+  .fit-toggle-star { display: none; }
+  .fit-toggle-track { border-color: ButtonText; }
+  .fit-toggle-track::after { background: ButtonText; }
+  .fit-toggle[aria-checked="true"] .fit-toggle-track { background: Highlight; border-color: Highlight; }
+  .fit-toggle[aria-checked="true"] .fit-toggle-track::after { background: HighlightText; }
+}
+
 /* Below this the reservation would overflow the window, and a scrollbar costs
    more than a clock that shifts when seconds are switched on. */
 @media (max-width: 560px) {
@@ -1400,6 +1613,9 @@ body.hover-none .tile:hover .box {
 
 @media (max-width: 480px) {
   #gear { top: 12px; right: 12px; bottom: auto; }
+  /* The gear comes up to the top corner here; the switch sits beside it,
+     centred on it (polish.css moves both 2px in below 420px). */
+  .fit-toggle { top: 14px; right: 64px; max-width: calc(100% - 76px); }
 }
 
 /* ── Frosted Glass Bookmark Context Menu ──────────────────────── */
@@ -1612,17 +1828,21 @@ body.hover-none .tile:hover .box {
   display: inline-block;
 }
 
-/* ── Frosted Toast Notifications ──────────────────────────────── */
+/* ── Notices ─────────────────────────────────────────────────── */
+/* In the bottom left corner, where nothing else is: the gear keeps the right,
+   and a notice in the middle came up on top of the folded folders and the
+   last row of the board. They slide in from the edge and stack upward, in the
+   same glass as the gear and the fit switch. */
 #toast-dock {
   position: fixed;
-  bottom: 26px;
-  left: 50%;
-  translate: -50% 0;
+  left: 20px;
+  bottom: 20px;
   z-index: var(--nl-z-toast);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+  max-width: calc(100vw - 40px);
   pointer-events: none;
 }
 
@@ -1630,20 +1850,22 @@ body.hover-none .tile:hover .box {
   display: flex;
   align-items: center;
   gap: 10px;
-  max-width: min(86vw, 440px);
-  padding: 10px 18px;
-  border-radius: 9999px;
-  background: rgba(11, 18, 36, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-sizing: border-box;
+  max-width: min(calc(100vw - 40px), 440px);
+  min-height: var(--nl-target-min);
+  padding: 6px 8px 6px 14px;
+  border-radius: var(--nl-radius-md);
+  border: 1px solid var(--nl-polish-hairline);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 88%, transparent);
   box-shadow: var(--nl-shadow-2);
-  backdrop-filter: blur(24px) saturate(1.6);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6);
-  color: var(--ink);
+  backdrop-filter: blur(16px) saturate(125%);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+  color: var(--nl-text-primary);
   font-size: var(--nl-text-sm);
   font-weight: 500;
   letter-spacing: var(--nl-track-tight);
   opacity: 0;
-  transform: translateY(14px) scale(0.96);
+  transform: translateX(-12px);
   transition: opacity var(--nl-transition-panel), transform var(--nl-transition-pop-panel);
 }
 .toast.on {
@@ -1663,20 +1885,23 @@ body.hover-none .tile:hover .box {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* A notice with nothing to press keeps its right-hand room even. */
+.toast:not(:has(.toast-action)) { padding-right: 14px; }
 
 /* The undo control. It had no style at all — a user-agent button inside a
    designed pill — and, because the dock takes no pointer events so a notice
    never blocks the board behind it, it could not be clicked either: the one
    button in the product that takes a deletion back was unreachable by mouse.
    It re-enables pointer events for itself alone, and it never shrinks, so a
-   long bookmark name ellipsises the sentence and not the way out of it. */
+   long bookmark name ellipsises the sentence and not the way out of it. It is
+   the accent's own quiet button, the one thing in the notice to press. */
 .toast-action {
   flex: none;
-  margin: -4px -8px -4px 2px;
-  padding: 5px 13px;
-  border-radius: 9999px;
-  border: 1px solid var(--nl-border-strong);
-  background: rgba(255, 255, 255, .07);
+  margin-left: 2px;
+  padding: 6px 12px;
+  border-radius: var(--nl-radius-sm);
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
   color: var(--nl-accent-text);
   font: inherit;
   font-weight: 650;
@@ -1687,10 +1912,15 @@ body.hover-none .tile:hover .box {
   transition: background var(--nl-transition-control), border-color var(--nl-transition-control);
 }
 .toast-action:hover {
-  background: rgba(255, 255, 255, .14);
-  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
 }
 .toast-action:active { transform: translateY(1px); }
+
+@media (max-width: 480px) {
+  #toast-dock { left: 12px; right: 12px; bottom: 12px; max-width: none; }
+  .toast { max-width: 100%; }
+}
 
 /* ── Glass Confirm Dialog ─────────────────────────────────────── */
 .confirm-backdrop {

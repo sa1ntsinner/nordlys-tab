@@ -9,7 +9,7 @@
 (function () {
   const PREFIX = 'nordlys-look:v1:';
   const HEX = /^#[0-9a-f]{6}$/i;
-  const SCENES = ['aurora', 'halo', 'silk', 'frost', 'drift', 'horizon', 'solid'];
+  const SCENES = ['aurora', 'polaris', 'halo', 'pillars', 'nacre', 'silk', 'baikal', 'drift', 'horizon', 'solid'];
   const FAMILY = /^[\p{L}\p{N} .'&+-]{1,64}$/u;
   const STUDIO = ['bg', 'card', 'border', 'accent', 'glow', 'text', 'dim'];
 
@@ -17,7 +17,8 @@
   const oneOf = options => value => (options.includes(value) ? value : undefined);
   const FIELDS = {
     theme: value => (typeof value === 'string' && /^[a-z0-9-]{1,40}$/.test(value) ? value : undefined),
-    bgMode: oneOf(SCENES),
+    // Frost was retired for Baikal; a look shared before then keeps a sky.
+    bgMode: value => oneOf(SCENES)(value === 'frost' ? 'baikal' : value),
     bgPalette: value => (typeof value === 'string' && /^[\w-]{1,48}$/.test(value) ? value : undefined),
     bgMotion: number(0, 1.5),
     bgIntensity: number(0.15, 1.5),

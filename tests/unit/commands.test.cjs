@@ -4,7 +4,7 @@ const { parse, score } = require('../../src/js/commands.js');
 
 const WORLD = {
   themes: [{ key: 'nord-frost', name: 'Nord Frost' }, { key: 'nordic-snow', name: 'Nordic Snow' }, { key: 'aurora-void', name: 'Aurora Void' }],
-  scenes: [{ key: 'frost', name: 'Frost' }, { key: 'halo', name: 'Halo' }, { key: 'aurora', name: 'Nordlys' }],
+  scenes: [{ key: 'polaris', name: 'Polaris' }, { key: 'halo', name: 'Halo' }, { key: 'aurora', name: 'Nordlys' }],
   moods: [{ key: 'ember', name: 'Ember' }, { key: 'mood_1', name: 'Midwinter' }],
   folders: [{ key: 0, name: 'Daily' }, { key: 1, name: 'Dev & tech' }, { key: 2, name: 'Shopping', hidden: true }],
   bookmarks: [{ key: '0:0', name: 'YouTube', folder: 0 }, { key: '1:0', name: 'GitHub', folder: 1 }],
@@ -18,7 +18,7 @@ test('a bare > asks for the list of what can be done', () => {
 
 test('each verb finds what it names, best match first', () => {
   assert.deepEqual(kinds(parse('theme nord', WORLD)), ['theme:nord-frost', 'theme:nordic-snow']);
-  assert.deepEqual(kinds(parse('sky fr', WORLD)), ['sky:frost']);
+  assert.deepEqual(kinds(parse('sky po', WORLD)), ['sky:polaris']);
   assert.deepEqual(kinds(parse('mood mid', WORLD)), ['mood:mood_1']);
   assert.deepEqual(kinds(parse('hide daily', WORLD)), ['hide:0']);
   assert.deepEqual(kinds(parse('show shop', WORLD)), ['show:2']);

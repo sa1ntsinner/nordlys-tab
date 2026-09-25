@@ -1,0 +1,561 @@
+{
+  "reportVersion": 2,
+  "probe": {
+    "cadence": "render",
+    "quietAlpha": null,
+    "seed": 7
+  },
+  "timestamp": "2026-09-24T19:54:26.561Z",
+  "browser": "153.0.8010.53",
+  "channel": "chrome",
+  "platform": "win32",
+  "gpuDevices": [
+    "AMD Radeon(TM) 890M Graphics",
+    "Microsoft Basic Render Driver"
+  ],
+  "gpuFeatureStatus": {
+    "2d_canvas": "enabled",
+    "direct_rendering_display_compositor": "disabled_off_ok",
+    "gpu_compositing": "enabled",
+    "multiple_raster_threads": "enabled_on",
+    "opengl": "enabled_on",
+    "rasterization": "enabled",
+    "raw_draw": "disabled_off_ok",
+    "skia_graphite": "disabled_off",
+    "trees_in_viz": "disabled_off",
+    "video_decode": "enabled",
+    "video_encode": "enabled",
+    "webgl": "enabled",
+    "webgpu": "enabled",
+    "webnn": "disabled_off"
+  },
+  "viewport": {
+    "width": 2048,
+    "height": 1152,
+    "dpr": 1.25
+  },
+  "board": "dense",
+  "secondsPerSample": 8,
+  "warmupSec": 2,
+  "runsPerBuild": 5,
+  "order": "ABBA interleaved",
+  "probeArgs": [
+    "--channel",
+    "chrome",
+    "--board",
+    "dense",
+    "--width",
+    "2048",
+    "--height",
+    "1152",
+    "--dpr",
+    "1.25",
+    "--seconds",
+    "8",
+    "--warmup",
+    "2",
+    "--only",
+    "aurora",
+    "--cadence",
+    "render",
+    "--seed",
+    "7"
+  ],
+  "base": {
+    "ref": "origin/main",
+    "sha": "1537da4e2f90ef7044a7eebcc51c668068c03516",
+    "fingerprint": "dc426a8b49769593"
+  },
+  "current": {
+    "path": ".",
+    "head": "1537da4e2f90ef7044a7eebcc51c668068c03516",
+    "uncommitted": [
+      "M newtab.html",
+      " M src/css/components.css",
+      " M src/css/main.css",
+      " M src/css/settings.css",
+      " M src/js/app.js",
+      " M src/js/background.js",
+      " M src/js/board-arrange.js",
+      " M src/js/boot.js",
+      " M src/js/config-schema.js",
+      " M src/js/grid.js",
+      " M src/js/i18n.js",
+      " M src/js/settings.js",
+      " M src/js/widgets.js",
+      "?? src/css/page-fit.css",
+      "?? src/js/page-fit.js"
+    ],
+    "fingerprint": "adbcc4503dbbca23",
+    "unchangedDuringRuns": true
+  },
+  "runs": {
+    "base": [
+      {
+        "machineLoadPct": 9,
+        "startupWallMs": 381,
+        "domContentLoadedMs": 332.4,
+        "canvasPixels": 3686400
+      },
+      {
+        "machineLoadPct": 2.5,
+        "startupWallMs": 406,
+        "domContentLoadedMs": 347.1,
+        "canvasPixels": 3686400
+      },
+      {
+        "machineLoadPct": 3.5,
+        "startupWallMs": 445,
+        "domContentLoadedMs": 385.5,
+        "canvasPixels": 3686400
+      },
+      {
+        "machineLoadPct": 8,
+        "startupWallMs": 435,
+        "domContentLoadedMs": 381.3,
+        "canvasPixels": 3686400
+      },
+      {
+        "machineLoadPct": 10.75,
+        "startupWallMs": 401,
+        "domContentLoadedMs": 343.6,
+        "canvasPixels": 3686400
+      }
+    ],
+    "current": [
+      {
+        "machineLoadPct": 14.5,
+        "startupWallMs": 413,
+        "domContentLoadedMs": 353.6,
+        "canvasPixels": 3686400
+      },
+      {
+        "machineLoadPct": 13.75,
+        "startupWallMs": 402,
+        "domContentLoadedMs": 343.3,
+        "canvasPixels": 3686400
+      },
+      {
+        "machineLoadPct": 9.5,
+        "startupWallMs": 486,
+        "domContentLoadedMs": 422.6,
+        "canvasPixels": 3686400
+      },
+      {
+        "machineLoadPct": 12.5,
+        "startupWallMs": 419,
+        "domContentLoadedMs": 368.3,
+        "canvasPixels": 3686400
+      },
+      {
+        "machineLoadPct": 7.25,
+        "startupWallMs": 406,
+        "domContentLoadedMs": 349.8,
+        "canvasPixels": 3686400
+      }
+    ]
+  },
+  "scenes": {
+    "aurora": {
+      "gpuCpuMsPerSec": {
+        "base": 507.3,
+        "current": 407.83,
+        "deltaPct": -19.6,
+        "baseRuns": [
+          501.8,
+          493.47,
+          507.3,
+          539.82,
+          509.11
+        ],
+        "currentRuns": [
+          407.83,
+          414.46,
+          454.29,
+          397.83,
+          398.47
+        ]
+      },
+      "rendererCpuMsPerSec": {
+        "base": 98.49,
+        "current": 87.63,
+        "deltaPct": -11,
+        "baseRuns": [
+          100.94,
+          93.02,
+          98.49,
+          108.27,
+          95.88
+        ],
+        "currentRuns": [
+          87.63,
+          85.33,
+          94.79,
+          82.77,
+          88.21
+        ]
+      },
+      "browserCpuMsPerSec": {
+        "base": 96.57,
+        "current": 89.52,
+        "deltaPct": -7.3,
+        "baseRuns": [
+          96.57,
+          78.53,
+          100.86,
+          102.31,
+          89.09
+        ],
+        "currentRuns": [
+          75.82,
+          118.8,
+          123.17,
+          89.52,
+          82.56
+        ]
+      },
+      "gpuPrivateMiB": {
+        "base": 306.11,
+        "current": 306.46,
+        "deltaPct": 0.1,
+        "baseRuns": [
+          296.92,
+          300.13,
+          306.11,
+          316.87,
+          309.86
+        ],
+        "currentRuns": [
+          307.87,
+          318.19,
+          296.93,
+          301.39,
+          306.46
+        ]
+      },
+      "pageRendererPrivateMiB": {
+        "base": 73.15,
+        "current": 72.12,
+        "deltaPct": -1.4,
+        "baseRuns": [
+          73.23,
+          72.85,
+          72.03,
+          74.7,
+          73.15
+        ],
+        "currentRuns": [
+          72.12,
+          74.98,
+          72.12,
+          71.75,
+          74.81
+        ]
+      },
+      "totalPrivateMiB": {
+        "base": 502.63,
+        "current": 505.69,
+        "deltaPct": 0.6,
+        "baseRuns": [
+          494.99,
+          498.75,
+          502.63,
+          515.12,
+          511.6
+        ],
+        "currentRuns": [
+          506.88,
+          521,
+          493.85,
+          502.39,
+          505.69
+        ]
+      },
+      "jsHeapMiB": {
+        "base": 4.35,
+        "current": 5.38,
+        "deltaPct": 23.7,
+        "baseRuns": [
+          4.31,
+          4.31,
+          4.35,
+          4.35,
+          4.36
+        ],
+        "currentRuns": [
+          5.38,
+          4.42,
+          4.38,
+          5.38,
+          5.41
+        ]
+      },
+      "canvasFps": {
+        "base": 29.93,
+        "current": 29.69,
+        "deltaPct": -0.8,
+        "baseRuns": [
+          29.93,
+          29.95,
+          30.07,
+          29.8,
+          29.42
+        ],
+        "currentRuns": [
+          29.68,
+          29.69,
+          29.68,
+          29.7,
+          29.77
+        ]
+      },
+      "rafFps": {
+        "base": null,
+        "current": null,
+        "deltaPct": null,
+        "baseRuns": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "currentRuns": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "rafP95Ms": {
+        "base": null,
+        "current": null,
+        "deltaPct": null,
+        "baseRuns": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "currentRuns": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "rafOver25MsPct": {
+        "base": null,
+        "current": null,
+        "deltaPct": null,
+        "baseRuns": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "currentRuns": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "canvasRenderMsPerFrame": {
+        "base": 0.99,
+        "current": 0.52,
+        "deltaPct": -47.5,
+        "baseRuns": [
+          1.01,
+          0.89,
+          0.97,
+          1.06,
+          0.99
+        ],
+        "currentRuns": [
+          0.52,
+          0.52,
+          0.48,
+          0.5,
+          0.56
+        ]
+      },
+      "rendererTaskMsPerSec": {
+        "base": 65.91,
+        "current": 41.95,
+        "deltaPct": -36.4,
+        "baseRuns": [
+          68.42,
+          61.23,
+          65.91,
+          72.48,
+          65.28
+        ],
+        "currentRuns": [
+          41.95,
+          40.74,
+          43.39,
+          39.16,
+          44.07
+        ]
+      },
+      "scratchRenderMsPerFrame": {
+        "base": 0,
+        "current": 0.28,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "currentRuns": [
+          0.33,
+          0.28,
+          0.34,
+          0.26,
+          0.27
+        ]
+      },
+      "renderFps": {
+        "base": 29.93,
+        "current": 29.69,
+        "deltaPct": -0.8,
+        "baseRuns": [
+          29.93,
+          29.95,
+          30.07,
+          29.8,
+          29.42
+        ],
+        "currentRuns": [
+          29.68,
+          29.69,
+          29.68,
+          29.7,
+          29.77
+        ]
+      },
+      "renderP50Ms": {
+        "base": 33.3,
+        "current": 33.3,
+        "deltaPct": 0,
+        "baseRuns": [
+          33.3,
+          33.3,
+          33.3,
+          33.3,
+          33.3
+        ],
+        "currentRuns": [
+          33.3,
+          33.3,
+          33.3,
+          33.3,
+          33.3
+        ]
+      },
+      "renderP95Ms": {
+        "base": 34.3,
+        "current": 35.2,
+        "deltaPct": 2.6,
+        "baseRuns": [
+          34.3,
+          34.1,
+          34.3,
+          34.2,
+          38.7
+        ],
+        "currentRuns": [
+          35,
+          36.1,
+          35.2,
+          34.7,
+          35.9
+        ]
+      },
+      "renderOver50MsPct": {
+        "base": 0,
+        "current": 0,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0,
+          0,
+          0.85
+        ],
+        "currentRuns": [
+          0.42,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "quietAlphaMax": {
+        "base": 0,
+        "current": 0,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "currentRuns": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "quietNonzeroSolves": {
+        "base": 0,
+        "current": 0,
+        "deltaPct": null,
+        "baseRuns": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "currentRuns": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "meteorsSpawned": {
+        "base": 3,
+        "current": 3,
+        "deltaPct": 0,
+        "baseRuns": [
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "currentRuns": [
+          3,
+          2,
+          3,
+          2,
+          3
+        ]
+      }
+    }
+  }
+}

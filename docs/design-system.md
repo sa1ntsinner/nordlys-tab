@@ -204,11 +204,14 @@ every other improvement.
 
 ## Backgrounds
 
-Six authored skies — Nordlys, Halo, Silk, Frost, Contour and Fjord — the user's
-own image or video, and a flat colour. Each sky is a different *kind* of
-picture: curtains, an optical display around a moon, threads walked through a
-vector field, rime grown in from the edges, a survey map of hills and hollows,
-a low horizon. Contour was once nine sine waves at an eighth of an opacity —
+Nine authored skies — Nordlys, Polaris, Halo, Pillars, Nacre, Silk, Baikal,
+Contour and Fjord — the user's own image or video, and a flat colour. Each sky
+is a different *kind* of picture: curtains, star trails turning round the pole,
+an optical display around a moon, columns of light over a far horizon, banded
+mother-of-pearl cloud, threads walked through a vector field, black ice with
+its bubbles and cracks, a survey map of hills and hollows, a low horizon. Frost,
+rime grown in from the edges, was retired; a stored Frost becomes Baikal.
+Contour was once nine sine waves at an eighth of an opacity —
 a paler Silk that vanished on dark themes — and became a map: closed contour
 lines traced from a seeded, slowly wandering terrain (marching squares), a
 heavier index line every fifth, coloured by elevation through the mood.
@@ -223,8 +226,8 @@ to be unmistakable at thumbnail size, which is now easy to check, because —
 with the code that paints the full one, in the palette the sky has resolved, so
 a preview cannot fall behind its scene the way the CSS imitations did.
 
-**Every scene is a pure function of time, and of a seed.** Stars, threads and
-frost are scattered from `config.bgSeed` — zero is the authored composition —
+**Every scene is a pure function of time, and of a seed.** Stars, threads,
+bubbles and cracks are scattered from `config.bgSeed` — zero is the authored composition —
 so a new tab is the same sky, and "Shuffle this sky" is a new one kept until
 shuffled again. Each scene has a rest phase, the frame chosen by looking at it,
 which is what motion at zero, reduced motion and the thumbnails all hold.
@@ -233,6 +236,19 @@ which is what motion at zero, reduced motion and the thumbnails all hold.
 picture. And moving frames are budgeted: thirty a second, fifteen after a minute
 without input, at the same pace either way, because every painted frame makes
 each glass surface above the canvas blur what is behind it again.
+
+**A scene paints with what the GPU draws as it is.** Chrome's 2D canvas fills
+gradients, circles, hairlines and images on the GPU, but a thick antialiased
+stroke that runs across the window it rasterises on the processor, box and all:
+Silk's threads cost a hundred milliseconds a frame that way and it ran at a
+third of its budget. So soft light is gradients (`glow`, `drawShaft`), fine
+lines are hairlines, whatever holds still is drawn once into a layer and laid
+down each frame (Baikal's ice), and long lines go to the GPU layer
+(`sky-gl.js`: Silk, Polaris, Contour), which draws them as triangle strips and
+lays the frame onto the canvas in one `drawImage`. A still and the quiet-zone
+sample are small enough to paint in 2D, and do. `tests/unit/scene-cost` holds
+every scene to it: no thick stroke across more than a small box on the screen
+canvas, and no more than a few hundred calls a frame.
 
 **The sky yields to the words.** The app tells the engine where text sits
 straight on the sky — the clock, the date, the greeting, the search field — and

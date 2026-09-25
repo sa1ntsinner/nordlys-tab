@@ -114,6 +114,12 @@
     root.setAttribute("data-bg", mode);
   } catch (error) { /* no config: the defaults below are a fine first frame */ }
 
+  /* One page fit lays the page out on its own surface (page-fit.js). Saying
+     so before the first frame means the surface is already in place when the
+     fit measures it, rather than the page changing shape as the fit starts.
+     Only exactly true turns it on; anything else is the ordinary page. */
+  if (config && config.onePageFit === true) root.setAttribute("data-page-fit", "on");
+
   root.setAttribute("data-theme", theme);
   if (LIGHT.indexOf(theme) !== -1) root.classList.add("light-ui");
   root.style.backgroundColor = background;

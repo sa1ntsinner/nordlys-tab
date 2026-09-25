@@ -2260,6 +2260,10 @@ input[type="range"].ipt:focus-visible {
 .board-rows-state { flex: 1 0 100%; min-width: 0; font-size: var(--nl-text-xs); line-height: 1.4; color: var(--nl-text-secondary); }
 .board-layout-foot #cfg-size { margin-inline-start: auto; }
 .board-arrange-btn { min-height: var(--nl-target-min); padding-inline: 16px; }
+/* One page fit, under the layouts it is easy to mistake it for. */
+.page-fit-block { display: grid; gap: 4px; padding-top: 10px; border-top: 1px solid var(--nl-border); }
+.page-fit-row { margin: 0; }
+.page-fit-note { margin: 0; font-size: var(--nl-text-xs); line-height: 1.45; color: var(--nl-text-secondary); }
 @media (max-width: 420px) {
   .board-layout-options { grid-template-columns: 1fr; }
 }
