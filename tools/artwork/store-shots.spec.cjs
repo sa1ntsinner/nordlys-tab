@@ -2,20 +2,21 @@ const { test, expect } = require('../../tests/helpers/nordlys-fixture.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
 const compose = require('./compose.cjs');
-const { BOARDS } = require('./store-board.cjs');
+const { BOARDS, SKIES } = require('./store-board.cjs');
 
 /* Regenerates the five Chrome Web Store screenshots. Each is a headline over
    the real product: the extension is opened on a board of well-known sites
    (store-board.cjs) in its own theme, scene and arrangement, captured at twice
    its pixels, and set into a layout from compose.cjs. Every look is one the
-   product's own settings make; nothing in a screenshot is drawn by hand. */
+   product's own settings make; nothing in a screenshot is drawn by hand. The
+   frames are kept in tools/artwork/.scratch for site-assets.cjs. */
 
 const ROOT = path.resolve(__dirname, '../..');
 const OUT = path.join(ROOT, 'docs/store-assets');
 const SCRATCH = path.join(ROOT, 'tools/artwork/.scratch');
 
 test.use({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, timezoneId: 'Europe/Berlin' });
-test.setTimeout(180000);
+test.setTimeout(240000);
 
 /* The scene animates on a slow clock: in the first second the aurora is still a
    flat wash, and only after roughly a dozen does it draw the ribbons that make
@@ -32,6 +33,24 @@ async function frame(page, name, warmup = 700) {
   return `/tools/artwork/.scratch/${name}`;
 }
 
+/* Part of the page: the boxes of the given elements taken together, with room
+   around them, cut off at a height when a list runs on. */
+async function closeUp(page, name, selectors, { pad = 22, height = Infinity } = {}) {
+  await page.addStyleTag({ content: STILL });
+  await page.waitForTimeout(300);
+  const boxes = [];
+  for (const selector of selectors) {
+    const box = await page.locator(selector).first().boundingBox();
+    if (box) boxes.push(box);
+  }
+  const x = Math.max(0, Math.min(...boxes.map(box => box.x)) - pad);
+  const y = Math.max(0, Math.min(...boxes.map(box => box.y)) - pad);
+  const right = Math.max(...boxes.map(box => box.x + box.width)) + pad;
+  const bottom = Math.min(Math.max(...boxes.map(box => box.y + box.height)) + pad, y + height);
+  await page.screenshot({ path: path.join(SCRATCH, name), animations: 'disabled', clip: { x, y, width: right - x, height: bottom - y } });
+  return shot(name);
+}
+
 /* Lays a composition out in a page of its own, at the store's size. */
 async function render(context, origin, name, html) {
   fs.writeFileSync(path.join(SCRATCH, 'compose.html'), html);
@@ -45,25 +64,15 @@ async function render(context, origin, name, html) {
   console.log(`  ${name} ${Math.round(fs.statSync(path.join(OUT, name)).size / 1024)}KB`);
 }
 
-/* Three pictures for one bookmark, as if taken from three addresses over
-   time: the same mark, drawn three ways. */
-async function iconVersions(page) {
-  return page.evaluate(() => [['#ff4d4d', '#b3122e'], ['#2b2f3a', '#12141a'], ['#ffffff', '#e8ebf2']].map(([top, bottom], index) => {
-    const canvas = Object.assign(document.createElement('canvas'), { width: 128, height: 128 });
-    const g = canvas.getContext('2d');
-    const fill = g.createLinearGradient(0, 0, 0, 128);
-    fill.addColorStop(0, top); fill.addColorStop(1, bottom);
-    g.fillStyle = fill;
-    g.beginPath(); g.roundRect(8, 24, 112, 80, 24); g.fill();
-    g.fillStyle = index === 2 ? '#e0253a' : '#ffffff';
-    g.beginPath(); g.moveTo(52, 44); g.lineTo(86, 64); g.lineTo(52, 84); g.closePath(); g.fill();
-    return canvas.toDataURL('image/png').split(',')[1];
-  }));
-}
-
 const shot = name => `/tools/artwork/.scratch/${name}`;
+const hide = (page, ids) => page.evaluate(ids => {
+  for (const id of ids) {
+    const node = document.getElementById(id);
+    if (node) node.style.visibility = 'hidden';
+  }
+}, ids);
 
-/* One screenshot per test, each opening its own board and look. */
+/* One test per board, each opening its own look. */
 const scene = (key, run) => test.describe(key, () => {
   test.use({ nordlysBoard: BOARDS[key] });
   test(`screenshot: ${key}`, async ({ nordlysPage }) => {
@@ -77,9 +86,29 @@ const scene = (key, run) => test.describe(key, () => {
 scene('sky', async ({ page, origin }) => {
   const sky = await frame(page, 'sky.png', CANVAS_WARMUP);
   await render(page.context(), origin, 'screenshot-1-sky.png', compose.slide({
-    title: 'A new tab under a living sky',
-    subtitle: 'Six moving scenes, drawn on your own machine, with your bookmarks in folders on top.',
+    title: 'Bookmarks on your new tab',
+    subtitle: 'Arrange folders over an animated background. No account or analytics.',
     image: sky
+  }));
+});
+
+scene('skies', async ({ page, origin }) => {
+  await hide(page, ['board', 'searchwrap', 'gear', 'hiddenDock', 'greet', 'fit-toggle']);
+  const frames = [];
+  for (const sky of SKIES) {
+    await page.evaluate(({ scene, theme, intensity = 1 }) => {
+      window.Nordlys.setTheme(theme);
+      window.Nordlys.config.bgMode = scene;
+      window.Nordlys.config.bgIntensity = intensity;
+      window.Nordlys.saveConfig();
+      window.Nordlys.updateBackgroundMode();
+    }, sky);
+    frames.push({ label: sky.name, image: await frame(page, `sky-${sky.scene}.png`, sky.scene === 'aurora' ? CANVAS_WARMUP : 6000) });
+  }
+  await render(page.context(), origin, 'screenshot-2-skies.png', compose.grid({
+    title: '9 animated backgrounds',
+    subtitle: 'Change the colours or speed, or use your own picture or video.',
+    frames, backdropImage: frames[1].image
   }));
 });
 
@@ -94,58 +123,63 @@ scene('arrange', async ({ page, origin }) => {
   await expect(page.locator('#arrange-size-panel')).toBeVisible();
   await page.mouse.move(720, 20);
   const arrange = await frame(page, 'arrange.png', 1500);
-  await render(page.context(), origin, 'screenshot-2-arrange.png', compose.slide({
-    title: 'Arrange it the way you think',
-    subtitle: 'Fitted rows, or folders where you drop them. Set size and spacing, and one Undo takes it back.',
+  await render(page.context(), origin, 'screenshot-3-arrange.png', compose.slide({
+    title: 'Move folders around',
+    subtitle: 'Choose free or fitted rows. Adjust tile size, spacing and width in one panel. Undo any change.',
     image: arrange
   }));
 });
 
-scene('icons', async ({ page, origin }) => {
-  const board = await frame(page, 'icons-board.png', CANVAS_WARMUP);
-  // Three pictures one bookmark has come from, served as if from three addresses.
-  const pictures = await iconVersions(page);
-  await page.route('https://icons.example/**', route => {
-    const index = Number(/v(\d)/.exec(route.request().url())?.[1] || 1) - 1;
-    route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from(pictures[index], 'base64') });
-  });
-  const openCustom = async () => {
-    await page.evaluate(() => window.Nordlys.settings.openIconModal(0, 0));
-    await expect(page.locator('#icon-modal')).toBeVisible();
-    await page.locator('.icon-tab-btn[data-tab="custom"]').click();
-    await expect(page.locator('#modal-pane-custom')).toBeVisible();
-  };
-  await page.locator('#gear').click();
-  await page.locator('#settings-tab-bookmarks').click();
-  for (const version of [3, 2, 1]) {
-    await openCustom();
-    await page.locator('#icon-url-input').fill(`https://icons.example/play-v${version}.png`);
-    await page.locator('#icon-url-input').press('Enter');
-    await expect(page.locator('#icon-url-status')).toHaveText('Image ready');
-    await page.locator('#icon-url-apply-btn').click();
-    await expect(page.locator('#icon-modal')).toBeHidden();
+/* The search box and the icon picker up close. The brand search is the real
+   one, so this is what a person searching "google" gets from Iconify. */
+scene('extras', async ({ page }) => {
+  await page.waitForTimeout(6000);
+  const search = page.locator('#q');
+  await search.click();
+  await search.fill('45 * 12 + sqrt(144)');
+  await expect(page.locator('#sugg .sugg-calc')).toBeVisible();
+  await closeUp(page, 'extra-calc.png', ['#searchwrap', '#sugg']);
+
+  await search.fill('>');
+  await expect(page.locator('#sugg .sugg-command').nth(3)).toBeVisible();
+  const rows = await page.locator('#sugg .sugg-command').nth(3).boundingBox();
+  const top = (await page.locator('#searchwrap').boundingBox()).y;
+  await closeUp(page, 'extra-commands.png', ['#searchwrap', '#sugg'], { pad: 10, height: rows.y + rows.height + 4 - (top - 10) });
+  await search.fill('');
+  await page.keyboard.press('Escape');
+
+  await page.evaluate(() => window.Nordlys.settings.openIconModal(0, 0));
+  await expect(page.locator('#icon-modal')).toBeVisible();
+  await page.locator('#icon-search').fill('google');
+  // The one step that goes online; a slow answer is asked for again.
+  for (let attempt = 1; ; attempt++) {
+    await page.locator('#icon-search-btn').click();
+    try {
+      await expect(page.locator('#modal-icon-grid .icon-item').nth(7)).toBeVisible({ timeout: 12000 });
+      break;
+    } catch (error) {
+      if (attempt === 3) throw error;
+    }
   }
-  await openCustom();
-  await expect(page.locator('.icon-url-version')).toHaveCount(3);
   await page.evaluate(() => document.activeElement?.blur());
-  const source = page.locator('#icon-url-source');
-  await source.scrollIntoViewIfNeeded();
-  await page.locator('.icon-url-version').nth(1).hover();
-  await page.waitForTimeout(600);
+  await page.waitForTimeout(1200);
+  // The search field and the first three rows of what it found.
   await page.addStyleTag({ content: STILL });
-  const box = await source.boundingBox();
-  await page.screenshot({ path: path.join(SCRATCH, 'icons.png'), animations: 'disabled', clip: { x: box.x - 22, y: box.y - 18, width: box.width + 44, height: box.height + 30 } });
-  await render(page.context(), origin, 'screenshot-3-icons.png', compose.feature({
-    title: 'Every bookmark, the icon you want',
-    subtitle: 'A site’s own icon, a letter, or a picture from any address — and the ones you used before stay in reach.',
-    back: board, detail: shot('icons.png')
-  }));
+  const pane = await page.locator('#modal-pane-search').boundingBox();
+  const field = await page.locator('#icon-search').boundingBox();
+  const bottom = await page.evaluate(() => {
+    const boxes = [...document.querySelectorAll('#modal-icon-grid .icon-item')].map(item => item.getBoundingClientRect());
+    const rows = [...new Set(boxes.map(box => Math.round(box.top)))].sort((a, b) => a - b);
+    const third = rows[Math.min(2, rows.length - 1)];
+    return Math.max(...boxes.filter(box => Math.round(box.top) === third).map(box => box.bottom));
+  });
+  const y = field.y - 16;
+  await page.screenshot({ path: path.join(SCRATCH, 'extra-icons.png'), animations: 'disabled', clip: { x: pane.x, y, width: pane.width, height: bottom + 6 - y } });
 });
 
 scene('daylight', async ({ page, origin }) => {
-  // An equinox day in Berlin at four hours, the clock saying which. Only the
-  // date is held: Playwright's clock would also stop the frame timer, and the
-  // sky with it.
+  // An equinox day in Berlin at four hours. Only the date is held:
+  // Playwright's clock would also stop the frame timer, and the sky with it.
   await page.evaluate(() => {
     window.Nordlys.config.bgDaylight = true;
     window.Nordlys.saveConfig();
@@ -162,10 +196,16 @@ scene('daylight', async ({ page, origin }) => {
     }, iso);
     frames.push({ label, image: await frame(page, `daylight-${label.toLowerCase()}.png`, 6000) });
   }
-  await render(page.context(), origin, 'screenshot-4-daylight.png', compose.mosaic({
-    title: 'Lit by the time of day',
-    subtitle: 'Turn on daylight and every scene follows the sun where you are. No location asked, nothing sent.',
-    frames, backdropImage: frames[2].image
+  await render(page.context(), origin, 'screenshot-4-extras.png', compose.tiles({
+    title: 'Search, icons and time of day',
+    subtitle: 'Math and commands in the search box, icons by brand name, and a background that follows the time of day.',
+    cells: [
+      { label: 'Math in search', image: shot('extra-calc.png') },
+      { label: 'Commands with >', image: shot('extra-commands.png') },
+      { label: 'Brand icons', image: shot('extra-icons.png') },
+      { label: 'Time of day', images: frames }
+    ],
+    backdropImage: frames[2].image
   }));
 });
 
@@ -182,8 +222,8 @@ scene('dark', async ({ page, origin }) => {
   await page.evaluate(() => document.activeElement?.blur());
   const dark = await frame(page, 'dark.png', CANVAS_WARMUP);
   await render(page.context(), origin, 'screenshot-5-themes.png', compose.pair({
-    title: 'Light or dark, always readable',
-    subtitle: '21 themes, light and dark, each checked for contrast on every panel it paints.',
+    title: '21 themes',
+    subtitle: '11 dark and 10 light themes. You can make your own from three colours.',
     back: shot('light.png'), front: dark, backdropImage: dark
   }));
 });

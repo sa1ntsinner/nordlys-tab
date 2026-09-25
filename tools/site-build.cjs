@@ -12,6 +12,7 @@ const BORROWED = {
   'sky/colour-tools.js': 'src/js/colour-tools.js',
   'sky/sky-zones.js': 'src/js/sky-zones.js',
   'sky/sky-clock.js': 'src/js/sky-clock.js',
+  'sky/sky-gl.js': 'src/js/sky-gl.js',
   'sky/background.js': 'src/js/background.js',
   'fonts/outfit.woff2': 'src/fonts/outfit.woff2',
   'fonts/instrument-sans.woff2': 'src/fonts/instrument-sans.woff2',

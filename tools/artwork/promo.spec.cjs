@@ -4,20 +4,22 @@ const path = require('node:path');
 const compose = require('./compose.cjs');
 const { BOARDS } = require('./store-board.cjs');
 
-/* Builds the two Chrome Web Store promo tiles and the cover for the Buy Me a
-   Coffee page. The sky in each is the product's own canvas captured at that
-   picture's shape, not a drawing of it, so the artwork cannot drift from what
-   the extension actually renders. */
+/* Builds the two Chrome Web Store promo tiles, the cover for the Buy Me a
+   Coffee page and the picture the website shows when its link is shared. The
+   sky in each is the product's own canvas captured at that picture's shape,
+   not a drawing of it, so the artwork cannot drift from what the extension
+   actually renders. */
 
 const ROOT = path.resolve(__dirname, '../..');
 const SCRATCH = path.join(ROOT, 'tools/artwork/.scratch');
 const PIECES = [
   { name: 'docs/store-assets/promo-marquee-1400x560.png', width: 1400, height: 560, layout: 'marquee' },
   { name: 'docs/store-assets/promo-small-440x280.png', width: 440, height: 280, layout: 'small' },
-  { name: 'docs/brand/buymeacoffee-cover.png', width: 2400, height: 600, layout: 'cover' }
+  { name: 'docs/brand/buymeacoffee-cover.png', width: 2400, height: 600, layout: 'cover' },
+  { name: 'site/assets/og.png', width: 1200, height: 630, layout: 'og' }
 ].filter(piece => !process.env.ARTWORK_PIECES || process.env.ARTWORK_PIECES.split(',').includes(piece.layout));
 
-// ARTWORK_PIECES=marquee (or small, cover) builds only those.
+// ARTWORK_PIECES=marquee (or small, cover, og) builds only those.
 test.use({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, nordlysBoard: BOARDS.marquee });
 test.setTimeout(420000);
 

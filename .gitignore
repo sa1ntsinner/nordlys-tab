@@ -10,11 +10,7 @@ scratch-shots/
 scratch-qa-*.html
 test-screenshots/
 test-theme-previews/
-.superpowers/
 .references/
 tools/artwork/.scratch/
 sweeps.config.cjs
-
-# graft's local graph cache — regenerable, not committed (run `graft build`).
-/graft/
 _site/

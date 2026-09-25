@@ -49,7 +49,7 @@ function board({ theme, scene, folders, ...settings }) {
 const BOARDS = {
   // The hero: a full board under the aurora.
   sky: board({
-    theme: 'aurora-void', scene: 'aurora', bgIntensity: 1.4,
+    theme: 'aurora-void', scene: 'aurora', bgIntensity: 1.5,
     folders: [
       folder('Daily', 3, ['gmail', 'drive', 'youtube', 'wikipedia', 'reddit', 'amazon']),
       folder('AI', 2, ['chatgpt', 'claude', 'gemini', 'perplexity']),
@@ -81,9 +81,23 @@ const BOARDS = {
       folder('Social', 2, ['x', 'discord', 'telegram', 'reddit'], true)
     ]
   }),
+  // The nine skies: the board is hidden for these, so any folders will do.
+  skies: board({
+    theme: 'aurora-void', scene: 'aurora',
+    folders: [folder('Daily', 3, ['gmail', 'drive', 'youtube'])]
+  }),
+  // The extras: the search box and the icon picker, over a quiet sky.
+  extras: board({
+    theme: 'tokyo-night', scene: 'polaris',
+    folders: [
+      folder('Daily', 3, ['gmail', 'drive', 'google', 'youtube', 'wikipedia', 'reddit']),
+      folder('Work', 3, ['notion', 'slack', 'figma', 'trello', 'linear', 'github']),
+      folder('Watch', 2, ['netflix', 'spotify', 'twitch', 'steam'])
+    ]
+  }),
   // Daylight: the sky is the subject, so the board is folded into the dock.
   daylight: board({
-    theme: 'dracula-velvet', scene: 'drift',
+    theme: 'boreal-emerald', scene: 'aurora', bgIntensity: 1.5,
     folders: [
       folder('Daily', 3, ['gmail', 'drive', 'youtube'], true),
       folder('AI', 2, ['chatgpt', 'claude'], true),
@@ -92,7 +106,7 @@ const BOARDS = {
   }),
   // Themes: the same board light and dark.
   light: board({
-    theme: 'porcelain-light', scene: 'frost', boardWidth: 'wide',
+    theme: 'porcelain-light', scene: 'baikal', boardWidth: 'wide',
     folders: [
       folder('Daily', 3, ['gmail', 'drive', 'youtube', 'wikipedia', 'reddit', 'amazon']),
       folder('Work', 3, ['notion', 'slack', 'figma', 'trello', 'linear', 'github']),
@@ -113,4 +127,17 @@ const BOARDS = {
 };
 BOARDS.dark = { ...BOARDS.light, theme: 'gruvbox-dark', bgMode: 'silk' };
 
-module.exports = { BOARDS };
+/* Each sky in a theme of its own, so the grid shows the themes as well. */
+const SKIES = [
+  { scene: 'aurora', name: 'Nordlys', theme: 'aurora-void', intensity: 1.5 },
+  { scene: 'polaris', name: 'Polaris', theme: 'tokyo-night' },
+  { scene: 'halo', name: 'Halo', theme: 'nord-frost' },
+  { scene: 'pillars', name: 'Pillars', theme: 'sunset-amber' },
+  { scene: 'nacre', name: 'Nacre', theme: 'peach-sunset' },
+  { scene: 'silk', name: 'Silk', theme: 'catppuccin-mocha' },
+  { scene: 'baikal', name: 'Baikal', theme: 'aurora-void' },
+  { scene: 'drift', name: 'Contour', theme: 'dracula-velvet' },
+  { scene: 'horizon', name: 'Fjord', theme: 'boreal-emerald' }
+];
+
+module.exports = { BOARDS, SKIES };
