@@ -150,7 +150,8 @@ test('a large image used as an icon is stored at icon size', async ({ nordlysPag
   await page.locator('#icon-file-apply-btn').click();
   await expect(page.locator('#icon-modal')).toBeHidden();
   const stored = await page.evaluate(() => window.Nordlys.config.groups[0].links[0].customImg);
-  expect(stored).toMatch(/^data:image\/webp/);
+  // WebKit on macOS cannot encode WebP and hands back PNG, which is fine.
+  expect(stored).toMatch(/^data:image\/(webp|png)/);
   const size = await page.evaluate(src => new Promise(done => { const image = new Image(); image.onload = () => done([image.naturalWidth, image.naturalHeight]); image.src = src; }), stored);
   expect(Math.max(...size)).toBe(256);
   // A budget per icon, not a ratio: a flat test image compresses unusually well.
@@ -170,6 +171,6 @@ test('a heavy vector is stored at icon size, a light one stays a vector', async 
   });
   expect(result.light).toMatch(/^data:image\/svg\+xml/);
   expect(result.heavyIn).toBeGreaterThan(150000);
-  expect(result.heavy).toMatch(/^data:image\/webp/);
+  expect(result.heavy).toMatch(/^data:image\/(webp|png)/);
   expect(result.heavy.length).toBeLessThan(result.heavyIn);
 });

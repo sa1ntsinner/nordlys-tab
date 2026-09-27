@@ -92,7 +92,6 @@ const WALLPAPERS = {
 };
 for (const theme of ['aurora-void', 'porcelain-light']) {
   test(`${theme}: a wallpaper of any brightness leaves every word readable`, async ({ nordlysPage, browserName }) => {
-    test.skip(browserName === 'webkit' && process.platform === 'win32', 'Playwright WebKit on Windows cannot store a Blob in IndexedDB; Safari can');
     const { page } = nordlysPage;
     for (const kind of Object.values(WALLPAPERS)) {
       await page.evaluate(async ({ kind, theme }) => {

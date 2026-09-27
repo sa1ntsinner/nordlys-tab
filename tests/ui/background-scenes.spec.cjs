@@ -410,7 +410,6 @@ test('Halo follows the real moon, and holds a full one when told not to', async 
 /* A mood can start from somewhere other than three blank pickers: two harmonies
    of its first colour, and — when there is one — the person's own wallpaper. */
 test('a mood can start from a harmony, or from the wallpaper when there is one', async ({ nordlysPage, browserName }) => {
-  test.skip(browserName === 'webkit' && process.platform === 'win32', 'Playwright WebKit on Windows cannot store a Blob in IndexedDB; Safari can');
   const { page } = nordlysPage;
   await openBackground(page);
   await expect(page.locator('#bg-palette-wallpaper')).toBeHidden();

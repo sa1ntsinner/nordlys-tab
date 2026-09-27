@@ -65,7 +65,7 @@ test('a new key that already exists is never overwritten by an old one', async (
 });
 
 test('a wallpaper stored under the old database name is still the wallpaper', async ({ nordlysPage, browserName }) => {
-  test.skip(browserName === 'webkit' && process.platform === 'win32', 'Playwright WebKit on Windows cannot store a Blob in IndexedDB; Safari can');
+  test.skip(browserName === 'webkit', 'the test writes a Blob into IndexedDB itself, which Playwright WebKit cannot store (the app falls back to bytes, see wallpaper-storage.spec.cjs)');
   const { page } = nordlysPage;
   // Put a record where the previous build would have left it, and nothing new.
   await page.evaluate(async () => {
@@ -107,7 +107,7 @@ test('a wallpaper stored under the old database name is still the wallpaper', as
    on the next load. Between the two the user may have chosen a wallpaper, which
    went into the new database. The retry must not put the old one back over it. */
 test('a retried move never puts an old wallpaper over a newer one', async ({ nordlysPage, browserName }) => {
-  test.skip(browserName === 'webkit' && process.platform === 'win32', 'Playwright WebKit on Windows cannot store a Blob in IndexedDB; Safari can');
+  test.skip(browserName === 'webkit', 'the test writes a Blob into IndexedDB itself, which Playwright WebKit cannot store (the app falls back to bytes, see wallpaper-storage.spec.cjs)');
   const { page } = nordlysPage;
   await page.evaluate(async () => {
     const openWith = name => new Promise((resolve, reject) => {

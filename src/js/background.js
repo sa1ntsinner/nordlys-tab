@@ -2350,14 +2350,27 @@ const MediaVault = {
     });
   },
 
+  /* Some WebKit sessions (a Safari private window among them) refuse to keep
+     a Blob in IndexedDB. The file is then kept as its bytes and its type, and
+     getMedia hands back the same Blob either way. */
   async saveMedia(id, blob, type) {
     const db = await this.open();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(this.STORE, "readwrite");
-      tx.objectStore(this.STORE).put({ id, blob, type, timestamp: Date.now() });
+    const write = (record) => new Promise((resolve, reject) => {
+      let tx;
+      try {
+        tx = db.transaction(this.STORE, "readwrite");
+        tx.objectStore(this.STORE).put(record);
+      } catch (error) { reject(error); return; }
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
     });
+    const timestamp = Date.now();
+    try {
+      await write({ id, blob, type, timestamp });
+    } catch (error) {
+      await write({ id, bytes: await blob.arrayBuffer(), blobType: blob.type || type || "", type, timestamp });
+    }
   },
 
   async getMedia(id) {
@@ -2365,7 +2378,12 @@ const MediaVault = {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(this.STORE, "readonly");
       const req = tx.objectStore(this.STORE).get(id);
-      req.onsuccess = () => resolve(req.result ? req.result.blob : null);
+      req.onsuccess = () => {
+        const record = req.result;
+        if (!record) resolve(null);
+        else if (record.blob) resolve(record.blob);
+        else resolve(record.bytes ? new Blob([record.bytes], { type: record.blobType || "" }) : null);
+      };
       req.onerror = () => reject(req.error);
     });
   },

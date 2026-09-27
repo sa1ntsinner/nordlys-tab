@@ -244,7 +244,8 @@ test.describe('saved', () => {
 test.describe('from the keyboard', () => {
   test.use({ nordlysBoard: NINE_FOLDERS });
 
-  test('Tab reaches it before the gear, Space and Enter work it, and focus stays', async ({ nordlysPage }) => {
+  test('Tab reaches it before the gear, Space and Enter work it, and focus stays', async ({ nordlysPage, browserName }) => {
+    test.skip(browserName === 'webkit' && process.platform === 'darwin', 'WebKit on macOS moves Tab only between text fields until keyboard navigation is turned on in System Settings');
     const { page } = nordlysPage;
     await settled(page);
     await page.locator('body').click({ position: { x: 5, y: 5 } });
@@ -349,6 +350,8 @@ test.describe('a star until it is wanted', () => {
     await settled(page);
     await page.mouse.move(5, 500);
     await expect.poll(async () => (await look(page)).label).toBe(0);
+    // Past the one glint the star gives after arrival.
+    await expect(page.locator('#fit-toggle')).not.toHaveClass(/glint/, { timeout: 8000 });
     const rest = await look(page);
     expect(rest.star?.shown, 'the star is there').toBe(true);
     expect(rest.star.opacity, 'visible, and quiet').toBeGreaterThan(0.3);
@@ -373,7 +376,8 @@ test.describe('a star until it is wanted', () => {
     await expect.poll(async () => (await look(page)).star.opacity, 'the star comes back').toBeGreaterThan(0.5);
   });
 
-  test('keyboard focus opens it as a pointer does', async ({ nordlysPage }) => {
+  test('keyboard focus opens it as a pointer does', async ({ nordlysPage, browserName }) => {
+    test.skip(browserName === 'webkit' && process.platform === 'darwin', 'WebKit on macOS moves Tab only between text fields until keyboard navigation is turned on in System Settings');
     const { page } = nordlysPage;
     await settled(page);
     await page.locator('#fit-toggle').focus();

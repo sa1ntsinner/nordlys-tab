@@ -156,7 +156,8 @@ test('every locale gets the invitation in its own words', async ({ nordlysPage }
   }
 });
 
-test('the invitation is reachable, focusable and fits 320px', async ({ nordlysPage }) => {
+test('the invitation is reachable, focusable and fits 320px', async ({ nordlysPage, browserName }) => {
+  test.skip(browserName === 'webkit' && process.platform === 'darwin', 'WebKit on macOS moves Tab only between text fields until keyboard navigation is turned on in System Settings');
   const { page } = nordlysPage;
   await page.setViewportSize({ width: 320, height: 568 });
   await expect(page.locator(EMPTY)).toBeVisible();

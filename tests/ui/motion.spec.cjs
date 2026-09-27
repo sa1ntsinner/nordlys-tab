@@ -27,7 +27,9 @@ async function animationAudit(page, context = null) {
 test('the page does not animate itself on arrival', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   const onArrival = await animationAudit(page);
-  const moving = onArrival.filter(animation => animation.duration > 0);
+  // The one glint the fit switch's star gives, 1.2 s in, is a hint and not
+  // arrival; a slow machine reaches this check after it has started.
+  const moving = onArrival.filter(animation => animation.duration > 0 && !/fit-toggle-star/.test(animation.target));
   expect(moving, `nothing should be animating on load: ${JSON.stringify(moving)}`).toEqual([]);
 });
 
