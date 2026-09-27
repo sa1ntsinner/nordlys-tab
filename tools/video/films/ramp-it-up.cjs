@@ -249,7 +249,9 @@ module.exports = {
         await s.rect('menu', '#profile-menu');
         const home = await rowOf(s, '#profile-menu .ctx-item', 'Home');
         await s.clickOn(at(3), ['#profile-menu .ctx-item', home], 0.4, 'switch');
-        await s.at(at(4));
+        // Off the board before the pointer goes: the folder under it would keep showing its hover buttons.
+        await s.at(at(3.5));
+        await s.glide(24, 24, 0.5);
         await s.pointer(false);
       } },
 
