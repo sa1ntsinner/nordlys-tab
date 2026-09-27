@@ -33,7 +33,7 @@
   const layout = () => window.NordlysBoardLayout;
   /* Boxes are measured as drawn; One page fit may draw the board zoomed, and a
      distance measured there is written back in the element's own lengths. */
-  const zoomOf = (node) => node?.currentCSSZoom || 1;
+  const zoomOf = (node) => window.NordlysUI?.cssZoom(node) || 1;
 
   /* Where every folder on the board is, keyed by the folder itself: indices
      change when folders move, objects do not. */
@@ -289,8 +289,11 @@
       }
       const session = this.session;
       if (!session || event.pointerId !== session.pointerId) return;
-      if (event.type === "pointercancel") this.cancel();
-      else this.drop();
+      if (event.type === "pointercancel") { this.cancel(); return; }
+      // Released before the next frame: the place is worked out now, from
+      // where the pointer last was, not left at the one before.
+      if (session.frame) { cancelAnimationFrame(session.frame); session.frame = 0; this.retarget(); }
+      this.drop();
     }
 
     onKey(event) {

@@ -37,7 +37,7 @@ const SCENE_KEYS = {
 };
 
 /* The settings a shared look may change (look-share.js). */
-const LOOK_SETTINGS = ["bgMode", "bgMotion", "bgIntensity", "bgSeed", "bgRealSky", "bgDaylight", "boardLayout", "glassLevel", "cardRadius", "tileSize", "cardGap", "boardGap", "boardWidth", "tileLabels", "cardGlow", "iconShape", "hoverEffect"];
+const LOOK_SETTINGS = ["bgMode", "bgMotion", "bgIntensity", "bgSeed", "bgRealSky", "bgDaylight", "boardLayout", "glassLevel", "cardRadius", "tileSize", "cardGap", "boardGap", "boardWidth", "tileLabels", "cardGlow", "iconShape", "hoverEffect", "cornerShape"];
 
 class SettingsController {
   constructor(app) {
@@ -1051,7 +1051,7 @@ class SettingsController {
   }
 
   mapTab(targetTab) {
-    const tabMap = { "themes":"appearance", "theme":"appearance", "appearance":"appearance", "shaders":"background", "background":"background", "custom-theme":"appearance", "general":"general", "bookmarks":"bookmarks", "custom-css":"custom-css", "backup":"backup" };
+    const tabMap = { "themes":"appearance", "theme":"appearance", "appearance":"appearance", "shaders":"background", "background":"background", "custom-theme":"appearance", "general":"general", "bookmarks":"bookmarks", "dashboard":"dashboard", "custom-css":"custom-css", "backup":"backup" };
     return tabMap[targetTab] || targetTab;
   }
 
@@ -1122,6 +1122,11 @@ class SettingsController {
     if (cardGlow) cardGlow.value = cfg.cardGlow != null ? cfg.cardGlow : 40;
     if (hoverEffect) hoverEffect.value = cfg.hoverEffect || "lift";
     if (iconShape) iconShape.value = cfg.iconShape || "squircle";
+    const cornerShape = document.getElementById("cfg-corner-shape");
+    if (cornerShape) cornerShape.value = cfg.cornerShape === "smooth" ? "smooth" : "round";
+    // Smooth corners need CSS corner-shape (Chrome and Edge); elsewhere the
+    // choice would change nothing, so it isn't offered.
+    if (cornerShape && typeof CSS !== "undefined" && !CSS.supports("corner-shape: squircle")) cornerShape.closest(".row")?.setAttribute("hidden", "");
 
     this.updateSliderLabels();
     this.updateMiniPreview();
@@ -1260,6 +1265,12 @@ class SettingsController {
       this.app.applyGeometryTokens();
       this.updateSliderLabels();
       this.app.grid?.relayout();
+    });
+
+    document.getElementById("cfg-corner-shape")?.addEventListener("change", (e) => {
+      this.app.config.cornerShape = e.target.value === "smooth" ? "smooth" : "round";
+      document.documentElement.dataset.corners = this.app.config.cornerShape;
+      this.app.saveConfig();
     });
 
     iconShape?.addEventListener("change", (e) => {
@@ -1637,6 +1648,24 @@ class SettingsController {
     const showSeconds = document.getElementById("cfg-show-seconds");
     const openNewTab = document.getElementById("cfg-open-newtab");
     if (languageSelect) languageSelect.value = this.app.config.language || "en";
+
+    /* A browser with no search API of its own (Safari) asks which engine the
+       box should use. Chrome, Edge and Firefox use the one set in the browser. */
+    const engineRow = document.getElementById("cfg-search-engine-row");
+    const engine = document.getElementById("cfg-search-engine");
+    const noSearchApi = !(typeof chrome !== "undefined" && chrome.search);
+    if (engineRow && engine && noSearchApi && window.NordlysPlatform) {
+      engineRow.hidden = false;
+      for (const [key, e] of Object.entries(window.NordlysPlatform.ENGINES)) engine.append(Object.assign(document.createElement("option"), { value: key, textContent: e.name }));
+      engine.value = this.app.config.searchEngine || "";
+      engine.addEventListener("change", () => { this.app.config.searchEngine = engine.value || undefined; this.app.saveConfig(); });
+    }
+    // Without the browser's icon cache, its chip has nothing to show.
+    if (window.NordlysPlatform?.faviconCache === false) {
+      document.querySelector('[data-fav-source="chrome"]')?.setAttribute("hidden", "");
+      document.querySelector('[data-fav-source="chrome"]')?.classList.remove("active");
+      document.querySelector('[data-fav-source="duckduckgo"]')?.classList.add("active");
+    }
 
     languageSelect?.addEventListener("change", (e) => {
       const lang = e.target.value;
@@ -2297,7 +2326,8 @@ class SettingsController {
        already holds every site the person has visited — which is every site
        they would bookmark — and asking it sends nothing anywhere. A remote
        provider is contacted only when its chip is pressed. */
-    this.currentFaviconSource = "chrome";
+    // The browser's own icon cache exists only in Chrome and Edge.
+    this.currentFaviconSource = window.NordlysPlatform?.faviconCache === false ? "duckduckgo" : "chrome";
     this.currentFetchedFaviconUrl = null;
 
     const buildFaviconUrl = (rawUrl, provider) => {
@@ -2389,16 +2419,24 @@ class SettingsController {
     favSourceChips.forEach((chip) => {
       chip.addEventListener("click", () => {
         favSourceChips.forEach((c) => c.classList.toggle("active", c === chip));
-        this.currentFaviconSource = chip.dataset.favSource || "chrome";
+        this.currentFaviconSource = chip.dataset.favSource || (window.NordlysPlatform?.faviconCache === false ? "duckduckgo" : "chrome");
         fetchAndDisplayFavicon(this.currentFaviconSource);
       });
     });
-    /* Loaded when the website-icon tab is opened, not when the picker is. */
-    this.refreshFaviconPreview = () => fetchAndDisplayFavicon();
+    /* Loaded when the website-icon tab is opened, not when the picker is.
+       Without the browser's own cache (Firefox, Safari) every source is
+       someone else's server, so nothing loads until a chip is pressed. */
+    this.refreshFaviconPreview = () => {
+      if (window.NordlysPlatform?.faviconCache === false) {
+        if (favStatus) favStatus.textContent = window.I18N ? window.I18N.t("picker.faviconPick") : "Pick where the icon comes from.";
+        return;
+      }
+      fetchAndDisplayFavicon();
+    };
     this.resetFaviconSource = () => {
-      this.currentFaviconSource = "chrome";
+      this.currentFaviconSource = window.NordlysPlatform?.faviconCache === false ? "duckduckgo" : "chrome";
       this.currentFetchedFaviconUrl = null;
-      favSourceChips.forEach((c) => c.classList.toggle("active", c.dataset.favSource === "chrome"));
+      favSourceChips.forEach((c) => c.classList.toggle("active", c.dataset.favSource === this.currentFaviconSource));
     };
 
     favApplyBtn?.addEventListener("click", () => {
@@ -3763,7 +3801,8 @@ class SettingsController {
     try { drawerWidth = localStorage.getItem("nordlys_drawer_width") || ""; } catch (error) { /* no width to carry */ }
     return window.NordlysConfigSchema.buildBackupFile(this.app.config, {
       customThemes: this.loadCustomThemes(),
-      drawerWidth
+      drawerWidth,
+      dashboardData: this.app.dashboard?.backupData?.() || {}
     });
   }
 
@@ -3998,6 +4037,10 @@ class SettingsController {
     try {
       if (Array.isArray(extras.customThemes)) localStorage.setItem("nordlys_custom_themes", JSON.stringify(extras.customThemes));
       if (extras.drawerWidth) localStorage.setItem("nordlys_drawer_width", extras.drawerWidth);
+      // What the dashboard cards held; the config that names them comes next.
+      if (extras.dashboardData && typeof chrome !== "undefined" && chrome.storage?.local) {
+        chrome.storage.local.set(Object.fromEntries(Object.entries(extras.dashboardData).map(([id, data]) => [`nordlys_dash.${id}`, data])));
+      }
       return true;
     } catch (error) { return false; }
   }

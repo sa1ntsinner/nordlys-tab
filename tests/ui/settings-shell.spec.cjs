@@ -8,7 +8,7 @@ test('desktop settings is a named modal drawer with grouped vertical tabs and co
   await expect(drawer).toHaveAttribute('aria-labelledby', 'settings-title');
   const width = (await drawer.boundingBox()).width;
   expect(width).toBeGreaterThanOrEqual(600); expect(width).toBeLessThanOrEqual(720);
-  const tabs = drawer.getByRole('tab'); await expect(tabs).toHaveCount(7);
+  const tabs = drawer.getByRole('tab'); await expect(tabs).toHaveCount(9);
   await expect(drawer.getByRole('tablist')).toHaveAttribute('aria-orientation', 'vertical');
   await expect(drawer.locator('.settings-nav-group')).toHaveCount(3);
   await drawer.locator('button, input, select, textarea, [tabindex="0"]').last().focus(); await page.keyboard.press('Tab');

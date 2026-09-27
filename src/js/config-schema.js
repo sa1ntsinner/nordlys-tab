@@ -29,7 +29,7 @@
   const FIELDS = {
     version: "string", theme: "string", colorMode: "string", bgMode: "string", bgPalette: "string", boardLayout: "string", boardWidth: "string",
     glassLevel: "string", headerStyle: "string", timeFormat: "string",
-    userName: "string", customCss: "string", iconShape: "string",
+    userName: "string", customCss: "string", iconShape: "string", cornerShape: "string", searchEngine: "string",
     hoverEffect: "string", language: "string",
     bgBlur: "number", bgDim: "number", cardRadius: "number", tileSize: "number",
     cardGap: "number", boardGap: "number", cardGlow: "number", bgMotion: "number", bgIntensity: "number", bgSeed: "number",
@@ -235,10 +235,21 @@
   const BACKUP_EXTRAS_KEY = "nordlysBackup";
   const BACKUP_FORMAT_VERSION = 1;
 
+  /* What each dashboard card holds (its tasks, its note), by card id. Kept
+     beside the config rather than in it, the way the page keeps it. */
+  function dashboardCards(value) {
+    const out = {};
+    if (!isObject(value)) return out;
+    for (const [id, data] of Object.entries(value)) if (/^[a-zA-Z0-9_-]{1,80}$/.test(id) && isObject(data)) out[id] = data;
+    return out;
+  }
+
   function buildBackupFile(config, extras = {}) {
     const envelope = { formatVersion: BACKUP_FORMAT_VERSION, savedAt: new Date().toISOString() };
     if (Array.isArray(extras.customThemes)) envelope.customThemes = extras.customThemes;
     if (typeof extras.drawerWidth === "string" && extras.drawerWidth) envelope.drawerWidth = extras.drawerWidth;
+    const cards = dashboardCards(extras.dashboardData);
+    if (Object.keys(cards).length) envelope.dashboardData = cards;
     return Object.assign({}, config, { [BACKUP_EXTRAS_KEY]: envelope });
   }
 
@@ -254,6 +265,8 @@
     if (isObject(envelope)) {
       if (Array.isArray(envelope.customThemes)) extras.customThemes = envelope.customThemes;
       if (typeof envelope.drawerWidth === "string" && envelope.drawerWidth) extras.drawerWidth = envelope.drawerWidth;
+      const cards = dashboardCards(envelope.dashboardData);
+      if (Object.keys(cards).length) extras.dashboardData = cards;
     }
     return { config, extras };
   }

@@ -165,11 +165,13 @@ test('Ctrl+Z takes back the newest change still on offer, even from inside a dia
    the way back away. The clock stops while the notice is being attended to. */
 test('an undo notice waits while the pointer rests on it', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  await page.evaluate(() => window.NordlysUI.showUndoToast({ message: 'Something changed', duration: 600, onAction: () => {} }));
+  /* Long enough for the pointer to get there on a busy machine; the wait
+     below is still well past it, so only a paused clock keeps it up. */
+  await page.evaluate(() => window.NordlysUI.showUndoToast({ message: 'Something changed', duration: 1500, onAction: () => {} }));
   const notice = page.locator('#toast-dock .toast', { hasText: 'Something changed' });
   await expect(notice).toBeVisible();
   await notice.hover();
-  await page.waitForTimeout(1200);
+  await page.waitForTimeout(2500);
   await expect(notice, 'still there while the pointer rests on it').toBeVisible();
   await page.mouse.move(5, 5);
   await expect(notice).toBeHidden({ timeout: 4000 });

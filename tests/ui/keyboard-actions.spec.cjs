@@ -59,7 +59,7 @@ test('resizing a folder animates the tiles to their new places', async ({ nordly
 /* Alt+1 to Alt+9 are the first nine tiles on the board in reading order, not
    the first nine of the first folder: a board that opens with a two-bookmark
    folder used to leave seven chords doing nothing. */
-test('Alt+digit reaches past the first folder, and holding Alt shows the numbers', async ({ nordlysPage }) => {
+test('Alt+digit reaches past the first folder, and holding Alt shows the numbers', async ({ nordlysPage, browserName }) => {
   const { page } = nordlysPage;
   const numbered = await page.locator('#board .tile[data-shortcut]').evaluateAll(tiles => tiles.map(tile => ({
     n: tile.dataset.shortcut, name: tile.querySelector('.lbl')?.textContent, keys: tile.getAttribute('aria-keyshortcuts')
@@ -71,7 +71,8 @@ test('Alt+digit reaches past the first folder, and holding Alt shows the numbers
   await page.keyboard.down('Alt');
   await expect(page.locator('body')).toHaveClass(/alt-held/);
   const badge = await page.locator('#board .tile[data-shortcut="9"]').evaluate(tile => getComputedStyle(tile, '::after').content);
-  expect(badge).toBe('"9"');
+  // Gecko reports the attr() it draws from rather than the text it draws.
+  expect(badge).toMatch(browserName === 'firefox' ? /^"9"$|^attr\(data-shortcut\)$/ : /^"9"$/);
   await page.keyboard.up('Alt');
   await expect(page.locator('body')).not.toHaveClass(/alt-held/);
 

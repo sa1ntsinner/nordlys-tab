@@ -160,7 +160,12 @@ const COMMAND_KEYS = {
   hide: ["command.verb.hide", "command.help.hide"],
   show: ["command.verb.show", "command.help.show"],
   move: ["command.verb.move", "command.help.move"],
-  settings: ["command.verb.settings", "command.help.settings"]
+  settings: ["command.verb.settings", "command.help.settings"],
+  profile: ["command.verb.profile", "command.help.profile"],
+  dashboard: ["command.verb.dashboard", "command.help.dashboard"],
+  task: ["command.verb.task", "command.help.task"],
+  timer: ["command.verb.timer", "command.help.timer"],
+  focusMode: ["command.verb.focusMode", "command.help.focusMode"]
 };
 
 class SearchWidget {
@@ -471,7 +476,8 @@ class SearchWidget {
       moods: [...document.querySelectorAll("#bg-palette-grid [data-palette]")].map((chip) => ({ key: chip.dataset.palette, name: text(chip.querySelector("span")) || chip.dataset.palette })),
       folders: groups.map((group, index) => ({ key: index, name: group.label || "", hidden: Boolean(group.hidden) })),
       bookmarks: groups.flatMap((group, g) => (group.links || []).map((link, l) => ({ key: `${g}:${l}`, name: link.name || link.url || "", folder: g }))),
-      tabs: [...document.querySelectorAll(".ctabs .ctab[data-tab]")].map((tab) => ({ key: tab.dataset.tab, name: text(tab) }))
+      tabs: [...document.querySelectorAll(".ctabs .ctab[data-tab]")].map((tab) => ({ key: tab.dataset.tab, name: text(tab) })),
+      profiles: (app.sync?.list() || []).map((profile) => ({ key: profile.id, name: profile.name }))
     };
   }
 
@@ -505,6 +511,11 @@ class SearchWidget {
       case "hide": return this.say("command.doHide", `Hide ${name}`, { name });
       case "show": return this.say("command.doShow", `Show ${name}`, { name });
       case "move": return this.say("command.doMove", `Move ${name} to ${candidate.folder.name}`, { name, folder: candidate.folder.name });
+      case "profile": return this.say("command.doProfile", `Profile: ${name}`, { name });
+      case "dashboard": return this.app.dashboard?.on ? this.say("command.doDashboardOff", "Turn the dashboard off") : this.say("command.doDashboardOn", "Turn the dashboard on");
+      case "task": return this.say("command.doTask", `Add a task: ${candidate.name}`, { name: candidate.name });
+      case "timer": return this.say("command.doTimer", "Start or pause the focus timer");
+      case "focusMode": return this.say("command.doFocusMode", "Open focus mode");
       case "settings": return name ? this.say("command.doSettingsTab", `Open settings: ${name}`, { name }) : this.say("command.doSettings", "Open settings");
       default: return "";
     }
@@ -515,7 +526,10 @@ class SearchWidget {
     return [
       ["theme", "theme nord"], ["sky", "sky polaris"], ["mood", "mood ember"], ["shuffle", "shuffle"],
       ["arrange", "arrange"], ["size", "size"], ["newFolder", "new folder Reading"], ["rename", "rename Daily to Morning"], ["hide", "hide Shopping"],
-      ["show", "show Shopping"], ["move", "move YouTube to Daily"], ["settings", "settings background"]
+      ["show", "show Shopping"], ["move", "move YouTube to Daily"], ["settings", "settings background"],
+      ["dashboard", "dashboard"], ["task", "task Call the dentist"], ["timer", "timer"], ["focusMode", "focus"],
+      // Only worth offering once there is a second profile to go to.
+      ...((this.app.sync?.list().length || 0) > 1 ? [["profile", "profile Home"]] : [])
     ].map(([verb, example]) => ({ kind: "verb", verb, example }));
   }
 
@@ -657,11 +671,45 @@ class SearchWidget {
         (to.links ||= []).push(link);
         break;
       }
+      case "profile": {
+        this.endCommandMode();
+        this.input.value = "";
+        this.input.blur();
+        document.body.classList.remove("searching");
+        this.closeSuggestions();
+        this.app.sync?.switchTo(candidate.target.key);
+        return;
+      }
       case "settings": {
         this.endCommandMode();
         this.input.value = "";
         this.input.blur();
         this.app.settings?.open(candidate.target?.key || null);
+        return;
+      }
+      // The dashboard keeps its own Undo: a removed card, a cleared list.
+      case "focusMode": {
+        this.endCommandMode();
+        this.input.value = "";
+        this.input.blur();
+        document.body.classList.remove("searching");
+        this.closeSuggestions();
+        this.app.focusMode?.show();
+        return;
+      }
+      case "dashboard":
+      case "task":
+      case "timer": {
+        this.endCommandMode();
+        this.input.value = "";
+        this.input.blur();
+        document.body.classList.remove("searching");
+        this.closeSuggestions();
+        const dash = this.app.dashboard;
+        if (!dash) return;
+        if (candidate.kind === "dashboard") dash.setOn(!dash.on);
+        else if (candidate.kind === "task") dash.addTask(candidate.name);
+        else dash.toggleTimer();
         return;
       }
       /* Arranging is a place to go, not a change to undo: the arrangement
@@ -773,6 +821,14 @@ class SearchWidget {
       } else if (this.input.value.trim().startsWith(">")) {
         // A command with nothing highlighted runs the best reading of it.
         items.find((item) => item.classList.contains("sugg-command"))?.dispatchEvent(new MouseEvent("mousedown"));
+      } else if (this.input.value.trim().startsWith("?") && this.app.dashboard) {
+        // "? question" goes to the Ask card, not to a search engine.
+        const question = this.input.value.trim().slice(1).trim();
+        this.input.value = "";
+        this.input.blur();
+        document.body.classList.remove("searching");
+        this.closeSuggestions();
+        if (question) this.app.dashboard.ask(question);
       } else {
         this.executeSearch(this.input.value.trim());
       }
@@ -822,16 +878,26 @@ class SearchWidget {
     this.searchWithBrowser(query);
   }
 
-  /* chrome.search.query hands the text to the engine set in Chrome's own
-     settings, in this tab or a new one. There is deliberately no fallback to a
-     hard-coded engine: a page that quietly sends people to Google when the API
-     is missing has made the very choice it is not supposed to make. The API is
-     missing only where the "search" permission is, which is nowhere a user
-     will ever run this. */
+  /* chrome.search.query hands the text to the engine set in the browser's own
+     settings, in this tab or a new one (Chrome, Edge and Firefox all have it).
+     There is deliberately no hard-coded fallback: a page that quietly sends
+     people to Google when the API is missing has made the very choice it is
+     not supposed to make. Where it is missing (Safari), the person picks. */
   searchWithBrowser(text) {
     const api = (typeof chrome !== "undefined" && chrome.search) ? chrome.search : null;
     if (!api) {
-      NordlysUI.announce(window.I18N ? window.I18N.t("search.unavailable") : "Search is not available here");
+      /* A browser without a search API (Safari): the engine the person
+         picked in Settings → General, and if none yet, the place to pick. */
+      const url = window.NordlysPlatform?.searchUrl(this.app?.config?.searchEngine, text);
+      if (url) {
+        if (this.app?.config?.openNewTab) window.open(url, "_blank", "noopener,noreferrer");
+        else window.location.href = url;
+        return;
+      }
+      NordlysUI.announce(window.I18N ? window.I18N.t("search.chooseEngine") : "Choose a search engine first");
+      if (typeof toast === "function") toast(window.I18N ? window.I18N.t("search.chooseEngine") : "Choose a search engine first", "info", 4000);
+      this.app?.settings?.open("general");
+      setTimeout(() => document.querySelector("#cfg-search-engine + .nl-select, #cfg-search-engine")?.focus(), 400);
       return;
     }
     const disposition = this.app?.config?.openNewTab ? "NEW_TAB" : "CURRENT_TAB";

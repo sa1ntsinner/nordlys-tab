@@ -46,7 +46,7 @@ export default [
     ignores: [
       "node_modules/**", "dist/**", "playwright-report/**", "test-results/**", ".playwright-artifacts/**",
       ".*/**", "docs/**", "tools/artwork/.scratch/**",
-      "**/*.sweep.cjs", "sweeps.config.cjs", "scratch-*", "_site/**"
+      "**/*.sweep.cjs", "sweeps.config.cjs", "scratch-*"
     ]
   },
   js.configs.recommended,
@@ -75,7 +75,7 @@ export default [
     }
   },
   {
-    // The project site: one classic script over the page's own sky.
+    // The project site: its script, and the stand-in for Chrome in the demo.
     files: ["site/**/*.js"],
     languageOptions: {
       ecmaVersion: 2023,
@@ -83,6 +83,7 @@ export default [
       globals: { ...globals.browser, NordlysBackgroundEngine: "readonly" }
     },
     rules: {
+      "no-unused-vars": ["error", { args: "none", caughtErrors: "none" }],
       "eqeqeq": ["error", "smart"],
       "no-var": "error",
       "prefer-const": ["error", { destructuring: "all" }]

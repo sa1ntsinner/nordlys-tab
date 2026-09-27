@@ -64,7 +64,8 @@ test('a new key that already exists is never overwritten by an old one', async (
   expect(await page.evaluate(() => localStorage.getItem('aurora_language')), 'and the stale one is cleared').toBeNull();
 });
 
-test('a wallpaper stored under the old database name is still the wallpaper', async ({ nordlysPage }) => {
+test('a wallpaper stored under the old database name is still the wallpaper', async ({ nordlysPage, browserName }) => {
+  test.skip(browserName === 'webkit' && process.platform === 'win32', 'Playwright WebKit on Windows cannot store a Blob in IndexedDB; Safari can');
   const { page } = nordlysPage;
   // Put a record where the previous build would have left it, and nothing new.
   await page.evaluate(async () => {
@@ -105,7 +106,8 @@ test('a wallpaper stored under the old database name is still the wallpaper', as
 /* The move can fail part way — a blocked delete, a read error — and is retried
    on the next load. Between the two the user may have chosen a wallpaper, which
    went into the new database. The retry must not put the old one back over it. */
-test('a retried move never puts an old wallpaper over a newer one', async ({ nordlysPage }) => {
+test('a retried move never puts an old wallpaper over a newer one', async ({ nordlysPage, browserName }) => {
+  test.skip(browserName === 'webkit' && process.platform === 'win32', 'Playwright WebKit on Windows cannot store a Blob in IndexedDB; Safari can');
   const { page } = nordlysPage;
   await page.evaluate(async () => {
     const openWith = name => new Promise((resolve, reject) => {

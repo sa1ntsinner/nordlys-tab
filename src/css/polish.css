@@ -537,3 +537,17 @@ body.hover-glow .tile:hover .box {
     transform: none;
   }
 }
+
+/* Smooth corners: the continuous curve of an app icon rather than a quarter
+   circle. A squircle of the same radius reads less round, so the radius is
+   taken further to keep the size the slider promised. Browsers without
+   corner-shape keep plain round corners at the larger radius. */
+html[data-corners="smooth"] {
+  --card-radius-smooth: calc(var(--card-radius, 18px) * 1.6);
+}
+html[data-corners="smooth"] :is(.card, .dash-card, .dash-ghost, .dash-add, .dash-pill, #search, .glass-context-menu, .dash-dialog, .tile .box) {
+  corner-shape: squircle;
+}
+html[data-corners="smooth"] :is(.card, .dash-card, .dash-ghost) {
+  border-radius: var(--card-radius-smooth);
+}

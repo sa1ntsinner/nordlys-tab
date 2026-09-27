@@ -29,7 +29,26 @@ const test = base.extend({
       if (saved) Object.assign(state, JSON.parse(saved));
       const persist = () => localStorage.setItem('__nordlys_test_storage', JSON.stringify(state));
       const pick = keys => keys == null ? { ...state } : typeof keys === 'string' ? { [keys]: state[keys] } : Array.isArray(keys) ? Object.fromEntries(keys.map(key => [key, state[key]])) : Object.fromEntries(Object.entries(keys).map(([key, fallback]) => [key, state[key] ?? fallback]));
-      window.chrome = { storage: { local: {
+      /* Chrome sync, in memory and kept across reloads like the local area.
+         window.__syncRemote(items) writes as another device would. */
+      const syncState = JSON.parse(localStorage.getItem('__nordlys_test_sync') || '{}');
+      const persistSync = () => localStorage.setItem('__nordlys_test_sync', JSON.stringify(syncState));
+      const changeListeners = [];
+      const announce = (values, area, removed = []) => {
+        const changes = {};
+        for (const [key, value] of Object.entries(values)) changes[key] = { newValue: JSON.parse(JSON.stringify(value)) };
+        for (const key of removed) changes[key] = { newValue: undefined };
+        setTimeout(() => changeListeners.forEach(fn => fn(changes, area)), 0);
+      };
+      const pickSync = keys => keys == null ? JSON.parse(JSON.stringify(syncState)) : Object.fromEntries([].concat(keys).filter(key => key in syncState).map(key => [key, JSON.parse(JSON.stringify(syncState[key]))]));
+      const syncArea = {
+        get(keys, callback) { const answer = pickSync(keys); setTimeout(() => callback(answer), 0); },
+        set(values, callback) { Object.assign(syncState, JSON.parse(JSON.stringify(values))); persistSync(); announce(values, 'sync'); setTimeout(() => callback?.(), 0); },
+        remove(keys, callback) { for (const key of [].concat(keys)) delete syncState[key]; persistSync(); announce({}, 'sync', [].concat(keys)); setTimeout(() => callback?.(), 0); }
+      };
+      window.__syncRemote = values => new Promise(resolve => syncArea.set(values, resolve));
+      window.__syncState = () => JSON.parse(JSON.stringify(syncState));
+      window.chrome = { storage: { onChanged: { addListener(fn) { changeListeners.push(fn); }, removeListener(fn) { const i = changeListeners.indexOf(fn); if (i >= 0) changeListeners.splice(i, 1); } }, sync: syncArea, local: {
         /* Answers on a later tick with what was there when asked, as chrome.storage
            does. A synchronous answer here hid a real ordering bug, and answering
            with the state at delivery time hid a second one: a write that lands
@@ -51,11 +70,29 @@ const test = base.extend({
           }
         },
         permissions: {
-          contains(request, callback) { callback(Boolean(window.__bookmarks?.granted)); },
+          contains(request, callback) {
+            if (request?.permissions?.includes("tabs")) { callback(Boolean(window.__tabs?.granted)); return; }
+            callback(Boolean(window.__bookmarks?.granted));
+          },
           request(request, callback) {
+            /* Leave to reach a site (an AI provider): given unless a test says
+               otherwise with window.__origins = { grant: false }. */
+            if (request?.origins?.length) { (window.__origins ||= {}).asked = [...(window.__origins.asked || []), ...request.origins]; callback(window.__origins.grant !== false); return; }
+            if (request?.permissions?.includes("tabs")) {
+              if (window.__tabs) window.__tabs.granted = window.__tabs.grantOnRequest !== false;
+              callback(Boolean(window.__tabs?.granted));
+              return;
+            }
             if (window.__bookmarks) window.__bookmarks.granted = window.__bookmarks.grantOnRequest !== false;
             callback(Boolean(window.__bookmarks?.granted));
           }
+        },
+        /* Open tabs the tests can shape: window.__tabs = { list, granted,
+           grantOnRequest }; created and removed ones are recorded. */
+        tabs: {
+          query(query, callback) { setTimeout(() => callback((window.__tabs?.list || []).map(tab => ({ ...tab }))), 0); },
+          remove(ids, callback) { const gone = new Set([].concat(ids)); if (window.__tabs) { window.__tabs.list = (window.__tabs.list || []).filter(tab => !gone.has(tab.id)); (window.__tabs.removed ||= []).push(...gone); } callback?.(); },
+          create(details) { (window.__tabs ||= {}); (window.__tabs.created ||= []).push(details.url); return Promise.resolve({ id: Date.now(), ...details }); }
         },
         bookmarks: {
           getTree(callback) { callback(window.__bookmarks?.tree || []); },

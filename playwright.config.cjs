@@ -5,7 +5,10 @@ module.exports = defineConfig({
      the gate; counting them once made the reported test total wrong. They must
      not be named with a leading underscore: Chrome refuses to load an unpacked
      extension whose directory holds any such file. */
-  testIgnore: '**/*.sweep.cjs',
+  /* The pixel snapshots are Windows renders (their names end in -win32) and
+     are reviewed by eye on that machine; on CI's Linux they would only ever
+     report a different font rasteriser. */
+  testIgnore: process.env.CI ? ['**/*.sweep.cjs', '**/visual-regression.spec.cjs'] : '**/*.sweep.cjs',
   timeout: 30_000, expect: { timeout: 5_000 },
   /* Every test starts its own static server on an ephemeral port, so each one
      is its own origin with its own localStorage — nothing is shared between

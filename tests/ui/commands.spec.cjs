@@ -11,7 +11,7 @@ const rows = page => page.locator('#sugg .sugg-command');
 test('a bare > lists every command, as options of the one listbox', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await type(page, '>');
-  await expect(rows(page)).toHaveCount(12);
+  await expect(rows(page)).toHaveCount(16);
   await expect(rows(page).first()).toHaveAttribute('role', 'option');
   await expect(rows(page).first()).toContainText('theme nord');
   const results = await new AxeBuilder({ page }).include('#searchwrap').analyze();

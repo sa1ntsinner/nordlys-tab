@@ -53,7 +53,8 @@ test('the gate knows the hardest skies of every theme there is', async () => {
 });
 
 for (const theme of Object.keys(WORST)) {
-  test(`${theme}: every word is readable on its hardest skies`, async ({ nordlysPage }) => {
+  test(`${theme}: every word is readable on its hardest skies`, async ({ nordlysPage, browserName }) => {
+    test.skip(browserName !== 'chromium', 'the hardest-sky margins are measured with Chromium text rendering');
     const { page } = nordlysPage;
     const looks = [{ scene: 'aurora', mood: 'theme', phase: 12, intensity: 1 }, ...WORST[theme]];
     for (const look of looks) {
@@ -90,7 +91,8 @@ const WALLPAPERS = {
   night: 'dark'
 };
 for (const theme of ['aurora-void', 'porcelain-light']) {
-  test(`${theme}: a wallpaper of any brightness leaves every word readable`, async ({ nordlysPage }) => {
+  test(`${theme}: a wallpaper of any brightness leaves every word readable`, async ({ nordlysPage, browserName }) => {
+    test.skip(browserName === 'webkit' && process.platform === 'win32', 'Playwright WebKit on Windows cannot store a Blob in IndexedDB; Safari can');
     const { page } = nordlysPage;
     for (const kind of Object.values(WALLPAPERS)) {
       await page.evaluate(async ({ kind, theme }) => {

@@ -11,7 +11,8 @@ const A_LOOK = {
   mood: { name: 'Hearth', colors: ['#ffb86c', '#ff5555', '#bd93f9'] }
 };
 
-test('Copy puts the look on the clipboard, and it carries no bookmark', async ({ nordlysPage }) => {
+test('Copy puts the look on the clipboard, and it carries no bookmark', async ({ nordlysPage, browserName }) => {
+  test.skip(browserName !== 'chromium', 'clipboard-read can be granted only in Chromium under Playwright');
   const { page } = nordlysPage;
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   await openShare(page);
