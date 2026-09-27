@@ -1,5 +1,22 @@
 # Music for the promo videos
 
+## In use: "Rising Forest" by Diego Nava
+
+From [Mixkit](https://mixkit.co/free-stock-music/), under the Mixkit Stock
+Music Free License: free for commercial use including YouTube and ads, no
+credit required, no Content ID claims. It may not be handed on as a file, so
+the audio lives outside the repo (`docs/video/music/licensed/`, ignored);
+download it again from Mixkit (track 471) to re-render. Its map,
+`rising-forest.json`, is ours and is kept.
+
+Picked from 63 Mixkit tracks (EDM, electronic, house, future bass, pop) by
+`tools/video/music-map.py`: 123 bpm, steady beat, and the shape the film
+needs (a 6-bar groove, a one-bar dip, an 8-bar drop, an 8-bar breakdown, a
+16-bar second drop, a calm outro). Demucs found no vocals in it (checked on
+the ten best fits; one with vocals half the time was dropped).
+
+## Earlier: original instrumentals
+
 All eight tracks here are original instrumentals made for Nordlys with
 [ACE-Step 1.5](https://github.com/ace-step/ACE-Step-1.5), which is MIT-licensed
 and free for commercial use; its authors say it was trained on royalty-free

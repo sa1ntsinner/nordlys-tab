@@ -1,7 +1,7 @@
 # YouTube upload
 
-Video: `docs/video/nordlys-youtube-4k.mp4` (3840x2160, 60 fps, 60.5 s; not in
-the repo, render it with `tools/video/record3.cjs`). Thumbnail:
+Video: `docs/video/nordlys-youtube-4k.mp4` (3840x2160, 60 fps, 81 s; not in
+the repo, render it with `tools/video/record4.cjs tools/video/films/rising-forest.cjs …`). Thumbnail:
 `thumbnail.png` (1280x720, made by `tools/video/thumbnail.cjs`).
 
 ## Title
@@ -15,15 +15,17 @@ Nordlys: a new tab page with your bookmarks and a dashboard for your day
 ```
 Nordlys replaces the new tab page with your bookmarks in folders, over an animated sky, and a dashboard for your day when you want one. Free, open source, no account.
 
-0:00 Bookmarks and the dashboard
-0:30 Focus mode, search and the skies
-0:43 Profiles and connected apps
+0:00 Bookmarks and search
+0:15 The dashboard
+0:31 Focus mode and the skies
+0:46 Themes, profiles and connected apps
+1:04 No account, nothing tracked
 
 What's in it
 - Bookmark folders you arrange by dragging, with undo
 - A dashboard: tasks, habits, a focus timer, notes, weather, world clocks and more; drag and stretch the cards
 - Focus mode with a Pomodoro or count-up timer and sounds made in the browser
-- Tasks from Todoist, GitHub, GitLab, Trello, Asana, ClickUp, Linear, Jira and Notion, and events from any calendar link
+- Tasks from the task managers and code hosts you already use, and events from any calendar link
 - 9 animated backgrounds and 21 themes, including black for OLED
 - Math and commands in the search box
 - Profiles like Work and Home, synced through your browser's own sync
@@ -32,13 +34,13 @@ Chrome Web Store: https://chromewebstore.google.com/detail/nordlys/fepiibfbbjhao
 Website and live demo: https://sa1ntsinner.github.io/nordlys-tab/
 Source code: https://github.com/sa1ntsinner/nordlys-tab
 
-Music: an original instrumental made for this video.
+Music: "Rising Forest" by Diego Nava (Mixkit).
 ```
 
 ## Tags
 
 ```
-new tab, new tab page, chrome extension, start page, bookmarks, dashboard, productivity, focus timer, pomodoro, tasks, habit tracker, todoist, momentum alternative, aurora, open source
+new tab, new tab page, chrome extension, start page, bookmarks, dashboard, productivity, focus timer, pomodoro, tasks, habit tracker, todoist, aurora, open source
 ```
 
 ## Settings

@@ -29,7 +29,15 @@ function dilate(opts) {
   let d0 = r0;
   if (opts && opts.clock) { const [h, m] = opts.clock.split(':').map(Number); const day = new Date(r0); day.setHours(h, m, 0, 0); d0 = day.getTime(); }
   const vPerf = () => p0 + (perf() - p0) / slow;
-  const vNow = () => d0 + (realNow() - r0) / slow;
+  /* The wall clock can be held (window.__holdClock(true)) while a shot is
+     set up off camera, so the time on screen only moves while filming. */
+  let held = null, lost = 0;
+  const running = () => d0 + (realNow() - r0) / slow;
+  const vNow = () => (held ?? running()) - lost;
+  window.__holdClock = (on) => {
+    if (on && held == null) held = running();
+    else if (!on && held != null) { lost += running() - held; held = null; }
+  };
   performance.now = vPerf;
   const RealDate = Date;
   function VDate(...a) {

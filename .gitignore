@@ -24,3 +24,6 @@ docs/video/music/*.wav
 docs/video/**/*.mp4
 docs/video/v2/
 docs/video/v3/
+
+# Licensed music (Mixkit) may be used in the videos but not handed on as a file.
+docs/video/music/licensed/
