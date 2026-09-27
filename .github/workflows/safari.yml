@@ -20,7 +20,7 @@ on:
     # The release branch builds too (unsigned unless a tag), so the Xcode side
     # is checked before anything is sent to Apple.
     branches: ["perf/windows-newtab"]
-    paths: [".github/workflows/safari.yml", "tools/safari/**", "tools/build-ports.cjs", "manifest.json", "src/**", "newtab.html"]
+    paths: [".github/workflows/safari.yml", "tools/safari/**", "tools/build-ports.cjs", "tools/engines.playwright.config.cjs", "tests/**", "manifest.json", "src/**", "newtab.html"]
 
 permissions:
   contents: read
