@@ -73,6 +73,9 @@ function encoder(file) {
     args: ['--use-angle=d3d11', '--enable-gpu-rasterization', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required', '--hide-scrollbars',
       '--deterministic-mode', '--enable-begin-frame-control', '--run-all-compositor-stages-before-draw', '--disable-new-content-rendering-timeout',
       '--disable-threaded-animation', '--disable-threaded-scrolling', '--disable-checker-imaging',
+      /* Room for the tiles: at 5K with the page's own camera zoomed in, the default
+         budget ran out and whole cards were left undrawn in some frames. */
+      '--force-gpu-mem-available-mb=8192',
       `--force-device-scale-factor=${SCALE}`, `--window-size=${VIEW.width},${VIEW.height}`]
   });
   // One time zone wherever it is filmed, so the world clocks read the same.
