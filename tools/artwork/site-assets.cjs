@@ -19,6 +19,8 @@ const QUALITY = 0.84;
 // [captured frame, published name, width in pixels]
 const PICTURES = [
   ['sky.png', 'board.webp', 2400],
+  ['site-dashboard.png', 'dashboard.webp', 2400],
+  ['site-focus.png', 'focus.webp', 2400],
   ['arrange.png', 'arrange.webp', 1800],
   ['light.png', 'theme-light.webp', 1600],
   ['dark.png', 'theme-dark.webp', 1600],

@@ -85,7 +85,7 @@ const scene = (key, run) => test.describe(key, () => {
 
 scene('sky', async ({ page, origin }) => {
   const sky = await frame(page, 'sky.png', CANVAS_WARMUP);
-  await render(page.context(), origin, 'screenshot-1-sky.png', compose.slide({
+  await render(page.context(), origin, 'screenshot-2-sky.png', compose.slide({
     title: 'Bookmarks on your new tab',
     subtitle: 'Arrange folders over an animated background. No account or analytics.',
     image: sky
@@ -105,7 +105,7 @@ scene('skies', async ({ page, origin }) => {
     }, sky);
     frames.push({ label: sky.name, image: await frame(page, `sky-${sky.scene}.png`, sky.scene === 'aurora' ? CANVAS_WARMUP : 6000) });
   }
-  await render(page.context(), origin, 'screenshot-2-skies.png', compose.grid({
+  await render(page.context(), origin, 'screenshot-4-skies.png', compose.grid({
     title: '9 animated backgrounds',
     subtitle: 'Change the colours or speed, or use your own picture or video.',
     frames, backdropImage: frames[1].image
@@ -123,7 +123,7 @@ scene('arrange', async ({ page, origin }) => {
   await expect(page.locator('#arrange-size-panel')).toBeVisible();
   await page.mouse.move(720, 20);
   const arrange = await frame(page, 'arrange.png', 1500);
-  await render(page.context(), origin, 'screenshot-3-arrange.png', compose.slide({
+  await render(page.context(), origin, 'screenshot-6-arrange.png', compose.slide({
     title: 'Move folders around',
     subtitle: 'Choose free or fitted rows. Adjust tile size, spacing and width in one panel. Undo any change.',
     image: arrange
@@ -196,7 +196,7 @@ scene('daylight', async ({ page, origin }) => {
     }, iso);
     frames.push({ label, image: await frame(page, `daylight-${label.toLowerCase()}.png`, 6000) });
   }
-  await render(page.context(), origin, 'screenshot-4-extras.png', compose.tiles({
+  await render(page.context(), origin, 'screenshot-7-extras.png', compose.tiles({
     title: 'Search, icons and time of day',
     subtitle: 'Math and commands in the search box, icons by brand name, and a background that follows the time of day.',
     cells: [
@@ -221,7 +221,7 @@ scene('dark', async ({ page, origin }) => {
   await expect(page.locator('#sec-appearance')).toBeVisible();
   await page.evaluate(() => document.activeElement?.blur());
   const dark = await frame(page, 'dark.png', CANVAS_WARMUP);
-  await render(page.context(), origin, 'screenshot-5-themes.png', compose.pair({
+  await render(page.context(), origin, 'screenshot-8-themes.png', compose.pair({
     title: '21 themes',
     subtitle: '11 dark and 10 light themes. You can make your own from three colours.',
     back: shot('light.png'), front: dark, backdropImage: dark

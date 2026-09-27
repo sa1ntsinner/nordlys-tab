@@ -1,0 +1,199 @@
+{
+ "tempo": 129.199,
+ "seconds": 60.53,
+ "phases": {
+  "build1": 3.831,
+  "d1": 7.616,
+  "breakStart": 30.302,
+  "breakEnd": 34.087,
+  "d2": 37.849,
+  "outro": 52.965,
+  "end": 60.53
+ },
+ "hits": [
+  {
+   "at": 0.07,
+   "kind": "switch"
+  },
+  {
+   "at": 3.831,
+   "kind": "switch"
+  },
+  {
+   "at": 3.831,
+   "kind": "switch"
+  },
+  {
+   "at": 5.735,
+   "kind": "tick"
+  },
+  {
+   "at": 6.687200241487937,
+   "kind": "tick"
+  },
+  {
+   "at": 7.616,
+   "kind": "impact"
+  },
+  {
+   "at": 9.497,
+   "kind": "tick"
+  },
+  {
+   "at": 11.401,
+   "kind": "tick"
+  },
+  {
+   "at": 11.65660042260389,
+   "kind": "tick"
+  },
+  {
+   "at": 13.282,
+   "kind": "switch"
+  },
+  {
+   "at": 15.186,
+   "kind": "tick"
+  },
+  {
+   "at": 17.067,
+   "kind": "switch"
+  },
+  {
+   "at": 18.019,
+   "kind": "switch"
+  },
+  {
+   "at": 18.947,
+   "kind": "switch"
+  },
+  {
+   "at": 19.9,
+   "kind": "switch"
+  },
+  {
+   "at": 20.852,
+   "kind": "switch"
+  },
+  {
+   "at": 21.78,
+   "kind": "switch"
+  },
+  {
+   "at": 22.732,
+   "kind": "switch"
+  },
+  {
+   "at": 23.684,
+   "kind": "switch"
+  },
+  {
+   "at": 24.636,
+   "kind": "switch"
+  },
+  {
+   "at": 25.588,
+   "kind": "switch"
+  },
+  {
+   "at": 26.517,
+   "kind": "switch"
+  },
+  {
+   "at": 27.469,
+   "kind": "switch"
+  },
+  {
+   "at": 28.398,
+   "kind": "switch"
+  },
+  {
+   "at": 29.35,
+   "kind": "switch"
+  },
+  {
+   "at": 30.302,
+   "kind": "switch"
+  },
+  {
+   "at": 31.230799758512063,
+   "kind": "tick"
+  },
+  {
+   "at": 32.206,
+   "kind": "tick"
+  },
+  {
+   "at": 33.13479975851207,
+   "kind": "tick"
+  },
+  {
+   "at": 34.087,
+   "kind": "switch"
+  },
+  {
+   "at": 34.31919993962802,
+   "kind": "tick"
+  },
+  {
+   "at": 35.968,
+   "kind": "switch"
+  },
+  {
+   "at": 37.849,
+   "kind": "impact"
+  },
+  {
+   "at": 38.313,
+   "kind": "switch"
+  },
+  {
+   "at": 38.801,
+   "kind": "switch"
+  },
+  {
+   "at": 39.265,
+   "kind": "switch"
+  },
+  {
+   "at": 39.753,
+   "kind": "switch"
+  },
+  {
+   "at": 40.217,
+   "kind": "switch"
+  },
+  {
+   "at": 40.681,
+   "kind": "switch"
+  },
+  {
+   "at": 41.146,
+   "kind": "switch"
+  },
+  {
+   "at": 41.633,
+   "kind": "switch"
+  },
+  {
+   "at": 43.514,
+   "kind": "switch"
+  },
+  {
+   "at": 45.418,
+   "kind": "switch"
+  },
+  {
+   "at": 47.299,
+   "kind": "switch"
+  },
+  {
+   "at": 49.203,
+   "kind": "switch"
+  },
+  {
+   "at": 52.965,
+   "kind": "impact"
+  }
+ ]
+}

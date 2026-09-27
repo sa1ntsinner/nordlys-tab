@@ -1,108 +1,303 @@
-/* The site runs the extension's own sky (sky/background.js, copied from
-   src/js by tools/site-build.cjs) behind the hero, and lets a visitor switch
-   its scene and light it by their time of day, the way the settings do. */
+/* The page around the live demo. The hero is the extension's own new tab
+   (demo/index.html, built by tools/site-build.cjs) in an iframe; the controls
+   under it call the same app object the extension's settings call. The
+   closing section runs the extension's sky (sky/background.js) on its own. */
 (function () {
   document.documentElement.classList.add('js');
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // Install: straight to the store once there is a store page.
   const store = document.querySelector('meta[name="nordlys-store"]')?.content.trim();
   if (store) {
-    for (const link of document.querySelectorAll('[data-install]')) { link.href = store; link.textContent = 'Add to Chrome'; }
+    for (const link of document.querySelectorAll('[data-install]')) link.href = store;
     const button = document.querySelector('[data-store]');
     if (button) { button.href = store; button.hidden = false; }
   }
 
-  // The bar gains its glass once the page moves under it.
+  // The island gains its glass once the page moves under it.
   const nav = document.getElementById('nav');
-  const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 8);
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
+  const sentinel = document.createElement('div');
+  sentinel.style.cssText = 'position:absolute;top:0;height:24px;width:1px';
+  document.body.prepend(sentinel);
+  new IntersectionObserver(([entry]) => nav.classList.toggle('scrolled', !entry.isIntersecting)).observe(sentinel);
 
   // Sections rise in as they arrive.
   const reveals = document.querySelectorAll('.reveal');
-  if ('IntersectionObserver' in window) {
+  if ('IntersectionObserver' in window && !still) {
     const seen = new IntersectionObserver(entries => {
       for (const entry of entries) if (entry.isIntersecting) { entry.target.classList.add('shown'); seen.unobserve(entry.target); }
-    }, { rootMargin: '0px 0px -12% 0px' });
+    }, { rootMargin: '0px 0px -10% 0px' });
     reveals.forEach(node => seen.observe(node));
   } else {
     reveals.forEach(node => node.classList.add('shown'));
   }
 
-  if (typeof NordlysBackgroundEngine !== 'function') return;
-  const engine = new NordlysBackgroundEngine();
-  engine.setMode('aurora');
-
-  /* The hero text, told to the engine the way the new tab tells it about the
-     clock: where it is and what colour, so the sky behind it is quietened
-     just enough to keep it readable. */
-  const hero = document.getElementById('top');
-  const ink = node => (getComputedStyle(node).color.match(/\d+(\.\d+)?/g) || [233, 239, 251]).slice(0, 3).map(Number);
-  const zones = () => {
-    const list = [];
-    for (const [id, target] of [['hero-title', 3.3], ['hero-lede', 4.8], ['sky-label', 4.8]]) {
-      const node = document.getElementById(id);
-      const box = node?.getBoundingClientRect();
-      if (!box || box.bottom < 0 || box.top > window.innerHeight) continue;
-      const pad = Math.min(24, box.height * 0.3);
-      list.push({ id, x: box.left - pad, y: box.top - pad / 2, w: box.width + pad * 2, h: box.height + pad, inks: [[ink(node), target, 1]] });
-    }
-    return list;
-  };
-  let queued = false;
-  const sendZones = () => {
-    if (queued) return;
-    queued = true;
-    requestAnimationFrame(() => { queued = false; engine.setQuietZones?.(zones()); });
-  };
-  window.addEventListener('scroll', sendZones, { passive: true });
-  window.addEventListener('resize', sendZones);
-  document.fonts?.ready.then(sendZones);
-  sendZones();
-
-  // Nothing to draw while neither the hero nor the closing section shows it.
-  const install = document.getElementById('install');
-  if ('IntersectionObserver' in window) {
-    const showing = new Set();
-    const watch = new IntersectionObserver(entries => {
-      for (const entry of entries) entry.isIntersecting ? showing.add(entry.target) : showing.delete(entry.target);
-      if (showing.size) { engine.start(); engine.resumeIfMoving(); } else engine.stop();
-    });
-    watch.observe(hero);
-    if (install) watch.observe(install);
+  // The headline, a letter at a time (words kept whole for line breaks).
+  for (const title of document.querySelectorAll('.split')) {
+    if (still) break;
+    const words = title.textContent.trim().split(/\s+/);
+    let n = 0;
+    title.setAttribute('aria-label', title.textContent.trim());
+    title.replaceChildren(...words.flatMap((word, w) => {
+      const box = document.createElement('span');
+      box.style.whiteSpace = 'nowrap';
+      box.setAttribute('aria-hidden', 'true');
+      for (const letter of word) {
+        const ch = document.createElement('span');
+        ch.className = 'ch';
+        ch.style.setProperty('--n', String(n++));
+        ch.textContent = letter;
+        box.append(ch);
+      }
+      if (w === words.length - 1) return [box];
+      const gap = document.createElement('span');
+      gap.className = 'sp';
+      gap.setAttribute('aria-hidden', 'true');
+      gap.textContent = ' ';
+      return [box, gap];
+    }));
   }
 
-  // Scenes: a radio group, walked with the arrow keys.
-  const scenes = [...document.querySelectorAll('[data-scene]')];
-  const choose = button => {
-    for (const other of scenes) {
-      const on = other === button;
-      other.setAttribute('aria-checked', String(on));
-      other.tabIndex = on ? 0 : -1;
-    }
-    engine.setMode(button.dataset.scene);
-    sendZones();
-  };
-  scenes.forEach((button, index) => {
-    button.addEventListener('click', () => choose(button));
-    button.addEventListener('keydown', event => {
-      const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
-      if (!step) return;
-      event.preventDefault();
-      const next = scenes[(index + step + scenes.length) % scenes.length];
-      next.focus();
-      choose(next);
+  // Numbers count up the first time they are seen.
+  const counters = document.querySelectorAll('[data-count]');
+  if ('IntersectionObserver' in window && !still) {
+    const seenCount = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        seenCount.unobserve(entry.target);
+        const target = Number(entry.target.dataset.count);
+        const start = performance.now();
+        const step = now => {
+          const t = Math.min(1, (now - start) / 1200);
+          entry.target.textContent = String(Math.round(target * (1 - Math.pow(1 - t, 3))));
+          if (t < 1) requestAnimationFrame(step);
+        };
+        entry.target.textContent = '0';
+        requestAnimationFrame(step);
+      }
+    }, { threshold: 0.6 });
+    counters.forEach(node => seenCount.observe(node));
+  }
+
+  // A light that follows the pointer across the hero, and buttons that lean toward it.
+  const heroSection = document.getElementById('top');
+  if (!still && matchMedia('(hover: hover)').matches) {
+    heroSection.addEventListener('pointermove', event => {
+      const box = heroSection.getBoundingClientRect();
+      heroSection.style.setProperty('--hx', `${event.clientX - box.left}px`);
+      heroSection.style.setProperty('--hy', `${event.clientY - box.top}px`);
     });
+    for (const pill of document.querySelectorAll('.pill')) {
+      pill.addEventListener('pointermove', event => {
+        const box = pill.getBoundingClientRect();
+        pill.style.setProperty('--mx-pull', `${((event.clientX - box.left) / box.width - 0.5) * 8}px`);
+        pill.style.setProperty('--my-pull', `${((event.clientY - box.top) / box.height - 0.5) * 6}px`);
+      });
+      pill.addEventListener('pointerleave', () => { pill.style.removeProperty('--mx-pull'); pill.style.removeProperty('--my-pull'); });
+    }
+  }
+
+  // Bento cells: a soft light that follows the pointer.
+  for (const cell of document.querySelectorAll('.cell .bezel-core')) {
+    cell.addEventListener('pointermove', event => {
+      const box = cell.getBoundingClientRect();
+      cell.style.setProperty('--mx', `${event.clientX - box.left}px`);
+      cell.style.setProperty('--my', `${event.clientY - box.top}px`);
+    });
+  }
+
+  // ── The live demo ────────────────────────────────────────────
+  const stage = document.getElementById('stage');
+  const viewport = document.getElementById('viewport');
+  const frame = document.getElementById('demo');
+  const DESK = { w: 1440, h: 900 };
+
+  /* The demo is laid out at a desktop size and scaled to fit the frame, so a
+     visitor sees the page the way it looks on a real screen. Below a width
+     where that would be too small to use, the still picture stands in. */
+  const fit = () => {
+    const width = viewport.clientWidth;
+    const scale = width / DESK.w;
+    viewport.style.setProperty('--scale', scale.toFixed(4));
+    viewport.style.height = `${Math.round(DESK.h * scale)}px`;
+    stage.classList.toggle('compact', width < 620);
+  };
+  new ResizeObserver(fit).observe(viewport);
+  fit();
+
+  const ready = new Promise(resolve => {
+    const look = () => {
+      try {
+        const candidate = frame.contentWindow?.Nordlys;
+        if (candidate?.config && candidate.grid) { resolve(candidate); return; }
+      } catch (error) { /* not loaded yet */ }
+      setTimeout(look, 120);
+    };
+    frame.addEventListener('load', look);
+    look();
+  });
+  ready.then(() => stage.classList.add('live'));
+
+  const setScene = key => ready.then(demo => {
+    demo.config.bgMode = key;
+    demo.saveConfig();
+    demo.updateBackgroundMode();
+  });
+  const setTheme = key => ready.then(demo => { demo.setTheme(key); demo.saveConfig?.(); });
+
+  // One radio group per kind, walked with the arrow keys.
+  const radioGroup = (buttons, attr, onPick) => {
+    const pick = (value, { focus = false } = {}) => {
+      for (const button of buttons) {
+        const on = button.dataset[attr] === value;
+        if (button.getAttribute('role') === 'radio') {
+          button.setAttribute('aria-checked', String(on));
+          button.tabIndex = on ? 0 : -1;
+          if (on && focus) button.focus();
+        } else button.classList.toggle('on', on);
+      }
+      onPick(value);
+    };
+    const radios = buttons.filter(button => button.getAttribute('role') === 'radio');
+    radios.forEach((button, index) => {
+      button.tabIndex = button.getAttribute('aria-checked') === 'true' ? 0 : -1;
+      button.addEventListener('keydown', event => {
+        const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+        if (!step) return;
+        event.preventDefault();
+        pick(radios[(index + step + radios.length) % radios.length].dataset[attr], { focus: true });
+      });
+    });
+    buttons.forEach(button => button.addEventListener('click', () => pick(button.dataset[attr])));
+    return pick;
+  };
+
+  /* The controls show what the demo shows, however it got there: a command
+     typed in it, its own settings, or a profile with a look of its own. */
+  const mark = (selector, attr, value) => {
+    for (const button of document.querySelectorAll(selector)) {
+      const on = button.dataset[attr] === value;
+      if (button.getAttribute("role") === "radio") { button.setAttribute("aria-checked", String(on)); button.tabIndex = on ? 0 : -1; }
+      else button.classList.toggle("on", on);
+    }
+  };
+  const syncDock = () => ready.then(demo => {
+    mark("[data-scene]", "scene", demo.config.bgMode);
+    mark("[data-theme]", "theme", demo.config.theme);
+    document.querySelector("[data-try=\"arrange\"]")?.setAttribute("aria-pressed", String(Boolean(demo.grid.arrange?.active)));
+    document.querySelector("[data-try=\"daylight\"]")?.setAttribute("aria-pressed", String(Boolean(demo.config.bgDaylight)));
+    document.querySelector("[data-try=\"dashboard\"]")?.setAttribute("aria-pressed", String(Boolean(demo.dashboard?.on)));
+  });
+  let dockTimer = 0;
+  const syncSoon = () => { clearTimeout(dockTimer); dockTimer = setTimeout(syncDock, 350); };
+  ready.then(() => {
+    for (const type of ["click", "keyup", "change"]) frame.contentDocument.addEventListener(type, syncSoon, true);
   });
 
-  // Time of day: the visitor's own, from their time zone.
-  const toggle = document.getElementById('daylight');
-  const now = document.getElementById('daylight-now');
-  if (!window.NordlysSky?.daylight) { toggle.hidden = true; return; }
-  toggle.addEventListener('click', () => {
-    const on = toggle.getAttribute('aria-pressed') !== 'true';
-    toggle.setAttribute('aria-pressed', String(on));
-    engine.setDaylight(on);
-    now.textContent = on && engine.sky?.phase ? `Now: ${engine.sky.phase}` : '';
+  const sceneButtons = [...document.querySelectorAll('[data-scene]')];
+  const pickScene = radioGroup(sceneButtons, 'scene', setScene);
+  // A sky in the gallery below puts it on the demo and brings the demo into view.
+  for (const card of document.querySelectorAll('.sky[data-scene]')) {
+    card.addEventListener('click', () => {
+      pickScene(card.dataset.scene);
+      stage.scrollIntoView({ behavior: still ? 'auto' : 'smooth', block: 'center' });
+    });
+  }
+  radioGroup([...document.querySelectorAll('[data-theme]')], 'theme', setTheme);
+
+  const inDemo = fn => ready.then(demo => { frame.contentWindow.focus(); return fn(demo, frame.contentDocument); });
+  const actions = {
+    arrange: () => inDemo(demo => (demo.grid.arrange?.active ? demo.grid.arrange.exit() : demo.grid.arrange?.enter())),
+    settings: () => inDemo(demo => demo.settings.open()),
+    command: () => inDemo((demo, doc) => {
+      const box = doc.getElementById('q');
+      box.focus();
+      box.value = '>';
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+    }),
+    // Two whole setups: the first time, a Home profile in its own look.
+    profile: () => inDemo(async demo => {
+      const sync = demo.sync;
+      if (!sync) return;
+      if (sync.list().length < 2) {
+        const first = sync.list()[0];
+        if (first) sync.rename(first.id, 'Work');
+        await sync.create({ name: 'Home', from: 'copy' });
+        demo.setTheme('gruvbox-dark');
+        demo.config.bgMode = 'nacre';
+        demo.saveConfig();
+        demo.updateBackgroundMode();
+        return;
+      }
+      const list = sync.list();
+      const now = list.findIndex(entry => entry.id === sync.active()?.id);
+      await sync.switchTo(list[(now + 1) % list.length].id);
+    }),
+    /* The dashboard with a day already in it, so there is something to see:
+       the Planner layout, a few tasks, habits under way, a countdown. */
+    dashboard: () => inDemo(async demo => {
+      const dash = demo.dashboard;
+      if (!dash) return;
+      if (dash.on) { dash.setOn(false); return; }
+      if (!dash.widgets().length || !dash.seededDemo) {
+        const K = frame.contentWindow.NordlysWidgetKit;
+        dash.applyPreset('planner');
+        await dash.render();
+        const now = Date.now();
+        for (const w of dash.widgets()) {
+          const key = dash.dataKey(w);
+          if (w.type === 'tasks') { const l = K.tasks.create(); for (const [x, o] of [['Write the release notes', { priority: true, due: K.dayOf(now) }], ['Reply to Anna', { due: K.tasks.shift(now, 1) }], ['Book the dentist', { due: K.tasks.shift(now, 3) }], ['Water the plants', {}]]) K.tasks.add(l, x, now, o); K.tasks.toggle(l, l.items[3].id, now); dash.persist(key, l); }
+          if (w.type === 'focus') { const d = K.focus.create(); K.focus.set(d, 'Try the dashboard', now); dash.persist(key, d); }
+          if (w.type === 'notes') dash.persist(key, { text: 'Drag a card by its title.\nStretch it by its corner.' });
+          if (w.type === 'habits') { const h = K.habits.create(); for (const [name, days] of [['Read', [0, 1, 2, 4, 5]], ['Walk', [3, 5]], ['Stretch', [5]]]) { const x = K.habits.add(h, name); for (const i of days) K.habits.toggle(h, x.id, K.tasks.shift(now, i - 6)); } dash.persist(key, h); }
+          if (w.type === 'countdown') dash.change(w.id, x => ({ ...x, settings: { title: 'the weekend', date: K.tasks.shift(now, 5) } }));
+        }
+        dash.seededDemo = true;
+        dash.signature = '';
+        await dash.render();
+        frame.contentDocument.querySelectorAll('#toast-dock > *').forEach(node => node.remove());
+      } else dash.setOn(true);
+    }),
+    focus: () => inDemo(demo => demo.focusMode?.show()),
+    daylight: () => inDemo(demo => {
+      demo.config.bgDaylight = !demo.config.bgDaylight;
+      demo.saveConfig();
+      demo.updateBackgroundMode();
+    })
+  };
+  for (const button of document.querySelectorAll('[data-try]')) {
+    button.addEventListener('click', () => Promise.resolve(actions[button.dataset.try]?.(button)).then(syncSoon));
+  }
+
+  // "Try it above": to the demo, and do it there.
+  for (const link of document.querySelectorAll('[data-try-link]')) {
+    link.addEventListener('click', event => {
+      event.preventDefault();
+      stage.scrollIntoView({ behavior: still ? 'auto' : 'smooth', block: 'center' });
+      setTimeout(() => actions[link.dataset.tryLink]?.(), still ? 0 : 600);
+    });
+  }
+
+  // The glow under the frame takes the demo's accent.
+  ready.then(() => {
+    const tint = () => {
+      const accent = getComputedStyle(frame.contentDocument.documentElement).getPropertyValue('--accent').trim();
+      if (accent) stage.style.setProperty('--demo-accent', accent);
+    };
+    new MutationObserver(tint).observe(frame.contentDocument.documentElement, { attributes: true, attributeFilter: ['style', 'class', 'data-theme'] });
+    tint();
   });
+
+  // ── The closing sky ──────────────────────────────────────────
+  if (typeof NordlysBackgroundEngine !== 'function') return;
+  const install = document.getElementById('install');
+  let engine = null;
+  new IntersectionObserver(([entry]) => {
+    document.body.classList.toggle("sky-on", entry.isIntersecting);
+    if (entry.isIntersecting) {
+      if (!engine) { engine = new NordlysBackgroundEngine(); engine.setMode('aurora'); }
+      engine.start();
+      engine.resumeIfMoving?.();
+    } else engine?.stop();
+  }, { threshold: 0.25 }).observe(install);
 })();

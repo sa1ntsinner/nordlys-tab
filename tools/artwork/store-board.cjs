@@ -126,6 +126,19 @@ const BOARDS = {
   })
 };
 BOARDS.dark = { ...BOARDS.light, theme: 'gruvbox-dark', bgMode: 'silk' };
+// The dashboard: the day's cards over the folders, and Focus mode.
+BOARDS.dashboard = board({
+  theme: 'nord-frost', scene: 'halo',
+  folders: [
+    folder('Daily', 3, ['gmail', 'drive', 'youtube', 'wikipedia', 'reddit', 'amazon']),
+    folder('Work', 3, ['notion', 'slack', 'figma', 'trello', 'linear', 'github']),
+    folder('AI', 2, ['chatgpt', 'claude', 'gemini', 'perplexity'])
+  ]
+});
+BOARDS.focus = { ...BOARDS.dashboard, theme: 'oled-obsidian', bgMode: 'aurora', bgIntensity: 1.3 };
+BOARDS.connect = { ...BOARDS.dashboard, theme: 'tokyo-night', bgMode: 'polaris' };
+// The website's dashboard pictures: black OLED over Contour.
+BOARDS.site = { ...BOARDS.dashboard, theme: 'oled-obsidian', bgMode: 'drift' };
 
 /* Each sky in a theme of its own, so the grid shows the themes as well. */
 const SKIES = [
