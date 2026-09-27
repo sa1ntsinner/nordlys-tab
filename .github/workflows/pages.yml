@@ -5,7 +5,8 @@ name: Site
 on:
   push:
     branches: [main]
-    paths: ["site/**", "src/js/background.js", "src/js/sky-*.js", "src/js/colour-tools.js", "src/fonts/**", "icons/**", "tools/site-build.cjs", ".github/workflows/pages.yml"]
+    # The live demo is the extension itself, so any change to it redeploys.
+    paths: ["site/**", "src/**", "newtab.html", "icons/**", "tools/site-build.cjs", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
