@@ -29,22 +29,52 @@ npm ci
 # The track: download "Ramp It Up" (https://mixkit.co/free-stock-music/item/69/)
 # to docs/video/music/licensed/ramp-it-up.mp3 (git-ignored; Mixkit does not allow handing the file on).
 FFMPEG=/path/to/ffmpeg node scripts/setup.cjs     # fonts, icon, and the two soundtracks into public/
-# The plates, 5120 x 2880 at 60 fps (about 20 minutes on an RTX 5070 Ti):
-FFMPEG=/path/to/ffmpeg node ../plates.cjs ../films/ramp-it-up.cjs public/plates
-FFMPEG=/path/to/ffmpeg node scripts/render.cjs    # both films, the 1080 copies, the tour, the checks
+# The plates, 5120 x 2880 at 60 fps (about 25 minutes on an RTX 5070 Ti). The nine
+# theme plates are only seen a third of the frame wide, in the grid, and are filmed at
+# 1920 x 1080, so the grid does not decode nine 5K videos at once:
+PLATES=$(node -e "const f=require('../films/ramp-it-up.cjs'); console.log(f.plates({}).map(p=>p.name).filter(n=>!n.startsWith('theme-')).join(','))")
+THEMES=$(node -e "const f=require('../films/ramp-it-up.cjs'); console.log(f.plates({}).map(p=>p.name).filter(n=>n.startsWith('theme-')).join(','))")
+FFMPEG=/path/to/ffmpeg node ../plates.cjs ../films/ramp-it-up.cjs public/plates --only "$PLATES"
+FFMPEG=/path/to/ffmpeg node ../plates.cjs ../films/ramp-it-up.cjs public/plates --only "$THEMES" --scale 1.3333333333
+# Both films, the 1080 copy, the tour and its poster, the thumbnail, the checks, the maps (about 30 minutes):
+FFMPEG=/path/to/ffmpeg node scripts/render.cjs      # into out/ (ignored); --out <dir> for elsewhere
 ```
 
 On this PC ffmpeg is `D:\remote-jobs\tools\ffmpeg\bin\ffmpeg.exe`. The
 render uses the GPU for the WebGL effects (`--gl=angle`, set in
-`remotion.config.ts`).
+`remotion.config.ts`) and to decode the plates. Keep to four render tabs (the
+default, `--concurrency 4`) on a 16 GB card. With eight, the card filled up,
+and some frames came out black or half decoded with no error. The render does
+not notice such frames by itself: look at the contact sheets.
 
 Previews:
 
 ```sh
 npx remotion studio                                               # the Studio (props: plates)
-npx remotion render YouTube out/preview.mp4 --scale=0.5           # half size
-node ../plates.cjs ../films/ramp-it-up.cjs public/plates-1080 --scale 1.3333   # quick plates, 1920 x 1080
-npx remotion render YouTube out/preview.mp4 --scale=0.5 --props='{"plates":"plates-1080"}'
+node ../plates.cjs ../films/ramp-it-up.cjs public/plates-1080 --scale 1.3333333333   # quick plates, 1920 x 1080
+node scripts/render.cjs --preview --plates plates-1080 --out out/preview   # both cuts at half size, sheets, checks
+node scripts/render.cjs --maps-only                               # only the edit map and the music map
+```
+
+`render.cjs` hands the props to Remotion as a file: on Windows, JSON typed on
+the command line loses its quotes on the way through `npx`.
+
+## Checking the pictures
+
+`render.cjs` checks what it can see in the files: the format, a full decode,
+the loudness, and where the music sits against the soundtrack (0 samples). It
+cannot see a frame drawn wrong, so two more checks (Python with numpy, from
+the repo root):
+
+```sh
+# The plates: a frame further from both neighbours than they are from each
+# other (a flash, a card left undrawn).
+uv run --with numpy python tools/video/glitches.py "$FFMPEG" tools/video/remotion/public/plates/*.mp4
+# The film against a half-size render of the same edit from the 1080 plates
+# (in tools/video/remotion: node scripts/render.cjs --preview --plates plates-1080 --out out/ref):
+# frames where picture was lost (black, half decoded).
+R=tools/video/remotion/out
+uv run --with numpy python tools/video/dropouts.py $R/nordlys-youtube-4k.mp4 $R/ref/preview.mp4 "$FFMPEG"
 ```
 
 ## How it is put together

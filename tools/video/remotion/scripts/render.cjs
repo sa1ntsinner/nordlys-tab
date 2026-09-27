@@ -1,13 +1,15 @@
 /* Renders the films and what ships with them, and checks them.
 
    node scripts/render.cjs [--out dir] [--plates plates] [--only youtube|store] [--preview]
-                           [--skip-render] [--concurrency 8] [--maps-only]
+                           [--skip-render] [--concurrency 4] [--maps-only]
 
    Into --out (default out/):
      nordlys-youtube-4k.mp4    3840 x 2160, 60 fps, H.264 High (x264 slow, CRF 16), AAC 320 kb/s, faststart
      nordlys-store-4k.mp4      the store cut, the same
      nordlys-store-1080.mp4    the store cut at 1920 x 1080
      tour.mp4                  the YouTube cut at 1920 x 1080 for the website, under 15 MB (two-pass)
+     tour-poster.webp          its poster frame for the website
+     thumbnail.png             the YouTube thumbnail, 1280 x 720, from a clean frame of a plate
      sheets/                   contact sheets: around every cut (a quarter second before, just after,
                                0.3 s after) and the middle of every shot
      edit-map.json, edit-map.md  every shot and caption with its frame, its time, and the bar and beat
@@ -29,7 +31,10 @@ const OUT = path.resolve(HERE, flag('out', 'out'));
 const PLATES = flag('plates', 'plates');
 const ONLY = flag('only', null);
 const PREVIEW = has('preview');
-const CONCURRENCY = flag('concurrency', '8');
+/* Four tabs, not more: each holds decoders for several 5K plates and 4K effect
+   canvases on the GPU. With eight, a 16 GB card filled up and some frames came out
+   black or half decoded, with no error. */
+const CONCURRENCY = flag('concurrency', '4');
 const FFMPEG = process.env.FFMPEG || 'ffmpeg';
 const FFPROBE = process.env.FFPROBE || FFMPEG.replace(/ffmpeg(\.exe)?$/i, (m, exe) => `ffprobe${exe || ''}`);
 const FONT = process.platform === 'win32' ? 'C\\:/Windows/Fonts/arial.ttf' : '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
@@ -47,15 +52,22 @@ const ff = (argv) => execFileSync(FFMPEG, ['-hide_banner', ...argv], { stdio: ['
 const edit = editData();
 const { musicMap: map, FPS, BAR, BEAT } = edit.music;
 
-function render(comp, file, extra = []) {
+function render(comp, file, cut, extra = []) {
   const tmp = file.replace(/\.mp4$/, '.remotion.mp4');
-  const props = path.join(OUT, `props-${PLATES}.json`);
+  const props = path.join(require('node:os').tmpdir(), `nordlys-props-${PLATES}.json`);
   fs.writeFileSync(props, JSON.stringify({ plates: PLATES }));
   run(process.execPath, [REMOTION, 'render', comp, tmp, `--props=${props}`, '--codec=h264', '--crf=16', '--x264-preset=slow', '--pixel-format=yuv420p',
-    '--color-space=bt709', '--audio-codec=aac', '--audio-bitrate=320k', `--concurrency=${CONCURRENCY}`, '--gl=angle', '--jpeg-quality=95', '--log=warn', ...extra]);
-  // Remotion writes the index at the end; the web wants it at the start.
-  ff(['-y', '-loglevel', 'error', '-i', tmp, '-c', 'copy', '-movflags', '+faststart', file]);
+    '--color-space=bt709', '--muted', `--concurrency=${CONCURRENCY}`, '--gl=angle', '--jpeg-quality=95', '--log=warn', ...extra]);
+  mux(tmp, cut, file);
   fs.rmSync(tmp);
+}
+/* The picture from Remotion, the soundtrack added here, and the index at the start
+   (faststart) for the web. Remotion's own AAC plays 2048 samples (42.7 ms) late: its
+   edit list skips none of the encoder's priming. ffmpeg's skips exactly that, so the
+   music plays where the edit put it (checked on every file: audioLag). */
+function mux(video, cut, file) {
+  ff(['-y', '-loglevel', 'error', '-i', video, '-i', path.join(HERE, 'public', cut.audio), '-map', '0:v:0', '-map', '1:a:0', '-t', String(cut.frames / FPS),
+    '-c:v', 'copy', '-c:a', 'aac', '-b:a', '320k', '-movflags', '+faststart', file]);
 }
 
 /* ── The edit map: where every shot and word lands in the music ── */
@@ -161,12 +173,49 @@ function loadIndex() {
 
 /* ── Checks ── */
 function probe(file) {
-  const j = JSON.parse(execFileSync(FFPROBE, ['-v', 'error', '-show_entries', 'format=duration,size,bit_rate:stream=codec_name,profile,width,height,r_frame_rate,pix_fmt,sample_rate,channels,bit_rate', '-of', 'json', file]).toString());
+  const j = JSON.parse(execFileSync(FFPROBE, ['-v', 'error', '-show_entries', 'format=duration,size,bit_rate:stream=codec_name,profile,width,height,r_frame_rate,pix_fmt,sample_rate,channels,bit_rate,nb_frames', '-of', 'json', file]).toString());
   return j;
+}
+// Faststart: the index (moov) comes before the media (mdat), so the web can play it while it loads.
+function faststart(file) {
+  const fd = fs.openSync(file, 'r');
+  try {
+    const head = Buffer.alloc(16);
+    for (let at = 0, size = fs.fstatSync(fd).size; at < size;) {
+      fs.readSync(fd, head, 0, 16, at);
+      const type = head.toString('latin1', 4, 8);
+      if (type === 'moov') return true;
+      if (type === 'mdat') return false;
+      const n = head.readUInt32BE(0);
+      at += n === 1 ? Number(head.readBigUInt64BE(8)) : n || size;
+    }
+    return false;
+  } finally { fs.closeSync(fd); }
 }
 function decodeAll(file) {
   const r = spawnSync(FFMPEG, ['-hide_banner', '-v', 'error', '-i', file, '-f', 'null', '-'], { encoding: 'utf8' });
   return { ok: r.status === 0 && !r.stderr.trim(), errors: r.stderr.trim() };
+}
+/* Where the music in a finished file sits against the soundtrack the edit was cut to:
+   a second of the soundtrack at a fifth, two fifths ... of the film, cross-correlated
+   with the file's audio over +-50 ms. 0 samples is where the edit put it. */
+function audioLag(file, cut) {
+  const pcm = (src) => {
+    const b = execFileSync(FFMPEG, ['-v', 'error', '-i', src, '-vn', '-ac', '1', '-ar', '48000', '-f', 'f32le', '-'], { maxBuffer: 1 << 28 });
+    return new Float32Array(b.buffer.slice(b.byteOffset, b.byteOffset + b.length));
+  };
+  const a = pcm(file), b = pcm(path.join(HERE, 'public', cut.audio));
+  const SR = 48000, M = SR / 20, n = SR;
+  return [1, 2, 3, 4].map((q) => {
+    const i = Math.round(((q / 5) * cut.frames * SR) / FPS);
+    let best = -Infinity, lag = 0;
+    for (let k = -M; k <= M; k++) {
+      let s = 0;
+      for (let j = 0; j < n; j++) s += a[i + k + j] * b[i + j];
+      if (s > best) { best = s; lag = k; }
+    }
+    return lag;
+  });
 }
 function loudness(file) {
   const r = spawnSync(FFMPEG, ['-hide_banner', '-nostats', '-i', file, '-vn', '-af', 'loudnorm=I=-14:TP=-1:LRA=11:print_format=summary', '-f', 'null', '-'], { encoding: 'utf8' });
@@ -208,7 +257,7 @@ function sheets(file, cut, name) {
     fs.writeFileSync(listFile, list.map((n) => `file '${path.join(dir, n).replace(/\\/g, '/')}'`).join('\n'));
     ff(['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', listFile, '-vf', `tile=8x6:padding=4:color=black`, '-frames:v', '1', path.join(OUT, 'sheets', `${name}-cuts-${k + 1}.jpg`)]);
   }
-  // And the whole film at two frames a second.
+  // And the whole film at a frame a second.
   ff(['-y', '-loglevel', 'error', '-i', file, '-vf', `fps=1,scale=${w / 2}:-1,tile=12x${Math.ceil(cut.frames / FPS / 12)}:padding=2`, '-frames:v', '1', path.join(OUT, 'sheets', `${name}-overview.jpg`)]);
   fs.rmSync(dir, { recursive: true, force: true });
 }
@@ -224,23 +273,24 @@ function sheets(file, cut, name) {
   if (PREVIEW) {
     if (!ONLY || ONLY === 'youtube') {
       const file = path.join(OUT, 'preview.mp4');
-      if (!has('skip-render')) render('YouTube', file, ['--scale=0.5']);
+      if (!has('skip-render')) render('YouTube', file, edit.youtube, ['--scale=0.5']);
       files.push(['preview', file, edit.youtube]);
     }
     if (!ONLY || ONLY === 'store') {
       const file = path.join(OUT, 'preview-store.mp4');
-      if (!has('skip-render')) render('Store', file, ['--scale=0.5']);
+      if (!has('skip-render')) render('Store', file, edit.store, ['--scale=0.5']);
       files.push(['preview-store', file, edit.store]);
     }
   } else {
     if (!ONLY || ONLY === 'youtube') {
       const yt = path.join(OUT, 'nordlys-youtube-4k.mp4');
-      if (!has('skip-render')) render('YouTube', yt);
+      if (!has('skip-render')) render('YouTube', yt, edit.youtube);
       files.push(['youtube', yt, edit.youtube]);
-      // The tour on the website: the same cut at 1080, two-pass to stay under 15 MB.
+      /* The tour on the website: the same cut at 1080, two-pass, aimed at 14.4 MB
+         (million bytes) so that it stays under 15 MB however that is counted. */
       const tour = path.join(OUT, 'tour.mp4');
       const seconds = edit.youtube.frames / FPS;
-      const kbps = Math.floor((14.6 * 8 * 1024) / seconds - 128);
+      const kbps = Math.floor((14.4e6 * 8) / 1000 / seconds - 128);
       const log = path.join(OUT, 'tour-pass');
       for (const pass of [1, 2]) {
         ff(['-y', '-loglevel', 'error', '-i', yt, '-vf', 'scale=1920:1080:flags=lanczos', '-c:v', 'libx264', '-preset', 'slow', '-b:v', `${kbps}k`, '-maxrate', `${kbps * 2}k`, '-bufsize', `${kbps * 4}k`,
@@ -248,12 +298,14 @@ function sheets(file, cut, name) {
       }
       for (const f of fs.readdirSync(OUT)) if (f.startsWith('tour-pass')) fs.rmSync(path.join(OUT, f));
       files.push(['tour', tour, edit.youtube]);
+      // Its poster on the website (site/assets/tour-poster.webp): the dashboard and its caption.
+      ff(['-y', '-loglevel', 'error', '-ss', '27.5', '-i', tour, '-frames:v', '1', '-c:v', 'libwebp', '-quality', '82', path.join(OUT, 'tour-poster.webp')]);
       // The YouTube thumbnail, from a clean frame (no caption): the dashboard over the aurora, from its plate.
       run(process.execPath, [path.join(HERE, '../thumbnail.cjs'), path.join(HERE, 'public', PLATES, 'hero-dash.mp4'), path.join(OUT, 'thumbnail.png'), '--at', '2.0'], { env: { ...process.env, FFMPEG } });
     }
     if (!ONLY || ONLY === 'store') {
       const st = path.join(OUT, 'nordlys-store-4k.mp4');
-      if (!has('skip-render')) render('Store', st);
+      if (!has('skip-render')) render('Store', st, edit.store);
       files.push(['store', st, edit.store]);
       const st1080 = path.join(OUT, 'nordlys-store-1080.mp4');
       ff(['-y', '-loglevel', 'error', '-i', st, '-vf', 'scale=1920:1080:flags=lanczos', '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-c:a', 'copy', '-movflags', '+faststart', st1080]);
@@ -263,11 +315,14 @@ function sheets(file, cut, name) {
   for (const [name, file, cut] of files) {
     const p = probe(file);
     const v = p.streams.find((s) => s.width), a = p.streams.find((s) => s.sample_rate);
-    note(`${path.basename(file)}: ${v.width}x${v.height} ${v.r_frame_rate} ${v.codec_name} ${v.profile} ${v.pix_fmt}; audio ${a ? `${a.codec_name} ${a.sample_rate} Hz ${Math.round((a.bit_rate || 0) / 1000)} kb/s` : 'none'}; ${Number(p.format.duration).toFixed(3)} s; ${(Number(p.format.size) / 1048576).toFixed(1)} MB`);
+    const size = Number(p.format.size);
+    note(`${path.basename(file)}: ${v.width}x${v.height} ${v.r_frame_rate} ${v.codec_name} ${v.profile} ${v.pix_fmt}; audio ${a ? `${a.codec_name} ${a.sample_rate} Hz ${Math.round((a.bit_rate || 0) / 1000)} kb/s` : 'none'}; ${Number(p.format.duration).toFixed(3)} s; ${(size / 1e6).toFixed(2)} MB (${(size / 1048576).toFixed(2)} MiB)`);
+    note(`  frames: ${v.nb_frames} (the edit: ${cut.frames}); faststart: ${faststart(file) ? 'yes' : 'NO'}`);
     const d = decodeAll(file);
     note(`  full decode: ${d.ok ? 'clean' : `ERRORS ${d.errors.slice(0, 400)}`}`);
     const l = loudness(file);
     note(`  loudness: ${l.integrated} LUFS integrated, true peak ${l.truePeak} dBTP, LRA ${l.lra} LU`);
+    note(`  audio against the soundtrack (at 1/5 ... 4/5 of the film): ${audioLag(file, cut).map((k) => `${k >= 0 ? '+' : ''}${k}`).join(', ')} samples at 48 kHz`);
     if (name !== 'tour' && name !== 'store-1080') sheets(file, cut, name);
   }
   fs.writeFileSync(path.join(OUT, PREVIEW ? 'checks-preview.txt' : 'checks.txt'), `${checks.join('\n')}\n`);
