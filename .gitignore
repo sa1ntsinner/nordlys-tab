@@ -1,4 +1,5 @@
 node_modules/
+/graft/
 test-results/
 playwright-report/
 .playwright-artifacts/
@@ -13,4 +14,13 @@ test-theme-previews/
 .references/
 tools/artwork/.scratch/
 sweeps.config.cjs
-_site/
+.site-dist/
+
+# The promo soundtrack source, 27 MB; the mp3 beside it is committed.
+docs/video/music/*.wav
+
+# Rendered promo videos (4K, 30-70 MB each) go to YouTube and the stores, not
+# the repo; tools/video/record3.cjs remakes them. site/assets/tour.mp4 stays.
+docs/video/**/*.mp4
+docs/video/v2/
+docs/video/v3/

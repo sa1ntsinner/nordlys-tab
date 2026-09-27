@@ -4,10 +4,26 @@ All user-visible changes, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow the
 Chrome Web Store's rule that they only ever go up.
 
-## [2.5.1] — 2026-09-25
+## [Unreleased]
+
+## [2.5.1] — 2026-09-27
 
 ### Added
 
+- Profiles. Keep several whole setups (folders, bookmarks, look and layout), for example Work and Home, and switch between them from the small chip under the greeting, from Settings or with `> profile home`. Language and the name in the greeting stay the same in every profile. A deleted profile can be restored for 30 days.
+- Sync through your Google account, off until you turn it on in Settings → Sync & profiles. It uses Chrome's own sync, so there's no account of ours and no server. Edits from different devices merge field by field instead of the last one overwriting everything. Uploaded icon images, wallpapers, custom CSS and folders that follow Chrome bookmarks stay on the device they're on.
+- With sync on, a bookmark or folder can be kept on one device only, a bookmark can have a different name or address on one device, and a look can be kept on one device while the rest stays shared.
+- A dashboard, off until you turn it on in Settings → Dashboard. Cards for the day sit above the folders, and each profile has its own. Drag a card by its title to move it and the others make room; stretch it by its lower right corner. There are five layouts to start from, and the folders can be hidden while it's on.
+- Cards: focus of the day, tasks, habits, a focus timer, notes, weather (from Open-Meteo, no key), world clocks, a countdown, a tab stash, Ask, and a line for the day.
+- Connected apps. The Inbox card shows tasks from Todoist, GitHub, GitLab, Trello, Asana, ClickUp, Linear, Jira and Notion, and the Agenda card shows events from any calendar with an ICS link. Ticking a task off in Nordlys ticks it off there too where the service allows it. Nordlys talks to each service directly with a token you create there; the token stays on this device, and access to a site is asked for only when you connect it.
+- Tasks have Today, Later and Done views, dates and importance you can type in words ("tomorrow", "on friday", "!"), steps inside a task, and can be reordered by dragging or with Alt and an arrow key. `> task` adds one from the search box.
+- Focus mode gives the whole page to one thing: a large timer, Pomodoro or counting up, sounds made in the browser (rain, ocean, wind, deep noise, a soft pad), your tasks at the side and how long you've focused today. It can keep the timer in a small window over other tabs. `> focus` opens it.
+- The Ask card talks to a model you choose: Chrome's built-in model on this device, your own key for OpenAI, Anthropic, Google Gemini or OpenRouter, or a model on your computer through Ollama. The key stays on the device. `? question` in the search box asks it.
+- Balance rests the tasks, timer and habits outside the working hours you set.
+- Corners can be smooth, like app icons, and the corner radius goes up to 48 px.
+- The tab stash puts the tabs of a window away and brings them back. It asks for access to tabs the first time you use it.
+- The search box works in every browser. Chrome, Edge and Firefox search with the engine set in the browser; Safari has no way for an extension to do that, so there you pick an engine once in Settings → General.
+- Builds for Edge and Firefox, made from the same code (`npm run ports`), and a folder ready for Safari.
 - One page fit keeps the clock, search box and folders in the window without scrolling. It reduces spacing, then tile size, and scales the board only if needed. It doesn't change your saved sizes, and it's off until you turn it on. The small star at the top right opens the switch when you point at it or Tab to it. You can also find it in Settings → Bookmarks.
 - Four new backgrounds: Polaris shows star trails round the pole star, Pillars shows columns of light over a frozen town, Nacre shows mother-of-pearl clouds at dusk, and Baikal shows black lake ice with frozen bubbles and cracks.
 
@@ -19,6 +35,13 @@ Chrome Web Store's rule that they only ever go up.
 
 ### Fixed
 
+- A list inside a dialog (the sound of the timer, weather units) now opens over the dialog instead of behind it.
+- Tab now stays inside Settings and dialogs in every browser. In Safari, which skips links on Tab, it used to leave the drawer after the last button.
+- A bookmark dropped very quickly after moving now lands where it was dropped, not where the pointer was a frame earlier.
+- One page fit measures a zoomed board correctly in browsers without `currentCSSZoom` (Safari 17 and 18).
+- A dashboard list with more rows than fit (tasks, habits, the tab stash, connected apps) fades at its lower edge, so a row cut by the edge reads as "more below".
+- The Connect an app menu shows each app's logo, and Google and Microsoft say "Soon" until their sign-in is ready.
+- Smooth corners are offered only in browsers that can draw them.
 - Icon search now spells Google TV correctly.
 
 ### Removed
