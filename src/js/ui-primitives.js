@@ -44,13 +44,21 @@
         || (target instanceof HTMLInputElement && /^(text|search|url|tel|email|password)$/.test(target.type));
       if (selectable && target.value) target.select();
     }
+    /* Tab is walked here rather than left to the browser. Safari skips links
+       on Tab unless the person turned that on, so "the last element" differs
+       by browser, and focus that leaves for the toolbar can't be caught. A
+       radio group is one stop, on its checked button, as it is natively. */
     onKeyDown(event) {
       if (event.key !== 'Tab' || layers[layers.length - 1]?.scope !== this) return;
-      const nodes = visibleFocusable(this.root);
-      if (!nodes.length) { event.preventDefault(); this.root.focus(); return; }
-      const first = nodes[0], last = nodes[nodes.length - 1];
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      const nodes = visibleFocusable(this.root).filter((node) => node.tabIndex >= 0 && !(
+        node instanceof HTMLInputElement && node.type === 'radio' && node.name && !node.checked
+        && (node.form || document).querySelector(`input[type="radio"][name="${CSS.escape(node.name)}"]:checked`)
+      ));
+      event.preventDefault();
+      if (!nodes.length) { this.root.focus(); return; }
+      const at = nodes.indexOf(document.activeElement);
+      const next = event.shiftKey ? (at <= 0 ? nodes.length - 1 : at - 1) : (at + 1) % nodes.length;
+      nodes[next].focus();
     }
     deactivate({ restore = true } = {}) {
       if (!this.active) return;
@@ -292,7 +300,11 @@
       if (this.isOpen || this.select.disabled) return;
       // The list is portalled on first use, not on construction: a panel holds
       // dozens of these and most are never opened.
-      if (!this.root.isConnected) document.body.append(this.root);
+      /* Inside a modal <dialog> the list goes into that dialog: the page
+         under a modal is behind it in the top layer, and a list portalled
+         there could be seen through the glass but never clicked. */
+      const host = this.trigger.closest('dialog[open]') || document.body;
+      if (this.root.parentElement !== host) host.append(this.root);
       this.build();
       this.isOpen = true;
       this.root.hidden = false; this.root.inert = false;
@@ -549,5 +561,15 @@
       .map(animation => animation.finished.catch(() => {})));
   }
 
-  window.NordlysUI = { FocusScope, DialogController, RovingTabs, MenuController, SelectMenu, enhanceSelect, enhanceSelects, refreshSelects, announce, showUndoToast, undoText, animateReflow, visibleFocusable, layers, settled, motion, trackThumb };
+  /* The CSS zoom an element is drawn at. Safari 17 and 18 have no
+     currentCSSZoom, so there it is the product of the zoom of each ancestor. */
+  function cssZoom(node) {
+    if (!node) return 1;
+    if ('currentCSSZoom' in node) return node.currentCSSZoom || 1;
+    let zoom = 1;
+    for (let n = node; n; n = n.parentElement) { const v = parseFloat(getComputedStyle(n).zoom); if (v > 0) zoom *= v; }
+    return zoom;
+  }
+
+  window.NordlysUI = { cssZoom, FocusScope, DialogController, RovingTabs, MenuController, SelectMenu, enhanceSelect, enhanceSelects, refreshSelects, announce, showUndoToast, undoText, animateReflow, visibleFocusable, layers, settled, motion, trackThumb };
 })();

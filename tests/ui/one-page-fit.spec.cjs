@@ -216,7 +216,7 @@ test.describe('the gentlest stage that fits', () => {
     await settled(page, 420);
     const m = await measure(page);
     expect(m.state.stage).toBe('scaled');
-    const zooms = await page.evaluate(() => Object.fromEntries(['cfg', 'gear', 'toast-dock', 'quick-edit-modal', 'board'].map((id) => [id, document.getElementById(id)?.currentCSSZoom])));
+    const zooms = await page.evaluate(() => Object.fromEntries(['cfg', 'gear', 'toast-dock', 'quick-edit-modal', 'board'].map((id) => [id, ((node) => node ? window.NordlysUI.cssZoom(node) : undefined)(document.getElementById(id))])));
     expect(zooms.board).toBeLessThan(1);
     for (const id of ['cfg', 'gear', 'toast-dock', 'quick-edit-modal']) expect(zooms[id], id).toBe(1);
     // A dialog opened over the fitted page scrolls inside itself, not the page.
@@ -347,7 +347,7 @@ test.describe('the switch in Settings', () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await settled(page, 900);
     // The drawer stayed at its own size over the fitted page.
-    expect(await page.evaluate(() => document.getElementById('cfg').currentCSSZoom)).toBe(1);
+    expect(await page.evaluate(() => window.NordlysUI.cssZoom(document.getElementById('cfg')))).toBe(1);
     await page.keyboard.press('Escape');
     expectInside(await measure(page), 'after turning it on');
 
@@ -453,7 +453,7 @@ test.describe('drag and arrange', () => {
     const arranging = await measure(page);
     expect(arranging.attribute).toBeNull();
     expect(arranging.pageStyle).toBe('');
-    expect(await page.evaluate(() => document.getElementById('board').currentCSSZoom)).toBe(1);
+    expect(await page.evaluate(() => window.NordlysUI.cssZoom(document.getElementById('board')))).toBe(1);
     await page.locator('#arrange-done').click();
     await settled(page, 460);
     const back = await measure(page);

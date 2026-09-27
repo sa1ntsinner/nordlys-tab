@@ -22,7 +22,7 @@
       so there is nothing to scroll. The board keeps the width it had on
       screen, so a dense board gains columns as it is zoomed out instead of
       only shrinking. Pointer coordinates stay the ones the browser reports;
-      grid.js and board-arrange.js divide by currentCSSZoom wherever they turn
+      grid.js and board-arrange.js divide by the CSS zoom (NordlysUI.cssZoom) wherever they turn
       a measured box back into CSS lengths.
 
    The settings drawer, the gear, dialogs, menus, toasts and the copy in hand
@@ -741,7 +741,7 @@
         const rows = [...board.querySelectorAll(":scope > .board-row")];
         const cardsOf = (row) => [...row.querySelectorAll(":scope > .board-line > .card")];
         const runs = board.dataset.rows !== "yours" ? [rows.flatMap(cardsOf)] : rows.map(cardsOf);
-        const zoom = board.currentCSSZoom || 1;
+        const zoom = window.NordlysUI?.cssZoom(board) || 1;
         return {
           gap: parseFloat(getComputedStyle(board).rowGap) || 0,
           runs: runs.filter((run) => run.length).map((run) => ({

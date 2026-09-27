@@ -17,7 +17,8 @@
     "qa:visual": "node tools/qa-visual.cjs",
     "qa:contrast": "node tools/qa-contrast.cjs",
     "package": "node tools/package.cjs",
-    "site": "node tools/site-build.cjs"
+    "site": "node tools/site-build.cjs",
+    "ports": "node tools/build-ports.cjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

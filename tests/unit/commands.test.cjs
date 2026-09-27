@@ -59,3 +59,18 @@ test('size and spacing have a verb of their own', () => {
   assert.deepEqual(kinds(parse('spacing', WORLD)), ['size:']);
   assert.deepEqual(kinds(parse('размер', WORLD, { verbs: { size: ['размер', 'отступы'] } })), ['size:']);
 });
+
+test('the dashboard answers to its own words: turn it on, add a task, run the timer', () => {
+  assert.deepEqual(parse('dashboard', WORLD).candidates, [{ kind: 'dashboard' }]);
+  assert.deepEqual(parse('task Call the dentist', WORLD).candidates, [{ kind: 'task', name: 'Call the dentist' }]);
+  assert.deepEqual(parse('todo Buy milk', WORLD).candidates, [{ kind: 'task', name: 'Buy milk' }]);
+  assert.deepEqual(parse('task', WORLD).candidates, [], 'a task needs words');
+  assert.deepEqual(parse('timer', WORLD).candidates, [{ kind: 'timer' }]);
+  assert.deepEqual(parse('pomodoro', WORLD).candidates, [{ kind: 'timer' }]);
+});
+
+test('"focus" opens focus mode, and "focus timer" is still the timer', () => {
+  assert.deepEqual(parse('focus', WORLD).candidates, [{ kind: 'focusMode' }]);
+  assert.deepEqual(parse('zen', WORLD).candidates, [{ kind: 'focusMode' }]);
+  assert.deepEqual(parse('focus timer', WORLD).candidates, [{ kind: 'timer' }]);
+});

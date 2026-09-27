@@ -69,7 +69,7 @@ for (const locale of ['en', 'ru', 'es', 'de', 'fr', 'ja', 'zh', 'tr']) {
       await page.waitForTimeout(100);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
       const tabs = page.locator('#cfg [role="tab"]');
-      await expect(tabs).toHaveCount(7);
+      await expect(tabs).toHaveCount(9);
       const names = await tabs.evaluateAll(items => items.map(item => item.getAttribute('aria-label') || item.textContent.trim()));
       expect(names.every(Boolean)).toBe(true);
     });

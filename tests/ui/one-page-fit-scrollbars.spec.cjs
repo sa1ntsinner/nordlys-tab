@@ -14,7 +14,8 @@ test.use({
   launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] }
 });
 
-test('the fit measures at the full width, and leaves the page free to scroll', async ({ nordlysPage }) => {
+test('the fit measures at the full width, and leaves the page free to scroll', async ({ nordlysPage, browserName }) => {
+  test.skip(browserName !== 'chromium', 'headless Gecko and WebKit use overlay scrollbars with no width');
   const { page, runtimeErrors } = nordlysPage;
   await page.waitForFunction(() => {
     const fit = window.Nordlys?.pageFit;

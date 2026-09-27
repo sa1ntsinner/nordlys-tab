@@ -75,7 +75,7 @@ test('titles, accessible names and placeholders are translated, not only the vis
     // Brand names given as examples, and a look's code prefix, read the same in every language.
     || /^GitHub, Figma, Spotify…$/.test(value) || value.startsWith('nordlys-look:');
   // Words that are the same word in the target language.
-  const cognates = { de: new Set(['Name']) };
+  const cognates = { de: new Set(['Name', 'Dashboard']) };
   for (const locale of ['de', 'ru']) {
     await page.evaluate(value => window.I18N.setLanguage ? window.I18N.setLanguage(value) : null, locale);
     await page.locator('#gear').click();

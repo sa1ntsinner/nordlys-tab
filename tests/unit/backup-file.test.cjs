@@ -92,3 +92,13 @@ test('the fixture holds nothing from the file it was derived from', () => {
     assert.ok(!raw.toLowerCase().includes(pattern), `fixture leaks "${pattern}"`);
   }
 });
+
+test('what the dashboard cards hold travels in the backup, and only well-formed cards of it', () => {
+  const dashboardData = { t1: { items: [{ id: 'a', text: 'Water the plants', done: false, created: 1 }] }, n1: { text: 'Keys in the bowl' } };
+  const file = schema.buildBackupFile({ theme: 'aurora-void', groups: [] }, { dashboardData });
+  const read = schema.readBackupFile(JSON.parse(JSON.stringify(file)));
+  assert.deepEqual(read.extras.dashboardData, dashboardData);
+  // A damaged part is dropped, not allowed to sink the rest.
+  const damaged = schema.readBackupFile({ theme: 'aurora-void', groups: [], [schema.BACKUP_EXTRAS_KEY]: { dashboardData: { good: { text: 'ok' }, 'bad id!': { text: 'x' }, worse: 'not an object' } } });
+  assert.deepEqual(damaged.extras.dashboardData, { good: { text: 'ok' } });
+});

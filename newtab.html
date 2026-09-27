@@ -26,6 +26,9 @@
   <link rel="stylesheet" href="src/css/settings.css">
   <link rel="stylesheet" href="src/css/polish.css">
   <link rel="stylesheet" href="src/css/motion.css">
+  <link rel="stylesheet" href="src/css/sync.css">
+  <link rel="stylesheet" href="src/css/dashboard.css">
+  <link rel="stylesheet" href="src/css/focus-mode.css">
   <link rel="stylesheet" href="src/css/page-fit.css">
 </head>
 <body>
@@ -57,6 +60,11 @@
       </time>
       <div id="date">SUNDAY, AUG 16</div>
       <div id="greet">Good day</div>
+      <!-- Which profile this is, shown once there is more than one (sync-ui.js). -->
+      <button id="profile-chip" type="button" hidden aria-haspopup="menu" aria-expanded="false" aria-controls="profile-menu">
+        <span class="profile-dot" aria-hidden="true"></span><span class="profile-name"></span>
+        <svg class="profile-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+      </button>
     </header>
 
     <!-- Omni-Search Bar & Suggestions -->
@@ -70,6 +78,10 @@
       </div>
       <div id="sugg"></div>
     </section>
+
+    <!-- The dashboard: cards for the day, there only when the profile has it
+         on (dashboard.js). In the New tab mode this stays empty and hidden. -->
+    <section id="dash" class="dash" hidden aria-label="Dashboard" data-i18n-aria="nav.dashboard"></section>
 
     <!-- Arranging the board. Hidden until somebody asks to arrange — from a
          folder's grip or menu, the board's menu, Settings → Bookmarks or
@@ -204,9 +216,11 @@
     <nav class="ctabs">
       <button class="ctab active" data-tab="appearance" data-i18n="nav.appearance">Appearance</button>
       <button class="ctab" data-tab="general" data-i18n="nav.general">General</button>
+      <button class="ctab" data-tab="sync" data-i18n="nav.sync">Sync &amp; profiles</button>
       <button class="ctab" data-tab="support" data-i18n="nav.support">Support</button>
       <button class="ctab" data-tab="background" data-i18n="nav.background">Background</button>
       <button class="ctab" data-tab="bookmarks" data-i18n="nav.bookmarks">Bookmarks</button>
+      <button class="ctab" data-tab="dashboard" data-i18n="nav.dashboard">Dashboard</button>
       <button class="ctab" data-tab="custom-css" data-i18n="nav.customCss">Custom CSS</button>
       <button class="ctab" data-tab="backup" data-i18n="nav.backup">Backup</button>
     </nav>
@@ -430,7 +444,7 @@
           <div class="settings-group-label" data-i18n="appearance.geometry">Geometry</div>
           <div class="row">
             <span><span data-i18n="appearance.cardRadius">Corner radius</span> (<b id="lbl-radius">18px</b>)</span>
-            <input id="cfg-card-radius" type="range" class="ipt" min="6" max="36" value="18">
+            <input id="cfg-card-radius" type="range" class="ipt" min="6" max="48" value="18">
           </div>
           <div class="row">
             <span><span data-i18n="appearance.tileSize">Tile size</span> (<b id="lbl-tile">78px</b>)</span>
@@ -439,6 +453,13 @@
           <div class="row">
             <span><span data-i18n="appearance.cardGap">Spacing</span> (<b id="lbl-gap">12px</b>)</span>
             <input id="cfg-card-gap" type="range" class="ipt" min="6" max="28" value="12">
+          </div>
+          <div class="row">
+            <span data-i18n="appearance.cornerShape">Corner style</span>
+            <select id="cfg-corner-shape" class="ipt">
+              <option value="round" data-i18n="appearance.cornerRound">Round</option>
+              <option value="smooth" data-i18n="appearance.cornerSmooth">Smooth, like app icons</option>
+            </select>
           </div>
           <div class="row">
             <span data-i18n="appearance.iconShape">Icon shape</span>
@@ -554,6 +575,14 @@
         <div class="row">
           <span data-i18n="general.openNewTab">Open bookmarks in new tab</span>
           <label class="tg"><input id="cfg-open-newtab" type="checkbox"><i></i></label>
+        </div>
+        <!-- Only in a browser that has no search API of its own (Safari):
+             the engine is the person's choice, never ours (widgets.js). -->
+        <div class="row" id="cfg-search-engine-row" hidden>
+          <span data-i18n="general.searchEngine">Search engine</span>
+          <select id="cfg-search-engine" class="ipt">
+            <option value="" data-i18n="general.searchEngineChoose">Choose one</option>
+          </select>
         </div>
 
       </section>
@@ -788,6 +817,11 @@
            offer is declared in src/js/settings-support.js and rendered from
            there, so an unconfigured account shows a sentence rather than a
            link nobody verified. -->
+      <!-- Sync and profiles: drawn by sync-ui.js from what the client knows. -->
+      <!-- The dashboard: on or off for this profile, and its cards (dashboard.js). -->
+      <section id="sec-dashboard" class="csec"></section>
+      <section id="sec-sync" class="csec" aria-live="polite"></section>
+
       <section id="sec-support" class="csec">
         <h3 data-i18n="support.title">Support Nordlys</h3>
         <p class="support-intro" data-i18n="support.intro">Nordlys is free, carries no ads and no telemetry, and keeps your setup on this machine. Support is what keeps it independent.</p>
@@ -1149,6 +1183,19 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
       <span data-i18n="ctx.copyLink">Copy Link Address</span>
     </div>
+    <div class="ctx-divider" data-device-only hidden></div>
+    <div class="ctx-item" data-action="device-here-only" data-device-only hidden>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+      <span data-i18n="device.hereOnly">Only on this device</span>
+    </div>
+    <div class="ctx-item" data-action="device-different" data-device-only hidden>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+      <span data-i18n="device.different">Different on this device…</span>
+    </div>
+    <div class="ctx-item" data-action="device-shared" data-device-only hidden>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+      <span data-i18n="device.useShared">Use the shared one</span>
+    </div>
     <div class="ctx-divider"></div>
     <div class="ctx-item danger" data-action="delete">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -1236,11 +1283,36 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
       <span data-i18n="ctx.hideFolder">Hide / Fold Folder</span>
     </div>
+    <div class="ctx-item" data-action="device-folder-here-only" data-device-only hidden>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+      <span data-i18n="device.hereOnly">Only on this device</span>
+    </div>
     <div class="ctx-divider"></div>
     <div class="ctx-item danger" data-action="delete-folder">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
       <span data-i18n="ctx.deleteFolder">Delete Folder</span>
     </div>
+  </div>
+
+  <!-- Profiles on the page -->
+  <div id="profile-menu" class="glass-context-menu profile-menu" aria-label="Profiles" data-i18n-aria="profiles.menu"></div>
+
+  <!-- A small form: a new profile's name, a device name, a different address -->
+  <div id="nl-form-modal" class="quick-modal-backdrop" aria-labelledby="nl-form-title">
+    <form class="quick-modal-card" id="nl-form" novalidate>
+      <div class="quick-modal-head">
+        <b id="nl-form-title"></b>
+        <button id="nl-form-x" type="button" class="xbtn" aria-label="Close" data-i18n-aria="a11y.close">✕</button>
+      </div>
+      <div class="quick-modal-body">
+        <div id="nl-form-fields" class="nl-form-fields"></div>
+        <p id="nl-form-note" class="nl-form-note" hidden></p>
+        <div class="nl-form-actions">
+          <button id="nl-form-ok" type="submit" class="glass-btn accent"></button>
+          <button id="nl-form-cancel" type="button" class="glass-btn" data-i18n="confirm.cancel">Cancel</button>
+        </div>
+      </div>
+    </form>
   </div>
 
   <!-- Instant Quick Edit Folder Modal -->
@@ -1326,6 +1398,8 @@
   </div>
 
   <!-- Modular Scripts Execution -->
+  <script src="src/js/search-engines.js"></script>
+  <script src="src/js/platform.js"></script>
   <script src="src/js/ui-kit.js"></script>
   <script src="src/js/ui-primitives.js"></script>
   <script src="src/js/typography.js"></script>
@@ -1352,6 +1426,21 @@
   <script src="src/js/settings-support.js"></script>
   <script src="src/js/icon-picker.js"></script>
   <script src="src/js/icon-history.js"></script>
+  <script src="src/js/sync-model.js"></script>
+  <script src="src/js/profiles.js"></script>
+  <script src="src/js/sync-engine.js"></script>
+  <script src="src/js/sync-client.js"></script>
+  <script src="src/js/sync-ui.js"></script>
+  <script src="src/js/widget-kit.js"></script>
+  <script src="src/js/soundscapes.js"></script>
+  <script src="src/js/ai.js"></script>
+  <script src="src/js/brands.js"></script>
+  <script src="src/js/oauth-clients.js"></script>
+  <script src="src/js/connectors.js"></script>
+  <script src="src/js/dash-layout.js"></script>
+  <script src="src/js/dash-arrange.js"></script>
+  <script src="src/js/dashboard.js"></script>
+  <script src="src/js/focus-mode.js"></script>
   <script src="src/js/settings.js"></script>
   <script src="src/js/config-schema.js"></script>
   <script src="src/js/app.js"></script>

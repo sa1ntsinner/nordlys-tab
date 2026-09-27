@@ -51,7 +51,7 @@ function layout(page) {
       toggle: shown(toggle) ? rect(toggle) : null,
       gear: rect(document.getElementById('gear')),
       label: { text: label.textContent, truncated: label.scrollWidth > label.clientWidth + 1 },
-      zoom: toggle.currentCSSZoom,
+      zoom: window.NordlysUI.cssZoom(toggle),
       insidePage: Boolean(toggle.closest('#page, #fit-surface')),
       hero: all('#hero > *'),
       search: all('#searchwrap'),

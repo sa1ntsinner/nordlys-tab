@@ -128,6 +128,8 @@ class GridController {
     this.numberShortcuts();
     this.wireRovingTiles();
     this.arrange?.refresh();
+    // The dashboard follows the board: a new profile, a restore, another tab.
+    this.app.dashboard?.render();
     // A new board is fitted before it is ever painted (page-fit.js).
     this.app.pageFit?.request({ now: true });
     requestAnimationFrame(() => this.titleCutNames());
@@ -169,7 +171,7 @@ class GridController {
     this.board.classList.add("is-measuring");
     /* Boxes are measured as they are drawn, and One page fit may draw the
        board zoomed; lengths the layout uses are the board's own, unzoomed. */
-    const zoom = this.board.currentCSSZoom || 1;
+    const zoom = window.NordlysUI?.cssZoom(this.board) || 1;
     const plans = runs.map((run) => {
       const lines = run.flatMap((row) => [...row.querySelectorAll(":scope > .board-line")]);
       const cards = lines.flatMap(cardsOf);
@@ -505,6 +507,8 @@ class GridController {
     card.className = "card";
     card.style.setProperty("--i", visibleIdx);
     card.dataset.groupIdx = gIdx;
+    // Kept only here, or different here: a quiet mark (sync-client.js).
+    this.app.sync?.decorate(card, group, "g");
 
     // Card Header
     const cat = document.createElement("div");
@@ -620,6 +624,7 @@ class GridController {
     a.style.setProperty("--j", lIdx);
     a.dataset.groupIdx = gIdx;
     a.dataset.linkIdx = lIdx;
+    this.app.sync?.decorate(a, link, "l");
 
     // Render Box & Icon
     const box = document.createElement("div");

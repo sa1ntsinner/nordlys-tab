@@ -4,7 +4,7 @@ const { openIconPicker } = require('../helpers/flows.cjs');
 /* An icon taken from a web address kept the picture and forgot the address:
    the next time the picker opened, the field was empty. The address is kept
    now, and so are the last few, each shown by the picture it gave. */
-const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAHUlEQVR42mNkYPhfz0AEYBxVSF+FjKMKRxWSrhAAhm0f8Uq+1cQAAAAASUVORK5CYII=', 'base64');
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAFklEQVR4nGOo3MtMEmIY1TCqYfhqAADdITkQZQGFuAAAAABJRU5ErkJggg==', 'base64');
 
 /* The first time through the real path; after that the drawer has been
    redrawn under the editor, so the picker is reopened the way the editor does. */

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Nordlys",
   "version": "2.5.1",
-  "description": "A Chrome new tab page with bookmark folders, 9 animated backgrounds, 21 themes, math and commands in the search box.",
+  "description": "A Chrome new tab page with bookmark folders, a dashboard for tasks and focus, 9 animated backgrounds and 21 themes.",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   },
@@ -16,7 +16,9 @@
     "search"
   ],
   "optional_permissions": [
-    "bookmarks"
+    "bookmarks",
+    "tabs",
+    "identity"
   ],
   "host_permissions": [
     "https://images.weserv.nl/*"
@@ -35,5 +37,14 @@
       "128": "icons/icon128.png"
     },
     "default_title": "Nordlys"
-  }
+  },
+  "optional_host_permissions": [
+    "https://api.openai.com/*",
+    "https://api.anthropic.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://openrouter.ai/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "https://*/*"
+  ]
 }

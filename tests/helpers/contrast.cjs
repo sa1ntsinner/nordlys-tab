@@ -165,7 +165,8 @@ async function measureRuns({ runs, withText, withoutText }) {
   });
   const [a, b] = await Promise.all([load(withText), load(withoutText)]);
   const w = b.naturalWidth, h = b.naturalHeight;
-  const canvas = new OffscreenCanvas(w, h);
+  // A plain canvas where OffscreenCanvas is missing (older WebKit builds).
+  const canvas = typeof OffscreenCanvas === 'function' ? new OffscreenCanvas(w, h) : Object.assign(document.createElement('canvas'), { width: w, height: h });
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   ctx.drawImage(a, 0, 0);
   const A = ctx.getImageData(0, 0, w, h).data;

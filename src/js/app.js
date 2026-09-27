@@ -32,6 +32,8 @@ const DEFAULT_CONFIG = {
   userName: "",
   openNewTab: false,
   cardRadius: 18,
+  // "round", or "smooth": the continuous corner of an app icon (CSS corner-shape).
+  cornerShape: "round",
   tileSize: 78,
   cardGap: 12,
   /* How folders share a row: "natural" keeps each at its own size, "fitted"
@@ -151,7 +153,9 @@ const OWNED_LOCAL_KEYS = [
   "aether_tab_config", "aurora_tab_config", "aurora_custom_themes",
   "aurora_drawer_width", "aurora_language", "aurora_search_history",
   // What One page fit remembers for the next new tab (page-fit.js); never in a backup.
-  "nordlys_fit_hint"
+  "nordlys_fit_hint",
+  // The list of profiles and which one this device opens on (profiles.js, sync-ui.js).
+  "nordlys_profiles", "nordlys_device_start"
 ];
 const LIGHT_THEMES = [
   "porcelain-light", "warm-ivory", "sage-light", "sakura-daylight",
@@ -504,7 +508,7 @@ class NordlysApp {
        words get more headroom than the rest: the icon plates cast shadows on
        the top of every name, and the vignette above the board darkens the
        edges of a light theme — neither of which the solver sees. */
-    const headroom = this.isLightTheme() ? 1.5 : 0.8;
+    const headroom = this.isLightTheme() ? 1.8 : 0.8;
     for (const zone of zones.filter((entry) => entry.card)) {
       const tint = paint(getComputedStyle(document.documentElement).getPropertyValue("--card-tint").trim() || "#0f1c32");
       const inks = zone.inks.map(([colour, target, alpha]) => [colour, target + headroom, alpha]);
@@ -892,6 +896,13 @@ class NordlysApp {
     // Before the first render, which is where the first fit happens.
     this.pageFit = window.NordlysPageFit ? new window.NordlysPageFit.PageFit(this) : null;
     this.settings = new SettingsController(this);
+    /* Profiles and sync. A failure here must never cost the page its board. */
+    try { this.sync = window.NordlysSyncClient ? new window.NordlysSyncClient(this) : null; } catch (error) { this.sync = null; }
+    try { this.syncUI = this.sync && window.NordlysSyncUI ? new window.NordlysSyncUI(this) : null; } catch (error) { this.syncUI = null; }
+    /* The dashboard draws after the board does (grid.render). Like sync, a
+       failure here must never cost the page its board. */
+    try { this.dashboard = window.NordlysDashboard ? new window.NordlysDashboard(this) : null; } catch (error) { this.dashboard = null; }
+    try { this.focusMode = this.dashboard && window.NordlysFocusMode ? new window.NordlysFocusMode(this) : null; } catch (error) { this.focusMode = null; }
 
     // 4. Render Grid
     this.grid.render();
@@ -1262,6 +1273,7 @@ class NordlysApp {
        the reach of every selector, which is why a control that looked wired up
        changed nothing at all. */
     if (cfg.cardRadius != null) root.setProperty("--card-radius", `${cfg.cardRadius}px`);
+    document.documentElement.dataset.corners = cfg.cornerShape === "smooth" ? "smooth" : "round";
     // Preserve a usable 56px floor; narrow layouts reflow instead of collapsing controls.
     if (cfg.tileSize != null) root.setProperty("--tw", `clamp(56px, 12vw, ${Math.max(56, cfg.tileSize)}px)`);
     if (cfg.cardGap != null) root.setProperty("--grid-gap", `${cfg.cardGap}px`);

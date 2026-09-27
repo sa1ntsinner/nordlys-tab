@@ -110,7 +110,8 @@ test('expanded bookmark actions stay grouped within their row', async ({ nordlys
       .filter(control => control.getClientRects().length)
       .filter(control => {
         const box = control.getBoundingClientRect();
-        return box.left < bounds.left || box.right > bounds.right || box.top < bounds.top || box.bottom > bounds.bottom;
+        // Half a pixel of sub-pixel rounding is not a button outside its row.
+        return box.left < bounds.left - 0.5 || box.right > bounds.right + 0.5 || box.top < bounds.top - 0.5 || box.bottom > bounds.bottom + 0.5;
       })
       .map(control => control.getAttribute('aria-label'));
   });

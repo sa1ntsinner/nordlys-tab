@@ -20,7 +20,12 @@
     hide: ['hide', 'fold'],
     show: ['show', 'unhide'],
     move: ['move'],
-    settings: ['settings', 'preferences']
+    settings: ['settings', 'preferences'],
+    profile: ['profile', 'switch to'],
+    dashboard: ['dashboard'],
+    task: ['task', 'todo', 'add task'],
+    timer: ['timer', 'pomodoro', 'focus timer'],
+    focusMode: ['focus', 'focus mode', 'zen']
   };
   const JOINERS_EN = ['to', '→', '->'];
 
@@ -84,7 +89,7 @@
   }
 
   /* What there is to act on arrives in `world`:
-     { themes, scenes, moods, folders, bookmarks, tabs } — each a list of
+     { themes, scenes, moods, folders, bookmarks, tabs, profiles } — each a list of
      { key, name } — plus the locale's { verbs, joiners }. Returns the ranked
      candidates, or { help: true } for a bare ">". */
   function parse(input, world, locale = {}) {
@@ -105,12 +110,17 @@
       case 'theme': return one('theme', world.themes || []);
       case 'sky': return one('sky', world.scenes || []);
       case 'mood': return one('mood', world.moods || []);
+      case 'profile': return one('profile', world.profiles || []);
       case 'hide': return one('hide', (world.folders || []).filter(folder => !folder.hidden));
       case 'show': return one('show', (world.folders || []).filter(folder => folder.hidden));
       case 'settings': return rest ? one('settings', world.tabs || []) : { candidates: [{ kind: 'settings', target: null }] };
       case 'shuffle': return { candidates: [{ kind: 'shuffle' }] };
       case 'arrange': return { candidates: [{ kind: 'arrange' }] };
       case 'size': return { candidates: [{ kind: 'size' }] };
+      case 'dashboard': return { candidates: [{ kind: 'dashboard' }] };
+      case 'timer': return { candidates: [{ kind: 'timer' }] };
+      case 'focusMode': return { candidates: [{ kind: 'focusMode' }] };
+      case 'task': return { candidates: rest ? [{ kind: 'task', name: rest }] : [] };
       case 'newFolder': return { candidates: rest ? [{ kind: 'newFolder', name: rest }] : [] };
       case 'rename': {
         const [from, to] = split(rest, joiners);

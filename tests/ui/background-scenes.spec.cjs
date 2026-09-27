@@ -77,7 +77,8 @@ test('the atmosphere gallery offers nine distinct compositions and personal medi
 
 /* The thumbnails are the sky in miniature, so choosing a mood repaints them in
    it — a picker whose previews stay on the old colours shows the wrong choice. */
-test('scene previews repaint in the chosen colour mood', async ({ nordlysPage }) => {
+test('scene previews repaint in the chosen colour mood', async ({ nordlysPage, browserName }) => {
+  test.skip(browserName === 'firefox', 'Gecko does not paint the same preview twice byte for byte, which this test compares');
   const { page } = nordlysPage;
   await openBackground(page);
   const halo = page.locator('#bg-scene-grid canvas.scene-still[data-scene="halo"]');
@@ -212,7 +213,8 @@ test('zero motion paints the scene once and then stops', async ({ nordlysPage })
    the thirty-a-second cadence, never has two frames on the way at once, and
    pausing leaves nothing behind to wake it. (How few callbacks each paint
    costs at each panel rate is pinned exactly in tests/unit/frame-budget.) */
-test('a moving sky sleeps between paints and keeps its cadence; a paused one does nothing', async ({ nordlysPage }) => {
+test('a moving sky sleeps between paints and keeps its cadence; a paused one does nothing', async ({ nordlysPage, browserName }) => {
+  test.skip(browserName !== 'chromium', 'headless Gecko and Playwright WebKit paint too few frames a second to measure the 30 fps budget');
   const { page } = nordlysPage;
   const sample = () => page.evaluate(async () => {
     const engine = window.Nordlys.bgEngine;
@@ -297,7 +299,12 @@ test('the atmosphere sliders visibly change what the canvas draws', async ({ nor
     probe.width = probe.height = 24;
     const context = probe.getContext('2d', { willReadFrequently: true });
     context.drawImage(canvas, 0, 0, 24, 24);
-    return [...context.getImageData(0, 0, 24, 24).data].reduce((total, value) => total + value, 0);
+    // The light that shows: colour weighted by how opaque it is, so engines
+    // that round faint pixels differently agree.
+    const d = context.getImageData(0, 0, 24, 24).data;
+    let lit = 0;
+    for (let i = 0; i < d.length; i += 4) lit += (d[i] + d[i + 1] + d[i + 2]) * d[i + 3] / 255;
+    return lit;
   });
 
   await page.evaluate(() => window.Nordlys.bgEngine.setAtmosphere({ intensity: 1.5 }));
@@ -402,7 +409,8 @@ test('Halo follows the real moon, and holds a full one when told not to', async 
 
 /* A mood can start from somewhere other than three blank pickers: two harmonies
    of its first colour, and — when there is one — the person's own wallpaper. */
-test('a mood can start from a harmony, or from the wallpaper when there is one', async ({ nordlysPage }) => {
+test('a mood can start from a harmony, or from the wallpaper when there is one', async ({ nordlysPage, browserName }) => {
+  test.skip(browserName === 'webkit' && process.platform === 'win32', 'Playwright WebKit on Windows cannot store a Blob in IndexedDB; Safari can');
   const { page } = nordlysPage;
   await openBackground(page);
   await expect(page.locator('#bg-palette-wallpaper')).toBeHidden();

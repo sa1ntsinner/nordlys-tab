@@ -6,7 +6,8 @@ test.use({ nordlysBoard: NINE_FOLDERS, viewport: { width: 1600, height: 1000 } }
 /* Size and spacing live where arranging happens, with the board itself as the
    preview: a few measures, each named for what it changes, and one Undo. */
 async function openSize(page) {
-  await page.mouse.click(40, 960, { button: 'right' });
+  // Inside the window at every size the spec uses (720×450 included).
+  await page.mouse.click(5, 300, { button: 'right' });
   await page.locator('#board-ctx-menu [data-action="arrange"]').click();
   await expect(page.locator('#arrange-bar')).toBeVisible();
   await page.locator('#arrange-size').click();

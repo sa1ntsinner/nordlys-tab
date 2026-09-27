@@ -64,7 +64,7 @@ async function bothWays(page, scene) {
 
 test('Silk draws its threads on the GPU, and they look as the 2D strokes do', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  const gl = await page.evaluate(() => Boolean(new OffscreenCanvas(1, 1).getContext('webgl2')));
+  const gl = await page.evaluate(() => typeof OffscreenCanvas === 'function' && Boolean(new OffscreenCanvas(1, 1).getContext('webgl2')));
   test.skip(!gl, 'this browser has no WebGL2, so Silk is painted in 2D and there is nothing to compare');
   const dark = await bothWays(page, 'silk');
   expect(dark.layer, 'the screen paints Silk on the GPU layer').toBe('gpu');
@@ -84,7 +84,7 @@ test('Silk draws its threads on the GPU, and they look as the 2D strokes do', as
 
 test('the GPU layer is kept only while a scene draws with it', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  const gl = await page.evaluate(() => Boolean(new OffscreenCanvas(1, 1).getContext('webgl2')));
+  const gl = await page.evaluate(() => typeof OffscreenCanvas === 'function' && Boolean(new OffscreenCanvas(1, 1).getContext('webgl2')));
   test.skip(!gl, 'no WebGL2 in this browser');
   const state = () => page.evaluate(() => {
     const layer = window.Nordlys.bgEngine.gl;
@@ -100,7 +100,7 @@ test('the GPU layer is kept only while a scene draws with it', async ({ nordlysP
    pieces of one strip merged where they meet. The same frame both ways again. */
 test('Contour draws its lines on the GPU, and they look as the 2D strokes do', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  const gl = await page.evaluate(() => Boolean(new OffscreenCanvas(1, 1).getContext('webgl2')));
+  const gl = await page.evaluate(() => typeof OffscreenCanvas === 'function' && Boolean(new OffscreenCanvas(1, 1).getContext('webgl2')));
   test.skip(!gl, 'no WebGL2 in this browser');
   const dark = await bothWays(page, 'drift');
   expect(dark.layer).toBe('gpu');

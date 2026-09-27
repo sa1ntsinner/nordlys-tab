@@ -56,10 +56,13 @@ test('support is a section of the settings navigation, not a popup', async ({ no
   await expect(page.locator('#sec-support')).toHaveAttribute('role', 'tabpanel');
 });
 
-test('the support tab is reachable with the arrow keys, its actions with Tab', async ({ nordlysPage }) => {
+test('the support tab is reachable with the arrow keys, its actions with Tab', async ({ nordlysPage, browserName }) => {
+  test.skip(browserName === 'webkit', 'WebKit skips links on Tab unless the person turns that on');
   const { page } = nordlysPage;
   await page.locator('#gear').click();
   await page.locator('#settings-tab-general').focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('#settings-tab-sync')).toBeFocused();
   await page.keyboard.press('ArrowDown');
   await expect(page.locator('#settings-tab-support')).toBeFocused();
   await expect(page.locator('#sec-support')).toBeVisible();
