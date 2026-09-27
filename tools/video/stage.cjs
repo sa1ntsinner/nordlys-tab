@@ -90,8 +90,48 @@ function virtualClock(opts) {
   const raf = window.requestAnimationFrame.bind(window);
   window.requestAnimationFrame = (cb) => raf(() => cb(base + v));
   const move = (to) => { if (!wallHeld) wallV += to - v; v = to; };
+  /* CSS transitions and animations (and element.animate()) run on the document
+     timeline, which Chrome keeps on real time even when frames are begun by hand:
+     at 5K, where a frame takes a tenth of a second to draw, the page's own camera
+     moves ran five times too fast. So each one is held, and set frame by frame to
+     the virtual time since it began, and finished at its end (its finished promise
+     resolves, transitionend fires). Left alone: one the page paused itself, and a
+     view transition's (a theme change): held, a view transition never closes, and
+     Chrome stops drawing the page behind its still picture. */
+  const began = new WeakMap();
+  const animations = (from) => {
+    for (const a of document.getAnimations()) {
+      if (a.playState === 'finished' || a.playbackRate < 0) continue;
+      if (String(a.effect?.pseudoElement || '').startsWith('::view-transition')) continue;
+      let t0 = began.get(a);
+      if (t0 === undefined) {
+        if (a.playState === 'paused') continue;
+        t0 = from; // it began since the last frame
+        began.set(a, t0);
+      }
+      try {
+        if (a.playState !== 'paused') a.pause();
+        const t = (v - t0) * a.playbackRate;
+        const end = a.effect ? a.effect.getComputedTiming().endTime : 0;
+        if (end !== Infinity && t >= end) { a.finish(); began.delete(a); } else a.currentTime = t;
+      } catch (error) { console.error(error); }
+    }
+  };
+  /* A heartbeat: a pixel that changes every frame (by a third of a percent of
+     black, which no eye or encoder can see), so that every frame begun is drawn.
+     A still page gives Chrome nothing to draw, and then no picture comes back. */
+  let beat = null;
+  const heartbeat = () => {
+    if (!beat && document.body) {
+      beat = document.createElement('div');
+      beat.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;pointer-events:none;z-index:2147483647;background:#000;opacity:0.002';
+      document.body.append(beat);
+    }
+    if (beat) beat.style.opacity = beat.style.opacity === '0.002' ? '0.003' : '0.002';
+  };
   window.__vclock = {
     advance(ms) {
+      const from = v;
       const end = v + ms;
       for (;;) {
         let next = null;
@@ -103,6 +143,8 @@ function virtualClock(opts) {
         try { if (typeof t.fn === 'function') t.fn(...t.args); } catch (error) { console.error(error); }
       }
       move(end);
+      animations(from);
+      heartbeat();
       return v;
     },
     hold(on) { wallHeld = Boolean(on); },

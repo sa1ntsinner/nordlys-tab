@@ -237,6 +237,7 @@ function encoder(file) {
     mode = 'run';
     const script = (async () => { if (plate.run) await plate.run(s); })().then(() => { finished = true; active = false; notify(); }, (error) => { finished = error; active = false; notify(); });
     const started = Date.now();
+    let waited = 0; // frames asked for again (see below)
     for (frame = 0; frame < frames; frame++) {
       await advance();
       // Let the script act on this frame, until it waits for a later one (or ends).
@@ -249,7 +250,15 @@ function encoder(file) {
         if (Date.now() - since > 30000) { console.warn(`${plate.name}: script busy at frame ${frame}`); break; }
       }
       if (finished && finished !== true) throw finished;
-      const shot = await beginFrame(true);
+      /* A view transition (a theme change) holds the page's drawing for a moment,
+         on Chrome's own clock: then no picture comes back. Ask again, without
+         moving the page's time, until it draws. */
+      let shot = await beginFrame(true);
+      for (let tries = 0; !shot.screenshotData && tries < 400; tries++) {
+        await new Promise((r) => setTimeout(r, 10));
+        shot = await beginFrame(true);
+        waited += 1;
+      }
       if (!shot.screenshotData) throw new Error(`${plate.name}: no picture at frame ${frame}`);
       if (inflight.length) await Promise.all(inflight.splice(0));
       if (!ff.stdin.write(Buffer.from(shot.screenshotData, 'base64'))) await once(ff.stdin, 'drain');
@@ -267,7 +276,7 @@ function encoder(file) {
       scale: SCALE, marks, rects, note: plate.note || '' };
     fs.writeFileSync(path.join(OUT, `${plate.name}.json`), JSON.stringify(meta, null, 1));
     writeIndex();
-    console.log(`${plate.name}: ${frames} frames in ${((Date.now() - started) / 1000).toFixed(1)} s`);
+    console.log(`${plate.name}: ${frames} frames in ${((Date.now() - started) / 1000).toFixed(1)} s${waited ? ` (asked again ${waited} times)` : ''}`);
     pump();
     await page.mouse.move(PARK.x, PARK.y);
   }
