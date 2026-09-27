@@ -70,7 +70,8 @@ test.describe('folded folders', () => {
     await expect.poll(async () => (await look(page)).hidden).toBe(1);
   });
 
-  test('open for the keyboard as they do for a pointer', async ({ nordlysPage }) => {
+  test('open for the keyboard as they do for a pointer', async ({ nordlysPage, browserName }) => {
+    test.skip(browserName === 'webkit' && process.platform === 'darwin', 'WebKit on macOS moves Tab only between text fields until keyboard navigation is turned on in System Settings');
     const { page } = nordlysPage;
     await fold(page);
     await page.locator('#hiddenDock .restoreFolder').first().focus();

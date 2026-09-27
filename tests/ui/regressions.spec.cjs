@@ -29,7 +29,6 @@ test('switching themes faster than the transition settles raises nothing', async
 });
 
 test('uploading a wallpaper moves the scene selection with it', async ({ nordlysPage, browserName }) => {
-  test.skip(browserName === 'webkit' && process.platform === 'win32', 'Playwright WebKit on Windows cannot store a Blob in IndexedDB; Safari can');
   const { page } = nordlysPage;
   await page.locator('#gear').click();
   await page.locator('#settings-tab-background').click();
@@ -47,7 +46,6 @@ test('uploading a wallpaper moves the scene selection with it', async ({ nordlys
 });
 
 test('removing a wallpaper hands the scene back', async ({ nordlysPage, browserName }) => {
-  test.skip(browserName === 'webkit' && process.platform === 'win32', 'Playwright WebKit on Windows cannot store a Blob in IndexedDB; Safari can');
   const { page } = nordlysPage;
   await page.locator('#gear').click();
   await page.locator('#settings-tab-background').click();

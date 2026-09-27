@@ -17,6 +17,7 @@ async function tabThrough(page, presses = 60) {
 /* Everything the canvas offers has to be reachable without a mouse — the tiles,
    the folder controls, the search field and the way into settings. */
 test('the canvas can be operated from the keyboard alone', async ({ nordlysPage, browserName }) => {
+  test.skip(browserName === 'webkit' && process.platform === 'darwin', 'WebKit on macOS moves Tab only between text fields until keyboard navigation is turned on in System Settings');
   test.skip(browserName === 'firefox', 'Gecko starts Tab elsewhere after a click, and Playwright cannot Tab back from the browser toolbar');
   const { page } = nordlysPage;
   await page.locator('body').click({ position: { x: 5, y: 5 } });
@@ -39,7 +40,8 @@ test('the canvas can be operated from the keyboard alone', async ({ nordlysPage,
 
 /* Focus must not be able to leave the page into browser chrome and strand the
    user mid-task while a folder is folded away in the dock. */
-test('a folded folder stays reachable from the keyboard', async ({ nordlysPage }) => {
+test('a folded folder stays reachable from the keyboard', async ({ nordlysPage, browserName }) => {
+  test.skip(browserName === 'webkit' && process.platform === 'darwin', 'WebKit on macOS moves Tab only between text fields until keyboard navigation is turned on in System Settings');
   const { page } = nordlysPage;
   await page.locator('#board .card').first().locator('.foldBtn').click();
   await page.waitForTimeout(360);

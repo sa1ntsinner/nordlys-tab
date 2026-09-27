@@ -124,7 +124,6 @@ test('a reset keeps everything it removed, and the board comes back whole', asyn
    to one slot in the media vault instead of deleting it. Without that, the undo
    would bring back a config that points at a wallpaper no longer on disk. */
 test('a reset sets the wallpaper aside rather than deleting it, and the undo brings it back', async ({ nordlysPage, browserName }) => {
-  test.skip(browserName === 'webkit' && process.platform === 'win32', 'Playwright WebKit on Windows cannot store a Blob in IndexedDB; Safari can');
   const { page } = nordlysPage;
   await page.evaluate(async () => {
     await MediaVault.saveMedia('custom_bg', new Blob(['not really an image'], { type: 'image/png' }), 'image/png');
@@ -144,7 +143,8 @@ test('a reset sets the wallpaper aside rather than deleting it, and the undo bri
   await openBackup(page);
   await page.locator('#cfg-undo-point').click();
   await page.waitForFunction(() => window.Nordlys?.config?.bgMode === 'wallpaper', null, { timeout: 5000 });
-  expect(await page.evaluate(async () => Boolean(await MediaVault.getMedia('custom_bg')))).toBe(true);
+  // The settings come back first, the picture a moment after.
+  await expect.poll(() => page.evaluate(async () => Boolean(await MediaVault.getMedia('custom_bg')))).toBe(true);
   expect(await page.evaluate(async () => Boolean(await MediaVault.getMedia('nordlys_undo_bg'))), 'one slot, handed back rather than hoarded').toBe(false);
 });
 
@@ -187,7 +187,6 @@ test('a reset that cannot save a way back does not happen at all', async ({ nord
    into it first, and only then finding there is no room for the snapshot, left
    the previous way back promising a wallpaper that had been written over. */
 test('a reset that cannot save a way back leaves the previous one usable, wallpaper and all', async ({ nordlysPage, browserName }) => {
-  test.skip(browserName === 'webkit' && process.platform === 'win32', 'Playwright WebKit on Windows cannot store a Blob in IndexedDB; Safari can');
   const { page } = nordlysPage;
   await seedUndoPoint(page, { media: true });
   await putMedia(page, 'nordlys_undo_bg', 'the wallpaper the previous undo brings back');
@@ -213,7 +212,6 @@ test('a reset that cannot save a way back leaves the previous one usable, wallpa
    emptied the slot before it had earned it. Nothing was gained by that, and an
    older undo point lost the only copy of its wallpaper. */
 test('a reset with no wallpaper does not empty the previous undo point before it has a way back', async ({ nordlysPage, browserName }) => {
-  test.skip(browserName === 'webkit' && process.platform === 'win32', 'Playwright WebKit on Windows cannot store a Blob in IndexedDB; Safari can');
   const { page } = nordlysPage;
   await seedUndoPoint(page, { media: true });
   await putMedia(page, 'nordlys_undo_bg', 'the only copy left of that wallpaper');
@@ -233,7 +231,6 @@ test('a reset with no wallpaper does not empty the previous undo point before it
 /* Transactional is not the same as hoarding: after a reset that does land there
    is still exactly one snapshot and one wallpaper behind it. */
 test('a second reset overwrites the one slot rather than collecting them', async ({ nordlysPage, browserName }) => {
-  test.skip(browserName === 'webkit' && process.platform === 'win32', 'Playwright WebKit on Windows cannot store a Blob in IndexedDB; Safari can');
   const { page } = nordlysPage;
   await seedUndoPoint(page, { media: true });
   await putMedia(page, 'nordlys_undo_bg', 'the wallpaper from one reset ago');

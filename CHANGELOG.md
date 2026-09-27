@@ -42,6 +42,7 @@ Chrome Web Store's rule that they only ever go up.
 - A dashboard list with more rows than fit (tasks, habits, the tab stash, connected apps) fades at its lower edge, so a row cut by the edge reads as "more below".
 - The Connect an app menu shows each app's logo, and Google and Microsoft say "Soon" until their sign-in is ready.
 - Smooth corners are offered only in browsers that can draw them.
+- A wallpaper is kept where the browser refuses to store a file in its database (a Safari private window, for one): it is kept as its bytes and comes back as the same picture.
 - Icon search now spells Google TV correctly.
 
 ### Removed

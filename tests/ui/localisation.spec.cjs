@@ -29,6 +29,8 @@ test('switching language translates the whole settings chrome, not just the item
 /* A key that reaches the screen unresolved reads as "nav.backup" to the user. */
 test('no message key leaks to the screen in any locale', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
+  // Eight languages, every section: slow on a small machine.
+  test.slow();
   await page.locator('#gear').click();
   const leaked = [];
   for (const locale of ['en', 'ru', 'de', 'ja', 'zh', 'tr', 'es', 'fr']) {
