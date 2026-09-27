@@ -1,0 +1,139 @@
+/* Profiles and sync (sync-ui.js). The chip is one more quiet line under the
+   greeting; everything else lives in menus, a small form and one section of
+   Settings. */
+
+.profile-dot {
+  --dot: #35d6c0;
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dot);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dot) 22%, transparent);
+}
+.profile-dot[data-color="teal"] { --dot: #35d6c0; }
+.profile-dot[data-color="amber"] { --dot: #f5a524; }
+.profile-dot[data-color="violet"] { --dot: #9d7bff; }
+.profile-dot[data-color="rose"] { --dot: #f06292; }
+.profile-dot[data-color="sky"] { --dot: #5aa9ff; }
+.profile-dot[data-color="lime"] { --dot: #9ccc4f; }
+
+/* ── The chip under the greeting ──────────────────────────────── */
+#profile-chip {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 7px;
+  margin: 8px auto 0;
+  min-height: 30px;
+  padding: 0 10px 0 11px;
+  border: 1px solid var(--nl-polish-hairline, rgba(255, 255, 255, 0.12));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--nl-surface-card-deep, #0c1222) 55%, transparent);
+  color: var(--nl-text-secondary);
+  font: inherit;
+  font-size: var(--nl-text-sm, 0.85rem);
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: color var(--nl-transition-control), border-color var(--nl-transition-control), background-color var(--nl-transition-control);
+}
+#profile-chip[hidden] { display: none; }
+#profile-chip:hover { color: var(--nl-text-primary); border-color: color-mix(in srgb, var(--nl-accent, #35d6c0) 40%, var(--nl-border, transparent)); }
+#profile-chip[aria-expanded="true"] { color: var(--nl-text-primary); }
+#profile-chip .profile-name { max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-caret { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.7; }
+body[data-header="compact"] #profile-chip { margin-top: 4px; }
+
+.profile-menu { min-width: 220px; }
+.profile-menu .ctx-item { gap: 10px; }
+.profile-menu .ctx-item.is-current { color: var(--nl-text-primary); font-weight: 600; }
+.profile-check { margin-left: auto; color: var(--nl-accent, #35d6c0); }
+.profile-plus { display: inline-grid; place-items: center; width: 8px; font-weight: 700; }
+
+/* ── Switching: the board leaves, the new one settles in ─────── */
+body.profile-leaving #board { opacity: 0; transform: translateY(6px); transition: opacity var(--nl-transition-fast), transform var(--nl-transition-fast); }
+body.profile-arriving #board { opacity: 0; transform: translateY(-6px); transition: none; }
+body.profile-settling #board { transition: opacity var(--nl-transition-panel), transform var(--nl-transition-panel); }
+
+/* ── Kept here, or different here ─────────────────────────────── */
+.device-mark {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--nl-surface-card-deep, #0c1222) 80%, transparent);
+  color: var(--nl-accent, #35d6c0);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--nl-transition-control);
+}
+.device-mark svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+:is(.is-here-only, .is-different-here) { position: relative; }
+:is(.is-here-only, .is-different-here):is(:hover, :focus-visible) > .device-mark,
+body.arranging :is(.is-here-only, .is-different-here) > .device-mark { opacity: 0.9; }
+.is-different-here > .device-mark { color: var(--nl-text-secondary); }
+
+/* ── The small form ───────────────────────────────────────────── */
+.nl-form-fields { display: grid; gap: 14px; }
+.nl-choice { margin: 0; padding: 0; border: 0; display: grid; gap: 8px; }
+.nl-choice-option {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--nl-radius-md, 12px);
+  border: 1px solid var(--nl-polish-hairline, rgba(255, 255, 255, 0.1));
+  cursor: pointer;
+}
+.nl-choice-option:has(input:checked) { border-color: color-mix(in srgb, var(--nl-accent, #35d6c0) 55%, transparent); background: color-mix(in srgb, var(--nl-accent, #35d6c0) 8%, transparent); }
+.nl-choice-option input { margin-top: 3px; accent-color: var(--nl-accent, #35d6c0); }
+.nl-choice-option span { display: grid; gap: 2px; }
+.nl-choice-option small, .nl-form-note { color: var(--nl-text-secondary); font-size: var(--nl-text-sm, 0.85rem); }
+.nl-form-note { margin: 12px 0 0; }
+.nl-form-actions { display: flex; gap: 8px; margin-top: 16px; }
+.nl-form-actions .glass-btn { flex: 1; }
+.nl-form-fields input[aria-invalid="true"] { border-color: var(--nl-danger, #f06292); }
+
+/* ── Settings: Sync & profiles ────────────────────────────────── */
+#cfg .row-hint { display: block; margin-top: 2px; color: var(--nl-text-secondary); font-size: var(--nl-text-sm, 0.85rem); font-weight: 400; }
+#cfg .glass-btn.small { min-height: 34px; padding: 0 12px; font-size: var(--nl-text-sm, 0.85rem); }
+.sync-block { display: grid; gap: 12px; margin-bottom: 18px; }
+.sync-profiles, .sync-devices { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.sync-profile, .sync-deleted, .sync-device {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  border-radius: var(--nl-radius-md, 12px);
+  border: 1px solid var(--nl-polish-hairline, rgba(255, 255, 255, 0.08));
+}
+.sync-profile.is-current { border-color: color-mix(in srgb, var(--nl-accent, #35d6c0) 45%, transparent); }
+.profile-color { display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 50%; background: transparent; cursor: pointer; }
+.profile-color .profile-dot { width: 12px; height: 12px; }
+.profile-color:hover { background: color-mix(in srgb, var(--nl-text-primary) 8%, transparent); }
+.sync-profile-name, .sync-device > span:first-child { display: grid; min-width: 0; flex: 1 1 8rem; }
+.sync-profile-name b, .sync-device b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--nl-text-md, 0.95rem); font-weight: 600; }
+.sync-profile-name small, .sync-device small { color: var(--nl-text-secondary); }
+.sync-profile-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin-left: auto; }
+.sync-deleted > span:nth-child(2) { flex: 1; }
+.sync-deleted-title { margin: 6px 0 0; }
+.sync-status { display: grid; gap: 6px; justify-items: start; }
+.sync-state { font-size: var(--nl-text-sm, 0.85rem); font-weight: 600; }
+.sync-state.is-ready { color: var(--nl-success, #4ade80); }
+.sync-state.is-full, .sync-state.is-error { color: var(--nl-danger, #f06292); }
+.sync-error { color: var(--nl-text-secondary); font-size: var(--nl-text-sm, 0.85rem); }
+.sync-meter { width: 100%; height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--nl-text-primary) 12%, transparent); overflow: hidden; }
+.sync-meter i { display: block; height: 100%; border-radius: inherit; background: var(--nl-accent, #35d6c0); }
+
+@media (forced-colors: active) {
+  #profile-chip, .nl-choice-option, .sync-profile, .sync-deleted, .sync-device { border: 1px solid ButtonText; }
+  .profile-dot { forced-color-adjust: none; }
+}
