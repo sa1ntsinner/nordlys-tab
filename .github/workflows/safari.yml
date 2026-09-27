@@ -16,7 +16,8 @@ on:
         type: boolean
         default: true
   push:
-    tags: ["v*"]
+    # v* is a release; safari-* sends a build to TestFlight without one.
+    tags: ["v*", "safari-*"]
     # The release branch builds too (unsigned unless a tag), so the Xcode side
     # is checked before anything is sent to Apple.
     branches: ["perf/windows-newtab"]
