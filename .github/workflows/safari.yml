@@ -65,9 +65,15 @@ jobs:
             --project-location build --app-name Nordlys --bundle-identifier "$BUNDLE_ID" \
             --macos-only --swift --copy-resources --no-open --no-prompt --force
           find build -maxdepth 3 -name "*.xcodeproj"
-      - name: App icon, category and export compliance
+      - name: App icon, category, export compliance and the extension's id
         run: |
           sh tools/safari/app-icon.sh build
+          # The converter names the extension after the app name (…Nordlys.Extension);
+          # the App Store needs it under the app's own id, case and all.
+          grep -rlI "sa1ntsinner.Nordlys.Extension" build | while read -r f; do
+            sed -i '' "s/io\.github\.sa1ntsinner\.Nordlys\.Extension/$BUNDLE_ID.Extension/g" "$f"
+          done
+          grep -rhoI "$BUNDLE_ID[A-Za-z.]*" build/Nordlys/Nordlys.xcodeproj/project.pbxproj | sort -u
           # Nordlys uses no encryption beyond what the system provides.
           find build -name Info.plist -not -path "*/Pods/*" | while read -r plist; do
             /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$plist" 2>/dev/null || true
