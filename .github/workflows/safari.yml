@@ -68,10 +68,11 @@ jobs:
       - name: App icon, category, export compliance and the extension's id
         run: |
           sh tools/safari/app-icon.sh build
-          # The converter names the extension after the app name (…Nordlys.Extension);
-          # the App Store needs it under the app's own id, case and all.
-          grep -rlI "sa1ntsinner.Nordlys.Extension" build | while read -r f; do
-            sed -i '' "s/io\.github\.sa1ntsinner\.Nordlys\.Extension/$BUNDLE_ID.Extension/g" "$f"
+          # The converter takes the case of the ids from the app name
+          # (io.github.sa1ntsinner.Nordlys, …Nordlys.Extension); the registered
+          # ids are lower case, and the extension must sit under the app's.
+          grep -rlI "io.github.sa1ntsinner.Nordlys" build | while read -r f; do
+            sed -i '' "s/io\.github\.sa1ntsinner\.Nordlys/$BUNDLE_ID/g" "$f"
           done
           grep -rhoI "$BUNDLE_ID[A-Za-z.]*" build/Nordlys/Nordlys.xcodeproj/project.pbxproj | sort -u
           # Nordlys uses no encryption beyond what the system provides.
