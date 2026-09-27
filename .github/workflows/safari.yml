@@ -1,0 +1,138 @@
+# Safari: the extension in Apple's own WebKit, and the Mac app for the App
+# Store, built on GitHub's macOS machines, so no Mac of our own is needed.
+#
+# Secrets (Settings > Secrets and variables > Actions):
+#   APPLE_TEAM_ID    the team id from developer.apple.com > Membership
+#   ASC_KEY_ID       App Store Connect API key id
+#   ASC_ISSUER_ID    its issuer id
+#   ASC_KEY_P8       the contents of AuthKey_<id>.p8
+name: Safari
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: Sign and upload the Mac app to App Store Connect
+        type: boolean
+        default: true
+  push:
+    tags: ["v*"]
+    # The release branch builds too (unsigned unless a tag), so the Xcode side
+    # is checked before anything is sent to Apple.
+    branches: ["perf/windows-newtab"]
+    paths: [".github/workflows/safari.yml", "tools/safari/**", "tools/build-ports.cjs", "manifest.json", "src/**", "newtab.html"]
+
+permissions:
+  contents: read
+
+jobs:
+  webkit:
+    # The UI suite in the WebKit that Safari is built on, on macOS.
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install webkit
+      - run: npx playwright test --config=tools/engines.playwright.config.cjs --project=webkit --workers=3
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: webkit-results
+          path: test-results
+          retention-days: 7
+
+  app:
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      BUNDLE_ID: io.github.sa1ntsinner.nordlys
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build the Safari folder
+        run: npm run ports safari
+      - name: Turn it into an Xcode project
+        run: |
+          xcrun safari-web-extension-converter dist/safari \
+            --project-location build --app-name Nordlys --bundle-identifier "$BUNDLE_ID" \
+            --macos-only --swift --copy-resources --no-open --no-prompt --force
+          find build -maxdepth 3 -name "*.xcodeproj"
+      - name: App icon, category and export compliance
+        run: |
+          sh tools/safari/app-icon.sh build
+          # Nordlys uses no encryption beyond what the system provides.
+          find build -name Info.plist -not -path "*/Pods/*" | while read -r plist; do
+            /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$plist" 2>/dev/null || true
+          done
+      - name: API key
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/keys"
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+      - name: Archive
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          project=$(find build -maxdepth 3 -name "*.xcodeproj" | head -1)
+          scheme=$(xcodebuild -list -json -project "$project" | python3 -c 'import json,sys; s=json.load(sys.stdin)["project"]["schemes"]; print(next((x for x in s if "Extension" not in x), s[0]))')
+          version=$(node -p 'require("./manifest.json").version')
+          echo "project $project, scheme $scheme, version $version, build $GITHUB_RUN_NUMBER"
+          if [ -z "$ASC_ISSUER_ID" ]; then
+            # No API key yet: prove the project builds, unsigned, and stop there.
+            xcodebuild build -project "$project" -scheme "$scheme" -configuration Release \
+              -destination "generic/platform=macOS" CODE_SIGNING_ALLOWED=NO \
+              MARKETING_VERSION="$version" CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER"
+            echo "UNSIGNED=1" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          xcodebuild archive -project "$project" -scheme "$scheme" -configuration Release \
+            -destination "generic/platform=macOS" -archivePath build/Nordlys.xcarchive \
+            DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic \
+            MARKETING_VERSION="$version" CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
+            INFOPLIST_KEY_LSApplicationCategoryType=public.app-category.productivity \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+      - name: Sign for the App Store and upload
+        if: ${{ env.UNSIGNED != '1' && (startsWith(github.ref, 'refs/tags/') || inputs.upload) }}
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          cat > build/ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$TEAM</string>
+            <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath build/Nordlys.xcarchive -exportPath build/export \
+            -exportOptionsPlist build/ExportOptions.plist -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+      - if: always()
+        run: rm -rf "$RUNNER_TEMP/keys"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcode-project
+          path: |
+            build/**/*.xcodeproj
+            build/export/*.log
+          retention-days: 7
+          if-no-files-found: ignore
