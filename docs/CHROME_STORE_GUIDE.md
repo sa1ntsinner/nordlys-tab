@@ -1,56 +1,30 @@
-# Chrome Web Store publication guide
+# Load and package the extension
 
-This document guides you through testing Nordlys locally and publishing it to the Chrome Web Store.
+## Load it unpacked
 
----
+Nordlys works in Chromium browsers, including Chrome, Edge, Brave, Arc, Opera and Vivaldi.
 
-## Step 1: load locally in developer mode
+1. Open `chrome://extensions` (or `edge://extensions`, `brave://extensions`).
+2. Turn on Developer mode.
+3. Click Load unpacked and pick the repo folder.
+4. Open a new tab.
 
-You can test Nordlys in any Chromium browser (Google Chrome, Brave, Microsoft Edge, Arc, Opera, Vivaldi):
+Chrome reads every file in the folder when it loads the extension. A large `node_modules` folder or extra checkouts can slow that down. A clean clone is fine.
 
-1. Open your browser and navigate to:
-   * Chrome: `chrome://extensions`
-   * Brave: `brave://extensions`
-   * Edge: `edge://extensions`
-2. Toggle **Developer mode** on (top right corner).
-3. Click the **Load unpacked** button (top left).
-4. Select the project folder:
-   ```
-   C:\Users\smile\Sync Docs\Important Stuff\Nordlys
-   ```
-5. Open a new tab (`Ctrl + T`) to see Nordlys in action!
+## Build the zip without npm
 
----
-
-## Step 2: package for the Chrome Web Store
-
-To upload to the Chrome Web Store Developer Dashboard, you need a single `.zip` file containing the extension files.
-
-### Create ZIP using PowerShell:
-
-Run this from the repository root. List the shipped paths explicitly — a wildcard
-(`-Path .\*`) would sweep in `node_modules/`, `tests/`, and the internal docs,
-producing a ~40 MB upload instead of ~600 KB.
+`npm run package` checks the version and makes the zip. To do it by hand, run this in PowerShell from the repo root:
 
 ```powershell
-Compress-Archive -Path manifest.json, newtab.html, PRIVACY.md, README.md, LICENSE, icons, src -DestinationPath nordlys-v2.5.0.zip -Force
+Compress-Archive -Path manifest.json, newtab.html, PRIVACY.md, README.md, LICENSE, icons, src -DestinationPath nordlys-v2.5.1.zip -Force
 ```
 
-Verify before uploading — `manifest.json` must sit at the zip root and nothing
-else should be present:
+List the paths shown. A wildcard would also pack `node_modules/`, the tests and the docs, growing the upload from about 600 KB to 40 MB.
+
+Check that `manifest.json` is at the root of the zip:
 
 ```powershell
-Expand-Archive nordlys-v2.5.0.zip -DestinationPath .\zip-check -Force; Get-ChildItem .\zip-check
+Expand-Archive nordlys-v2.5.1.zip -DestinationPath .\zip-check -Force; Get-ChildItem .\zip-check
 ```
 
----
-
-## Step 3: the developer dashboard
-
-1. Visit the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole).
-2. Sign in with your Google account (one-time $5 developer registration fee if new).
-3. Click **Add new item** and upload `nordlys-v2.5.0.zip`.
-4. Fill in the listing from [store-listing.md](store-listing.md), which holds the
-   title, summary, description, artwork inventory and the privacy answers as
-   text to paste. Do not retype them here; one copy is enough.
-5. Click **Submit for Review**.
+Follow [RELEASE_GUIDE.md](../RELEASE_GUIDE.md) to upload the zip and finish the release.

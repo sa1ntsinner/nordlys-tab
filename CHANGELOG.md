@@ -4,6 +4,27 @@ All user-visible changes, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow the
 Chrome Web Store's rule that they only ever go up.
 
+## [2.5.1] — 2026-09-25
+
+### Added
+
+- One page fit keeps the clock, search box and folders in the window without scrolling. It reduces spacing, then tile size, and scales the board only if needed. It doesn't change your saved sizes, and it's off until you turn it on. The small star at the top right opens the switch when you point at it or Tab to it. You can also find it in Settings → Bookmarks.
+- Four new backgrounds: Polaris shows star trails round the pole star, Pillars shows columns of light over a frozen town, Nacre shows mother-of-pearl clouds at dusk, and Baikal shows black lake ice with frozen bubbles and cracks.
+
+### Changed
+
+- Folded folders now share one icon with a count under the board. Point at it, Tab to it or tap it to open them.
+- Undo notices now appear at the bottom left, clear of the folded folders and the last board row.
+- Silk and Contour now use the GPU. On some machines, Silk used to run at 10 to 25 frames a second while other backgrounds held 30. On an integrated GPU, Chrome's GPU process dropped from about 1,100 to 170 ms of CPU time per second on Silk and used about half a gigabyte less memory. Both look the same as before. Browsers without WebGL2 still use the older drawing method.
+
+### Fixed
+
+- Icon search now spells Google TV correctly.
+
+### Removed
+
+- Frost is gone. If you were using it, you now get Baikal.
+
 ## [2.5.0] — 2026-09-23
 
 ### Added

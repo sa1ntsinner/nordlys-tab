@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Nordlys",
-  "version": "2.5.0",
-  "description": "A new tab page with 21 themes, six living skies you can recolour, folders you arrange, and a search box that does arithmetic.",
+  "version": "2.5.1",
+  "description": "A Chrome new tab page with bookmark folders, 9 animated backgrounds, 21 themes, math and commands in the search box.",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   },

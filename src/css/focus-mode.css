@@ -1,0 +1,131 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Focus mode (focus-mode.js): the page given to one thing. The sky stays,
+   dimmed; everything else of the page steps back behind the veil.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.focus-mode {
+  position: fixed; inset: 0; z-index: var(--nl-z-overlay);
+  display: grid;
+  grid-template: "top top top" auto "left center right" 1fr "foot foot foot" auto / minmax(220px, 1fr) minmax(0, 560px) minmax(220px, 1fr);
+  gap: var(--nl-space-6);
+  padding: var(--nl-space-6) var(--nl-space-8);
+  color: #f3f6fb;
+  opacity: 0;
+  transition: opacity var(--nl-transition-panel);
+}
+.focus-mode[hidden] { display: none; }
+.focus-mode.is-open { opacity: 1; }
+.focus-mode > :not(.fm-veil) { position: relative; }
+.fm-veil {
+  position: absolute; inset: 0;
+  background: radial-gradient(120% 90% at 50% 45%, rgba(4, 7, 14, 0.42), rgba(4, 7, 14, 0.78));
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+}
+body.focus-mode-open #fit-surface, body.focus-mode-open #gear { visibility: hidden; }
+
+/* ── Top ────────────────────────────────────────────────────── */
+.fm-top { grid-area: top; display: flex; align-items: center; justify-content: space-between; }
+.fm-status { display: inline-flex; align-items: center; gap: var(--nl-space-2); padding: 8px 16px; border-radius: 999px; font-size: var(--nl-text-md); font-weight: 600; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.1); }
+.fm-status-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, 0.4); }
+.focus-mode.is-running .fm-status-dot { background: var(--accent); animation: pulse 2.4s ease-in-out infinite; }
+.fm-top-actions { display: flex; gap: var(--nl-space-2); }
+.fm-icon, .fm-round {
+  appearance: none; cursor: pointer; display: inline-grid; place-items: center; padding: 0;
+  color: #f3f6fb; background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: background var(--nl-transition-fast), transform var(--nl-transition-pop-fast);
+}
+.fm-icon { width: 40px; height: 40px; border-radius: 50%; }
+.fm-icon:hover, .fm-round:hover { background: rgba(255, 255, 255, 0.14); }
+.fm-icon:active, .fm-round:active { transform: scale(.94); }
+.focus-mode svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── The timer ──────────────────────────────────────────────── */
+.fm-center { grid-area: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--nl-space-6); min-height: 0; }
+.fm-modes { display: inline-flex; padding: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1); }
+.fm-mode { appearance: none; border: 0; cursor: pointer; padding: 6px 16px; border-radius: 999px; font: inherit; font-size: var(--nl-text-sm); color: rgba(243, 246, 251, 0.7); background: transparent; transition: background var(--nl-transition-fast), color var(--nl-transition-fast); }
+.fm-mode[aria-checked="true"] { background: rgba(255, 255, 255, 0.92); color: #0b0f18; }
+.fm-ring { position: relative; width: min(46vh, 380px); aspect-ratio: 1; display: grid; place-items: center; }
+.focus-mode .fm-ring-svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+.focus-mode .fm-ring-svg circle { fill: none; stroke-width: 3; }
+.fm-ring-svg .track { stroke: rgba(255, 255, 255, 0.12); }
+.fm-ring-svg .fill { stroke: var(--accent); stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: calc(100 - var(--fm-progress, 0) * 100); transition: stroke-dashoffset var(--nl-transition-panel); }
+.focus-mode.is-rest .fm-ring-svg .fill { stroke: #f5c451; filter: none; }
+.fm-read { display: flex; flex-direction: column; align-items: center; gap: var(--nl-space-2); }
+.fm-phase { font-size: var(--nl-text-sm); font-weight: 600; letter-spacing: var(--nl-track-wide); text-transform: uppercase; color: rgba(243, 246, 251, 0.7); }
+.fm-face { font-family: var(--font-display, inherit); font-size: clamp(64px, 12vh, 116px); font-weight: 200; line-height: 1; letter-spacing: var(--nl-track-tight); font-variant-numeric: tabular-nums; text-shadow: 0 2px 30px rgba(0, 0, 0, 0.35); }
+.fm-intent {
+  width: min(100%, 480px); text-align: center; padding: var(--nl-space-2) 0; border: 0; outline: none; background: transparent;
+  font: inherit; font-family: var(--font-display, inherit); font-size: var(--nl-text-2xl); color: #f3f6fb;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.22);
+  transition: border-color var(--nl-transition-fast);
+}
+.fm-intent::placeholder { color: rgba(243, 246, 251, 0.5); }
+.fm-intent:focus { border-bottom-color: var(--accent); }
+.fm-controls { display: flex; align-items: center; gap: var(--nl-space-4); }
+.fm-round { width: 48px; height: 48px; border-radius: 50%; font: inherit; font-size: var(--nl-text-sm); font-weight: 600; }
+.fm-go {
+  appearance: none; cursor: pointer; display: inline-grid; place-items: center; padding: 0; border: 0;
+  width: 76px; height: 76px; border-radius: 50%; color: #06121a; background: var(--accent);
+  box-shadow: var(--nl-shadow-2);
+  transition: transform var(--nl-transition-pop-fast);
+}
+.fm-go:hover { transform: scale(1.04); }
+.fm-go:active { transform: scale(.95); }
+.fm-go svg { width: 28px; height: 28px; fill: currentColor; stroke: none; }
+
+/* ── Sides ──────────────────────────────────────────────────── */
+.fm-panel {
+  align-self: end; display: flex; flex-direction: column; gap: var(--nl-space-3);
+  padding: var(--nl-space-4) var(--nl-space-5); border-radius: var(--nl-radius-xl);
+  background: rgba(10, 14, 24, 0.42); border: 1px solid rgba(255, 255, 255, 0.1);
+  max-width: 320px; min-width: 0;
+}
+.fm-panel[hidden] { display: none; }
+.fm-left { grid-area: left; justify-self: start; }
+.fm-right { grid-area: right; justify-self: end; width: 100%; }
+.fm-panel h2 { margin: 0; display: flex; align-items: center; gap: var(--nl-space-2); font-size: var(--nl-text-2xs); font-weight: 650; letter-spacing: var(--nl-track-wide); text-transform: uppercase; color: rgba(243, 246, 251, 0.6); }
+.fm-panel h2 svg { width: 14px; height: 14px; }
+.fm-sounds { display: flex; flex-wrap: wrap; gap: 6px; }
+.fm-chip { appearance: none; cursor: pointer; padding: 6px 12px; border-radius: 999px; border: 0; font: inherit; font-size: var(--nl-text-sm); color: rgba(243, 246, 251, 0.8); background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.1); transition: background var(--nl-transition-fast), color var(--nl-transition-fast); }
+.fm-chip:hover { background: rgba(255, 255, 255, 0.13); }
+.fm-chip[aria-checked="true"] { background: rgba(255, 255, 255, 0.92); color: #0b0f18; }
+.fm-volume { width: 100%; accent-color: var(--accent); }
+.fm-volume:disabled { opacity: .35; }
+.fm-tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 32vh; overflow-y: auto; }
+.fm-tasks li { display: flex; align-items: center; gap: var(--nl-space-3); font-size: var(--nl-text-md); }
+.focus-mode .dash-check { border-color: rgba(255, 255, 255, 0.55); }
+.focus-mode .dash-check:checked { border-color: var(--accent); }
+.fm-tasks li.is-done span { text-decoration: line-through; color: rgba(243, 246, 251, 0.5); }
+.fm-empty { color: rgba(243, 246, 251, 0.55); }
+
+/* ── Foot ───────────────────────────────────────────────────── */
+.fm-foot { grid-area: foot; display: flex; flex-direction: column; align-items: center; gap: var(--nl-space-2); text-align: center; }
+.fm-stats { margin: 0; font-size: var(--nl-text-sm); color: rgba(243, 246, 251, 0.72); font-variant-numeric: tabular-nums; }
+.fm-mantra { margin: 0; font-family: var(--font-display, inherit); font-size: var(--nl-text-lg); font-style: italic; color: rgba(243, 246, 251, 0.85); }
+
+/* ── Arriving ───────────────────────────────────────────────── */
+.focus-mode .fm-center, .focus-mode .fm-panel, .focus-mode .fm-foot, .focus-mode .fm-top { transition: transform var(--nl-transition-reveal), opacity var(--nl-transition-reveal); }
+.focus-mode:not(.is-open) .fm-center { transform: scale(.96); opacity: 0; }
+.focus-mode:not(.is-open) .fm-panel, .focus-mode:not(.is-open) .fm-foot { transform: translateY(12px); opacity: 0; }
+
+/* ── The small floating window ──────────────────────────────── */
+.fm-pip-body { margin: 0; background: #070a12; color: #f3f6fb; font-family: var(--font-display, system-ui); }
+.fm-pip { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+.fm-pip-face { font-size: calc(var(--nl-text-2xl) * 2.3); font-weight: 200; font-variant-numeric: tabular-nums; }
+.fm-pip-phase { font-size: var(--nl-text-xs); letter-spacing: var(--nl-track-wide); text-transform: uppercase; opacity: .7; }
+.fm-pip-go { width: 52px; height: 52px; }
+.fm-pip-go svg { width: 20px; height: 20px; fill: currentColor; }
+
+@media (max-width: 900px) {
+  .focus-mode { grid-template: "top" auto "center" auto "right" auto "left" auto "foot" auto / minmax(0, 1fr); align-content: start; overflow-y: auto; padding: var(--nl-space-4); gap: var(--nl-space-5); }
+  .fm-center { gap: var(--nl-space-4); min-height: auto; }
+  .fm-ring { width: min(72vw, 300px); }
+  .fm-face { font-size: calc(var(--nl-text-2xl) * 2.6); }
+  .fm-intent { font-size: var(--nl-text-xl); }
+  .fm-left, .fm-right { justify-self: stretch; max-width: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .focus-mode, .focus-mode * { transition: none !important; animation: none !important; }
+}

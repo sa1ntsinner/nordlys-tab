@@ -1,99 +1,19 @@
-# 🚀 Nordlys — Complete Release & Publishing Guide
+# Release steps
 
-This guide covers the exact manual steps to publish **Nordlys** on **GitHub** and the **Google Chrome Web Store**.
+Nordlys is on the [Chrome Web Store](https://chromewebstore.google.com/detail/nordlys/fepiibfbbjhaoldgcfpfcikbonnjbfdc). Release a new version as an update to that listing.
 
----
+1. Update the version in `manifest.json` and `src/js/app.js`. The store requires a higher number. Move the Unreleased notes in `CHANGELOG.md` under the new version.
+2. Run `npm test`.
+3. If the interface changed, run `npm run artwork` to retake the store and site pictures.
+4. Run `npm run package`. It checks the version and builds `nordlys-v2.5.1.zip` with the extension files.
+5. Commit, tag and push. A push to `main` also redeploys the website.
 
-## 📋 Pre-Release Summary
+   ```sh
+   git tag -a v2.5.1 -m "Nordlys 2.5.1"
+   git push origin main v2.5.1
+   ```
 
-- [x] **Extension Architecture**: Manifest V3 compliant, zero external CDN dependencies, fast cold startup, no `<all_urls>` host permission (one allow-listed icon host, used only when the user pastes an icon address). Search goes through `chrome.search` to the engine set in Chrome; the extension has no engine setting of its own.
-- [x] **Icons Package**: 16x16, 32x32, 48x48, 128x128 PNG icons ready in `icons/`.
-- [x] **Privacy Compliance**: Zero-telemetry `PRIVACY.md` whose "Optional Network Features" section matches the manifest exactly.
-- [x] **UI/UX Polish**: 21 built-in themes (11 dark + 10 light) with per-theme canvas shader palettes, Dark/Light/Auto system mode, custom theme studio with live preview, drag-and-drop folders, context menus everywhere, glass confirm dialogs & toasts, a calculator in the search box (search itself goes to the engine set in Chrome), video/image wallpapers with blur & dim, Netscape HTML bookmarks import/export.
-- [x] **License**: MIT `LICENSE` file included.
+6. Open Nordlys in the [developer dashboard](https://chrome.google.com/webstore/devconsole) and upload the zip under Package. If the listing text or screenshots changed, use [docs/store-listing.md](docs/store-listing.md). The privacy answers and permission justifications are there too.
+7. Submit for review. Updates usually go through in a day or two.
 
----
-
-## 🛠️ Step 1: GitHub Repository & Release
-
-The repository lives at `https://github.com/sa1ntsinner/nordlys-tab`. For future updates:
-
-```powershell
-git add .
-git commit -m "feat: describe your change"
-git push
-```
-
-Tag a release when publishing a new store version:
-
-```powershell
-git tag -a v2.5.0 -m "Release v2.5.0"
-git push origin v2.5.0
-```
-
----
-
-## 📦 Step 2: Create the Chrome Web Store `.zip` Package
-
-Google Chrome Web Store requires a `.zip` archive where `manifest.json` is at the **root** of the zip.
-
-### On Windows (PowerShell), from inside the project directory:
-```powershell
-Compress-Archive -Path manifest.json, newtab.html, PRIVACY.md, README.md, LICENSE, icons, src -DestinationPath nordlys-v2.5.0.zip -Force
-```
-
-This generates `nordlys-v2.5.0.zip` ready for upload.
-
----
-
-## 💳 Step 3: Google Chrome Web Store Developer Registration
-
-1. Open the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole).
-2. Sign in with your Google account.
-3. Accept the **Developer Terms of Service**.
-4. Pay the **one-time $5.00 USD registration fee** via Google Pay.
-5. Enable **2-Step Verification** on the account (mandatory): [myaccount.google.com/security](https://myaccount.google.com/security).
-
----
-
-## 🏪 Step 4: Fill Store Listing in Developer Dashboard
-
-1. In the [Developer Dashboard](https://chrome.google.com/webstore/devconsole), click **`+ New Item`**.
-2. Upload `nordlys-v2.5.0.zip`.
-
-### 4.1 Store Listing Details
-- **Title**, **Summary**, **Description** and every **permission justification**: paste from `docs/store-listing.md`, which is the single source for the listing. This guide used to carry its own copies; they drifted, and one of them still advertised "multi-engine search" after the store had rejected the extension for exactly that. Do not retype them here.
-- **Category**: **Productivity** or **Lifestyle / Personalization**.
-- **Primary Language**: `English (United States)` or `Russian`.
-
-### 4.2 Graphic Assets & Screenshots
-- **Store Icon**: Upload `icons/icon128.png` (128x128 PNG).
-- **Screenshots**: At least 1 required (up to 5), recommended `1280 x 800 px`. Ready-made shots live in `docs/assets/` (main board in several themes, settings drawer, search calculator) — or take fresh ones with `F11` fullscreen.
-
----
-
-## 🔒 Step 5: Privacy Practices Declaration
-
-Fill in the **Privacy** tab in the Developer Console exactly as follows:
-
-1. **Single Purpose Description**:
-   > *"Nordlys provides a customizable, aesthetic New Tab startpage featuring ambient background shaders, local bookmark organization, and quick search."*
-2. **Permission Justifications**:
-   - `storage`: *"Required to save user preferences, bookmark folders, themes, and custom CSS locally on the device."*
-   - `unlimitedStorage`: *"Allows users to save custom high-resolution background wallpapers and video loops locally without hitting quota limits."*
-   - `favicon`: *"Allows displaying website favicons from Chrome's local favicon cache on user bookmark tiles."*
-   - `search`: *"Sends the text typed in the new tab page's search box to the search engine the user has set in Chrome, via chrome.search.query. The extension has no engine of its own and never chooses one."*
-   - Host `images.weserv.nl`: *"Image proxy fallback used only when the user pastes a custom icon URL whose host blocks cross-origin loading."*
-3. **Data Usage**:
-   - Select: **"I do not collect or use any user data"**.
-   - Check all three certification checkboxes.
-4. **Privacy Policy Link**:
-   - `https://github.com/sa1ntsinner/nordlys-tab/blob/main/PRIVACY.md`
-
----
-
-## 🚀 Step 6: Submit for Review
-
-1. Click **Submit for Review**.
-2. **Review Time**: Manifest V3 extensions with local storage typically get approved within **24–48 hours**.
-3. Once approved, Nordlys will be live on the Chrome Web Store with a public store URL!
+Use `https://github.com/sa1ntsinner/nordlys-tab/blob/main/PRIVACY.md` for the dashboard's privacy policy link.
