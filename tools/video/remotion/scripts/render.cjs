@@ -1,7 +1,7 @@
 /* Renders the films and what ships with them, and checks them.
 
    node scripts/render.cjs [--out dir] [--plates plates] [--only youtube|store] [--preview]
-                           [--skip-render] [--concurrency 8]
+                           [--skip-render] [--concurrency 8] [--maps-only]
 
    Into --out (default out/):
      nordlys-youtube-4k.mp4    3840 x 2160, 60 fps, H.264 High (x264 slow, CRF 16), AAC 320 kb/s, faststart
@@ -14,7 +14,8 @@
                                of the track it lands on (and how far from the beat grid)
      checks.txt                a full decode of every file, and loudness (target about -14 LUFS
                                integrated, true peak at most -1 dBTP)
-   --preview renders the YouTube cut at half size to preview.mp4 and checks only that. */
+   --preview renders the YouTube cut at half size to preview.mp4 and checks only that.
+   --maps-only writes the edit map and the music map, and renders nothing. */
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync, spawnSync } = require('node:child_process');
@@ -59,12 +60,14 @@ function render(comp, file, extra = []) {
 
 /* ── The edit map: where every shot and word lands in the music ── */
 function editMap(cut, startSeconds, pieces) {
-  // The track's time of a film frame: the soundtrack is pieces of the track, joined.
+  /* The track's time of a film frame: the soundtrack is pieces of the track, joined
+     with a 10 ms crossfade. A frame within half a frame of a join is the next
+     piece's (the cut onto the final hit is on the frame nearest that hit). */
   const trackTime = (f) => {
     let t = f / FPS;
-    for (const [a, b] of pieces) {
+    for (const [i, [a, b]] of pieces.entries()) {
       const len = (b - a) * BAR;
-      if (t <= len + 1e-6) return map.downbeats[0] + a * BAR + t;
+      if (i === pieces.length - 1 || t < len - 0.01 - 0.5 / FPS) return map.downbeats[0] + a * BAR + t;
       t -= len - 0.01;
     }
     return NaN;
@@ -75,9 +78,16 @@ function editMap(cut, startSeconds, pieces) {
     const nearest = Math.round(beats * 4) / 4; // to the nearest sixteenth
     const bar = Math.floor(nearest / 4), beat = nearest - bar * 4;
     const off = (beats - nearest) * BEAT * 1000;
-    const events = map.events.filter((e) => Math.abs(e.t - t) < 0.06 && ['drop', 'riser', 'whoosh', 'sweep', 'downlifter', 'stop', 'crash', 'clap', 'stab', 'fill'].includes(e.type) && (e.s ?? 0) >= 0.3);
-    const kinds = [...new Set(events.map((e) => e.type))];
-    return { film: +(f / FPS).toFixed(3), frame: f, track: +t.toFixed(3), bar, beat, offMs: +off.toFixed(1), on: kinds.join('+') || (beat === 0 ? 'downbeat' : Number.isInteger(beat) ? `beat ${beat + 1}` : 'off-beat') };
+    /* What is in the music there: the place in the bar (claps are on 2 and
+       4, a kick on every beat, except in the break, bars 24-31), and any cue
+       of src/music.ts or strong swell or drop of the map within 60 ms. */
+    const inBreak = bar >= 24 && bar < 32, intro = bar < 7;
+    const place = !Number.isInteger(beat) ? 'off-beat' : beat === 0 ? 'downbeat' : `beat ${beat + 1}`;
+    const groove = intro ? 'the held chord' : inBreak ? 'the break' : beat === 1 || beat === 3 ? 'clap' : Number.isInteger(beat) ? 'kick' : '';
+    const cues = Object.entries(edit.music.CUES).flatMap(([name, b]) => [].concat(b).map((x) => [name, x])).filter(([, x]) => Math.abs(map.downbeats[0] + x * BAR - t) < 0.06).map(([name]) => name);
+    const swells = map.events.filter((e) => ['drop', 'whoosh', 'sweep', 'downlifter', 'stop'].includes(e.type) && (e.s ?? 0) >= 0.3 && (Math.abs(e.t - t) < 0.06 || (e.end != null && Math.abs(e.end - t) < 0.06))).map((e) => `${e.type} ${e.end != null && Math.abs(e.end - t) < 0.06 ? 'ends' : 'peaks'}`);
+    const on = [place, groove, ...cues, ...new Set(swells)].filter(Boolean).join(', ');
+    return { film: +(f / FPS).toFixed(3), frame: f, track: +t.toFixed(3), bar, beat, offMs: +off.toFixed(1), on };
   };
   const shots = cut.shots.map((s) => ({ shot: s.name, plate: s.plate, arrives: s.enter?.type ?? 'cut', ...where(s.from), seconds: +((s.to - s.from) / FPS).toFixed(2) }));
   /* What happens inside the plates (a key pressed, a click), where it lands in the
@@ -93,7 +103,12 @@ function editMap(cut, startSeconds, pieces) {
     }
   }
   const captions = cut.captions.map((c) => ({ text: c.text, ...where(c.from), until: +(c.to / FPS).toFixed(2) }));
-  const accents = cut.accents.map((a) => ({ accent: a.kind, ...where(a.f) }));
+  const accents = cut.accents.map((a) => {
+    // A light leak starts a few frames early, so its light is already coming in on the hit.
+    const hit = a.kind === 'leak' && cut.accents.find((b) => b.kind === 'flash' && b.f >= a.f && b.f - a.f <= 12);
+    const h = hit && where(hit.f);
+    return { accent: a.kind, ...where(a.f), ...(h ? { on: `starts ${hit.f - a.f} frames before the flash on ${h.bar}.${h.beat}` } : {}) };
+  });
   return { cut: cut.name, frames: cut.frames, seconds: +(cut.frames / FPS).toFixed(3), soundtrack: pieces.map(([a, b]) => `track bars ${a}-${b}`).join(', then '), shots, actions, captions, accents };
 }
 
@@ -203,6 +218,7 @@ function sheets(file, cut, name) {
   const note = (line) => { console.log(line); checks.push(line); };
   const maps = writeEditMaps();
   writeMusicMap();
+  if (has('maps-only')) return;
   for (const m of maps) note(`${m.cut}: ${m.shots.length} shots, largest cut distance from the grid ${Math.max(...m.shots.map((s) => Math.abs(s.offMs))).toFixed(1)} ms`);
   const files = [];
   if (PREVIEW) {
