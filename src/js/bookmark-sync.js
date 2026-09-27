@@ -191,5 +191,15 @@
     }
   };
 
-  window.NordlysBookmarks = NordlysBookmarks;
+  /* Safari has no bookmarks API for extensions and its build leaves the
+     permission out; there, nothing offers what cannot be done. A page with no
+     manifest to read (the tests, the site's demo) keeps the feature. */
+  const offered = (() => {
+    try {
+      const manifest = chrome.runtime.getManifest();
+      return [...(manifest.permissions || []), ...(manifest.optional_permissions || [])].includes("bookmarks");
+    } catch (error) { return true; }
+  })();
+
+  window.NordlysBookmarks = offered ? NordlysBookmarks : null;
 })();

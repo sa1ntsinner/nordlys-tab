@@ -57,7 +57,8 @@ const PORTS = {
     // Safari has neither the favicon service, the search API nor identity;
     // the search box asks for an engine instead (platform.js).
     permissions: without(manifest.permissions, 'favicon', 'search'),
-    optional_permissions: without(manifest.optional_permissions, 'identity'),
+    // Nor bookmarks: Safari extensions cannot read them (bookmark-sync.js).
+    optional_permissions: without(manifest.optional_permissions, 'identity', 'bookmarks'),
     browser_specific_settings: { safari: { strict_min_version: '17.0' } }
   })
 };
