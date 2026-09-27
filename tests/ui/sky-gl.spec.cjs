@@ -1,6 +1,10 @@
 /* global NORDLYS_REST_PHASE -- read inside page.evaluate, where background.js declares it */
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
 
+/* WebKit rasterises the 2D strokes a touch differently; half a percent more
+   of the picture may differ there by more than 4 of 255. */
+const FAR = () => (test.info().project.use?.browserName === 'webkit' ? 0.01 : 0.005);
+
 /* Silk's threads used to be stroked on the 2D canvas, which Chrome rasterises
    on the CPU for a stroke this long and this curved: Silk ran at ten to
    eighteen frames a second on an integrated GPU while every other scene held
@@ -70,7 +74,7 @@ test('Silk draws its threads on the GPU, and they look as the 2D strokes do', as
   expect(dark.layer, 'the screen paints Silk on the GPU layer').toBe('gpu');
   expect(dark.lit, 'there is a weave to compare').toBeGreaterThan(0.05);
   expect(dark.mean, 'on average the two frames are within a fraction of a level').toBeLessThan(0.5);
-  expect(dark.far, 'and hardly a patch anywhere differs by more than 4 of 255').toBeLessThan(0.005);
+  expect(dark.far, 'and hardly a patch anywhere differs by more than 4 of 255').toBeLessThan(FAR());
   expect(Math.abs(dark.ink - 1), 'the same light in all').toBeLessThan(0.03);
 
   await page.evaluate(() => { window.Nordlys.config.theme = 'porcelain-light'; window.Nordlys.applyThemeTokens(); });
@@ -79,7 +83,7 @@ test('Silk draws its threads on the GPU, and they look as the 2D strokes do', as
   expect(light.light, 'the light theme multiplies instead of screening').toBe(true);
   expect(light.layer).toBe('gpu');
   expect(light.mean).toBeLessThan(0.5);
-  expect(light.far).toBeLessThan(0.005);
+  expect(light.far).toBeLessThan(FAR());
 });
 
 test('the GPU layer is kept only while a scene draws with it', async ({ nordlysPage }) => {
@@ -106,6 +110,6 @@ test('Contour draws its lines on the GPU, and they look as the 2D strokes do', a
   expect(dark.layer).toBe('gpu');
   expect(dark.lit, 'there are lines to compare').toBeGreaterThan(0.02);
   expect(dark.mean).toBeLessThan(0.5);
-  expect(dark.far).toBeLessThan(0.005);
+  expect(dark.far).toBeLessThan(FAR());
   expect(Math.abs(dark.ink - 1), 'the same light in all').toBeLessThan(0.03);
 });
