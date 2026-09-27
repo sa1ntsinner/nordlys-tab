@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+
+# Rendered films and frames.
+out
+
+# Filled by the scripts, not committed: the plates filmed from the live demo
+# (tools/video/plates.cjs), the fonts copied from src/fonts, and the licensed
+# music (Mixkit forbids handing on the file; see docs/video/music/README.md).
+public/
