@@ -55,6 +55,63 @@ function dilate(opts) {
   window.__virtualNow = vPerf;
 }
 
+/* Runs before the page's own scripts: a clock that moves only when the
+   recorder moves it (plates.cjs). performance.now, requestAnimationFrame and
+   the timers read it; window.__vclock.advance(ms) moves it on, firing every
+   timer that falls due on the way, in order, each at its own time. The wall
+   clock (Date) starts at opts.clock ("HH:MM" today) and can be held while a
+   plate is set up off camera, so the time on screen only runs on camera,
+   and set back (anchor) so that every plate reads the same time.
+   With Chrome drawing only when asked (HeadlessExperimental.beginFrame), a
+   frame is then the page at an exact time, however long it took to draw. */
+function virtualClock(opts) {
+  const base = performance.now();
+  let v = 0;
+  const [h, m] = (opts.clock || '09:41').split(':').map(Number);
+  const day = new Date();
+  day.setHours(h, m, 0, 0);
+  const wall0 = day.getTime();
+  let wallHeld = true, wallV = 0;
+  performance.now = () => base + v;
+  const RealDate = Date;
+  const wall = () => wall0 + wallV;
+  function VDate(...a) {
+    if (!new.target) return new RealDate(wall()).toString();
+    return a.length ? new RealDate(...a) : new RealDate(wall());
+  }
+  VDate.prototype = RealDate.prototype;
+  VDate.now = wall; VDate.parse = RealDate.parse; VDate.UTC = RealDate.UTC;
+  window.Date = VDate;
+  const timers = new Map();
+  let seq = 0;
+  window.setTimeout = (fn, ms = 0, ...args) => { const id = ++seq; timers.set(id, { due: v + Math.max(0, Number(ms) || 0), fn, args, every: 0 }); return id; };
+  window.setInterval = (fn, ms = 0, ...args) => { const id = ++seq; const every = Math.max(1, Number(ms) || 0); timers.set(id, { due: v + every, fn, args, every }); return id; };
+  window.clearTimeout = window.clearInterval = (id) => { timers.delete(id); };
+  const raf = window.requestAnimationFrame.bind(window);
+  window.requestAnimationFrame = (cb) => raf(() => cb(base + v));
+  const move = (to) => { if (!wallHeld) wallV += to - v; v = to; };
+  window.__vclock = {
+    advance(ms) {
+      const end = v + ms;
+      for (;;) {
+        let next = null;
+        for (const [id, t] of timers) if (t.due <= end && (!next || t.due < next[1].due)) next = [id, t];
+        if (!next) break;
+        const [id, t] = next;
+        if (t.due > v) move(t.due);
+        if (t.every) t.due += t.every; else timers.delete(id);
+        try { if (typeof t.fn === 'function') t.fn(...t.args); } catch (error) { console.error(error); }
+      }
+      move(end);
+      return v;
+    },
+    hold(on) { wallHeld = Boolean(on); },
+    // The wall clock back to its start plus ms, so every plate reads the same time.
+    anchor(ms) { wallV = ms; },
+    now: () => v
+  };
+}
+
 /* Drawn into the page: a caption, a title card and a pointer. */
 function overlay() {
   const style = document.createElement('style');
@@ -113,4 +170,4 @@ function overlay() {
 }
 
 
-module.exports = { serve, dilate, overlay };
+module.exports = { serve, dilate, virtualClock, overlay };
