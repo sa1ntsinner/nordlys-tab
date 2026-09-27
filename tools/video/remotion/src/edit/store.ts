@@ -35,7 +35,9 @@ const shots: Shot[] = [
     },
     cam: [{ f: at(7), z: 1.0 }, { f: at(8), z: 1.04, ease: 'in' }, { f: at(8, 1), z: 1.0, ease: 'punch' }, { f: at(9), z: 1.05, ease: 'glide' }],
   },
+  // The clock stays soft under the caption in the top corner (see youtube.ts).
   { name: 'math', plate: 'search', from: at(9), to: at(10), tau: 1.5,
+    veil: { from: at(9) - 36, to: at(10) + 36, y0: 0.36, y1: 0.2, blur: 80 },
     cam: [{ f: at(9), z: 1.0 }, { f: at(9, 3) - 1, z: 1.0 }, { f: at(10) - 2, z: 1.2, x: 0.5, y: 0.55, ease: 'punch' }] },
   { name: 'dashboard', plate: 'dash-in', from: at(10), to: at(11), enter: { type: 'zoom', frames: 18 },
     cam: [{ f: at(10), z: 1.05 }, { f: at(10, 2), z: 1.0, ease: 'punch' }] },

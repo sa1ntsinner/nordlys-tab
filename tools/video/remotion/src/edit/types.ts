@@ -37,6 +37,8 @@ export type Shot = {
   grid?: { plates: string[]; cols: number; rows: number; appear: number[]; into: number; zoomFrom: number; zoomTo: number };
   // A focus pull: everything but a box goes soft, then sharp again.
   pull?: { from: number; to: number; x: number; y: number; w: number; h: number; blur: number };
+  // A veil: the top of the plate goes soft, sharp at y0 and fully soft from y1 up (the clock, under a caption in the top corner).
+  veil?: { from: number; to: number; y0: number; y1: number; blur: number };
   /* Motion blur for a fast move filmed inside the plate (the page's own camera
      panning or flying in), which the edit cannot measure: a blur that swells
      over the move (bell) or grows into its end (ramp), in screen pixels. */

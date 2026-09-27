@@ -41,9 +41,13 @@ const shots: Shot[] = [
     cam: [{ f: at(7), z: 1.0 }, { f: at(8), z: 1.04, ease: 'in' }, { f: at(8, 1), z: 1.0, ease: 'punch' }, { f: at(10), z: 1.07, y: 0.53, ease: 'glide' }],
   },
 
-  // ── Search: math on the first riser, then a command that changes the sky ──
+  /* ── Search: math on the first riser, then a command that changes the sky ──
+     The captions here are in the top corner, beside the clock: a veil keeps the
+     clock soft under them and the search box sharp. The command's caption leaves
+     on its Enter, and the veil with it, as the sky changes and the page pulls back. */
   {
     name: 'math', plate: 'search', from: at(10), to: at(13, 2),
+    veil: { from: at(10) - 36, to: at(12, 2) + 30, y0: 0.36, y1: 0.2, blur: 80 },
     cam: [
       { f: at(10), z: 1.05 }, { f: at(10, 1), z: 1.0, ease: 'punch' },
       // The riser lands on bar 11 with the answer on screen: punch in on it.
@@ -54,6 +58,7 @@ const shots: Shot[] = [
     ],
   },
   { name: 'find', plate: 'find', from: at(13, 2), to: at(16), enter: { type: 'whip', frames: 14 },
+    veil: { from: at(13, 2) - 36, to: at(16) + 36, y0: 0.36, y1: 0.2, blur: 80 },
     // Bar 15 drops the bass and a tone rises: a slow push that speeds up into the next drop.
     cam: [{ f: at(13, 2), z: 1.0 }, { f: at(15), z: 1.06, ease: 'soft' }, { f: at(16), z: 1.3, y: 0.52, ease: 'accel' }] },
 
@@ -77,8 +82,9 @@ const shots: Shot[] = [
   { name: 'travel', plate: 'layout-travel', from: at(22, 1), to: at(22, 2) },
   { name: 'minimal', plate: 'layout-minimal', from: at(22, 2), to: at(22, 3) },
   { name: 'deep', plate: 'layout-deep', from: at(22, 3), to: at(23) },
-  // The planner: the page's camera flies into its focus timer on the downlifter; the card becomes focus mode.
-  { name: 'planner', plate: 'layout-planner', from: at(23), to: at(24), tau: 0.5,
+  /* The planner: the page's camera flies into its focus timer on the downlifter
+     (1.75 s, gathering speed) and reaches it on bar 24, where the card becomes focus mode. */
+  { name: 'planner', plate: 'layout-planner', from: at(23), to: at(24), tau: 1,
     hint: { from: at(23, 2), to: at(24), kind: 'zoom', px: 60, shape: 'ramp', at: [0.79, 0.6] } },
 
   // ── The breakdown: focus mode ──
@@ -142,7 +148,7 @@ const captions: Caption[] = [
   { text: 'Your favourite sites, in folders', eyebrow: 'Nordlys', from: at(8, 1), to: at(10) - 4 },
   // Over the search shots the top-left corner is the empty one (the bookmarks, with their names, are below).
   { text: 'Math right in the search box', eyebrow: 'Search', from: at(10, 1), to: at(11, 2) - 2, where: 'tl' },
-  { text: 'Commands after the > sign', eyebrow: 'Search', from: at(11, 2), to: at(13, 1), where: 'tl' },
+  { text: 'Commands after the > sign', eyebrow: 'Search', from: at(11, 2), to: at(12, 2) + 10, where: 'tl' },
   { text: 'Find any site as you type', eyebrow: 'Search', from: at(13, 3), to: at(15, 2), where: 'tl' },
   { text: 'A dashboard for your day', eyebrow: 'Dashboard', from: at(16, 1), to: at(17) - 2 },
   { text: 'Type tasks the way you say them', eyebrow: 'Tasks', from: at(17, 1), to: at(18, 2) - 2 },

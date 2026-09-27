@@ -7,6 +7,7 @@
    draft one blur alike. */
 import { Video } from '@remotion/media';
 import { blur } from '@remotion/effects/blur';
+import { linearProgressiveBlur } from '@remotion/effects/linear-progressive-blur';
 import { radialProgressiveBlur } from '@remotion/effects/radial-progressive-blur';
 import { zoomBlur } from '@remotion/effects/zoom-blur';
 import React from 'react';
@@ -43,11 +44,12 @@ type PlateLayerProps = {
   after: ScreenPose;
   extraZoomRate?: number;
   pull?: { x: number; y: number; w: number; h: number; blur: number };
+  veil?: { y0: number; y1: number; blur: number };
   hint?: Hint;
 };
 
 // The plate itself, placed by a pose, with the blur its motion calls for.
-export const PlateLayer: React.FC<PlateLayerProps> = ({ plate, trimBefore, rate, pose, before, after, extraZoomRate = 0, pull, hint }) => {
+export const PlateLayer: React.FC<PlateLayerProps> = ({ plate, trimBefore, rate, pose, before, after, extraZoomRate = 0, pull, veil, hint }) => {
   const meta = usePlate(plate);
   const src = usePlateSrc(plate);
   const k = meta.width / (W * pose.z); // plate pixels per screen pixel
@@ -57,6 +59,9 @@ export const PlateLayer: React.FC<PlateLayerProps> = ({ plate, trimBefore, rate,
   const effects = [];
   if (pull && pull.blur > 0.5) {
     effects.push(radialProgressiveBlur({ center: [pull.x, pull.y], width: pull.w * 1.6, height: pull.h * 1.6, start: 0.62, startBlur: 0, endBlur: pull.blur * (meta.width / W) }));
+  }
+  if (veil && veil.blur > 0.5) {
+    effects.push(linearProgressiveBlur({ start: [0.5, veil.y0], end: [0.5, veil.y1], startBlur: 0, endBlur: veil.blur * (meta.width / W) }));
   }
   if (hint && hint.px > 0.5) {
     if (hint.kind === 'zoom') effects.push(zoomBlur({ amount: Math.min(160, hint.px * k), center: hint.at ?? [0.5, 0.5], samples: 32 }));
@@ -85,12 +90,16 @@ export const PlateLayer: React.FC<PlateLayerProps> = ({ plate, trimBefore, rate,
   );
 };
 
+// A pull or a veil comes in and goes out over 36 frames.
+const rampAt = (p: { from: number; to: number }, f: number) =>
+  interpolate(f, [p.from, p.from + 36, p.to - 36, p.to], [0, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: EASE.inOut });
 const pullAt = (shot: Shot, f: number) => {
   const p = shot.pull;
-  if (!p) return undefined;
-  const ramp = 36;
-  const amount = interpolate(f, [p.from, p.from + ramp, p.to - ramp, p.to], [0, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: EASE.inOut });
-  return { x: p.x, y: p.y, w: p.w, h: p.h, blur: p.blur * amount };
+  return p && { x: p.x, y: p.y, w: p.w, h: p.h, blur: p.blur * rampAt(p, f) };
+};
+const veilAt = (shot: Shot, f: number) => {
+  const v = shot.veil;
+  return v && { y0: v.y0, y1: v.y1, blur: v.blur * rampAt(v, f) };
 };
 
 const hintAt = (shot: Shot, f: number): Hint | undefined => {
@@ -114,7 +123,7 @@ export const ShotView: React.FC<ShotViewProps> = ({ shot, next, seqFrom }) => {
 
   if (shot.grid) return <GridView shot={shot} f={f} seqFrom={seqFrom} pose={pose} />;
 
-  const layer = <PlateLayer plate={shot.plate} trimBefore={trimBefore} rate={rate} pose={pose} before={before} after={after} pull={pullAt(shot, f)} hint={hintAt(shot, f)} />;
+  const layer = <PlateLayer plate={shot.plate} trimBefore={trimBefore} rate={rate} pose={pose} before={before} after={after} pull={pullAt(shot, f)} veil={veilAt(shot, f)} hint={hintAt(shot, f)} />;
   const g = shot.grade;
   const grade = g ? `brightness(${g.brightness ?? 1}) contrast(${g.contrast ?? 1}) saturate(${g.saturate ?? 1})` : undefined;
   const outer: React.CSSProperties = { opacity: pose.opacity, WebkitMaskImage: pose.mask, maskImage: pose.mask, filter: grade };
