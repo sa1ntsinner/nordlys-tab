@@ -45,6 +45,17 @@ async function routes(context) {
     if (url.includes('calendar.nordlys.test')) return route.fulfill({ status: 200, headers: { ...cors, 'content-type': 'text/calendar' }, body: ics() });
     return route.continue();
   });
+  // A week in Oslo: every weather card has it at once, whichever layout made it.
+  await context.route(/https:\/\/api\.open-meteo\.com\//, (route) => json(route, {
+    current: { temperature_2m: 14.2, weather_code: 2, is_day: 1 },
+    daily: {
+      time: [0, 1, 2, 3, 4].map(iso),
+      weather_code: [2, 61, 3, 1, 2],
+      temperature_2m_max: [16.1, 14.6, 15.4, 17.8, 16.9],
+      temperature_2m_min: [9.2, 9.8, 8.6, 9.4, 10.3],
+      precipitation_probability_max: [10, 70, 20, 0, 10]
+    }
+  }));
 }
 
 /* Once, before the first shot: two profiles, Work (this look) and Home
@@ -88,7 +99,8 @@ function dashboardIn({ layout, board = false, preset }) {
 }
 const VIDEO = [['focus', 0, 0, 6, 2], ['countdown', 6, 0, 3, 2], ['clocks', 9, 0, 3, 2], ['tasks', 0, 2, 5, 3], ['habits', 5, 2, 4, 3], ['timer', 9, 2, 3, 3]];
 const APPS = [['inbox', 0, 0, 6, 5], ['agenda', 6, 0, 6, 5]];
-const TRAVEL = [['weather', 0, 0, 4, 3], ['clocks', 4, 0, 4, 3], ['countdown', 8, 0, 4, 3], ['focus', 0, 3, 8, 2], ['notes', 8, 3, 4, 2]];
+// The note sits under the weather: that corner is where the caption goes, and a quiet card is better under it.
+const TRAVEL = [['weather', 0, 0, 4, 3], ['clocks', 4, 0, 4, 3], ['countdown', 8, 0, 4, 3], ['notes', 0, 3, 4, 2], ['focus', 4, 3, 8, 2]];
 
 const card = (sel) => `#dash .dash-card[data-type="${sel}"]`;
 const look = async (s, { theme, scene, dash, board = false, bare = false, focus = false }) => {
@@ -98,6 +110,8 @@ const look = async (s, { theme, scene, dash, board = false, bare = false, focus 
   if (dash === false) await s.js(() => window.Nordlys.dashboard.setOn(false));
   else if (dash) await s.js(dashboardIn, dash.layout ? { layout: dash.layout, board } : { preset: dash.preset, board });
   await s.bare(bare, true);
+  // A new layout is fitted to the window over the next frames; the camera aims at where things end up.
+  if (theme || scene || dash !== undefined) await s.settle(0.25);
 };
 
 module.exports = {
@@ -160,9 +174,13 @@ module.exports = {
       setup: async (s) => { await s.pointer(false); await s.look(card('clocks'), 1.7); },
       run: async (s) => { await s.look(card('countdown'), 1.7, b(10) - b(9, 2) + 0.2, 'cubic-bezier(.45,0,.2,1)'); } });
     add({ name: 'move', from: b(10),
-      setup: async (s) => { await s.look('center', 1.0); await s.pointer(true); },
+      setup: async (s) => {
+        await s.look('center', 1.0);
+        const [hx, hy] = await s.centre(s.page.locator(`${card('clocks')} .dash-head h2`));
+        await s.glide(hx + 36, hy + 64, 0); await s.pointer(true);
+      },
       run: async (s) => {
-        await s.caption('Drag cards anywhere, stretch them to fit', 'Dashboard');
+        await s.caption('Drag and stretch any card', 'Dashboard');
         const head = s.page.locator(`${card('clocks')} .dash-head h2`);
         const [hx, hy] = await s.centre(head);
         const own = await s.page.locator(card('clocks')).boundingBox();
@@ -172,7 +190,16 @@ module.exports = {
         await s.at(b(10, 3)); await s.page.mouse.up();
       } });
     add({ name: 'resize', from: b(11), keepCaption: true,
-      setup: async (s) => { await s.look(card('tasks'), 1.2); const box = s.page.locator(card('tasks')); await box.hover(); },
+      setup: async (s) => {
+        /* A row shorter than the cards beside it, so stretching it fills a
+           space that is already there: the dashboard stays the same height
+           and the page does not refit itself on camera. */
+        await s.js(() => { const d = window.Nordlys.dashboard; const t = d.widgets().find((w) => w.type === 'tasks'); d.change(t.id, (w) => ({ ...w, h: 2 })); });
+        await s.settle(0.25);
+        await s.look(card('tasks'), 1.2);
+        // Over the card, so its corner handle shows, and the pointer starts from there.
+        const [x, y] = await s.centre(s.page.locator(card('tasks'))); await s.glide(x + 60, y + 30, 0);
+      },
       run: async (s) => {
         const corner = await s.page.locator(`${card('tasks')} .dash-resize`).boundingBox();
         await s.glide(corner.x + 9, corner.y + 9, 0.3); await s.page.mouse.down();
@@ -184,20 +211,27 @@ module.exports = {
         setup: async (s) => { await s.pointer(false); await look(s, { dash: { preset } }); await s.look('center', 1.0); },
         run: async (s) => { if (i === 0) await s.caption('Five layouts to start from', 'Dashboard'); await s.look('center', 1.035, 2 * B + 0.2, 'linear'); } });
     }
+    /* A soft wipe, not a slide: the caption is in the same place in both
+       shots, so it stays still while the colours change under it. (xfade's
+       smoothleft is a dissolve whose edge is the width of the frame.) */
     for (const [i, theme] of ['porcelain-light', 'catppuccin-mocha', 'sakura-daylight', 'oled-obsidian'].entries()) {
-      add({ name: `theme-${theme}`, from: b(14, i), into: i ? { type: i % 2 ? 'slideleft' : 'slideright', d: 0.2 } : undefined, keepCaption: i > 0, settle: 0.9,
+      add({ name: `theme-${theme}`, from: b(14, i), into: i ? { type: 'smoothleft', d: 0.24 } : undefined, keepCaption: i > 0, settle: 0.9,
         setup: async (s) => { await look(s, { theme, dash: i === 0 ? { layout: VIDEO } : undefined }); await s.look('center', 1.0); },
-        run: async (s) => { if (i === 0) await s.caption('21 colour themes', 'Looks'); } });
+        // Quick, so it is whole before the first wipe, and the same in every shot after it.
+        run: async (s) => { if (i === 0) await s.caption('21 colour themes', 'Looks', null, true); } });
     }
     // ── Breakdown: focus mode ──
     add({ name: 'focus', from: b(15), into: { type: 'fade', d: 1.0 }, settle: 0.8,
       setup: async (s) => {
         await s.js(() => window.Nordlys.focusMode.show());
-        await s.page.locator('#focus-mode .fm-intent').fill('');
+        const intent = s.page.locator('#focus-mode .fm-intent');
+        await intent.fill('');
         await s.look('#focus-mode .fm-ring', 1.0);
+        // The pointer will come in from below and to the right of the line it clicks.
+        const [x, y] = await s.centre(intent); await s.glide(x + 210, y + 96, 0);
       },
       run: async (s) => {
-        // Set it going first, with the camera still; then lean in on the ring.
+        // Set it going with the camera still, then one slow push in, from the ring to the time.
         await s.at(b(15, 2)); await s.caption('One thing at a time', 'Focus mode', 'top');
         await s.pointer(true);
         await s.clickOn(b(16), s.page.locator('#focus-mode .fm-intent'), 0.5);
@@ -206,11 +240,9 @@ module.exports = {
         await s.clickOn(b(17), s.page.locator('#focus-mode .fm-go'), 0.45);
         await s.clickOn(b(17, 2), s.page.locator('#focus-mode').getByRole('radio', { name: 'Rain' }), 0.5);
         await s.at(b(17, 3)); await s.pointer(false);
-        await s.look('#focus-mode .fm-ring', 1.25, b(19) - b(17, 3) + 0.6, 'cubic-bezier(.4,0,.2,1)');
+        await s.look('#focus-mode .fm-face', 2.5, b(21) - b(17, 3) + 0.4, 'cubic-bezier(.45,0,.25,1)');
+        await s.at(b(19)); await s.caption(null);
       } });
-    add({ name: 'focus-close', from: b(19), into: { type: 'fade', d: 1.2 },
-      setup: async (s) => { await s.look('#focus-mode .fm-face', 2.3); },
-      run: async (s) => { await s.look('#focus-mode .fm-face', 2.5, b(21) - b(19) + 0.6, 'linear'); } });
     // ── Skies, faster and faster into the drop ──
     const skies = [['halo', 'nord-frost'], ['pillars', 'sunset-amber'], ['nacre', 'peach-sunset'], ['silk', 'catppuccin-mocha'], ['baikal', 'aurora-void'], ['drift', 'dracula-velvet']];
     const skyAt = [b(21), b(21, 2), b(22), b(22, 1), b(22, 2), b(22, 3)];
@@ -223,7 +255,8 @@ module.exports = {
     add({ name: 'oled', from: b(23),
       setup: async (s) => { await look(s, { theme: 'oled-obsidian', scene: 'drift', dash: { layout: VIDEO } }); await s.look('center', 1.1); },
       run: async (s) => { await s.flash(); await s.look('center', 1.0, m.BAR, 'cubic-bezier(.16,1,.3,1)'); await s.at(b(23, 0.25)); await s.caption('Pure black, for OLED screens', 'Looks'); } });
-    add({ name: 'light', from: b(24), into: { type: 'smoothleft', d: 0.3 }, settle: 0.9,
+    // Hard cuts on the downbeats here: ffmpeg's smooth wipes are really wide dissolves, and would show the last caption over the next shot.
+    add({ name: 'light', from: b(24), settle: 0.9,
       setup: async (s) => { await look(s, { theme: 'porcelain-light', scene: 'horizon' }); await s.look('center', 1.0); },
       run: async (s) => { await s.caption('Or light, if you like', 'Looks'); await s.look('center', 1.04, m.BAR + 0.3, 'linear'); } });
     add({ name: 'profiles', from: b(25), settle: 0.9,
@@ -234,7 +267,7 @@ module.exports = {
         await s.js(async () => { const p = Nordlys.sync; const home = p.list().find((x) => x.name === 'Home'); await p.switchTo(home.id, { undo: false }); });
         await s.look('center', 1.0, m.BAR * 0.75, 'cubic-bezier(.45,0,.15,1)');
       } });
-    add({ name: 'apps', from: b(26), into: { type: 'smoothright', d: 0.3 }, settle: 1.0,
+    add({ name: 'apps', from: b(26), settle: 1.0,
       setup: async (s) => {
         await s.js(async () => { const p = Nordlys.sync; const work = p.list().find((x) => x.name === 'Work'); await p.switchTo(work.id, { undo: false }); });
         // The section lists the apps only while the dashboard is on.
@@ -253,6 +286,7 @@ module.exports = {
         await look(s, { theme: 'tokyo-night', scene: 'polaris', dash: { layout: APPS } });
         await s.settle(1.2);
         await s.look(card('inbox'), 1.4);
+        const [x, y] = await s.centre(s.page.locator(card('inbox'))); await s.glide(x + 120, y + 150, 0);
         await s.pointer(true);
       },
       run: async (s) => {
@@ -267,7 +301,11 @@ module.exports = {
       setup: async (s) => { await look(s, { theme: 'nord-frost', scene: 'horizon', dash: { layout: TRAVEL } }); await s.settle(1.0); await s.look(card('weather'), 1.55); },
       run: async (s) => { await s.caption('Weather, clocks and countdowns', 'Dashboard'); await s.look(card('clocks'), 1.55, m.BAR + 0.3, 'cubic-bezier(.45,0,.2,1)'); } });
     add({ name: 'tidy', from: b(30), into: { type: 'fade', d: 0.35 }, settle: 0.8,
-      setup: async (s) => { await look(s, { theme: 'tokyo-night', scene: 'polaris', dash: false }); await s.look('center', 1.0); await s.js(() => Nordlys.grid.arrange.enter()); },
+      setup: async (s) => {
+        await look(s, { theme: 'tokyo-night', scene: 'polaris', dash: false }); await s.look('center', 1.0); await s.js(() => Nordlys.grid.arrange.enter());
+        await s.settle(0.4);
+        const [x, y] = await s.centre(s.page.locator('.arrange-layout[data-layout="fitted"]')); await s.glide(x + 140, y + 30, 0);
+      },
       run: async (s) => {
         await s.caption('Tidy your folders in one click', 'Bookmarks');
         await s.pointer(true);
@@ -297,15 +335,19 @@ module.exports = {
         },
         run: async (s) => { await s.look(r.cam[0], r.cam[2], 2 * B + 0.3, 'cubic-bezier(.3,0,.3,1)'); } });
     });
-    // ── The whole thing, then the name ──
+    /* ── The whole thing, then the name ──
+       One shot to the end: the page pulls back to all of it, steps aside
+       into the sky it opened on (the reveal, backwards), and the name comes
+       in over that sky on the outro's first bar. */
     add({ name: 'hero', from: b(37), into: { type: 'fade', d: 0.8 }, settle: 1.0,
       setup: async (s) => { await look(s, { theme: 'aurora-void', scene: 'aurora', dash: { layout: VIDEO }, board: true }); await s.look('center', 1.2); },
-      run: async (s) => { await s.look('center', 1.0, b(39) - b(37) + 0.7, 'cubic-bezier(.45,0,.15,1)'); await s.at(b(37, 1)); await s.caption('Free, and nothing to sign up for', 'Nordlys'); } });
-    add({ name: 'end', from: b(39), into: { type: 'fade', d: 1.4 }, settle: 0.6,
-      setup: async (s) => { await look(s, { dash: false, bare: true }); await s.look('center', 1.06); },
       run: async (s) => {
-        await s.look('center', 1.0, to - b(39) + 0.5, 'linear');
-        await s.card('<img src="icons/icon.svg" alt=""><h1>Nordlys</h1><p>For Chrome, Edge, Firefox and Safari</p><div class="tags"><span>Free</span><span>No account</span><span>Open source</span></div>');
+        await s.look('center', 1.0, b(39) - b(37) + 0.3, 'cubic-bezier(.45,0,.15,1)');
+        await s.at(b(37, 1)); await s.caption('Free, and nothing to sign up for', 'Nordlys');
+        await s.at(b(38, 0.5)); await s.caption(null);
+        await s.at(b(38, 1)); await s.bare(true);
+        await s.at(b(39)); await s.card('<img src="icons/icon.svg" alt=""><h1>Nordlys</h1><p>For Chrome, Edge, Firefox and Safari</p><div class="tags"><span>Free</span><span>No account</span><span>Open source</span></div>');
+        await s.at(b(39) + 0.35); await s.look('center', 1.04, to - b(39), 'linear');
       } });
     return shots;
   }

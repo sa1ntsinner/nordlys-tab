@@ -1,86 +1,101 @@
 {
- "tempo": 129.199,
- "seconds": 28.4,
- "phases": {
-  "build1": 3.831,
-  "d1": 7.616,
-  "breakStart": null,
-  "breakEnd": null,
-  "outro": 22.732,
-  "end": 28.4
- },
+ "tempo": 123.047,
+ "seconds": 25.148000000000003,
  "hits": [
   {
-   "at": 0.07,
-   "kind": "switch"
+   "at": 1.928,
+   "kind": "fade",
+   "shot": "reveal"
   },
   {
-   "at": 3.831,
-   "kind": "switch"
+   "at": 3.8779999999999992,
+   "kind": "switch",
+   "shot": "command"
   },
   {
-   "at": 3.831,
-   "kind": "switch"
+   "at": 7.733,
+   "kind": "switch",
+   "shot": "dashboard"
   },
   {
-   "at": 5.735,
-   "kind": "tick"
+   "at": 9.66,
+   "kind": "switch",
+   "shot": "task"
   },
   {
-   "at": 6.687200241487937,
-   "kind": "tick"
+   "at": 11.61,
+   "kind": "switch",
+   "shot": "habit"
   },
   {
-   "at": 7.616,
-   "kind": "impact"
+   "at": 12.573999999999998,
+   "kind": "switch",
+   "shot": "clocks"
   },
   {
-   "at": 9.497,
-   "kind": "tick"
+   "at": 13.538,
+   "kind": "switch",
+   "shot": "move"
   },
   {
-   "at": 11.401,
-   "kind": "tick"
+   "at": 15.488,
+   "kind": "switch",
+   "shot": "layout-calm"
   },
   {
-   "at": 11.65660042260389,
-   "kind": "tick"
+   "at": 16.4515,
+   "kind": "switch",
+   "shot": "layout-minimal"
   },
   {
-   "at": 13.282,
-   "kind": "switch"
+   "at": 17.415,
+   "kind": "switch",
+   "shot": "focus"
   },
   {
-   "at": 15.186,
-   "kind": "tick"
+   "at": 19.343,
+   "kind": "switch",
+   "shot": "theme-porcelain-light"
   },
   {
-   "at": 17.067,
-   "kind": "switch"
+   "at": 19.82475,
+   "kind": "fade",
+   "shot": "theme-catppuccin-mocha"
   },
   {
-   "at": 18.019,
-   "kind": "switch"
+   "at": 20.3065,
+   "kind": "fade",
+   "shot": "theme-sakura-daylight"
   },
   {
-   "at": 18.947,
-   "kind": "switch"
+   "at": 20.788249999999998,
+   "kind": "fade",
+   "shot": "theme-gruvbox-dark"
   },
   {
-   "at": 19.9,
-   "kind": "switch"
+   "at": 21.27,
+   "kind": "fade",
+   "shot": "sky-halo"
   },
   {
-   "at": 20.852,
-   "kind": "switch"
+   "at": 21.7575,
+   "kind": "fade",
+   "shot": "sky-pillars"
   },
   {
-   "at": 21.78,
-   "kind": "switch"
+   "at": 22.244999999999997,
+   "kind": "fade",
+   "shot": "sky-baikal"
   },
   {
-   "at": 22.732,
-   "kind": "impact"
+   "at": 22.732499999999998,
+   "kind": "fade",
+   "shot": "sky-drift"
+  },
+  {
+   "at": 23.22,
+   "kind": "fade",
+   "shot": "end"
   }
  ]
 }

@@ -1,199 +1,211 @@
 {
- "tempo": 129.199,
- "seconds": 60.53,
- "phases": {
-  "build1": 3.831,
-  "d1": 7.616,
-  "breakStart": 30.302,
-  "breakEnd": 34.087,
-  "d2": 37.849,
-  "outro": 52.965,
-  "end": 60.53
- },
+ "tempo": 123.047,
+ "seconds": 81.34,
  "hits": [
   {
-   "at": 0.07,
-   "kind": "switch"
+   "at": 5.596,
+   "kind": "fade",
+   "shot": "reveal"
   },
   {
-   "at": 3.831,
-   "kind": "switch"
+   "at": 9.474,
+   "kind": "switch",
+   "shot": "math"
   },
   {
-   "at": 3.831,
-   "kind": "switch"
+   "at": 11.424,
+   "kind": "switch",
+   "shot": "command"
   },
   {
-   "at": 5.735,
-   "kind": "tick"
+   "at": 15.279,
+   "kind": "switch",
+   "shot": "dashboard"
   },
   {
-   "at": 6.687200241487937,
-   "kind": "tick"
+   "at": 17.206,
+   "kind": "switch",
+   "shot": "task"
   },
   {
-   "at": 7.616,
-   "kind": "impact"
+   "at": 19.156,
+   "kind": "switch",
+   "shot": "habit"
   },
   {
-   "at": 9.497,
-   "kind": "tick"
+   "at": 20.119999999999997,
+   "kind": "switch",
+   "shot": "clocks"
   },
   {
-   "at": 11.401,
-   "kind": "tick"
+   "at": 21.084,
+   "kind": "switch",
+   "shot": "move"
   },
   {
-   "at": 11.65660042260389,
-   "kind": "tick"
+   "at": 23.034,
+   "kind": "switch",
+   "shot": "resize"
   },
   {
-   "at": 13.282,
-   "kind": "switch"
+   "at": 24.961,
+   "kind": "switch",
+   "shot": "layout-calm"
   },
   {
-   "at": 15.186,
-   "kind": "tick"
+   "at": 25.924999999999997,
+   "kind": "switch",
+   "shot": "layout-travel"
   },
   {
-   "at": 17.067,
-   "kind": "switch"
+   "at": 26.889,
+   "kind": "switch",
+   "shot": "layout-minimal"
   },
   {
-   "at": 18.019,
-   "kind": "switch"
+   "at": 27.8525,
+   "kind": "switch",
+   "shot": "layout-planner"
   },
   {
-   "at": 18.947,
-   "kind": "switch"
+   "at": 28.816,
+   "kind": "switch",
+   "shot": "theme-porcelain-light"
   },
   {
-   "at": 19.9,
-   "kind": "switch"
+   "at": 29.3035,
+   "kind": "fade",
+   "shot": "theme-catppuccin-mocha"
   },
   {
-   "at": 20.852,
-   "kind": "switch"
+   "at": 29.790999999999997,
+   "kind": "fade",
+   "shot": "theme-sakura-daylight"
   },
   {
-   "at": 21.78,
-   "kind": "switch"
+   "at": 30.278499999999998,
+   "kind": "fade",
+   "shot": "theme-oled-obsidian"
   },
   {
-   "at": 22.732,
-   "kind": "switch"
+   "at": 30.766,
+   "kind": "fade",
+   "shot": "focus"
   },
   {
-   "at": 23.684,
-   "kind": "switch"
+   "at": 42.376,
+   "kind": "fade",
+   "shot": "sky-halo"
   },
   {
-   "at": 24.636,
-   "kind": "switch"
+   "at": 43.3515,
+   "kind": "fade",
+   "shot": "sky-pillars"
   },
   {
-   "at": 25.588,
-   "kind": "switch"
+   "at": 44.327,
+   "kind": "fade",
+   "shot": "sky-nacre"
   },
   {
-   "at": 26.517,
-   "kind": "switch"
+   "at": 44.866749999999996,
+   "kind": "fade",
+   "shot": "sky-silk"
   },
   {
-   "at": 27.469,
-   "kind": "switch"
+   "at": 45.406499999999994,
+   "kind": "fade",
+   "shot": "sky-baikal"
   },
   {
-   "at": 28.398,
-   "kind": "switch"
+   "at": 45.94625,
+   "kind": "fade",
+   "shot": "sky-drift"
   },
   {
-   "at": 29.35,
-   "kind": "switch"
+   "at": 46.486,
+   "kind": "switch",
+   "shot": "oled"
   },
   {
-   "at": 30.302,
-   "kind": "switch"
+   "at": 48.437,
+   "kind": "switch",
+   "shot": "light"
   },
   {
-   "at": 31.230799758512063,
-   "kind": "tick"
+   "at": 50.364,
+   "kind": "switch",
+   "shot": "profiles"
   },
   {
-   "at": 32.206,
-   "kind": "tick"
+   "at": 52.291,
+   "kind": "switch",
+   "shot": "apps"
   },
   {
-   "at": 33.13479975851207,
-   "kind": "tick"
+   "at": 54.242,
+   "kind": "switch",
+   "shot": "inbox"
   },
   {
-   "at": 34.087,
-   "kind": "switch"
+   "at": 56.169,
+   "kind": "switch",
+   "shot": "agenda"
   },
   {
-   "at": 34.31919993962802,
-   "kind": "tick"
+   "at": 58.096,
+   "kind": "switch",
+   "shot": "weather"
   },
   {
-   "at": 35.968,
-   "kind": "switch"
+   "at": 60.047,
+   "kind": "fade",
+   "shot": "tidy"
   },
   {
-   "at": 37.849,
-   "kind": "impact"
+   "at": 61.974,
+   "kind": "switch",
+   "shot": "find"
   },
   {
-   "at": 38.313,
-   "kind": "switch"
+   "at": 63.901,
+   "kind": "fade",
+   "shot": "statement"
   },
   {
-   "at": 38.801,
-   "kind": "switch"
+   "at": 67.779,
+   "kind": "switch",
+   "shot": "recap-dash"
   },
   {
-   "at": 39.265,
-   "kind": "switch"
+   "at": 68.75450000000001,
+   "kind": "fade",
+   "shot": "recap-focus"
   },
   {
-   "at": 39.753,
-   "kind": "switch"
+   "at": 69.73,
+   "kind": "switch",
+   "shot": "recap-sky"
   },
   {
-   "at": 40.217,
-   "kind": "switch"
+   "at": 70.6935,
+   "kind": "switch",
+   "shot": "recap-light"
   },
   {
-   "at": 40.681,
-   "kind": "switch"
+   "at": 71.657,
+   "kind": "fade",
+   "shot": "recap-home"
   },
   {
-   "at": 41.146,
-   "kind": "switch"
+   "at": 72.62049999999999,
+   "kind": "switch",
+   "shot": "recap-polaris"
   },
   {
-   "at": 41.633,
-   "kind": "switch"
-  },
-  {
-   "at": 43.514,
-   "kind": "switch"
-  },
-  {
-   "at": 45.418,
-   "kind": "switch"
-  },
-  {
-   "at": 47.299,
-   "kind": "switch"
-  },
-  {
-   "at": 49.203,
-   "kind": "switch"
-  },
-  {
-   "at": 52.965,
-   "kind": "impact"
+   "at": 73.584,
+   "kind": "fade",
+   "shot": "hero"
   }
  ]
 }

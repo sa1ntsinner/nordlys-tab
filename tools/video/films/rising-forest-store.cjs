@@ -42,13 +42,17 @@ module.exports = {
         await s.at(b(8, 3) - 0.02); await s.page.keyboard.press('Enter');
       } });
     add({ name: 'habit', from: b(9),
-      setup: async (s) => { await s.look(card('habits'), 1.75); await s.pointer(true); },
+      setup: async (s) => { await s.look(card('habits'), 1.75); const [x, y] = await s.centre(s.page.locator(`${card('habits')} .dash-habit-day.is-today`).nth(1)); await s.glide(x + 40, y + 60, 0); await s.pointer(true); },
       run: async (s) => { await s.clickOn(b(9, 1), s.page.locator(`${card('habits')} .dash-habit-day.is-today`).nth(1), 0.35); } });
     add({ name: 'clocks', from: b(9, 2),
       setup: async (s) => { await s.pointer(false); await s.look(card('clocks'), 1.7); },
       run: async (s) => { await s.look(card('countdown'), 1.7, b(10) - b(9, 2) + 0.2, 'cubic-bezier(.45,0,.2,1)'); } });
     add({ name: 'move', from: b(10),
-      setup: async (s) => { await s.look('center', 1.0); await s.pointer(true); },
+      setup: async (s) => {
+        await s.look('center', 1.0);
+        const [hx, hy] = await s.centre(s.page.locator(`${card('clocks')} .dash-head h2`));
+        await s.glide(hx + 36, hy + 64, 0); await s.pointer(true);
+      },
       run: async (s) => {
         await s.caption('Drag cards anywhere', 'Dashboard');
         const head = s.page.locator(`${card('clocks')} .dash-head h2`);
@@ -75,9 +79,10 @@ module.exports = {
       },
       run: async (s) => { await s.caption('One thing at a time', 'Focus mode', 'top'); await s.look('#focus-mode .fm-ring', 1.3, m.BAR + 0.3, 'cubic-bezier(.4,0,.2,1)'); } });
     for (const [i, theme] of ['porcelain-light', 'catppuccin-mocha', 'sakura-daylight', 'gruvbox-dark'].entries()) {
-      add({ name: `theme-${theme}`, from: b(13, i), into: i ? { type: i % 2 ? 'slideleft' : 'slideright', d: 0.2 } : undefined, keepCaption: i > 0, settle: 0.9,
+      // Soft wipes and a quick caption, as in the long film: the caption holds still while the colours change.
+      add({ name: `theme-${theme}`, from: b(13, i), into: i ? { type: 'smoothleft', d: 0.24 } : undefined, keepCaption: i > 0, settle: 0.9,
         setup: async (s) => { await look(s, { theme, dash: i === 0 ? { layout: VIDEO } : undefined }); await s.look('center', 1.0); },
-        run: async (s) => { if (i === 0) await s.caption('21 colour themes', 'Looks'); } });
+        run: async (s) => { if (i === 0) await s.caption('21 colour themes', 'Looks', null, true); } });
     }
     const skies = [['halo', 'nord-frost'], ['pillars', 'sunset-amber'], ['baikal', 'aurora-void'], ['drift', 'dracula-velvet']];
     skies.forEach(([scene, theme], i) => {

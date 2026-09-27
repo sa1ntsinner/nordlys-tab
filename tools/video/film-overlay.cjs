@@ -8,19 +8,41 @@ function filmOverlay() {
   html.fx-cam { overflow: hidden !important; }
   html.fx-cam body { transform-origin: 0 0; width: 100vw; min-height: 100vh; overflow: hidden; }
   #fx-root { position: fixed; inset: 0; z-index: 2147483600; pointer-events: none; font-synthesis: none; }
+  /* Under a caption the page goes quiet: a shade from the caption's edge, and
+     just behind the words a soft blur, so a busy card under them reads as
+     texture rather than as text. On a light theme the shade is light and the
+     words are dark. */
   #fx-shade { position: absolute; inset: 0; opacity: 0; transition: opacity 900ms cubic-bezier(.2,.8,.2,1);
-    background: linear-gradient(180deg, rgba(2,4,9,0) 52%, rgba(2,4,9,.34) 76%, rgba(2,4,9,.62)); }
+    background: radial-gradient(58% 44% at 14% 100%, rgba(2,4,9,.5), rgba(2,4,9,0) 74%),
+      linear-gradient(180deg, rgba(2,4,9,0) 46%, rgba(2,4,9,.3) 70%, rgba(2,4,9,.66)); }
   #fx-shade.on { opacity: 1; }
-  #fx-shade.top { background: linear-gradient(0deg, rgba(2,4,9,0) 52%, rgba(2,4,9,.34) 76%, rgba(2,4,9,.62)); }
+  #fx-shade.top { background: radial-gradient(58% 44% at 14% 0%, rgba(2,4,9,.5), rgba(2,4,9,0) 74%),
+      linear-gradient(0deg, rgba(2,4,9,0) 46%, rgba(2,4,9,.3) 70%, rgba(2,4,9,.66)); }
+  html.light-ui #fx-shade { background: radial-gradient(58% 44% at 14% 100%, rgba(248,249,252,.7), rgba(248,249,252,0) 74%),
+      linear-gradient(180deg, rgba(248,249,252,0) 46%, rgba(248,249,252,.36) 70%, rgba(248,249,252,.78)); }
+  html.light-ui #fx-shade.top { background: radial-gradient(58% 44% at 14% 0%, rgba(248,249,252,.7), rgba(248,249,252,0) 74%),
+      linear-gradient(0deg, rgba(248,249,252,0) 46%, rgba(248,249,252,.36) 70%, rgba(248,249,252,.78)); }
   #fx-cap.top { top: 64px; bottom: auto; }
-  #fx-cap { position: absolute; left: 76px; bottom: 70px; max-width: 900px; color: #f5f7fb; }
+  #fx-cap { position: absolute; z-index: 0; left: 76px; bottom: 70px; max-width: 1040px; color: #f5f7fb; }
+  #fx-cap::before { content: ""; position: absolute; z-index: -1; inset: -44px -96px -38px -70px; opacity: 0;
+    -webkit-backdrop-filter: blur(18px) saturate(.9); backdrop-filter: blur(18px) saturate(.9);
+    -webkit-mask-image: radial-gradient(closest-side, #000 48%, transparent); mask-image: radial-gradient(closest-side, #000 48%, transparent);
+    transition: opacity 800ms cubic-bezier(.2,.8,.2,1); }
+  #fx-cap.on::before { opacity: 1; }
+  #fx-cap.out::before { opacity: 0; transition-duration: 420ms; }
   #fx-cap small { display: block; margin-bottom: 14px; font: 600 13px/1 "Instrument Sans", system-ui, sans-serif; letter-spacing: .24em; text-transform: uppercase; color: rgba(245,247,251,.72); opacity: 0; transform: translateY(8px); transition: opacity 700ms cubic-bezier(.2,.8,.2,1), transform 900ms cubic-bezier(.2,.8,.2,1); }
   #fx-cap.on small { opacity: 1; transform: none; }
-  #fx-cap .line { font: 500 58px/1.04 "Outfit", system-ui, sans-serif; letter-spacing: -.035em; text-shadow: 0 2px 30px rgba(0,0,0,.35); }
+  #fx-cap .line { font: 500 58px/1.04 "Outfit", system-ui, sans-serif; letter-spacing: -.035em; text-wrap: balance; text-shadow: 0 2px 30px rgba(0,0,0,.35); }
+  html.light-ui #fx-cap { color: #0e1219; }
+  html.light-ui #fx-cap small { color: rgba(14,18,25,.62); }
+  html.light-ui #fx-cap .line { text-shadow: 0 1px 26px rgba(255,255,255,.6); }
   #fx-cap .w { display: inline-block; opacity: 0; transform: translateY(.5em); filter: blur(10px);
     transition: opacity 800ms cubic-bezier(.2,.8,.2,1), transform 1000ms cubic-bezier(.16,1,.3,1), filter 800ms cubic-bezier(.2,.8,.2,1); }
   #fx-cap.on .w { opacity: 1; transform: none; filter: none; }
   #fx-cap.out .w, #fx-cap.out small { opacity: 0; transform: translateY(-.25em); filter: blur(6px); transition-duration: 420ms; transition-delay: 0ms !important; }
+  /* Quick: whole in about a third of a second, for a caption over shots a beat long. */
+  #fx-cap.quick .w { transition-duration: 260ms, 300ms, 260ms; }
+  #fx-cap.quick small, #fx-cap.quick::before, #fx-shade.quick { transition-duration: 280ms; }
   #fx-card { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0; transition: opacity 1000ms cubic-bezier(.2,.8,.2,1);
     background: radial-gradient(95% 85% at 50% 46%, rgba(3,5,10,.52), rgba(3,5,10,.93)); }
   #fx-card.on { opacity: 1; }
@@ -78,6 +100,28 @@ function filmOverlay() {
   const body = document.body;
   const W = () => window.innerWidth, H = () => window.innerHeight;
   const cam = { tx: 0, ty: 0, s: 1 };
+  /* The page must not see the camera. One page fit measures boxes with
+     getBoundingClientRect, which includes the camera's transform: close up,
+     the board looks too big for the window and would be shrunk to fit. While
+     a fit runs, boxes are read as if the camera were at rest. */
+  const fitter = window.Nordlys?.pageFit;
+  if (fitter && !fitter.filmed) {
+    const fit = fitter.fit.bind(fitter);
+    const rect = Element.prototype.getBoundingClientRect;
+    fitter.fit = () => {
+      const t = getComputedStyle(body).transform;
+      if (!t || t === 'none') return fit();
+      const back = new DOMMatrix(t).inverse();
+      Element.prototype.getBoundingClientRect = function () {
+        const r = rect.call(this);
+        if (!body.contains(this)) return r;
+        const a = back.transformPoint(new DOMPoint(r.left, r.top)), b = back.transformPoint(new DOMPoint(r.right, r.bottom));
+        return new DOMRect(a.x, a.y, b.x - a.x, b.y - a.y);
+      };
+      try { return fit(); } finally { Element.prototype.getBoundingClientRect = rect; }
+    };
+    fitter.filmed = true;
+  }
   const place = (cx, cy, s) => {
     let tx = W() / 2 - cx * s, ty = H() / 2 - cy * s;
     tx = Math.min(0, Math.max(W() - W() * s, tx)); ty = Math.min(0, Math.max(H() - H() * s, ty));
@@ -94,7 +138,7 @@ function filmOverlay() {
     return { x: (r.left + r.width / 2 - cam.tx) / cam.s, y: (r.top + r.height / 2 - cam.ty) / cam.s };
   };
   window.__fx = {
-    caption(title, eyebrow, instant, where) {
+    caption(title, eyebrow, instant, where, quick) {
       const cap = $('fx-cap'), shade = $('fx-shade');
       if (!title) {
         if (instant) { cap.innerHTML = ''; cap.classList.remove('on', 'out'); shade.style.transition = 'none'; shade.classList.remove('on'); void shade.offsetWidth; shade.style.transition = ''; return; }
@@ -103,7 +147,9 @@ function filmOverlay() {
       cap.classList.remove('on', 'out');
       cap.classList.toggle('top', where === 'top');
       shade.classList.toggle('top', where === 'top');
-      cap.innerHTML = `${eyebrow ? `<small>${eyebrow}</small>` : ''}<div class="line">${words(title, 120)}</div>`;
+      cap.classList.toggle('quick', Boolean(quick));
+      shade.classList.toggle('quick', Boolean(quick));
+      cap.innerHTML = `${eyebrow ? `<small>${eyebrow}</small>` : ''}<div class="line">${quick ? words(title, 0, 20) : words(title, 120)}</div>`;
       void cap.offsetWidth;
       cap.classList.add('on'); shade.classList.add('on');
     },

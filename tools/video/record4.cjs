@@ -66,8 +66,14 @@ const encode = (list, file, seconds) => {
     ...codec, '-r', String(FPS), '-t', seconds.toFixed(4), '-an', file], { stdio: 'inherit' });
 };
 
+/* Where the mouse waits between shots: a corner with nothing under it, so no
+   card or tile on screen wears a hover it was never given. A shot that shows
+   the pointer puts it where it should first be seen. */
+const PARK = { x: 4, y: 4 };
+
 async function shoot(page, cdp) {
   const js = (fn, arg) => page.evaluate(fn, arg);
+  let mouse = { ...PARK };
   for (const shot of SHOTS) {
     if (ONLY && !ONLY.includes(shot.index)) continue;
     const head = half(shot.index), tail = half(shot.index + 1);
@@ -82,11 +88,10 @@ async function shoot(page, cdp) {
     const vnow = () => (Date.now() / 1000 - t0) / SLOW + clipFrom;
     const vwait = (seconds) => page.waitForTimeout(Math.max(0, seconds * 1000 * SLOW));
     const until = async (t) => { const left = t - vnow(); if (left > 0) await vwait(left); };
-    let mouse = { x: 1100, y: 620 };
     const s = {
       page, js, music, bar, BEAT, shot, vwait,
       at: until,
-      caption: (title, eyebrow, where) => js(([t, e, w]) => window.__fx.caption(t, e, false, w), [title, eyebrow, where]),
+      caption: (title, eyebrow, where, quick) => js(([t, e, w, q]) => window.__fx.caption(t, e, false, w, q), [title, eyebrow, where, Boolean(quick)]),
       card: (html) => js((h) => window.__fx.card(h), html),
       statement: (text) => js((t) => window.__fx.statement(t), text),
       flash: () => js(() => window.__fx.flash()),
@@ -134,6 +139,9 @@ async function shoot(page, cdp) {
     // Off camera: the page as the shot opens. The clock on screen waits.
     await js(() => window.__holdClock?.(true));
     await js((keep) => { if (!keep) window.__fx.caption(null, null, true); window.__fx.card(null, true); window.__fx.pointer(false); }, Boolean(shot.keepCaption));
+    await page.mouse.move(PARK.x, PARK.y); mouse = { ...PARK };
+    // The page is laid out for the shot with the camera at rest; the setup then frames it.
+    await s.look('center', 1);
     if (shot.setup) await shot.setup(s);
     await s.settle(shot.settle ?? 0.5);
     // On camera.
@@ -187,7 +195,10 @@ function assemble() {
   execFileSync(FFMPEG, ['-y', '-hide_banner', '-loglevel', 'error', ...inputs, '-filter_complex', parts.join(';') || '[0:v]null[vout]', '-map', `[${parts.length ? 'vout' : 'vout'}]`,
     ...final, '-pix_fmt', 'yuv420p', '-r', String(FPS), '-t', music.length.toFixed(3), '-movflags', '+faststart', picture], { stdio: 'inherit' });
   const fadeOut = film.fadeOut ?? 2;
-  const audio = [`atrim=start=${film.from.toFixed(3)}:end=${film.to.toFixed(3)}`, 'asetpts=PTS-STARTPTS', film.from > 0 ? 'afade=t=in:d=0.3' : null, `afade=t=out:st=${(music.length - fadeOut).toFixed(3)}:d=${fadeOut}`].filter(Boolean).join(',');
+  /* The track is mastered to its very top (+0.2 dBTP between samples), and
+     AAC would clip there; 1.5 dB less leaves it at about -1.3 dBTP and near
+     the -14 LUFS YouTube plays at. A level, not a change to the music. */
+  const audio = [`atrim=start=${film.from.toFixed(3)}:end=${film.to.toFixed(3)}`, 'asetpts=PTS-STARTPTS', 'volume=-1.5dB', film.from > 0 ? 'afade=t=in:d=0.3' : null, `afade=t=out:st=${(music.length - fadeOut).toFixed(3)}:d=${fadeOut}`].filter(Boolean).join(',');
   execFileSync(FFMPEG, ['-y', '-hide_banner', '-loglevel', 'error', '-i', picture, '-i', musicFile, '-map', '0:v', '-map', '1:a',
     '-c:v', 'copy', '-af', audio, '-c:a', 'aac', '-b:a', '320k', '-t', music.length.toFixed(3), '-movflags', '+faststart', out], { stdio: 'inherit' });
   fs.writeFileSync(out.replace(/\.mp4$/, '.timeline.json'), JSON.stringify({ tempo: MAP.tempo, seconds: music.length, hits: SHOTS.slice(1).map((s) => ({ at: s.from, kind: (s.into?.d ?? 0) > 0.1 ? 'fade' : 'switch', shot: s.name })) }, null, 1));
@@ -201,7 +212,8 @@ function assemble() {
     const server = await serve(SITE);
     const base = `http://localhost:${server.address().port}`;
     const browser = await chromium.launch({ args: ['--use-angle=d3d11', '--enable-gpu-rasterization', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
-    const context = await browser.newContext({ viewport: VIEW, deviceScaleFactor: SCALE, locale: 'en-US' });
+    // One time zone wherever it is filmed, so the world clocks read the same.
+    const context = await browser.newContext({ viewport: VIEW, deviceScaleFactor: SCALE, locale: 'en-US', timezoneId: film.timezone || 'Europe/Berlin' });
     await context.addInitScript(dilate, { slow: SLOW, clock: film.clock || '09:41' });
     if (film.routes) await film.routes(context);
     const page = await context.newPage();
@@ -217,7 +229,7 @@ function assemble() {
     await page.evaluate(() => { Nordlys.bgEngine.frameBudget = () => 1000 / 60; document.documentElement.style.scrollBehavior = 'auto'; });
     await cdp.send('Animation.setPlaybackRate', { playbackRate: 1 / SLOW });
     if (film.prepare) await film.prepare({ page, js: (fn, arg) => page.evaluate(fn, arg), music });
-    await page.mouse.move(1100, 620);
+    await page.mouse.move(PARK.x, PARK.y);
     await page.waitForTimeout(2000 * SLOW / 2);
     await shoot(page, cdp);
     await browser.close();

@@ -19,11 +19,12 @@ sweeps.config.cjs
 # The promo soundtrack source, 27 MB; the mp3 beside it is committed.
 docs/video/music/*.wav
 
-# Rendered promo videos (4K, 30-70 MB each) go to YouTube and the stores, not
-# the repo; tools/video/record3.cjs remakes them. site/assets/tour.mp4 stays.
+# Rendered promo videos (4K, 60-200 MB each) go to YouTube and the stores, not
+# the repo; tools/video/record4.cjs remakes them. site/assets/tour.mp4 stays.
 docs/video/**/*.mp4
 docs/video/v2/
 docs/video/v3/
+docs/video/v4/
 
 # Licensed music (Mixkit) may be used in the videos but not handed on as a file.
 docs/video/music/licensed/

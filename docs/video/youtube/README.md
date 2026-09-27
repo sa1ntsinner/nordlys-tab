@@ -2,7 +2,8 @@
 
 Video: `docs/video/nordlys-youtube-4k.mp4` (3840x2160, 60 fps, 81 s; not in
 the repo, render it with `tools/video/record4.cjs tools/video/films/rising-forest.cjs …`). Thumbnail:
-`thumbnail.png` (1280x720, made by `tools/video/thumbnail.cjs`).
+`thumbnail.png` (1280x720, made by `tools/video/thumbnail.cjs … --at 68.6`, a
+frame of the recap with no caption on it).
 
 ## Title
 
@@ -48,7 +49,8 @@ new tab, new tab page, chrome extension, start page, bookmarks, dashboard, produ
 - Category: Science & Technology
 - Audience: not made for kids
 - Language: English
-- Altered or synthetic content: no (the video is a screen recording; the
-  music was generated, which YouTube does not ask about unless it imitates a
-  real person)
+- Altered or synthetic content: no (a screen recording of the extension, with
+  a licensed track: "Rising Forest" by Diego Nava, from Mixkit, whose licence
+  allows use in videos without credit; the credit in the description is a
+  courtesy)
 - Licence: Standard YouTube Licence
