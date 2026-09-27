@@ -112,7 +112,7 @@ function encoder(file) {
 
   pump();
   const js = (fn, arg) => page.evaluate(fn, arg);
-  await page.goto(`http://localhost:${server.address().port}/demo/index.html`);
+  await page.goto(`http://127.0.0.1:${server.address().port}/demo/index.html`);
   await page.waitForFunction(() => window.Nordlys?.grid && window.Nordlys.sync && window.Nordlys.dashboard);
   await js(() => { Nordlys.setTheme('aurora-void'); Nordlys.config.bgMode = 'aurora'; Nordlys.config.onePageFit = true; Nordlys.saveConfig(); });
   if (film.board) await js(film.board);

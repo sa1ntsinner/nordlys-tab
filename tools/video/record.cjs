@@ -33,7 +33,7 @@ function serve() {
         response.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream' });
         response.end(data);
       });
-    }).listen(0, () => resolve(server));
+    }).listen(0, '127.0.0.1', () => resolve(server)); // this machine only
   });
 }
 
