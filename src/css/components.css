@@ -1047,7 +1047,8 @@ body.searching.commanding #dim { background: rgba(3, 7, 18, 0.12); }
 .sugg-command-help .sugg-command-text small { color: var(--nl-text-secondary); font-size: var(--nl-text-xs); }
 
 /* The first stop for a keyboard: straight past the clock and search to the
-   board. Out of sight until it is focused. */
+   board. Out of sight until it is focused. Moved with `translate`, not
+   `transform`: reduced motion drops every transform, which left it on screen. */
 .skip-link {
   position: fixed;
   top: 12px;
@@ -1059,9 +1060,9 @@ body.searching.commanding #dim { background: rgba(3, 7, 18, 0.12); }
   color: var(--nl-on-accent);
   font-weight: 650;
   text-decoration: none;
-  transform: translateY(-160%);
+  translate: 0 -160%;
 }
-.skip-link:focus-visible { transform: none; }
+.skip-link:focus-visible { translate: none; }
 
 /* Alt held: each of the first nine tiles shows the digit that opens it. */
 body.alt-held .tile[data-shortcut]::after {

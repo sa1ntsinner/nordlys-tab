@@ -42,6 +42,17 @@ test('at 320px the undo notice stays on the screen', async ({ nordlysPage }) => 
   expect(box.x + box.width).toBeLessThanOrEqual(320);
 });
 
+test('the skip link stays out of sight until the keyboard reaches it', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const link = page.locator('.skip-link');
+  const box = await link.boundingBox();
+  expect(box.y + box.height).toBeLessThanOrEqual(0);
+  await page.keyboard.press('Tab');
+  await expect(link).toBeFocused();
+  const shown = await link.boundingBox();
+  expect(shown.y).toBeGreaterThanOrEqual(0);
+});
+
 test('without its blur the glass is solid', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   const opacity = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--glass-opacity').trim());
