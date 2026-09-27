@@ -65,7 +65,7 @@ Tasks understand dates and importance typed in words ("call mum tomorrow !"), ha
 Focus mode gives the whole page to one thing: a large Pomodoro or count-up timer, sounds made in the browser (rain, ocean, wind, deep noise), your tasks at the side and how long you've focused today.
 
 Connected apps
-See your tasks from Todoist, GitHub, GitLab, Trello, Asana, ClickUp, Linear, Jira and Notion, and your events from any calendar with an ICS link. Nordlys talks to each app directly with a token you create there. The token stays on your device, and Nordlys asks for access to an app's address only when you connect it.
+See your tasks from the task managers and code hosts you already use, and your events from any calendar with an ICS link. Nordlys talks to each app directly with a token you create there. The token stays on your device, and Nordlys asks for access to an app's address only when you connect it.
 
 Ask
 The Ask card talks to a model you choose: Chrome's built-in model on your device, your own key for OpenAI, Anthropic, Gemini or OpenRouter, or a model on your computer through Ollama. Type ? and a question in the search box to ask it.

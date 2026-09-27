@@ -6,12 +6,35 @@
   document.documentElement.classList.add('js');
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Install: straight to the store once there is a store page.
-  const store = document.querySelector('meta[name="nordlys-store"]')?.content.trim();
-  if (store) {
-    for (const link of document.querySelectorAll('[data-install]')) link.href = store;
-    const button = document.querySelector('[data-store]');
-    if (button) { button.href = store; button.hidden = false; }
+  /* Getting it: each store's page from a meta tag (empty means not there
+     yet), and the visitor's own browser picked out, so the main button says
+     "Add to Edge" in Edge and goes to the right place. */
+  const stores = Object.fromEntries(['chrome', 'edge', 'firefox', 'safari'].map(key => [key, document.querySelector(`meta[name="nordlys-store-${key}"]`)?.content.trim() || '']));
+  const ua = navigator.userAgent;
+  const phone = /Android|iPhone|iPad|Mobile/i.test(ua);
+  const browser = /Edg\//.test(ua) ? 'edge' : /Firefox\//.test(ua) ? 'firefox' : /Safari\//.test(ua) && !/Chrome\/|Chromium\//.test(ua) ? 'safari' : 'chrome';
+  const NAMES = { chrome: 'Chrome', edge: 'Edge', firefox: 'Firefox', safari: 'Safari' };
+  // Edge also installs from the Chrome Web Store, until its own listing is up.
+  const target = stores[browser] || (browser === 'edge' ? stores.chrome : '');
+  for (const tile of document.querySelectorAll('[data-store]')) {
+    const url = stores[tile.dataset.store];
+    if (url) tile.href = url; else { tile.classList.add('is-soon'); tile.removeAttribute('href'); tile.setAttribute('aria-disabled', 'true'); }
+    tile.classList.toggle('is-yours', tile.dataset.store === browser && !phone);
+  }
+  const label = document.querySelector('[data-get-label]');
+  const note = document.querySelector('[data-get-note]');
+  if (phone) {
+    if (label) label.textContent = 'Try it here';
+    for (const link of document.querySelectorAll('[data-primary]')) link.href = '#try';
+    if (note) note.textContent = 'Nordlys is for the browser on your computer. You can try it right here.';
+  } else if (target) {
+    if (label) label.textContent = `Add to ${NAMES[browser]}, it's free`;
+    for (const link of document.querySelectorAll('[data-get]')) link.href = target;
+    if (note && browser === 'edge' && !stores.edge) note.textContent = 'In Edge, it installs from the Chrome Web Store.';
+  } else {
+    if (label) label.textContent = `Coming soon to ${NAMES[browser]}`;
+    if (note) note.textContent = `The ${NAMES[browser]} version is waiting for the store's review. You can try it here meanwhile, or use it in Chrome or Edge.`;
+    for (const link of document.querySelectorAll('[data-primary]')) link.href = '#try';
   }
 
   // The island gains its glass once the page moves under it.
@@ -97,17 +120,8 @@
     }
   }
 
-  // Bento cells: a soft light that follows the pointer.
-  for (const cell of document.querySelectorAll('.cell .bezel-core')) {
-    cell.addEventListener('pointermove', event => {
-      const box = cell.getBoundingClientRect();
-      cell.style.setProperty('--mx', `${event.clientX - box.left}px`);
-      cell.style.setProperty('--my', `${event.clientY - box.top}px`);
-    });
-  }
-
   // ── The live demo ────────────────────────────────────────────
-  const stage = document.getElementById('stage');
+  const stage = document.getElementById('try');
   const viewport = document.getElementById('viewport');
   const frame = document.getElementById('demo');
   const DESK = { w: 1440, h: 900 };
@@ -186,8 +200,13 @@
     mark("[data-theme]", "theme", demo.config.theme);
     document.querySelector("[data-try=\"arrange\"]")?.setAttribute("aria-pressed", String(Boolean(demo.grid.arrange?.active)));
     document.querySelector("[data-try=\"daylight\"]")?.setAttribute("aria-pressed", String(Boolean(demo.config.bgDaylight)));
-    document.querySelector("[data-try=\"dashboard\"]")?.setAttribute("aria-pressed", String(Boolean(demo.dashboard?.on)));
+    const focusOpen = Boolean(frame.contentDocument.getElementById('focus-mode')?.classList.contains('is-open'));
+    showTab(focusOpen ? 'focus' : demo.dashboard?.on ? 'dashboard' : 'board');
   });
+  const tabs = [...document.querySelectorAll('[data-view]')];
+  const showTab = view => {
+    for (const tab of tabs) { const on = tab.dataset.view === view; tab.setAttribute('aria-selected', String(on)); tab.tabIndex = on ? 0 : -1; }
+  };
   let dockTimer = 0;
   const syncSoon = () => { clearTimeout(dockTimer); dockTimer = setTimeout(syncDock, 350); };
   ready.then(() => {
@@ -269,12 +288,32 @@
     button.addEventListener('click', () => Promise.resolve(actions[button.dataset.try]?.(button)).then(syncSoon));
   }
 
-  // "Try it above": to the demo, and do it there.
-  for (const link of document.querySelectorAll('[data-try-link]')) {
-    link.addEventListener('click', event => {
+  /* The three views: the plain board, the dashboard with a day in it, and
+     focus mode. Picking one leaves the others. */
+  const views = {
+    board: () => inDemo(demo => { demo.focusMode?.hide?.(); if (demo.dashboard?.on) demo.dashboard.setOn(false); }),
+    dashboard: () => inDemo(async demo => { demo.focusMode?.hide?.(); if (!demo.dashboard?.on) await actions.dashboard(); }),
+    focus: () => inDemo(demo => demo.focusMode?.show())
+  };
+  const pickView = view => { showTab(view); return Promise.resolve(views[view]?.()).then(syncSoon); };
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => pickView(tab.dataset.view));
+    tab.addEventListener('keydown', event => {
+      const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
+      if (!step) return;
       event.preventDefault();
+      const next = tabs[(index + step + tabs.length) % tabs.length];
+      next.focus();
+      pickView(next.dataset.view);
+    });
+  });
+  showTab('board');
+
+  // "Try it above": to the demo, and that view in it.
+  for (const button of document.querySelectorAll('[data-show]')) {
+    button.addEventListener('click', () => {
       stage.scrollIntoView({ behavior: still ? 'auto' : 'smooth', block: 'center' });
-      setTimeout(() => actions[link.dataset.tryLink]?.(), still ? 0 : 600);
+      setTimeout(() => pickView(button.dataset.show), still ? 0 : 600);
     });
   }
 
@@ -290,7 +329,7 @@
 
   // ── The closing sky ──────────────────────────────────────────
   if (typeof NordlysBackgroundEngine !== 'function') return;
-  const install = document.getElementById('install');
+  const install = document.getElementById('get');
   let engine = null;
   new IntersectionObserver(([entry]) => {
     document.body.classList.toggle("sky-on", entry.isIntersecting);

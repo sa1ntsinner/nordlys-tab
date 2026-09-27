@@ -105,7 +105,7 @@ scene('connect', async ({ page, origin }) => {
   await block.screenshot({ path: path.join(SCRATCH, 'connect-picker.png'), animations: 'disabled' });
   await render(page.context(), origin, 'screenshot-5-connect.png', compose.feature({
     title: 'Your tasks from the apps you use',
-    subtitle: 'Todoist, GitHub, Trello, Asana, ClickUp, Linear, Jira, Notion and calendars. Your token stays on your device.',
+    subtitle: 'Tasks from the tools you already use, and events from any calendar link. Your token stays on your device.',
     back, detail: shot('connect-picker.png'), detailWidth: 470
   }));
 });

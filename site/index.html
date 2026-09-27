@@ -3,18 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Nordlys, a new tab page for Chrome</title>
-  <meta name="description" content="Nordlys is a new tab page for Chrome: your bookmarks in folders, on top of an animated background. Try the live demo. Free, open source, no account.">
+  <title>Nordlys: your favourite sites on every new tab</title>
+  <meta name="description" content="Nordlys puts your favourite sites in folders on a moving sky. Turn on a dashboard for today's tasks if you like. Free, no account, nothing tracked.">
   <meta name="theme-color" content="#05070c">
   <meta name="color-scheme" content="dark">
-  <!-- The Chrome Web Store page. Empty, the install buttons fall back to
-       loading the extension from source. -->
-  <meta name="nordlys-store" content="https://chromewebstore.google.com/detail/nordlys/fepiibfbbjhaoldgcfpfcikbonnjbfdc">
+  <!-- Store pages. An empty one means "not there yet": its button says so
+       instead of linking. site.js picks the one for the visitor's browser. -->
+  <meta name="nordlys-store-chrome" content="https://chromewebstore.google.com/detail/nordlys/fepiibfbbjhaoldgcfpfcikbonnjbfdc">
+  <meta name="nordlys-store-edge" content="">
+  <meta name="nordlys-store-firefox" content="">
+  <meta name="nordlys-store-safari" content="">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon128.png">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Nordlys, a new tab page for Chrome">
-  <meta property="og:description" content="Your bookmarks in folders, on top of an animated background. Try it right on the page. Free, no account, no tracking.">
+  <meta property="og:title" content="Nordlys: your favourite sites on every new tab">
+  <meta property="og:description" content="Your favourite sites in folders on a moving sky. Add a dashboard for today's tasks if you want one. Free, no account.">
   <meta property="og:url" content="https://sa1ntsinner.github.io/nordlys-tab/">
   <meta property="og:image" content="https://sa1ntsinner.github.io/nordlys-tab/assets/og.png">
   <meta property="og:image:width" content="1200">
@@ -33,31 +36,31 @@
       <img src="icon.svg" alt="" width="24" height="24"><span>Nordlys</span>
     </a>
     <nav class="island-links" aria-label="Sections">
-      <a href="#features">Features</a>
-      <a href="#dashboard">Dashboard</a>
-      <a href="#skies">Backgrounds</a>
+      <a href="#try">Try it</a>
+      <a href="#features">What it does</a>
       <a href="#tour">Tour</a>
-      <a href="#faq">FAQ</a>
-      <a href="https://github.com/sa1ntsinner/nordlys-tab">GitHub</a>
+      <a href="#faq">Questions</a>
     </nav>
-    <a class="pill small" href="#install" data-install><span>Install</span></a>
+    <a class="pill small" href="#get" data-get><span>Get Nordlys</span></a>
   </header>
 
   <main id="main">
-    <!-- ── Hero: the real product, running here ─────────────────── -->
+    <!-- ── Hero ─────────────────────────────────────────────────── -->
     <section class="hero" id="top" aria-labelledby="hero-title">
       <div class="hero-copy reveal">
-        <p class="eyebrow">Free · Open source · No account</p>
-        <h1 id="hero-title" class="split">A new tab page for Chrome</h1>
-        <p class="lede">Your bookmarks, a sky that moves, and when you want it, a dashboard for the day. What you see below is the real extension, running on this page. Click around.</p>
+        <p class="eyebrow">Free · No account · Nothing tracked</p>
+        <h1 id="hero-title" class="split">Your favourite sites on every new tab</h1>
+        <p class="lede">Nordlys puts your favourite sites in folders on a gently moving sky. You can turn on a dashboard for today's tasks when you want one.</p>
         <div class="actions">
-          <a class="pill" href="#install" data-install><span>Add to Chrome</span><i aria-hidden="true">↗</i></a>
-          <a class="pill ghost" href="#tour"><span>Watch the tour</span><i aria-hidden="true">▶</i></a>
+          <a class="pill" href="#get" data-get data-primary><span data-get-label>Add to your browser</span><i aria-hidden="true">↗</i></a>
+          <a class="pill ghost" href="#tour"><span>Watch the one-minute tour</span><i aria-hidden="true">▶</i></a>
         </div>
+        <p class="hero-note" data-get-note>Works in Chrome, Edge, Brave, Opera and other browsers built on Chrome.</p>
       </div>
 
-      <div class="stage reveal" id="stage">
-        <div class="stage-glow" id="stage-glow" aria-hidden="true"></div>
+      <!-- ── The real thing, running here ─────────────────────── -->
+      <div class="stage reveal" id="try">
+        <div class="stage-glow" aria-hidden="true"></div>
         <div class="bezel">
           <div class="stage-ring" aria-hidden="true"></div>
           <div class="bezel-core window">
@@ -67,196 +70,168 @@
               <span class="live-badge"><i></i>Live</span>
             </div>
             <div class="viewport" id="viewport">
-              <iframe id="demo" src="demo/index.html" title="Nordlys live demo: the real new tab page" loading="eager"></iframe>
-              <img class="viewport-still" src="assets/board.webp" width="2400" height="1500" alt="The Nordlys new tab: a clock, a search box and folders of bookmarks over the aurora.">
+              <iframe id="demo" src="demo/index.html" title="Nordlys running on this page" loading="eager"></iframe>
+              <img class="viewport-still" src="assets/board.webp" width="2400" height="1500" alt="The Nordlys new tab with a clock, search box and folders of favourite sites against the northern lights.">
             </div>
           </div>
         </div>
 
-        <div class="dock" role="group" aria-label="Try the demo">
-          <div class="dock-row">
-            <span class="dock-label">Sky</span>
-            <div class="chips" role="radiogroup" aria-label="Background">
-              <button type="button" role="radio" aria-checked="true" data-scene="aurora">Nordlys</button>
-              <button type="button" role="radio" aria-checked="false" data-scene="polaris">Polaris</button>
-              <button type="button" role="radio" aria-checked="false" data-scene="halo">Halo</button>
-              <button type="button" role="radio" aria-checked="false" data-scene="pillars">Pillars</button>
-              <button type="button" role="radio" aria-checked="false" data-scene="nacre">Nacre</button>
+        <div class="tryout">
+          <p class="tryout-lead">The demo here is the real extension. Have a look around:</p>
+          <div class="tabs" role="tablist" aria-label="Choose a view">
+            <button type="button" role="tab" aria-selected="true" data-view="board">Bookmarks</button>
+            <button type="button" role="tab" aria-selected="false" data-view="dashboard">Dashboard</button>
+            <button type="button" role="tab" aria-selected="false" data-view="focus">Focus mode</button>
+          </div>
+          <div class="tryout-row">
+            <span class="tryout-label">Sky</span>
+            <div class="chips" role="radiogroup" aria-label="Choose a background">
+              <button type="button" role="radio" aria-checked="true" data-scene="aurora">Northern lights</button>
+              <button type="button" role="radio" aria-checked="false" data-scene="polaris">Star trails</button>
+              <button type="button" role="radio" aria-checked="false" data-scene="halo">Moon halo</button>
+              <button type="button" role="radio" aria-checked="false" data-scene="baikal">Lake ice</button>
               <button type="button" role="radio" aria-checked="false" data-scene="silk">Silk</button>
-              <button type="button" role="radio" aria-checked="false" data-scene="baikal">Baikal</button>
-              <button type="button" role="radio" aria-checked="false" data-scene="drift">Contour</button>
-              <button type="button" role="radio" aria-checked="false" data-scene="horizon">Fjord</button>
             </div>
           </div>
-          <div class="dock-row">
-            <span class="dock-label">Theme</span>
-            <div class="swatches" role="radiogroup" aria-label="Theme">
+          <div class="tryout-row">
+            <span class="tryout-label">Colours</span>
+            <div class="swatches" role="radiogroup" aria-label="Choose a colour theme">
               <button type="button" role="radio" aria-checked="true" data-theme="aurora-void" style="--a:#060a14;--b:#35d6c0" aria-label="Aurora Void"></button>
-              <button type="button" role="radio" aria-checked="false" data-theme="oled-obsidian" style="--a:#000000;--b:#c9ced6" aria-label="OLED Obsidian"></button>
+              <button type="button" role="radio" aria-checked="false" data-theme="oled-obsidian" style="--a:#000000;--b:#c9ced6" aria-label="Pure black"></button>
               <button type="button" role="radio" aria-checked="false" data-theme="tokyo-night" style="--a:#1a1b26;--b:#7aa2f7" aria-label="Tokyo Night"></button>
-              <button type="button" role="radio" aria-checked="false" data-theme="nord-frost" style="--a:#2e3440;--b:#88c0d0" aria-label="Nord Frost"></button>
-              <button type="button" role="radio" aria-checked="false" data-theme="gruvbox-dark" style="--a:#282828;--b:#fabd2f" aria-label="Gruvbox Dark"></button>
-              <button type="button" role="radio" aria-checked="false" data-theme="dracula-velvet" style="--a:#282a36;--b:#ff79c6" aria-label="Dracula Velvet"></button>
-              <button type="button" role="radio" aria-checked="false" data-theme="porcelain-light" style="--a:#f4f6fb;--b:#3b82f6" aria-label="Porcelain Light"></button>
-              <button type="button" role="radio" aria-checked="false" data-theme="sakura-daylight" style="--a:#fff5f7;--b:#ec4899" aria-label="Sakura Daylight"></button>
-            </div>
-            <span class="dock-sep" aria-hidden="true"></span>
-            <div class="dock-actions">
-              <button type="button" data-try="dashboard" aria-pressed="false">Dashboard</button>
-              <button type="button" data-try="focus">Focus mode</button>
-              <button type="button" data-try="arrange" aria-pressed="false">Arrange</button>
-              <button type="button" data-try="command">Command line</button>
-              <button type="button" data-try="profile">Profiles</button>
-              <button type="button" data-try="daylight" aria-pressed="false">Time of day</button>
-              <button type="button" data-try="settings">Settings</button>
+              <button type="button" role="radio" aria-checked="false" data-theme="gruvbox-dark" style="--a:#282828;--b:#fabd2f" aria-label="Gruvbox"></button>
+              <button type="button" role="radio" aria-checked="false" data-theme="porcelain-light" style="--a:#f4f6fb;--b:#3b82f6" aria-label="Porcelain, light"></button>
+              <button type="button" role="radio" aria-checked="false" data-theme="sakura-daylight" style="--a:#fff5f7;--b:#ec4899" aria-label="Sakura, light"></button>
             </div>
           </div>
-          <p class="dock-note">Everything you change stays in this browser tab. Close it and the demo starts fresh.</p>
+          <details class="more-tries">
+            <summary>More to try</summary>
+            <div class="more-buttons">
+              <button type="button" data-try="arrange" aria-pressed="false">Move the folders</button>
+              <button type="button" data-try="command">Type a command</button>
+              <button type="button" data-try="profile">Switch to the Home profile</button>
+              <button type="button" data-try="daylight" aria-pressed="false">Match the time of day</button>
+              <button type="button" data-try="settings">Open the settings</button>
+            </div>
+          </details>
+          <p class="tryout-note">Changes here aren't saved. The demo starts fresh when you reopen the page.</p>
         </div>
-        <a class="demo-full" href="demo/index.html">Open the live demo full screen <span aria-hidden="true">↗</span></a>
+        <a class="demo-full" href="demo/index.html">Open the demo on its own page <span aria-hidden="true">↗</span></a>
       </div>
     </section>
 
-    <!-- ── Facts ────────────────────────────────────────────────── -->
-    <section class="facts reveal" aria-label="In numbers">
-      <div><b data-count="9">9</b><span>animated backgrounds</span></div>
-      <div><b data-count="10">10</b><span>dashboard cards, all free</span></div>
-      <div><b data-count="21">21</b><span>themes, light and dark</span></div>
-      <div><b data-count="0">0</b><span>accounts or trackers</span></div>
+    <!-- ── Three steps ──────────────────────────────────────────── -->
+    <section class="section steps-section" aria-labelledby="steps-title">
+      <div class="section-head reveal">
+        <p class="eyebrow">Getting started</p>
+        <h2 id="steps-title">Set it up in a few steps</h2>
+      </div>
+      <ol class="how reveal">
+        <li>
+          <span class="how-n">1</span>
+          <h3>Add it to your browser</h3>
+          <p>Add Nordlys from your browser's store. It's free and you don't need an account.</p>
+        </li>
+        <li>
+          <span class="how-n">2</span>
+          <h3>Bring in your bookmarks</h3>
+          <p>When you open a new tab for the first time, Nordlys offers to bring in your bookmarks. You can also start fresh.</p>
+        </li>
+        <li>
+          <span class="how-n">3</span>
+          <h3>Set up your page</h3>
+          <p>Pick a sky and colours, move folders where you like them, and turn on the dashboard if you want one.</p>
+        </li>
+      </ol>
     </section>
 
-    <!-- ── Features ─────────────────────────────────────────────── -->
+    <!-- ── What it does ─────────────────────────────────────────── -->
     <section class="section" id="features" aria-labelledby="features-title">
       <div class="section-head reveal">
-        <p class="eyebrow">What's in it</p>
-        <h2 id="features-title">Bookmarks first, then everything around them</h2>
+        <p class="eyebrow">What it does</p>
+        <h2 id="features-title">What you can do on a new tab</h2>
       </div>
-      <div class="bento">
-        <article class="cell span-7 tall reveal">
-          <div class="bezel"><div class="bezel-core">
-            <div class="cell-copy">
-              <h3>Folders you can drag around</h3>
-              <p>Drag a folder anywhere and it shows where it will land. Fitted mode lines rows up edge to edge, and tile size, spacing and width sit in one panel with Undo.</p>
-            </div>
-            <figure class="shot"><img src="assets/arrange.webp" width="1800" height="1125" loading="lazy" alt="Arrange mode with folders in fitted rows and the Size and spacing panel open."></figure>
-          </div></div>
-        </article>
-        <article class="cell span-5 reveal">
-          <div class="bezel"><div class="bezel-core">
-            <div class="cell-copy">
-              <h3>A search box that does a bit more</h3>
-              <p>It uses the engine you picked in Chrome, does math, and takes commands after <code>&gt;</code>.</p>
-            </div>
-            <figure class="shot tight"><img src="assets/extra-commands.webp" width="1100" height="480" loading="lazy" alt="The search box listing commands such as theme nord and sky polaris."></figure>
-          </div></div>
-        </article>
-        <article class="cell span-5 reveal">
-          <div class="bezel"><div class="bezel-core">
-            <div class="cell-copy">
-              <h3>Icons by brand name</h3>
-              <p>Type a brand, pick a clean icon, and it's saved on your machine.</p>
-            </div>
-            <figure class="shot tight"><img src="assets/extra-icons.webp" width="1100" height="498" loading="lazy" alt="The icon picker showing results for google."></figure>
-          </div></div>
-        </article>
-        <article class="cell span-4 reveal">
-          <div class="bezel"><div class="bezel-core">
-            <div class="cell-copy">
-              <h3>Profiles and sync</h3>
-              <p>Work and Home as two whole setups. Sync goes through Chrome's own sync, so there's no account of ours.</p>
-            </div>
-            <div class="mock-menu" aria-hidden="true">
-              <span class="mock-chip"><i class="dot teal"></i>Work<em>▾</em></span>
-              <span class="mock-list">
-                <span class="on"><i class="dot teal"></i>Work<em>✓</em></span>
-                <span><i class="dot amber"></i>Home</span>
-                <span><i class="dot violet"></i>Study</span>
-              </span>
-            </div>
-          </div></div>
-        </article>
-        <article class="cell span-4 reveal">
-          <div class="bezel"><div class="bezel-core">
-            <div class="cell-copy">
-              <h3>Nothing leaves your machine</h3>
-              <p>Settings and bookmarks stay in Chrome's storage. It only goes online when you search for an icon or paste an image link.</p>
-            </div>
-            <ul class="ticks">
-              <li>No account</li><li>No analytics</li><li>No remote code</li><li>Open source, MIT</li>
-            </ul>
-          </div></div>
-        </article>
-        <article class="cell span-4 reveal">
-          <div class="bezel"><div class="bezel-core">
-            <div class="cell-copy">
-              <h3>21 themes, light and dark</h3>
-              <p>Each one recolours the sky too. Text stays readable on every background, your own wallpaper included.</p>
-            </div>
-            <figure class="shot"><img src="assets/theme-light.webp" width="1600" height="1000" loading="lazy" alt="The board in the Porcelain Light theme."></figure>
-          </div></div>
-        </article>
-      </div>
-    </section>
 
-    <!-- ── Dashboard ────────────────────────────────────────────── -->
-    <section class="section" id="dashboard" aria-labelledby="dashboard-title">
-      <div class="section-head reveal">
-        <p class="eyebrow">Dashboard</p>
-        <h2 id="dashboard-title">A dashboard, when you want one</h2>
-        <p class="section-lede">Turn it on for a profile and cards for your day sit above the folders. Drag them anywhere, stretch them by the corner, start from a layout. Turn it off and it is the quiet new tab again.</p>
-      </div>
-      <div class="bezel showcase reveal"><div class="bezel-core">
-        <img src="assets/dashboard.webp" width="2400" height="1500" loading="lazy" alt="The Nordlys dashboard in the OLED theme: focus of the day, a countdown, tasks with dates, habits, a focus timer and a note.">
-      </div></div>
-      <ul class="cards-list reveal" aria-label="Cards">
-        <li>Focus of the day</li><li>Tasks with dates and steps</li><li>Habits and streaks</li><li>Focus timer</li><li>Notes</li><li>Weather</li><li>World clocks</li><li>Countdown</li><li>Tab stash</li><li>A line for today</li>
-      </ul>
-      <div class="split-feature reveal">
-        <div class="bezel"><div class="bezel-core"><img src="assets/focus.webp" width="2400" height="1500" loading="lazy" alt="Focus mode: a large timer in a ring, the task you will focus on, sounds and your tasks at the side."></div></div>
-        <div class="split-copy">
-          <h3>Focus mode</h3>
-          <p>The whole page for one thing. A timer in a ring, Pomodoro or counting up, rain or ocean made in the browser, your tasks at the side and how long you have focused today. It keeps the time in a small window over other tabs too.</p>
-          <a class="pill ghost" href="#top" data-try-link="focus"><span>Try it above</span><i aria-hidden="true">↑</i></a>
+      <article class="chapter reveal">
+        <div class="chapter-copy">
+          <h3>Keep your favourite sites in folders</h3>
+          <p>Put your sites in folders, then drag them into the order you like. You can see where each one will go, and undo any change.</p>
+          <ul class="ticks">
+            <li>Icons for familiar sites</li>
+            <li>Folders you can tuck away</li>
+            <li>Fits the whole page on one screen</li>
+          </ul>
         </div>
-      </div>
-    </section>
+        <div class="bezel chapter-shot"><div class="bezel-core"><img src="assets/arrange.webp" width="1800" height="1125" loading="lazy" alt="Folders of sites being moved, with controls for their size and spacing."></div></div>
+      </article>
 
-    <!-- ── Compare ──────────────────────────────────────────────── -->
-    <section class="section" id="compare" aria-labelledby="compare-title">
-      <div class="section-head reveal">
-        <p class="eyebrow">Free, really</p>
-        <h2 id="compare-title">What others put behind a subscription</h2>
-        <p class="section-lede">Nordlys only ever charges for things that cost money to run. Everything that runs on your own machine is free, and that is almost everything.</p>
-      </div>
-      <div class="compare reveal" role="table" aria-label="Nordlys and Momentum Plus">
-        <div class="compare-row compare-head" role="row"><span role="columnheader"></span><span role="columnheader">Nordlys</span><span role="columnheader">Momentum</span></div>
-        <div class="compare-row" role="row"><span role="cell">Focus mode, all day</span><span role="cell" class="yes">Free</span><span role="cell">1 hour a day, then Plus</span></div>
-        <div class="compare-row" role="row"><span role="cell">Sounds for focus</span><span role="cell" class="yes">Free</span><span role="cell">Plus</span></div>
-        <div class="compare-row" role="row"><span role="cell">Habits and streaks</span><span role="cell" class="yes">Free</span><span role="cell">Plus</span></div>
-        <div class="compare-row" role="row"><span role="cell">Tab stash</span><span role="cell" class="yes">Free</span><span role="cell">Plus</span></div>
-        <div class="compare-row" role="row"><span role="cell">Notes, countdowns, world clocks</span><span role="cell" class="yes">Free</span><span role="cell">Plus</span></div>
-        <div class="compare-row" role="row"><span role="cell">Bookmarks in folders</span><span role="cell" class="yes">Free</span><span role="cell">Links only</span></div>
-        <div class="compare-row" role="row"><span role="cell">Account needed</span><span role="cell" class="yes">No</span><span role="cell">For sync</span></div>
-        <div class="compare-row" role="row"><span role="cell">Price</span><span role="cell" class="yes">$0</span><span role="cell">Subscription</span></div>
-      </div>
-      <p class="compare-note reveal">Momentum as it describes itself on its Chrome Web Store page, and as its settings mark Plus features, September 2026.</p>
+      <article class="chapter flip reveal">
+        <div class="chapter-copy">
+          <h3>A dashboard you can turn on</h3>
+          <p>If you want more than bookmarks, turn on the dashboard. It puts cards for your day above your folders. Drag a card by its title, or pull its corner to make it bigger.</p>
+          <ul class="ticks">
+            <li>Add a task by typing "call mum tomorrow"</li>
+            <li>Habits, notes and a countdown</li>
+            <li>Weather and clocks for other cities</li>
+          </ul>
+          <button type="button" class="pill ghost" data-show="dashboard"><span>Try the dashboard</span><i aria-hidden="true">↑</i></button>
+        </div>
+        <div class="bezel chapter-shot"><div class="bezel-core"><img src="assets/dashboard.webp" width="2400" height="1500" loading="lazy" alt="A dark dashboard with today's focus, a countdown, clocks, tasks, habits and a timer."></div></div>
+      </article>
+
+      <article class="chapter reveal">
+        <div class="chapter-copy">
+          <h3>Focus mode, for one thing at a time</h3>
+          <p>Focus mode gives your task the whole page, with a large timer, rain or ocean sounds, and your list at the side. You can keep a small timer above your other tabs, too.</p>
+          <ul class="ticks">
+            <li>Pomodoro or a simple count-up</li>
+            <li>Sounds made in your browser</li>
+            <li>See how long you've focused today</li>
+          </ul>
+          <button type="button" class="pill ghost" data-show="focus"><span>Try focus mode</span><i aria-hidden="true">↑</i></button>
+        </div>
+        <div class="bezel chapter-shot"><div class="bezel-core"><img src="assets/focus.webp" width="2400" height="1500" loading="lazy" alt="Focus mode with a large timer, the current task, sound options and a task list at the side."></div></div>
+      </article>
+
+      <article class="chapter flip reveal">
+        <div class="chapter-copy">
+          <h3>Your tasks from the apps you already use</h3>
+          <p>If your to-do list lives in Todoist, GitHub, Trello or another tool, connect it and your tasks show up on the dashboard. Tick one off here and it's ticked off there, too. Calendars work with any calendar link.</p>
+          <p class="aside">Nordlys connects to each app from your browser. Your sign-in stays on your computer.</p>
+        </div>
+        <div class="bezel chapter-shot narrow"><div class="bezel-core"><img src="assets/connect.webp" width="1000" height="1086" loading="lazy" alt="A list of apps you can connect to Nordlys."></div></div>
+      </article>
+
+      <article class="chapter reveal">
+        <div class="chapter-copy">
+          <h3>Private by default</h3>
+          <p>Nordlys needs no account and tracks nothing. Your bookmarks and settings are kept in your browser. If you turn on sync, it uses your browser's own sync. Weather and icons go online when you ask for them.</p>
+          <ul class="ticks">
+            <li>No account</li>
+            <li>No analytics</li>
+            <li>Open source</li>
+          </ul>
+          <a class="link" href="https://github.com/sa1ntsinner/nordlys-tab/blob/main/PRIVACY.md">Read the privacy policy</a>
+        </div>
+        <div class="bezel chapter-shot"><div class="bezel-core"><img src="assets/theme-light.webp" width="1600" height="1000" loading="lazy" alt="Nordlys with a light colour theme."></div></div>
+      </article>
     </section>
 
     <!-- ── Skies ────────────────────────────────────────────────── -->
     <section class="section" id="skies" aria-labelledby="skies-title">
       <div class="section-head reveal">
-        <p class="eyebrow">Backgrounds</p>
-        <h2 id="skies-title">Nine skies, drawn live</h2>
-        <p class="section-lede">They're capped at 30 frames a second, so they stay light, and they can follow the time of day where you are. Pick one to put it on the demo above.</p>
+        <p class="eyebrow">Looks</p>
+        <h2 id="skies-title">Nine moving skies and 21 colour themes</h2>
+        <p class="section-lede">The skies are drawn live in your browser and can follow the time of day where you are. Choose one to see it in the demo above.</p>
       </div>
       <div class="skies reveal" role="list">
-        <button type="button" class="sky on" role="listitem" data-scene="aurora"><img src="assets/skies/aurora.webp" width="960" height="600" loading="lazy" alt=""><span>Nordlys</span></button>
-        <button type="button" class="sky" role="listitem" data-scene="polaris"><img src="assets/skies/polaris.webp" width="960" height="600" loading="lazy" alt=""><span>Polaris</span></button>
-        <button type="button" class="sky" role="listitem" data-scene="halo"><img src="assets/skies/halo.webp" width="960" height="600" loading="lazy" alt=""><span>Halo</span></button>
-        <button type="button" class="sky" role="listitem" data-scene="pillars"><img src="assets/skies/pillars.webp" width="960" height="600" loading="lazy" alt=""><span>Pillars</span></button>
-        <button type="button" class="sky" role="listitem" data-scene="nacre"><img src="assets/skies/nacre.webp" width="960" height="600" loading="lazy" alt=""><span>Nacre</span></button>
+        <button type="button" class="sky on" role="listitem" data-scene="aurora"><img src="assets/skies/aurora.webp" width="960" height="600" loading="lazy" alt=""><span>Northern lights</span></button>
+        <button type="button" class="sky" role="listitem" data-scene="polaris"><img src="assets/skies/polaris.webp" width="960" height="600" loading="lazy" alt=""><span>Star trails</span></button>
+        <button type="button" class="sky" role="listitem" data-scene="halo"><img src="assets/skies/halo.webp" width="960" height="600" loading="lazy" alt=""><span>Moon halo</span></button>
+        <button type="button" class="sky" role="listitem" data-scene="pillars"><img src="assets/skies/pillars.webp" width="960" height="600" loading="lazy" alt=""><span>Light pillars</span></button>
+        <button type="button" class="sky" role="listitem" data-scene="nacre"><img src="assets/skies/nacre.webp" width="960" height="600" loading="lazy" alt=""><span>Pearl clouds</span></button>
         <button type="button" class="sky" role="listitem" data-scene="silk"><img src="assets/skies/silk.webp" width="960" height="600" loading="lazy" alt=""><span>Silk</span></button>
-        <button type="button" class="sky" role="listitem" data-scene="baikal"><img src="assets/skies/baikal.webp" width="960" height="600" loading="lazy" alt=""><span>Baikal</span></button>
+        <button type="button" class="sky" role="listitem" data-scene="baikal"><img src="assets/skies/baikal.webp" width="960" height="600" loading="lazy" alt=""><span>Lake ice</span></button>
         <button type="button" class="sky" role="listitem" data-scene="drift"><img src="assets/skies/drift.webp" width="960" height="600" loading="lazy" alt=""><span>Contour</span></button>
         <button type="button" class="sky" role="listitem" data-scene="horizon"><img src="assets/skies/horizon.webp" width="960" height="600" loading="lazy" alt=""><span>Fjord</span></button>
       </div>
@@ -266,7 +241,7 @@
     <section class="section" id="tour" aria-labelledby="tour-title">
       <div class="section-head reveal">
         <p class="eyebrow">Tour</p>
-        <h2 id="tour-title">The whole thing in a minute</h2>
+        <h2 id="tour-title">Watch the one-minute tour</h2>
       </div>
       <div class="bezel tour reveal"><div class="bezel-core">
         <video id="tour-video" controls preload="none" playsinline poster="assets/tour-poster.webp" width="1920" height="1080">
@@ -275,45 +250,66 @@
       </div></div>
     </section>
 
-    <!-- ── FAQ ──────────────────────────────────────────────────── -->
+    <!-- ── Free ─────────────────────────────────────────────────── -->
+    <section class="section" id="free" aria-labelledby="free-title">
+      <div class="free reveal">
+        <div>
+          <p class="eyebrow">Price</p>
+          <h2 id="free-title">Everything here is free</h2>
+          <p class="section-lede">Everything that runs on your computer is free, including the dashboard, focus mode, sounds and themes. If a feature ever costs money, it'll be because it needs a paid service, such as server storage.</p>
+        </div>
+        <ul class="free-list">
+          <li>Bookmarks and folders</li>
+          <li>The dashboard and every card</li>
+          <li>Focus mode and sounds</li>
+          <li>Connected apps</li>
+          <li>Skies and themes</li>
+          <li>Profiles and sync</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ── Questions ────────────────────────────────────────────── -->
     <section class="section" id="faq" aria-labelledby="faq-title">
       <div class="section-head reveal">
         <p class="eyebrow">Questions</p>
-        <h2 id="faq-title">The usual ones</h2>
+        <h2 id="faq-title">Things people ask</h2>
       </div>
-      <dl class="faq reveal">
-        <div><dt>Is it free?</dt><dd>Yes, and the code is open under the MIT licence. If you like it there's a Buy me a coffee link in Settings.</dd></div>
-        <div><dt>Is the dashboard free too?</dt><dd>Yes, all of it: focus mode, tasks, habits, sounds, the tab stash and every card. If something ever costs money, it will be something that costs money to run, like storage on a server, never what works on your machine.</dd></div>
-        <div><dt>Do I need an account?</dt><dd>No. Everything is stored in Chrome. Sync, if you turn it on, goes through Chrome's own sync with the Google account you already use.</dd></div>
-        <div><dt>Can I bring my bookmarks?</dt><dd>Yes. On first open it offers to bring in your Chrome bookmarks, and it imports the HTML file any browser exports. A folder can also follow a Chrome bookmark folder.</dd></div>
-        <div><dt>Does it slow Chrome down?</dt><dd>The backgrounds are capped at 30 frames a second, drop further when you're idle and stop when the tab is hidden. Still mode paints one frame and stops.</dd></div>
-        <div><dt>Which browsers?</dt><dd>Chrome, Edge, Brave and other Chromium browsers. A Firefox version is built from the same code and is on its way to Firefox Add-ons; Safari comes after it.</dd></div>
-        <div><dt>What does it send anywhere?</dt><dd>Only what you ask for: an icon search goes to Iconify, and a pasted image link is fetched. The search box sends nothing until you press Enter. <a class="link" href="https://github.com/sa1ntsinner/nordlys-tab/blob/main/PRIVACY.md">Privacy policy</a></dd></div>
-      </dl>
+      <div class="faq reveal">
+        <details><summary>Is it really free?</summary><p>Yes. There are no ads or paid plan, and anyone can read the code. There's a "Buy me a coffee" link in settings if you'd like to help.</p></details>
+        <details><summary>Do I need an account?</summary><p>No. Nordlys keeps your things in your browser. If you turn on sync, it uses your browser's own sync, just as your bookmarks do.</p></details>
+        <details><summary>Can I keep my bookmarks?</summary><p>Yes. Nordlys offers to bring them in the first time you open a new tab. You can also import a bookmarks file from any browser or keep one Nordlys folder in step with a folder of browser bookmarks.</p></details>
+        <details><summary>Will it slow my computer down?</summary><p>It shouldn't. The skies slow down when you're away and stop when the tab is hidden. You can also choose a still background.</p></details>
+        <details><summary>Which browsers does it work in?</summary><p>It works now in Chrome, Edge, Brave, Opera and other browsers built on Chrome. Firefox and Safari (Mac) versions are in store review.</p></details>
+        <details><summary>What does it send over the internet?</summary><p>Only when you use a feature that needs it. Searches go to your chosen search engine, icon lookups to an icon library, and weather requests to a free weather service for your chosen city. <a class="link" href="https://github.com/sa1ntsinner/nordlys-tab/blob/main/PRIVACY.md">The privacy policy</a> lists what's sent.</p></details>
+        <details><summary>Can I get my old new tab back?</summary><p>Yes. Turn Nordlys off or remove it from your browser's extensions page. Your usual new tab will come back.</p></details>
+      </div>
     </section>
 
-    <!-- ── Install ──────────────────────────────────────────────── -->
-    <section class="install" id="install" aria-labelledby="install-title">
+    <!-- ── Get it ───────────────────────────────────────────────── -->
+    <section class="install" id="get" aria-labelledby="get-title">
       <canvas id="bg-canvas" aria-hidden="true"></canvas>
       <div class="install-inner reveal">
-        <p class="eyebrow">Install</p>
-        <h2 id="install-title">Try it on your next new tab</h2>
-        <p class="lede">Free, and it works in Chrome, Edge, Brave and other Chromium browsers.</p>
-        <div class="actions">
-          <a class="pill" href="#" data-store hidden><span>Add to Chrome</span><i aria-hidden="true">↗</i></a>
-          <a class="pill ghost" href="https://github.com/sa1ntsinner/nordlys-tab/archive/refs/heads/main.zip"><span>Download the source</span><i aria-hidden="true">↓</i></a>
+        <p class="eyebrow">Get Nordlys</p>
+        <h2 id="get-title">Try it on your next new tab</h2>
+        <p class="lede">Free, with nothing to sign up for.</p>
+        <div class="stores">
+          <a class="store" data-store="chrome" href="#"><b>Chrome</b><span>and Brave, Opera, Vivaldi</span></a>
+          <a class="store" data-store="edge" href="#"><b>Edge</b><span>Microsoft Edge Add-ons</span></a>
+          <a class="store" data-store="firefox" href="#"><b>Firefox</b><span>Firefox Add-ons</span></a>
+          <a class="store" data-store="safari" href="#"><b>Safari</b><span>on the Mac App Store</span></a>
         </div>
-        <p class="steps">From source: unzip it, open <code>chrome://extensions</code>, turn on Developer mode, then Load unpacked and pick the folder.</p>
       </div>
     </section>
   </main>
 
   <footer class="footer">
-    <p><img src="icon.svg" alt="" width="16" height="16"> Nordlys, MIT licence</p>
+    <p><img src="icon.svg" alt="" width="16" height="16"> Nordlys · open source</p>
     <nav aria-label="Links">
-      <a href="https://github.com/sa1ntsinner/nordlys-tab">GitHub</a>
-      <a href="https://github.com/sa1ntsinner/nordlys-tab/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/sa1ntsinner/nordlys-tab">Source code</a>
+      <a href="https://github.com/sa1ntsinner/nordlys-tab/blob/main/CHANGELOG.md">What's new</a>
       <a href="https://github.com/sa1ntsinner/nordlys-tab/blob/main/PRIVACY.md">Privacy</a>
+      <a href="https://github.com/sa1ntsinner/nordlys-tab/issues">Help and feedback</a>
       <a href="https://buymeacoffee.com/sa1ntsinner">Buy me a coffee</a>
     </nav>
   </footer>

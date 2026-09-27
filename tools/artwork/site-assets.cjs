@@ -21,6 +21,7 @@ const PICTURES = [
   ['sky.png', 'board.webp', 2400],
   ['site-dashboard.png', 'dashboard.webp', 2400],
   ['site-focus.png', 'focus.webp', 2400],
+  ['connect-picker.png', 'connect.webp', 1000],
   ['arrange.png', 'arrange.webp', 1800],
   ['light.png', 'theme-light.webp', 1600],
   ['dark.png', 'theme-dark.webp', 1600],
