@@ -155,7 +155,8 @@ test('a large image used as an icon is stored at icon size', async ({ nordlysPag
   const size = await page.evaluate(src => new Promise(done => { const image = new Image(); image.onload = () => done([image.naturalWidth, image.naturalHeight]); image.src = src; }), stored);
   expect(Math.max(...size)).toBe(256);
   // A budget per icon, not a ratio: a flat test image compresses unusually well.
-  expect(stored.length).toBeLessThan(60000);
+  // PNG, where WebP cannot be encoded (Safari), is allowed twice as much.
+  expect(stored.length).toBeLessThan(stored.startsWith('data:image/png') ? 120000 : 60000);
 });
 
 /* A vector stays a vector — unless it is heavy. An SVG from an address can
