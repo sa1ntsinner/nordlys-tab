@@ -18,7 +18,9 @@
       this._overflow = new NordlysUI.MenuController(root);
       return this._overflow;
     }
-    openOverflow(button, entries, { filterable = false, filterLabel = 'Filter' } = {}) {
+    openOverflow(button, offered, { filterable = false, filterLabel = 'Filter' } = {}) {
+      // An entry a browser cannot offer arrives as null and is left out.
+      const entries = offered.filter(Boolean);
       const menu = this.overflow();
       /* A long list — every folder in a large bookmark tree — gets a filter
          field at the top instead of being cut off. The picker used to stop at
@@ -231,10 +233,10 @@
           { label: group.hidden ? this.text('bookmarks.showOnBoard', 'Show on the board') : this.text('bookmarks.hideFromBoard', 'Hide from the board'), run: () => { group.hidden = !group.hidden; this.save(group.hidden ? this.text('announce.hidden', `${group.label} hidden`, { name: group.label }) : this.text('announce.shown', `${group.label} shown`, { name: group.label })); this.render(); } },
           { label: this.text('bookmarks.moveUp', 'Move up'), disabled: groupIndex === 0, run: () => this.moveFolder(group, -1) },
           { label: this.text('bookmarks.moveDown', 'Move down'), disabled: groupIndex === groups.length - 1, run: () => this.moveFolder(group, 1) },
-          { label: group.source?.folderId
+          window.NordlysBookmarks ? { label: group.source?.folderId
               ? this.text('bookmarks.unlink', 'Stop following the browser')
               : this.text('bookmarks.link', 'Follow a browser folder'),
-            run: () => this.toggleBrowserLink(group) },
+            run: () => this.toggleBrowserLink(group) } : null,
           { label: this.text('bookmarks.deleteFolder', 'Delete folder'), danger: true, run: async () => {
             const ok = await confirmDialog({ title: this.text('confirm.deleteFolderTitle', 'Delete folder?'), message: `${group.label}`, danger: true });
             if (!ok) return;

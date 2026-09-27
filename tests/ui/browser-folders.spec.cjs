@@ -327,3 +327,19 @@ test('a look follows a followed bookmark whose address changes in the browser', 
   expect(first.url).toBe('https://article.test/one-moved');
   expect(first.monogram).toBe('SA');
 });
+
+/* Safari has no bookmarks API for extensions, and its build leaves the
+   permission out. There, nothing offers to follow or bring browser bookmarks. */
+test('where the manifest has no bookmarks permission, nothing offers them', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.addInitScript(() => {
+    if (window.chrome?.runtime) window.chrome.runtime.getManifest = () => ({ permissions: ['storage'], optional_permissions: ['tabs'] });
+  });
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  expect(await page.evaluate(() => window.NordlysBookmarks)).toBeNull();
+  await openManager(page);
+  const menu = await folderMenu(page);
+  await expect(menu.getByRole('menuitem', { name: /Rename/ })).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: /Follow a browser folder/ })).toHaveCount(0);
+});
