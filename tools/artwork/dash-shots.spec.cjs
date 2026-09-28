@@ -110,8 +110,8 @@ scene('connect', async ({ page, origin }) => {
   }));
 });
 
-/* The website's two pictures (site-assets.cjs makes dashboard.webp and
-   focus.webp from them): the dashboard alone, then Focus mode over it. */
+/* The dashboard alone, then Focus mode over it (site-assets.cjs makes the
+   README's dashboard.webp from the first). */
 scene('site', async ({ page }) => {
   await morning(page);
   await page.evaluate(seedDashboard, 'video');

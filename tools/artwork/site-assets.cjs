@@ -16,21 +16,14 @@ const FROM = path.join(ROOT, 'tools/artwork/.scratch');
 const TO = path.join(ROOT, 'site/assets');
 const QUALITY = 0.84;
 
-// [captured frame, published name, width in pixels]
+// [captured frame, published name, width in pixels]. The site shows the
+// board; the README shows all three.
 const PICTURES = [
   ['sky.png', 'board.webp', 2400],
   ['site-dashboard.png', 'dashboard.webp', 2400],
-  ['site-focus.png', 'focus.webp', 2400],
-  ['connect-picker.png', 'connect.webp', 1000],
-  ['arrange.png', 'arrange.webp', 1800],
-  ['light.png', 'theme-light.webp', 1600],
-  ['dark.png', 'theme-dark.webp', 1600],
-  ['extra-calc.png', 'extra-calc.webp', 1100],
-  ['extra-commands.png', 'extra-commands.webp', 1100],
-  ['extra-icons.png', 'extra-icons.webp', 1100],
-  ...SKIES.map(sky => [`sky-${sky.scene}.png`, `skies/${sky.scene}.webp`, 960]),
   ['skies-grid.png', 'skies.webp', 1600]
 ];
+const SKY_FRAMES = SKIES.map(sky => `sky-${sky.scene}.png`);
 
 /* Halves while the picture is still twice the width wanted, then takes the
    last step at once, so a large reduction is filtered and not just sampled. */
@@ -54,8 +47,8 @@ function encode(page, png, width) {
 }
 
 (async () => {
-  for (const [source] of PICTURES) {
-    if (source !== 'skies-grid.png' && !fs.existsSync(path.join(FROM, source))) throw new Error(`${source} is missing: run npm run artwork first`);
+  for (const source of [...PICTURES.map(([frame]) => frame).filter(frame => frame !== 'skies-grid.png'), ...SKY_FRAMES]) {
+    if (!fs.existsSync(path.join(FROM, source))) throw new Error(`${source} is missing: run npm run artwork first`);
   }
   const server = await startStaticServer(ROOT);
   const browser = await chromium.launch();
@@ -63,7 +56,7 @@ function encode(page, png, width) {
     // The nine skies as one picture, laid out like the store's but untitled.
     const sheet = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 2 });
     fs.writeFileSync(path.join(FROM, 'skies-grid.html'), compose.grid({
-      frames: SKIES.map(sky => ({ label: sky.name, image: `/tools/artwork/.scratch/sky-${sky.scene}.png` }))
+      frames: SKIES.map((sky, i) => ({ label: sky.name, image: `/tools/artwork/.scratch/${SKY_FRAMES[i]}` }))
     }));
     await sheet.goto(`${server.origin}/tools/artwork/.scratch/skies-grid.html`);
     await sheet.evaluate(() => Promise.all([document.fonts.ready, ...[...document.images].map(image => image.decode().catch(() => {}))]));
