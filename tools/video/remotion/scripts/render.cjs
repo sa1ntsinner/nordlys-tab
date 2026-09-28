@@ -330,9 +330,17 @@ function sheets(file, cut, name) {
       const master = path.join(OUT, 'app-preview-master.mp4');
       if (!has('skip-render')) render('AppPreview', master, edit.appPreview);
       const ap = path.join(OUT, 'app-preview-1080p30.mp4');
-      ff(['-y', '-loglevel', 'error', '-i', master, '-vf', 'fps=30,scale=1920:1080:flags=lanczos,format=yuv420p', '-c:v', 'libx264', '-preset', 'slow', '-profile:v', 'high', '-level:v', '4.0',
-        '-b:v', '11M', '-maxrate', '12M', '-bufsize', '24M', '-x264-params', 'nal-hrd=vbr', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709',
-        '-c:a', 'aac', '-b:a', '256k', '-ar', '48000', '-ac', '2', '-movflags', '+faststart', ap]);
+      /* Two passes, so it averages Apple's target of 10-12 Mb/s (one pass left simple pictures
+         under it); the sound from the soundtrack itself, encoded once (transcoded from the
+         master's AAC, its true peak rose over -1 dBTP). */
+      const plog = path.join(OUT, 'app-preview-pass');
+      for (const pass of [1, 2]) {
+        ff(['-y', '-loglevel', 'error', '-i', master, '-i', path.join(HERE, 'public', edit.appPreview.audio), '-map', '0:v:0', ...(pass === 2 ? ['-map', '1:a:0'] : []), '-t', String(edit.appPreview.frames / FPS),
+          '-vf', 'fps=30,scale=1920:1080:flags=lanczos,format=yuv420p', '-c:v', 'libx264', '-preset', 'slow', '-profile:v', 'high', '-level:v', '4.0',
+          '-b:v', '11M', '-maxrate', '12M', '-bufsize', '24M', '-pass', String(pass), '-passlogfile', plog, '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709',
+          ...(pass === 1 ? ['-an', '-f', 'mp4', process.platform === 'win32' ? 'NUL' : '/dev/null'] : ['-c:a', 'aac', '-b:a', '256k', '-ar', '48000', '-ac', '2', '-movflags', '+faststart', ap])]);
+      }
+      for (const f of fs.readdirSync(OUT)) if (f.startsWith('app-preview-pass')) fs.rmSync(path.join(OUT, f));
       files.push(['app-preview-master', master, edit.appPreview]);
       files.push(['app-preview', ap, edit.appPreview, 30]);
     }

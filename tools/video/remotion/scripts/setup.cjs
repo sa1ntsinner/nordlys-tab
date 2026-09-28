@@ -30,8 +30,9 @@ const bar = (n) => map.downbeats[0] + n * map.bar;
    LUFS integrated and +0.5 dBTP: -3.7 dB brings it to -14 LUFS, the true peak
    near -3 dBTP. The app preview is quieter for its length (the held chord at
    the start, the ringing end), and its loudest moment, the final hit, sets
-   how far it can go and stay under -1 dBTP. */
-const GAIN_DB = { youtube: -3.7, 'app-preview': -1.4 };
+   how far it can go and stay under -1 dBTP in its AAC file: -1.6 dB, about
+   -14.8 LUFS. */
+const GAIN_DB = { youtube: -3.7, 'app-preview': -1.6 };
 
 /* Each cut's soundtrack: pieces of the track, joined on bar lines with a 10 ms
    crossfade centred on the line (each piece runs 5 ms past its bar line into
