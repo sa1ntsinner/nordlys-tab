@@ -214,6 +214,48 @@ No build step: every file in the package is the source as written. There is no r
 
 Built on a Mac: `npm run ports safari`, then `xcrun safari-web-extension-converter dist/safari --app-name Nordlys --bundle-identifier io.github.sa1ntsinner.nordlys`. Safari has no search API for extensions, so the Safari build asks for a search engine once in Settings → General. Say so in the App Store text. Safari has no favicon cache for extensions and no sign-in window API, so Google and Microsoft connections show "Soon" there.
 
+### Notes for App Review
+
+App Review asked for these on 2.5.1 (Guideline 2.1, "Information Needed", for
+a new developer account). They are in the version's App Review Information
+notes, and go in the reply with a screen recording made on a Mac: launching
+the app, turning the extension on in Safari, then a new tab and its main
+features.
+
+```text
+Nordlys is a Safari web extension that replaces the new tab page. The Mac app is its container: it installs the extension and shows how to turn it on. There is no account, no sign-in, no purchase, and nothing users make is shared with others.
+
+1. Screen recording: attached to our reply in App Store Connect.
+
+2. Purpose and audience
+Nordlys is for everyday Mac users who open many tabs a day. Each new tab shows their favourite sites in folders over an animated sky, with a search box, and, if they turn it on, a dashboard for the day: tasks, habits, notes, world clocks, a countdown, weather and a focus timer. It saves the time of finding the sites they use most and keeps the day's tasks in view, without an account and without tracking. It is free and open source: https://github.com/sa1ntsinner/nordlys-tab
+
+3. Setup and main features
+a. Open Nordlys from the Applications folder. Its window says whether the extension is on and has one button, "Quit and Open Safari Settings...".
+b. In Safari Settings > Extensions, tick Nordlys.
+c. Open a new window or tab (Command-N or Command-T). Nordlys shows its page. If Safari still shows its own start page, choose Nordlys under Safari Settings > General > "New windows open with" and "New tabs open with".
+d. Main features: add sites to folders, drag tiles and folders to arrange them, search from the box at the top, and open Settings with the gear at the bottom right (skies, colour themes, languages). The dashboard is off by default: turn it on in Settings > Dashboard, and start Focus mode from its timer card.
+No login or sample files are needed.
+
+4. External services
+Nordlys has no server of its own, and no analytics or ads. It makes a request only when the user uses a feature that needs one:
+- Search: the search engine the user picks in Settings > General.
+- Weather card: Open-Meteo (api.open-meteo.com and geocoding-api.open-meteo.com), for the city the user chooses. No key or account.
+- Icon search: Iconify's public API (api.iconify.design), only when the user searches for an icon; images.weserv.nl, only to load an icon image address the user pasted.
+- Connected apps (optional, off by default): Todoist, GitHub, GitLab, Trello, Asana, ClickUp, Linear, Jira, Notion, or a calendar link (ICS), with a token the user enters. The token stays on the Mac.
+- Ask card (optional, off by default): sends the user's question to the AI provider the user sets up with their own API key (OpenAI, Anthropic, Google Gemini, OpenRouter, or a server they name), or to a model running on their own Mac (Ollama). Nothing is sent until the user adds a provider and asks a question.
+The privacy policy lists all of it: https://github.com/sa1ntsinner/nordlys-tab/blob/main/PRIVACY.md
+
+5. Regions
+The app works the same in all regions. Its interface is in English, Russian, Spanish, German, French, Japanese, Chinese and Turkish.
+
+6. Regulated industries and third-party material
+Not applicable: Nordlys is not in a regulated industry and includes no protected third-party material.
+```
+
+The App Store preview is `docs/video/app-preview-1080p30.mp4`, the film's
+28-second cut. Its end card leaves out the line that names other browsers.
+
 ## Artwork
 
 Run `npm run artwork` to capture the extension for `docs/store-assets/`, the
