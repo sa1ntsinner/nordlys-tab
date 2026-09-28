@@ -63,14 +63,16 @@ for s in cut['shots']:
 
 # Frames where words come in or go out, and shots that are not one camera over one plate (the
 # page as a tilted window, the grid of tiles): no shimmer is judged there, the motion is the content's.
-words = set()
-for w in cut.get('captions', []) + cut.get('cards', []):
-    if 'untilFrame' in w:
-        words.update(range(w['frame'] - 8, w['frame'] + 48)); words.update(range(w['untilFrame'] - 30, w['untilFrame'] + 2))
-if cut.get('cards'):
-    for c in cut['cards']:
-        if c['card'] in ('title', 'end'):  # the name tightens in over two seconds
-            words.update(range(c['frame'], c['frame'] + 130))
+# The cards (the title, the statement, the end card) fill the frame with moving words, so a
+# camera fit is not judged while they come in or go out; the small captions only keep the
+# shimmer check off their own coming and going.
+words, captions = set(), set()
+for c in cut.get('cards', []):
+    words.update(range(c['frame'] - 8, c['frame'] + (130 if c['card'] in ('title', 'end') else 48)))
+    words.update(range(c['untilFrame'] - 36, c['untilFrame'] + 2))
+for c in cut.get('captions', []):
+    if 'untilFrame' in c:
+        captions.update(range(c['frame'] - 8, c['frame'] + 48)); captions.update(range(c['untilFrame'] - 30, c['untilFrame'] + 2))
 not_one_camera = {s['shot'] for s in cut['shots'] if s.get('kind') in ('window', 'grid')}
 words.update(range(cut['frames'] - 26, cut['frames'] + 1))  # the fade to black at the end
 # Where a camera moves (the edit map says, from the edit's keys and the plates whose page camera
@@ -204,7 +206,7 @@ for idx, s in enumerate(cut['shots']):
     # A run of 12 slow frames (0.2 s) whose median jitter is over the limit: a few stray frames
     # (a live sky moving on its own, words coming in) are not shimmer.
     speed = np.maximum(zspeed[sel], both)
-    ks = [k for k in range(len(rs)) if slow[k] and not np.isnan(rs[k]) and (camera_moves is None or fr[k] in camera_moves)]
+    ks = [k for k in range(len(rs)) if slow[k] and not np.isnan(rs[k]) and fr[k] not in captions and (camera_moves is None or fr[k] in camera_moves)]
     hot = sorted({fr[k] for i in range(len(ks) - 11) if fr[ks[i + 11]] - fr[ks[i]] <= 20
                   and np.median(rs[ks[i:i + 12]]) > shimmer_limit(np.median(speed[ks[i:i + 12]])) for k in ks[i:i + 12]})
     per_shot.append({'shot': s['shot'], 'slowFrames': int(slow.sum()), 'jitterMoving': round(float(np.median(moving)), 3) if len(moving) else None,
