@@ -42,7 +42,7 @@ export const Film: React.FC<{ cut: Cut; plates: Plates; dir: string }> = ({ cut,
         {cut.captions.map((c, i) => <CaptionView key={`c${i}`} c={c} />)}
         {cut.cards.map((card, i) =>
           card.kind === 'title' ? <TitleView key={`k${i}`} from={card.from} to={card.to} />
-            : card.kind === 'end' ? <EndView key={`k${i}`} from={card.from} to={card.to} tags={card.tags} />
+            : card.kind === 'end' ? <EndView key={`k${i}`} from={card.from} to={card.to} tags={card.tags} browsers={card.browsers !== false} />
               : <StatementView key={`k${i}`} from={card.from} to={card.to} lines={card.lines} beats={card.beats} />)}
         <FadeOut from={cut.frames - 24} to={cut.frames} />
         <Audio src={staticFile(cut.audio)} />

@@ -69,7 +69,8 @@ function excerpt(cut: Cut): Cut {
       if (c.to <= A || c.from >= B) continue;
       const span = { from: c.from + d, to: Math.min(c.to, B) + d };
       if (c.kind === 'title') cards.push({ ...c, ...span });
-      else if (c.kind === 'end') cards.push({ ...c, ...span, tags: c.tags.map((f) => f + d) });
+      // The Mac App Store is Safari's own, and App Review asks that no other platform be named there.
+      else if (c.kind === 'end') cards.push({ ...c, ...span, tags: c.tags.map((f) => f + d), browsers: false });
       else cards.push({ ...c, ...span, beats: c.beats.map((f) => f + d) });
     }
     // An accent a few frames before a moment belongs to its first hit (a light leak starts early).

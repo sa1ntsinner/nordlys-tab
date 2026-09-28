@@ -57,7 +57,8 @@ export type Caption = {
 
 export type Card =
   | { kind: 'title'; from: number; to: number }
-  | { kind: 'end'; from: number; to: number; tags: number[] }
+  // browsers: false leaves out the line that names the browsers.
+  | { kind: 'end'; from: number; to: number; tags: number[]; browsers?: boolean }
   | { kind: 'statement'; from: number; to: number; lines: string[]; beats: number[] };
 
 export type Accent =

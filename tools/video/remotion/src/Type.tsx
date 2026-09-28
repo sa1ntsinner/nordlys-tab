@@ -144,7 +144,7 @@ export const StatementView: React.FC<{ from: number; to: number; lines: string[]
 };
 
 // The name again on the hit, where to get it, and what it is.
-export const EndView: React.FC<{ from: number; to: number; tags: number[] }> = ({ from, to, tags }) => {
+export const EndView: React.FC<{ from: number; to: number; tags: number[]; browsers?: boolean }> = ({ from, to, tags, browsers = true }) => {
   const f = useCurrentFrame();
   if (f < from - 8 || f > to + 2) return null;
   // Readable within a fifth of a second of the hit; the letters go on closing up for a second more.
@@ -158,8 +158,8 @@ export const EndView: React.FC<{ from: number; to: number; tags: number[] }> = (
       <div style={{ textAlign: 'center', color: '#f5f7fb' }}>
         <Img src={staticFile('icon.svg')} style={{ width: 190, height: 190, display: 'block', margin: '0 auto 60px', ...arrive(f, from, to + 999, 0.3) }} />
         <div style={{ font: '500 320px/1 Outfit', letterSpacing: `${0.06 - 0.105 * t}em`, marginRight: `${0.06 - 0.105 * t}em`, opacity: seen, filter: seen < 0.98 ? `blur(${(1 - seen) * 18}px)` : undefined }}>Nordlys</div>
-        <div style={{ marginTop: 64, ...line, ...arrive(f, from + 20, to + 999, 0.4) }}>For Chrome, Edge, Firefox and Safari</div>
-        <div style={{ marginTop: 18, ...line, ...arrive(f, tags[0] ?? from + 60, to + 999, 0.4) }}>Free and open source. No account.</div>
+        {browsers ? <div style={{ marginTop: 64, ...line, ...arrive(f, from + 20, to + 999, 0.4) }}>For Chrome, Edge, Firefox and Safari</div> : null}
+        <div style={{ marginTop: browsers ? 18 : 64, ...line, ...arrive(f, tags[0] ?? from + 60, to + 999, 0.4) }}>Free and open source. No account.</div>
       </div>
     </AbsoluteFill>
   );
