@@ -96,7 +96,9 @@ def motion(prev, cur):
         ok = st.ravel() == 1
         if ok.sum() >= 30:
             m, inl = cv2.estimateAffinePartial2D(pts[ok], nxt[ok], method=cv2.RANSAC, ransacReprojThreshold=0.6, maxIters=3000, confidence=0.998)
-            if m is not None and inl.sum() >= max(30, 0.35 * ok.sum()):
+            # Most points must agree: in a fast move the page blurs, and the few points left may
+            # be on something that does not move with it (a caption), which would read as still.
+            if m is not None and inl.sum() >= max(30, 0.5 * ok.sum()):
                 return m.astype(np.float32), 'points', int(inl.sum())
     a, b = (cv2.GaussianBlur(x.astype(np.float32) / 255, (0, 0), 1.2) for x in (prev, cur))
     (dx, dy), _ = cv2.phaseCorrelate(a, b)
