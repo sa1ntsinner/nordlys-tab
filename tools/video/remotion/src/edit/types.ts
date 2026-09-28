@@ -1,7 +1,7 @@
 /* What an edit is made of. Every time is a frame of the film (60 fps),
    written in the edit files through the music's bars and beats. */
 
-export type Ease = 'linear' | 'in' | 'out' | 'inOut' | 'punch' | 'soft' | 'glide' | 'accel' | 'settle';
+export type Ease = 'linear' | 'in' | 'out' | 'inOut' | 'soft' | 'land' | 'fly';
 
 /* The camera over a plate: where it looks (x, y: the plate's centre is 0.5,
    0.5) and how close (z: 1 fills the frame with the whole plate). A key is
@@ -34,7 +34,7 @@ export type Shot = {
   light?: boolean;        // a light theme: the words over it are dark
   grade?: { brightness?: number; contrast?: number; saturate?: number }; // a gentle grade (the sky at night is dark)
   window?: { keys: WindowKey[]; backdrop: string; backdropTau?: number; backdropCam?: Key[] };
-  grid?: { plates: string[]; cols: number; rows: number; appear: number[]; into: number; zoomFrom: number; zoomTo: number };
+  grid?: { plates: string[]; cols: number; rows: number; appear: number[]; into?: number; zoomFrom?: number; zoomTo?: number };
   // A focus pull: everything but a box goes soft, then sharp again.
   pull?: { from: number; to: number; x: number; y: number; w: number; h: number; blur: number };
   // A veil: the top of the plate goes soft, sharp at y0 and fully soft from y1 up (the clock, under a caption in the top corner).

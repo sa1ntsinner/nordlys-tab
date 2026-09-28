@@ -28,29 +28,32 @@ const map = require(path.join(REPO, 'docs/video/music/ramp-it-up.json'));
 const bar = (n) => map.downbeats[0] + n * map.bar;
 /* One static gain per cut (no compression). The YouTube cut measured -10.3
    LUFS integrated and +0.5 dBTP: -3.7 dB brings it to -14 LUFS, the true peak
-   near -3 dBTP. The store cut is quieter for its length (the held chord at
-   the start, the ringing end): -1.4 dB brings it to about -14.9 LUFS with the
-   true peak near -1.3 dBTP, as loud as it can go and stay under -1 dBTP. */
-const GAIN_DB = { youtube: -3.7, store: -1.4 };
+   near -3 dBTP. The app preview is quieter for its length (the held chord at
+   the start, the ringing end), and its loudest moment, the final hit, sets
+   how far it can go and stay under -1 dBTP. */
+const GAIN_DB = { youtube: -3.7, 'app-preview': -1.4 };
 
-/* Each cut's soundtrack: pieces of the track, joined on bar lines with a
-   10 ms crossfade, then the fades. The store cut goes from the build of the
-   first drop (bar 15) straight to the last bar's final hit (bar 48): the
-   riser of bar 15 lands on the hit instead of on bar 16. */
+/* Each cut's soundtrack: pieces of the track, joined on bar lines with a 10 ms
+   crossfade centred on the line (each piece runs 5 ms past its bar line into
+   the next), so that no piece moves against the picture; then the fades. The
+   app preview (src/edit/preview.ts, MUSIC) goes from the rising tone of bars
+   14-15 straight to the last bar's final hit (bar 48): the rise lands on the
+   hit instead of on bar 16. */
 const CUTS = {
   youtube: { pieces: [[3, 50]], fadeIn: 0.8, fadeOut: 1.5 },
-  store: { pieces: [[5, 16], [48, 50.25]], fadeIn: 0.5, fadeOut: 1.2 }
+  'app-preview': { pieces: require('./edit-data.cjs')().appPreviewMusic, fadeIn: 0.5, fadeOut: 1.2 }
 };
+const HALF = 0.005; // half the crossfade
 
 function soundtrack(name, { pieces, fadeIn, fadeOut }) {
   const out = path.join(PUBLIC, 'music', `${name}.wav`);
-  const inputs = pieces.map(([a, b], i) => `[0:a]atrim=start=${bar(a).toFixed(6)}:end=${bar(b).toFixed(6)},asetpts=PTS-STARTPTS[p${i}]`);
+  const inputs = pieces.map(([a, b], i) => `[0:a]atrim=start=${(bar(a) - (i > 0 ? HALF : 0)).toFixed(6)}:end=${(bar(b) + (i < pieces.length - 1 ? HALF : 0)).toFixed(6)},asetpts=PTS-STARTPTS[p${i}]`);
   let chain = '[p0]';
   for (let i = 1; i < pieces.length; i++) {
     inputs.push(`${chain}[p${i}]acrossfade=d=0.01:c1=tri:c2=tri[j${i}]`);
     chain = `[j${i}]`;
   }
-  const seconds = pieces.reduce((sum, [a, b]) => sum + (b - a) * map.bar, 0) - 0.01 * (pieces.length - 1);
+  const seconds = pieces.reduce((sum, [a, b]) => sum + (b - a) * map.bar, 0);
   const filter = `${inputs.join(';')};${chain}afade=t=in:d=${fadeIn},afade=t=out:st=${(seconds - fadeOut).toFixed(4)}:d=${fadeOut},volume=${GAIN_DB[name]}dB[out]`;
   execFileSync(FFMPEG, ['-y', '-hide_banner', '-loglevel', 'error', '-i', TRACK, '-filter_complex', filter, '-map', '[out]', '-ar', '48000', '-c:a', 'pcm_s24le', out]);
   console.log(`music/${name}.wav: ${seconds.toFixed(3)} s`);

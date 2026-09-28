@@ -4,7 +4,7 @@ const edit = require('./edit-data.cjs')();
 const FR = { cut: 0, whip: 14, whipUp: 14, zoom: 18, iris: 24, wipe: 20, fade: 20 };
 const tf = (t) => (t ? t.frames ?? FR[t.type] ?? 0 : 0);
 const need = {};
-for (const cut of [edit.youtube, edit.store]) {
+for (const cut of [edit.youtube, edit.appPreview]) {
   cut.shots.forEach((s, i) => {
     const next = cut.shots[i + 1];
     const pre = s.enter && s.enter.type !== 'cut' ? Math.ceil(tf(s.enter) / 2) : 0;

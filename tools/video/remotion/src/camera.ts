@@ -9,14 +9,13 @@ export const EASE: Record<Ease, (t: number) => number> = {
   linear: Easing.linear,
   in: Easing.bezier(0.55, 0, 1, 0.45),
   out: Easing.bezier(0, 0.55, 0.45, 1),
+  // Every camera move: a gentle start and a long, soft tail, no overshoot.
   inOut: Easing.bezier(0.45, 0, 0.2, 1),
-  // A punch-in: nearly all of the move in the first frames, then a long settle.
-  punch: Easing.bezier(0.16, 1, 0.3, 1),
   soft: Easing.bezier(0.33, 0, 0.2, 1),
-  glide: Easing.bezier(0.25, 0.1, 0.25, 1),
-  // Speeding up all the way into the end: for moves that land on a hit.
-  accel: Easing.bezier(0.7, 0, 0.92, 0.45),
-  settle: Easing.spring({ damping: 200 }),
+  // Gathering speed, then landing softly at the end: for a move that must be at rest by a hit.
+  land: Easing.bezier(0.7, 0, 0.4, 1),
+  // Gathering speed all the way into a zoom cut, which carries it on.
+  fly: Easing.bezier(0.55, 0, 0.8, 0.5),
 };
 
 export const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
@@ -31,22 +30,31 @@ const inside = ({ x, y, z }: Pose): Pose => {
   return { x: Math.min(1 - h, Math.max(h, x)), y: Math.min(1 - h, Math.max(h, y)), z };
 };
 
+/* A move from one pose to the next. When the zoom changes, it zooms about the
+   one point of the plate that sits at the same place on screen in both poses,
+   so the subject stays put and the frame does not drift or swing; the zoom
+   runs in log space (the same speed whatever the zoom). A pan at one zoom is a
+   straight line. If both poses are inside the plate, every pose between them
+   is too, so the clamp never kinks a move. */
+const between = (a: Pose, b: Pose, p: number): Pose => {
+  const lz = Math.log(b.z / a.z);
+  const z = a.z * Math.exp(lz * p);
+  if (Math.abs(lz) < 1e-4) return { x: a.x + (b.x - a.x) * p, y: a.y + (b.y - a.y) * p, z };
+  const px = (b.x * b.z - a.x * a.z) / (b.z - a.z), py = (b.y * b.z - a.y * a.z) / (b.z - a.z);
+  return { x: px - ((px - a.x) * a.z) / z, y: py - ((py - a.y) * a.z) / z, z };
+};
+
 export const camAt = (keys: Key[] | undefined, f: number): Pose => {
   const ks = keys && keys.length ? keys : [{ f: 0 }];
-  let prev = { f: ks[0].f, x: ks[0].x ?? 0.5, y: ks[0].y ?? 0.5, z: ks[0].z ?? 1 };
-  if (f <= prev.f) return inside(prev);
+  let prev = inside({ x: ks[0].x ?? 0.5, y: ks[0].y ?? 0.5, z: ks[0].z ?? 1 });
+  if (f <= ks[0].f) return prev;
   for (let i = 1; i < ks.length; i++) {
     const k = ks[i];
-    const next = { f: k.f, x: k.x ?? prev.x, y: k.y ?? prev.y, z: k.z ?? prev.z };
-    if (f <= next.f) {
-      const p = EASE[k.ease ?? 'inOut'](clamp01((f - prev.f) / Math.max(1e-6, next.f - prev.f)));
-      // Zoom in log space: the same speed whatever the zoom.
-      const z = Math.exp(Math.log(prev.z) + (Math.log(next.z) - Math.log(prev.z)) * p);
-      return inside({ x: prev.x + (next.x - prev.x) * p, y: prev.y + (next.y - prev.y) * p, z });
-    }
+    const next = inside({ x: k.x ?? prev.x, y: k.y ?? prev.y, z: k.z ?? prev.z });
+    if (f <= k.f) return inside(between(prev, next, EASE[k.ease ?? 'inOut'](clamp01((f - ks[i - 1].f) / Math.max(1e-6, k.f - ks[i - 1].f)))));
     prev = next;
   }
-  return inside(prev);
+  return prev;
 };
 
 export const windowAt = (keys: WindowKey[], f: number): WindowKey => {
@@ -93,7 +101,7 @@ const moveOf = (t: Transition, p: number, side: 'in' | 'out'): Move => {
     case 'zoom':
       return side === 'out'
         ? { ...still, zMul: 1 + 2.4 * EASE.in(clamp01(p)), opacity: 1 - smooth(0.47, 0.55, p) }
-        : { ...still, zMul: 1.9 - 0.9 * EASE.out(clamp01(p)), opacity: smooth(0.45, 0.53, p) };
+        : { ...still, zMul: 1.6 - 0.6 * EASE.out(clamp01(p)), opacity: smooth(0.45, 0.53, p) };
     case 'iris': {
       if (side === 'out') return still;
       const [ax, ay] = t.at ?? [0.5, 0.5];
@@ -107,7 +115,7 @@ const moveOf = (t: Transition, p: number, side: 'in' | 'out'): Move => {
       return { ...still, mask: `linear-gradient(90deg, #000 ${(x - 0.05) * 100}%, transparent ${x * 100}%)` };
     }
     case 'fade':
-      return side === 'out' ? still : { ...still, opacity: EASE.inOut(clamp01(p)) };
+      return side === 'out' ? still : { ...still, opacity: (1 - Math.cos(Math.PI * clamp01(p))) / 2 };
     default:
       return still;
   }

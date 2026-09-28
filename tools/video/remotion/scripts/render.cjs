@@ -1,22 +1,25 @@
-/* Renders the films and what ships with them, and checks them.
+/* Renders the film and what ships with it, and checks them.
 
-   node scripts/render.cjs [--out dir] [--plates plates] [--only youtube|store] [--preview]
+   node scripts/render.cjs [--out dir] [--plates plates] [--only youtube|app-preview] [--preview]
                            [--skip-render] [--concurrency 4] [--maps-only]
 
    Into --out (default out/):
-     nordlys-youtube-4k.mp4    3840 x 2160, 60 fps, H.264 High (x264 slow, CRF 16), AAC 320 kb/s, faststart
-     nordlys-store-4k.mp4      the store cut, the same
-     nordlys-store-1080.mp4    the store cut at 1920 x 1080
-     tour.mp4                  the YouTube cut at 1920 x 1080 for the website, under 15 MB (two-pass)
-     tour-poster.webp          its poster frame for the website
+     nordlys-4k.mp4            the film: 3840 x 2160, 60 fps, H.264 High (x264 slow, CRF 16), AAC 320 kb/s,
+                               faststart; for YouTube, which the Chrome and Edge listings link to
+     tour.mp4                  the same film at 1920 x 1080 for the website, under 15 MB (two-pass)
+     tour-poster.webp          its poster, a clean frame with no words
+     app-preview-1080p30.mp4   the Mac App Store preview: the film's 28-second cut (src/edit/preview.ts),
+                               1920 x 1080, 30 fps, H.264 High 4.0, AAC 256 kb/s 48 kHz stereo
      thumbnail.png             the YouTube thumbnail, 1280 x 720, from a clean frame of a plate
      sheets/                   contact sheets: around every cut (a quarter second before, just after,
                                0.3 s after) and the middle of every shot
      edit-map.json, edit-map.md  every shot and caption with its frame, its time, and the bar and beat
                                of the track it lands on (and how far from the beat grid)
-     checks.txt                a full decode of every file, and loudness (target about -14 LUFS
-                               integrated, true peak at most -1 dBTP)
-   --preview renders the YouTube cut at half size to preview.mp4 and checks only that.
+     shake-*.json              the shake measurement of each cut (tools/video/shake.py)
+     checks.txt                for every file: its format, frames against the edit, faststart, a full
+                               decode, loudness (about -14 LUFS integrated, true peak at most -1 dBTP),
+                               the music against the soundtrack, and the shake measurement
+   --preview renders both cuts at half size (preview.mp4, preview-app.mp4) and checks those.
    --maps-only writes the edit map and the music map, and renders nothing. */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -72,15 +75,14 @@ function mux(video, cut, file) {
 
 /* ── The edit map: where every shot and word lands in the music ── */
 function editMap(cut, startSeconds, pieces) {
-  /* The track's time of a film frame: the soundtrack is pieces of the track, joined
-     with a 10 ms crossfade. A frame within half a frame of a join is the next
-     piece's (the cut onto the final hit is on the frame nearest that hit). */
+  /* The track's time of a film frame: the soundtrack is pieces of the track, each
+     join centred exactly on its bar line (setup.cjs). */
   const trackTime = (f) => {
     let t = f / FPS;
     for (const [i, [a, b]] of pieces.entries()) {
       const len = (b - a) * BAR;
-      if (i === pieces.length - 1 || t < len - 0.01 - 0.5 / FPS) return map.downbeats[0] + a * BAR + t;
-      t -= len - 0.01;
+      if (i === pieces.length - 1 || t < len - 0.5 / FPS) return map.downbeats[0] + a * BAR + t;
+      t -= len;
     }
     return NaN;
   };
@@ -101,7 +103,21 @@ function editMap(cut, startSeconds, pieces) {
     const on = [place, groove, ...cues, ...new Set(swells)].filter(Boolean).join(', ');
     return { film: +(f / FPS).toFixed(3), frame: f, track: +t.toFixed(3), bar, beat, offMs: +off.toFixed(1), on };
   };
-  const shots = cut.shots.map((s) => ({ shot: s.name, plate: s.plate, arrives: s.enter?.type ?? 'cut', ...where(s.from), seconds: +((s.to - s.from) / FPS).toFixed(2) }));
+  const FR = { cut: 0, whip: 14, whipUp: 14, zoom: 18, iris: 24, wipe: 20, fade: 20 }; // src/camera.ts
+  /* Where a shot's camera moves, for the shake measurement: between two of the edit's keys
+     that differ, and all through a plate whose page camera moves (the film's plates say so). */
+  const pageCamera = new Set(require('../../films/ramp-it-up.cjs').plates({}).filter((p) => p.camera === 'page').map((p) => p.name));
+  const moving = (s) => {
+    if (pageCamera.has(s.plate)) return [[s.from, s.to]];
+    const ks = s.cam ?? [];
+    const spans = [];
+    for (let i = 1; i < ks.length; i++) {
+      const a = ks[i - 1], b = ks[i];
+      if ((b.x ?? a.x) !== a.x || (b.y ?? a.y) !== a.y || (b.z ?? a.z) !== a.z) spans.push([Math.max(s.from, a.f), Math.min(s.to, b.f)]);
+    }
+    return spans.filter(([a, b]) => b > a);
+  };
+  const shots = cut.shots.map((s) => ({ shot: s.name, plate: s.plate, arrives: s.enter?.type ?? 'cut', transitionFrames: s.enter ? s.enter.frames ?? FR[s.enter.type] ?? 0 : 0, kind: s.window ? 'window' : s.grid ? 'grid' : 'plate', moving: moving(s), ...where(s.from), seconds: +((s.to - s.from) / FPS).toFixed(2) }));
   /* What happens inside the plates (a key pressed, a click), where it lands in the
      film: the plate's script marked the plate time, the shot maps plate time to frames. */
   const plates = loadIndex();
@@ -114,14 +130,15 @@ function editMap(cut, startSeconds, pieces) {
       if (f >= s.from && f < s.to) actions.push({ shot: s.name, action: mark, ...where(f) });
     }
   }
-  const captions = cut.captions.map((c) => ({ text: c.text, ...where(c.from), until: +(c.to / FPS).toFixed(2) }));
+  const captions = cut.captions.map((c) => ({ text: c.text, ...where(c.from), until: +(c.to / FPS).toFixed(2), untilFrame: c.to }));
+  const cards = cut.cards.map((c) => ({ card: c.kind, frame: c.from, untilFrame: c.to }));
   const accents = cut.accents.map((a) => {
     // A light leak starts a few frames early, so its light is already coming in on the hit.
     const hit = a.kind === 'leak' && cut.accents.find((b) => b.kind === 'flash' && b.f >= a.f && b.f - a.f <= 12);
     const h = hit && where(hit.f);
     return { accent: a.kind, ...where(a.f), ...(h ? { on: `starts ${hit.f - a.f} frames before the flash on ${h.bar}.${h.beat}` } : {}) };
   });
-  return { cut: cut.name, frames: cut.frames, seconds: +(cut.frames / FPS).toFixed(3), soundtrack: pieces.map(([a, b]) => `track bars ${a}-${b}`).join(', then '), shots, actions, captions, accents };
+  return { cut: cut.name, frames: cut.frames, seconds: +(cut.frames / FPS).toFixed(3), soundtrack: pieces.map(([a, b]) => `track bars ${a}-${b}`).join(', then '), shots, actions, captions, cards, accents };
 }
 
 /* ── The music map, to read: the grid, the cues the edit is cut to, and every
@@ -147,7 +164,7 @@ function writeMusicMap() {
 }
 
 function writeEditMaps() {
-  const maps = [editMap(edit.youtube, 0, [[3, 50]]), editMap(edit.store, 0, [[5, 16], [48, 50.25]])];
+  const maps = [editMap(edit.youtube, 0, [[3, 50]]), editMap(edit.appPreview, 0, edit.appPreviewMusic)];
   fs.writeFileSync(path.join(OUT, 'edit-map.json'), JSON.stringify(maps, null, 1));
   const md = ['# Edit map', '', 'Where every shot, word and accent of the films lands in "Ramp It Up" (120 bpm; bar 0 is the track\'s first downbeat, 0.112 s in). "off" is the distance of the frame from the sixteenth-note grid, in ms (a frame is 16.7 ms).', ''];
   for (const m of maps) {
@@ -270,20 +287,21 @@ function sheets(file, cut, name) {
   if (has('maps-only')) return;
   for (const m of maps) note(`${m.cut}: ${m.shots.length} shots, largest cut distance from the grid ${Math.max(...m.shots.map((s) => Math.abs(s.offMs))).toFixed(1)} ms`);
   const files = [];
+  const want = (name) => !ONLY || ONLY === name;
   if (PREVIEW) {
-    if (!ONLY || ONLY === 'youtube') {
+    if (want('youtube')) {
       const file = path.join(OUT, 'preview.mp4');
       if (!has('skip-render')) render('YouTube', file, edit.youtube, ['--scale=0.5']);
       files.push(['preview', file, edit.youtube]);
     }
-    if (!ONLY || ONLY === 'store') {
-      const file = path.join(OUT, 'preview-store.mp4');
-      if (!has('skip-render')) render('Store', file, edit.store, ['--scale=0.5']);
-      files.push(['preview-store', file, edit.store]);
+    if (want('app-preview')) {
+      const file = path.join(OUT, 'preview-app.mp4');
+      if (!has('skip-render')) render('AppPreview', file, edit.appPreview, ['--scale=0.5']);
+      files.push(['preview-app', file, edit.appPreview]);
     }
   } else {
-    if (!ONLY || ONLY === 'youtube') {
-      const yt = path.join(OUT, 'nordlys-youtube-4k.mp4');
+    if (want('youtube')) {
+      const yt = path.join(OUT, 'nordlys-4k.mp4');
       if (!has('skip-render')) render('YouTube', yt, edit.youtube);
       files.push(['youtube', yt, edit.youtube]);
       /* The tour on the website: the same cut at 1080, two-pass, aimed at 14.4 MB
@@ -298,32 +316,51 @@ function sheets(file, cut, name) {
       }
       for (const f of fs.readdirSync(OUT)) if (f.startsWith('tour-pass')) fs.rmSync(path.join(OUT, f));
       files.push(['tour', tour, edit.youtube]);
-      // Its poster on the website (site/assets/tour-poster.webp): the dashboard and its caption.
-      ff(['-y', '-loglevel', 'error', '-ss', '27.5', '-i', tour, '-frames:v', '1', '-c:v', 'libwebp', '-quality', '82', path.join(OUT, 'tour-poster.webp')]);
+      // Its poster on the website (site/assets/tour-poster.webp): the whole page, just before any words (1:22.25).
+      ff(['-y', '-loglevel', 'error', '-ss', '82.25', '-i', tour, '-frames:v', '1', '-c:v', 'libwebp', '-quality', '82', path.join(OUT, 'tour-poster.webp')]);
       // The YouTube thumbnail, from a clean frame (no caption): the dashboard over the aurora, from its plate.
       run(process.execPath, [path.join(HERE, '../thumbnail.cjs'), path.join(HERE, 'public', PLATES, 'hero-dash.mp4'), path.join(OUT, 'thumbnail.png'), '--at', '2.0'], { env: { ...process.env, FFMPEG } });
     }
-    if (!ONLY || ONLY === 'store') {
-      const st = path.join(OUT, 'nordlys-store-4k.mp4');
-      if (!has('skip-render')) render('Store', st, edit.store);
-      files.push(['store', st, edit.store]);
-      const st1080 = path.join(OUT, 'nordlys-store-1080.mp4');
-      ff(['-y', '-loglevel', 'error', '-i', st, '-vf', 'scale=1920:1080:flags=lanczos', '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-c:a', 'copy', '-movflags', '+faststart', st1080]);
-      files.push(['store-1080', st1080, edit.store]);
+    if (want('app-preview')) {
+      /* The Mac App Store preview (App Store Connect, "App preview specifications", for a
+         Mac app): 1920 x 1080 at 30 fps, H.264 progressive, High Profile Level 4.0, about
+         11 Mb/s; stereo AAC 256 kb/s at 48 kHz. From a 4K 60 fps master of the cut, scaled
+         down and taking every other frame (the beats, 30 frames apart, all stay). The
+         master is kept only for the checks and sheets. */
+      const master = path.join(OUT, 'app-preview-master.mp4');
+      if (!has('skip-render')) render('AppPreview', master, edit.appPreview);
+      const ap = path.join(OUT, 'app-preview-1080p30.mp4');
+      ff(['-y', '-loglevel', 'error', '-i', master, '-vf', 'fps=30,scale=1920:1080:flags=lanczos,format=yuv420p', '-c:v', 'libx264', '-preset', 'slow', '-profile:v', 'high', '-level:v', '4.0',
+        '-b:v', '11M', '-maxrate', '12M', '-bufsize', '24M', '-x264-params', 'nal-hrd=vbr', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709',
+        '-c:a', 'aac', '-b:a', '256k', '-ar', '48000', '-ac', '2', '-movflags', '+faststart', ap]);
+      files.push(['app-preview-master', master, edit.appPreview]);
+      files.push(['app-preview', ap, edit.appPreview, 30]);
     }
   }
-  for (const [name, file, cut] of files) {
+  // The shake measurement (tools/video/shake.py), on a file at the edit's own 60 fps.
+  const shake = (file, cut) => {
+    const json = path.join(OUT, `shake-${cut.name}.json`);
+    const r = spawnSync('uv', ['run', '--with', 'numpy', '--with', 'opencv-python-headless', 'python', path.join(HERE, '../shake.py'), file, path.join(OUT, 'edit-map.json'), cut.name, FFMPEG, '--json', json], { encoding: 'utf8' });
+    const lines = (r.stdout || r.stderr || '').trim().split('\n');
+    note(`  shake (${path.basename(file)}): ${lines[0]}`);
+    for (const line of lines.slice(1)) note(`  ${line.trim()}`);
+  };
+  for (const [name, file, cut, fps = FPS] of files) {
+    if (name === 'app-preview-master') { shake(file, cut); sheets(file, cut, cut.name); continue; }
     const p = probe(file);
     const v = p.streams.find((s) => s.width), a = p.streams.find((s) => s.sample_rate);
     const size = Number(p.format.size);
     note(`${path.basename(file)}: ${v.width}x${v.height} ${v.r_frame_rate} ${v.codec_name} ${v.profile} ${v.pix_fmt}; audio ${a ? `${a.codec_name} ${a.sample_rate} Hz ${Math.round((a.bit_rate || 0) / 1000)} kb/s` : 'none'}; ${Number(p.format.duration).toFixed(3)} s; ${(size / 1e6).toFixed(2)} MB (${(size / 1048576).toFixed(2)} MiB)`);
-    note(`  frames: ${v.nb_frames} (the edit: ${cut.frames}); faststart: ${faststart(file) ? 'yes' : 'NO'}`);
+    note(`  frames: ${v.nb_frames} (the edit: ${(cut.frames * fps) / FPS}); faststart: ${faststart(file) ? 'yes' : 'NO'}`);
     const d = decodeAll(file);
     note(`  full decode: ${d.ok ? 'clean' : `ERRORS ${d.errors.slice(0, 400)}`}`);
     const l = loudness(file);
     note(`  loudness: ${l.integrated} LUFS integrated, true peak ${l.truePeak} dBTP, LRA ${l.lra} LU`);
     note(`  audio against the soundtrack (at 1/5 ... 4/5 of the film): ${audioLag(file, cut).map((k) => `${k >= 0 ? '+' : ''}${k}`).join(', ')} samples at 48 kHz`);
-    if (name !== 'tour' && name !== 'store-1080') sheets(file, cut, name);
+    if (name === 'tour' || name === 'app-preview') continue;
+    shake(file, cut);
+    sheets(file, cut, cut.name);
   }
+  if (!PREVIEW && want('app-preview')) fs.rmSync(path.join(OUT, 'app-preview-master.mp4'), { force: true });
   fs.writeFileSync(path.join(OUT, PREVIEW ? 'checks-preview.txt' : 'checks.txt'), `${checks.join('\n')}\n`);
 })().catch((error) => { console.error(error); process.exit(1); });

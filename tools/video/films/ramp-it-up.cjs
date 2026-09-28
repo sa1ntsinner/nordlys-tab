@@ -15,7 +15,7 @@
    The page, the demo data and the mocked apps (Todoist, GitHub, a calendar,
    Open-Meteo) are the ones rising-forest.cjs set up for the last film. */
 const { helpers } = require('./rising-forest.cjs');
-const { routes, prepare, look, card, VIDEO, APPS, TRAVEL } = helpers;
+const { routes, prepare, look, card, VIDEO, APPS } = helpers;
 
 const B = 0.5, E = B / 2, Q = B / 4, T0 = 1;
 // Plate time of a beat, counted from where the shot begins.
@@ -62,10 +62,7 @@ const still = () => async () => {};
 const pointerNear = async (s, sel, dx, dy) => { const [x, y] = await s.centre(sel); await s.move(x + dx, y + dy); };
 const rowOf = (s, css, text) => s.js(([c, t]) => [...document.querySelectorAll(c)].findIndex((n) => n.textContent.includes(t)), [css, text]);
 
-let agendaAt = null;
-
-const skies = [['halo', 'nord-frost'], ['pillars', 'sunset-amber'], ['nacre', 'peach-sunset'], ['silk', 'catppuccin-mocha'], ['baikal', 'aurora-void'], ['drift', 'dracula-velvet'], ['horizon', 'nordic-snow'], ['polaris', 'tokyo-night']];
-const themes = ['aurora-void', 'nord-frost', 'catppuccin-mocha', 'dracula-velvet', 'tokyo-night', 'gruvbox-dark', 'porcelain-light', 'sakura-daylight', 'sunset-amber'];
+const themes = ['aurora-void', 'nord-frost', 'catppuccin-mocha', 'dracula-velvet', 'tokyo-night', 'gruvbox-dark', 'porcelain-light', 'sakura-daylight'];
 
 module.exports = {
   clock: '09:41',
@@ -77,14 +74,15 @@ module.exports = {
   music: { bpm: 120, beat: B, bar: 4 * B },
   plates: () => [
     // ── The name, over the sky ──
-    { name: 'sky-aurora', seconds: 13, setup: intro('aurora-void', 'aurora'), run: drift(12) },
+    // camera: 'page' — the page's own camera moves in this plate (a slow drift), for tools/video/shake.py.
+    { name: 'sky-aurora', seconds: 13, camera: 'page', setup: intro('aurora-void', 'aurora'), run: drift(12) },
     // The page as it opens: the board over the aurora, still. The edit floats it in a window, then fills the frame with it.
     { name: 'hero', seconds: 11,
       setup: async (s) => { await look(s, { theme: 'aurora-void', scene: 'aurora', dash: false }); await s.look('center', 1.0); },
       run: still() },
 
-    // ── Search: math, then a command that changes the sky ──
-    { name: 'search', seconds: 9.5, settle: 0.6,
+    // ── Search: a sum, then a site found by name ──
+    { name: 'search', seconds: 10, settle: 0.6,
       setup: async (s) => {
         await look(s, { theme: 'aurora-void', scene: 'aurora', dash: false });
         await s.page.locator('#q').click();
@@ -92,33 +90,23 @@ module.exports = {
         await s.look('#searchwrap', 1.6);
       },
       run: async (s) => {
-        await s.typeTo('1920 / 16 * 9', at(3), Q);
+        // The last key on the riser's landing, four beats in; held, then cleared for a site by name.
+        await s.typeTo('1920 / 16 * 9', at(4), Q);
         s.mark('answer');
         await s.rect('answer', '#searchwrap');
-        await s.press('Control+A', at(5));
-        await s.typeTo('> sky polaris', at(8.5), Q);
-        await s.press('Enter', at(10));
-        s.mark('enter');
-        await s.at(at(10.5));
-        await s.look('center', 1.0, 1.5, 'cubic-bezier(.3,0,.1,1)');
+        await s.press('Control+A', at(9));
+        await s.typeTo('git', at(10.5), E);
+        s.mark('found');
       } },
-    { name: 'find', seconds: 7,
-      setup: async (s) => {
-        await look(s, { theme: 'tokyo-night', scene: 'polaris', dash: false });
-        await s.page.locator('#q').click();
-        await s.page.fill('#q', '');
-        await s.look('#searchwrap', 1.6);
-      },
-      run: async (s) => { await s.typeTo('git', at(1.5), E); } },
     // ── The dashboard ──
-    { name: 'dash-in', seconds: 4,
+    { name: 'dash-in', seconds: 6,
       setup: async (s) => {
         await s.pointer(false);
         await settled(s, { theme: 'nord-frost', scene: 'halo', dash: { layout: VIDEO } });
         await s.bare(true, true);
       },
       run: async (s) => { await s.bare(false); s.mark('in'); } },
-    { name: 'task', seconds: 5, settle: 0.3,
+    { name: 'task', seconds: 8, settle: 0.3,
       setup: async (s) => {
         // At rest: zoomed in by the page's camera, the dashboard lays itself out wider than the
         // window and the card is cut at the edge. The edit frames it (a 5K plate has room).
@@ -133,18 +121,6 @@ module.exports = {
         await s.at(at(4.5));
         await s.rect('task', [`${card('tasks')} .dash-check`, 1]);
       } },
-    { name: 'habit', seconds: 3.5,
-      setup: async (s) => {
-        await s.look(card('habits'), 1.7);
-        // In the gap to the right of the card: over nothing, so no row shows its buttons.
-        const b = await s.box(card('habits'));
-        await s.move(b.x + b.w + 9, b.y + b.h * 0.62);
-        await s.pointer(true);
-      },
-      run: async (s) => { await s.clickOn(at(1), [`${card('habits')} .dash-habit-day.is-today`, 1], 0.4, 'click'); } },
-    { name: 'cards', seconds: 4,
-      setup: async (s) => { await s.pointer(false); await s.look(card('countdown'), 1.6); },
-      run: async (s) => { await s.at(at(1)); await s.look(card('clocks'), 1.6, B, 'cubic-bezier(.6,0,.2,1)'); } },
     { name: 'drag', seconds: 4,
       setup: async (s) => {
         await s.look('center', 1.0);
@@ -186,17 +162,15 @@ module.exports = {
         await s.up();
         s.mark('release');
       } },
-    // Five layouts, framed alike, for a cut on every beat.
-    ...['calm', 'travel', 'minimal', 'deep'].map((preset) => ({ name: `layout-${preset}`, seconds: 2.5, settle: 1.2,
-      setup: async (s) => { await s.pointer(false); await settled(s, { dash: { preset } }); await s.look('center', 1.0); },
-      run: still() })),
-    // The planner, then a dolly into its focus timer: the card becomes focus mode.
-    { name: 'layout-planner', seconds: 4, settle: 1.2,
-      setup: async (s) => { await settled(s, { dash: { preset: 'planner' } }); await s.look('center', 1.0); await s.rect('timer', card('timer')); },
-      run: async (s) => { await s.at(at(0.5)); await s.look(card('timer'), 3.4, 1.75, 'cubic-bezier(.6,0,.9,.4)'); s.mark('dolly'); } },
+    /* The planner, still: the edit flies into the ring of its focus timer, which becomes
+       focus mode's. (Changing the layout on camera jumps in one frame, so the edit cuts to it;
+       a flight filmed in the page redraws the text at each scale, so it crawls as it starts.) */
+    { name: 'layout-planner', seconds: 6, settle: 1.2,
+      setup: async (s) => { await s.pointer(false); await settled(s, { dash: { preset: 'planner' } }); await s.look('center', 1.0); await s.rect('face', `${card('timer')} .dash-timer-face`); },
+      run: still() },
 
     // ── The breakdown: focus mode ──
-    { name: 'focus', seconds: 13.5, settle: 0.8, clock: true,
+    { name: 'focus', seconds: 18.5, settle: 0.8, clock: true,
       setup: async (s) => {
         await s.js(() => window.Nordlys.focusMode.show());
         await s.settle(0.6);
@@ -211,26 +185,18 @@ module.exports = {
         await s.typeTo('Write the release notes', at(7), Q);
         await s.clickOn(at(8), '#focus-mode .fm-go', 0.45, 'go');
         await s.clickOn(at(12), '#focus-mode .fm-chip[data-sound="rain"]', 0.55, 'rain');
+        // Still from here: the edit pushes in on the plate (a push filmed in the page redraws the text at each scale).
         await s.at(at(13));
         await s.pointer(false);
-        await s.at(at(14));
-        await s.look('#focus-mode .fm-face', 2.3, 5.4, 'cubic-bezier(.45,0,.3,1)');
+        await s.rect('face', '#focus-mode .fm-face');
       } },
 
-    // ── Skies, framed alike, for cuts that speed up into the drop ──
-    ...skies.map(([scene, theme]) => ({ name: `sky-${scene}`, seconds: 3, settle: 0.8,
-      setup: async (s) => { await s.js(() => { if (window.Nordlys.focusMode?.open) window.Nordlys.focusMode.hide(); }); await intro(theme, scene)(s); },
-      run: drift(3) })),
-
-    // ── Looks: the same dashboard in nine themes, for a grid; black; light ──
+    // ── Looks: the same dashboard in nine themes, for a grid (the black one is the oled plate) ──
     ...themes.map((theme) => ({ name: `theme-${theme}`, seconds: 5.5, settle: 1.0,
       setup: async (s) => { await settled(s, { theme, scene: 'aurora', dash: { layout: VIDEO } }); await s.look('center', 1.0); },
       run: still() })),
     { name: 'oled', seconds: 7, settle: 1.0,
       setup: async (s) => { await settled(s, { theme: 'oled-obsidian', scene: 'drift', dash: { layout: VIDEO } }); await s.look('center', 1.0); },
-      run: still() },
-    { name: 'light', seconds: 4.5, settle: 1.0,
-      setup: async (s) => { await settled(s, { theme: 'porcelain-light', scene: 'horizon', dash: { layout: VIDEO } }); await s.look('center', 1.0); },
       run: still() },
 
     // ── Profiles: Work to Home, and the look that comes with it ──
@@ -254,9 +220,31 @@ module.exports = {
         await s.glide(24, 24, 0.5);
         await s.pointer(false);
       } },
+    /* Home, after the switch. The product changes the look with a view transition, which
+       runs on Chrome's own clock and so arrives in one frame of the plate above; the edit
+       dissolves from that plate into this one instead. */
+    { name: 'profiles-home', seconds: 9, settle: 1.0,
+      setup: async (s) => {
+        await s.pointer(false);
+        await s.js(async () => { const p = Nordlys.sync; const home = p.list().find((x) => x.name === 'Home'); await p.switchTo(home.id, { undo: false }); });
+        /* The demo makes Home as a copy of Work, so it would show the same sites. Here Home
+           has its own: no work folder, and what to watch first (demo data only). */
+        await s.js(() => {
+          const g = Nordlys.config.groups;
+          const work = g.findIndex((x) => x.label === 'Work');
+          if (work >= 0) g.splice(work, 1);
+          const watch = g.findIndex((x) => x.label === 'Watch & listen');
+          if (watch > 0) g.unshift(...g.splice(watch, 1));
+          Nordlys.saveConfig();
+          Nordlys.grid.render();
+        });
+        await s.settle(1.5);
+        await s.look('center', 1.0);
+      },
+      run: still() },
 
     // ── Connected apps ──
-    { name: 'apps', seconds: 4.5, settle: 1.0,
+    { name: 'apps', seconds: 6, settle: 1.0,
       setup: async (s) => {
         await s.pointer(false);
         await s.js(async () => { const p = Nordlys.sync; const work = p.list().find((x) => x.name === 'Work'); await p.switchTo(work.id, { undo: false }); });
@@ -268,36 +256,34 @@ module.exports = {
         await s.settle(0.5);
         await s.look('.dash-connections', 1.3);
       },
-      run: async (s) => { await s.look('.dash-connections', 1.38, 3.4, 'linear'); } },
-    { name: 'inbox', seconds: 5, settle: 1.6,
+      run: still() },
+    // The inbox and the calendar in one plate, the page at rest: the edit frames one, then pans to the other.
+    { name: 'inbox', seconds: 7, settle: 1.6,
       setup: async (s) => {
         await s.js(() => window.Nordlys.settings.close());
         await settled(s, { theme: 'tokyo-night', scene: 'polaris', dash: { layout: APPS } }, 1.2);
-        await s.look(card('inbox'), 1.4);
+        await s.look('center', 1.0);
+        await s.rect('inbox', card('inbox'));
+        await s.rect('agenda', card('agenda'));
         // Just outside the card, to the right, over the gap between the cards.
         const b = await s.box(card('inbox'));
         await s.move(b.x + b.w + 10, b.y + b.h * 0.42);
         await s.pointer(true);
       },
-      run: async (s) => { await s.clickOn(at(2), `${card('inbox')} input.dash-check`, 0.5, 'tick'); } },
-    { name: 'agenda', seconds: 3.5,
-      // The events sit at the top left of a large card: the camera looks there.
-      setup: async (s) => {
+      run: async (s) => {
+        await s.clickOn(at(3), `${card('inbox')} input.dash-check`, 0.5, 'tick');
+        // Back to the gap, so no row keeps its hover, and gone before the camera moves on.
+        const b = await s.box(card('inbox'));
+        await s.glide(b.x + b.w + 10, b.y + b.h * 0.42, 0.4);
+        await s.at(at(4.5));
         await s.pointer(false);
-        const b = await s.box(card('agenda'));
-        agendaAt = { x: b.x + b.w * 0.36, y: b.y + b.h * 0.34 };
-        await s.look(agendaAt, 1.6);
-      },
-      run: async (s) => { await s.look(agendaAt, 1.7, 2.5, 'linear'); } },
-    { name: 'weather', seconds: 4, settle: 1.6,
-      setup: async (s) => { await settled(s, { theme: 'nord-frost', scene: 'horizon', dash: { layout: TRAVEL } }, 1.2); await s.look(card('weather'), 1.55); },
-      run: async (s) => { await s.at(at(1)); await s.look(card('clocks'), 1.55, 2 * B, 'cubic-bezier(.5,0,.2,1)'); } },
+      } },
 
     // ── The whole of it, then the name again ──
-    { name: 'hero-dash', seconds: 6, settle: 1.2,
+    { name: 'hero-dash', seconds: 10, settle: 1.2,
       setup: async (s) => { await settled(s, { theme: 'aurora-void', scene: 'aurora', dash: { layout: VIDEO }, board: true }); await s.look('center', 1.0); },
       run: still() },
-    { name: 'sky-end', seconds: 8, setup: async (s) => { await look(s, { theme: 'aurora-void', scene: 'aurora', dash: false, bare: true }); await s.look('center', 1.0); },
+    { name: 'sky-end', seconds: 8, camera: 'page', setup: async (s) => { await look(s, { theme: 'aurora-void', scene: 'aurora', dash: false, bare: true }); await s.look('center', 1.0); },
       run: drift(7, 1.05) }
   ]
 };

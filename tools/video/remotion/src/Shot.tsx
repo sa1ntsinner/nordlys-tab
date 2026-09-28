@@ -33,6 +33,10 @@ export const toScreen = (p: ScreenPose, u: number, v: number) => ({
 
 const SHUTTER = 0.5; // half a frame of exposure
 
+// A zoom blur with enough samples that a long smear does not break into copies (strobe).
+const zoomSmear = (amount: number, center: readonly [number, number]) =>
+  zoomBlur({ amount, center, samples: Math.min(64, Math.max(16, Math.ceil(amount / 2.5))) });
+
 type Hint = { kind: 'x' | 'y' | 'zoom'; px: number; at?: [number, number] };
 
 type PlateLayerProps = {
@@ -64,13 +68,13 @@ export const PlateLayer: React.FC<PlateLayerProps> = ({ plate, trimBefore, rate,
     effects.push(linearProgressiveBlur({ start: [0.5, veil.y0], end: [0.5, veil.y1], startBlur: 0, endBlur: veil.blur * (meta.width / W) }));
   }
   if (hint && hint.px > 0.5) {
-    if (hint.kind === 'zoom') effects.push(zoomBlur({ amount: Math.min(160, hint.px * k), center: hint.at ?? [0.5, 0.5], samples: 32 }));
+    if (hint.kind === 'zoom') effects.push(zoomSmear(Math.min(160, hint.px * k), hint.at ?? [0.5, 0.5]));
     else effects.push(blur({ radius: Math.min(220, hint.px * k), horizontal: hint.kind === 'x', vertical: hint.kind === 'y' }));
   }
   if (Math.abs(vx) > 2) effects.push(blur({ radius: Math.min(220, Math.abs(vx) * SHUTTER * 0.5 * k), horizontal: true, vertical: false }));
   if (Math.abs(vy) > 2) effects.push(blur({ radius: Math.min(220, Math.abs(vy) * SHUTTER * 0.5 * k), horizontal: false, vertical: true }));
   // A zoom moves the frame's edge by (W/2) * rate; smear it over the shutter.
-  if (Math.abs(vz) > 0.002) effects.push(zoomBlur({ amount: Math.min(160, Math.abs(vz) * (W / 2) * SHUTTER * k), center: [pose.x, pose.y], samples: 32 }));
+  if (Math.abs(vz) > 0.002) effects.push(zoomSmear(Math.min(160, Math.abs(vz) * (W / 2) * SHUTTER * k), [pose.x, pose.y]));
   return (
     <AbsoluteFill style={{ overflow: 'hidden' }}>
       <div
@@ -176,11 +180,11 @@ const GridView: React.FC<{ shot: Shot; f: number; seqFrom: number; pose: ScreenP
   const tw = (W - 2 * margin - gap * (g.cols - 1)) / g.cols;
   const th = (H - 2 * margin - gap * (g.rows - 1)) / g.rows;
   const cell = (i: number) => ({ x: margin + (i % g.cols) * (tw + gap), y: margin + Math.floor(i / g.cols) * (th + gap) });
-  const target = cell(g.into);
-  const zease = EASE.inOut;
-  const zp = zease(clamp01((f - g.zoomFrom) / (g.zoomTo - g.zoomFrom)));
-  const zp0 = zease(clamp01((f - 0.5 - g.zoomFrom) / (g.zoomTo - g.zoomFrom)));
-  const zp1 = zease(clamp01((f + 0.5 - g.zoomFrom) / (g.zoomTo - g.zoomFrom)));
+  // With no tile to fly into, the grid holds still.
+  const into = g.into ?? -1;
+  const target = cell(Math.max(0, into));
+  const zease = (v: number) => (into < 0 || g.zoomFrom == null || g.zoomTo == null ? 0 : EASE.inOut(clamp01((v - g.zoomFrom) / (g.zoomTo - g.zoomFrom))));
+  const zp = zease(f), zp0 = zease(f - 0.5), zp1 = zease(f + 0.5);
   // The whole grid scaled and moved so the target tile grows to the frame.
   const gs = (p: number) => Math.exp(Math.log(W / tw) * p);
   const s = gs(zp);
@@ -194,7 +198,7 @@ const GridView: React.FC<{ shot: Shot; f: number; seqFrom: number; pose: ScreenP
           const c = cell(i);
           const t = interpolate(f, [g.appear[i], g.appear[i] + 16], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.bezier(0.16, 1, 0.3, 1) });
           // The other tiles fly out of the frame with the grid; they fade only at the very end.
-          const others = i === g.into ? 1 : 1 - clamp01((zp - 0.7) / 0.3);
+          const others = i === into ? 1 : 1 - clamp01((zp - 0.7) / 0.3);
           return (
             <div
               key={plate}
@@ -213,7 +217,7 @@ const GridView: React.FC<{ shot: Shot; f: number; seqFrom: number; pose: ScreenP
               }}
             >
               <div style={{ width: W, height: H, transform: `scale(${tw / W})`, transformOrigin: '0 0' }}>
-                <PlateLayer plate={plate} trimBefore={trim} rate={1} pose={still} before={still} after={still} extraZoomRate={i === g.into ? Math.log(gs(zp1) / gs(zp0)) : 0} />
+                <PlateLayer plate={plate} trimBefore={trim} rate={1} pose={still} before={still} after={still} extraZoomRate={i === into ? Math.log(gs(zp1) / gs(zp0)) : 0} />
               </div>
             </div>
           );

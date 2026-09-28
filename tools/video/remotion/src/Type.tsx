@@ -93,7 +93,7 @@ export const TitleView: React.FC<{ from: number; to: number }> = ({ from, to }) 
   const t = interpolate(f, [from, from + 150], [0, 1], { ...clamp, easing: OUT });
   const leave = interpolate(f, [to - 36, to], [0, 1], { ...clamp, easing: IN });
   const icon = interpolate(f, [from, from + 70], [0, 1], { ...clamp, easing: OUT });
-  const tag = 'Your favourite sites, on every new tab'.split(' ');
+  const tag = 'Your favourite sites on every new tab'.split(' ');
   return (
     <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center', opacity: 1 - leave, translate: `0px ${-leave * 90}px`, filter: leave > 0 ? `blur(${leave * 16}px)` : undefined }}>
       <AbsoluteFill style={{ background: 'radial-gradient(52% 46% at 50% 48%, rgba(3,5,10,0.42), rgba(3,5,10,0) 70%)', opacity: icon }} />
@@ -102,7 +102,7 @@ export const TitleView: React.FC<{ from: number; to: number }> = ({ from, to }) 
         <div style={{ font: '500 330px/1 Outfit', letterSpacing: `${0.16 - 0.205 * t}em`, opacity: interpolate(f, [from + 10, from + 70], [0, 1], { ...clamp, easing: OUT }), filter: t < 0.98 ? `blur(${(1 - t) * 26}px)` : undefined, marginRight: `${0.16 - 0.205 * t}em` }}>
           Nordlys
         </div>
-        <div style={{ marginTop: 70, font: '400 72px/1.3 "Instrument Sans"', color: '#c3cce0' }}>
+        <div style={{ marginTop: 70, font: '400 92px/1.3 "Instrument Sans"', color: '#c3cce0' }}>
           {tag.map((w, i) => (
             <React.Fragment key={i}>
               <span style={{ display: 'inline-block', ...arrive(f, from + 96 + i * 5, to + 999, 0.5) }}>{w}</span>
@@ -143,31 +143,23 @@ export const StatementView: React.FC<{ from: number; to: number; lines: string[]
   );
 };
 
-// The name again, where to get it, and the three things it is.
+// The name again on the hit, where to get it, and what it is.
 export const EndView: React.FC<{ from: number; to: number; tags: number[] }> = ({ from, to, tags }) => {
   const f = useCurrentFrame();
   if (f < from - 8 || f > to + 2) return null;
-  const t = interpolate(f, [from, from + 110], [0, 1], { ...clamp, easing: OUT });
+  // Readable within a fifth of a second of the hit; the letters go on closing up for a second more.
+  const t = interpolate(f, [from, from + 70], [0, 1], { ...clamp, easing: OUT });
+  const seen = interpolate(f, [from, from + 12], [0, 1], { ...clamp, easing: OUT });
   const dim = interpolate(f, [from - 6, from + 30], [0, 1], { ...clamp, easing: OUT });
-  const words = ['Free', 'No account', 'Open source'];
+  const line = { font: '400 84px/1.3 "Instrument Sans"', color: '#c3cce0' } as const;
   return (
     <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center' }}>
       <AbsoluteFill style={{ opacity: dim, background: 'radial-gradient(95% 85% at 50% 46%, rgba(3,5,10,0.45), rgba(3,5,10,0.88))' }} />
       <div style={{ textAlign: 'center', color: '#f5f7fb' }}>
         <Img src={staticFile('icon.svg')} style={{ width: 190, height: 190, display: 'block', margin: '0 auto 60px', ...arrive(f, from, to + 999, 0.3) }} />
-        <div style={{ font: '500 320px/1 Outfit', letterSpacing: `${0.1 - 0.145 * t}em`, marginRight: `${0.1 - 0.145 * t}em`, opacity: t, filter: t < 0.98 ? `blur(${(1 - t) * 22}px)` : undefined }}>Nordlys</div>
-        <div style={{ marginTop: 64, font: '400 76px/1.3 "Instrument Sans"', color: '#c3cce0', ...arrive(f, from + 26, to + 999, 0.4) }}>For Chrome, Edge, Firefox and Safari</div>
-        <div style={{ marginTop: 90, display: 'flex', gap: 34, justifyContent: 'center' }}>
-          {words.map((w, i) => {
-            const a = tags[i] ?? from + 40;
-            const p = interpolate(f, [a, a + 16], [0, 1], { ...clamp, easing: Easing.bezier(0.34, 1.56, 0.64, 1) });
-            return (
-              <span key={w} style={{ padding: '30px 58px', borderRadius: 999, font: '500 54px/1 "Instrument Sans"', color: '#e6ecf6', boxShadow: 'inset 0 0 0 4px rgba(210,222,245,0.26)', background: 'rgba(255,255,255,0.04)', opacity: Math.min(1, p * 1.4), scale: `${0.7 + 0.3 * p}` }}>
-                {w}
-              </span>
-            );
-          })}
-        </div>
+        <div style={{ font: '500 320px/1 Outfit', letterSpacing: `${0.06 - 0.105 * t}em`, marginRight: `${0.06 - 0.105 * t}em`, opacity: seen, filter: seen < 0.98 ? `blur(${(1 - seen) * 18}px)` : undefined }}>Nordlys</div>
+        <div style={{ marginTop: 64, ...line, ...arrive(f, from + 20, to + 999, 0.4) }}>For Chrome, Edge, Firefox and Safari</div>
+        <div style={{ marginTop: 18, ...line, ...arrive(f, tags[0] ?? from + 60, to + 999, 0.4) }}>Free and open source. No account.</div>
       </div>
     </AbsoluteFill>
   );
