@@ -88,17 +88,22 @@ if all('moving' in s for s in cut['shots']):
 centre = np.array([MW / 2, MH / 2, 1.0])
 crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 60, 1e-6)
 
+recent = []  # how many points the last second of frames had
+
 def motion(prev, cur):
     """The camera between two frames: a 2x3 similarity, how it was found, and on how many points."""
     pts = cv2.goodFeaturesToTrack(prev, 600, 0.01, 7, blockSize=7)
+    recent.append(0 if pts is None else len(pts)); del recent[:-60]
+    typical = float(np.median(recent))
     if pts is not None and len(pts) >= 30:
         nxt, st, _ = cv2.calcOpticalFlowPyrLK(prev, cur, pts, None, winSize=(21, 21), maxLevel=3)
         ok = st.ravel() == 1
         if ok.sum() >= 30:
             m, inl = cv2.estimateAffinePartial2D(pts[ok], nxt[ok], method=cv2.RANSAC, ransacReprojThreshold=0.6, maxIters=3000, confidence=0.998)
-            # Most points must agree: in a fast move the page blurs, and the few points left may
-            # be on something that does not move with it (a caption), which would read as still.
-            if m is not None and inl.sum() >= max(30, 0.5 * ok.sum()):
+            # As many points must agree as half of what a frame here usually has: in a fast move the
+            # page blurs, and the few points left may be on something that does not move with it (a
+            # caption), which would read as still.
+            if m is not None and inl.sum() >= max(30, 0.5 * typical):
                 return m.astype(np.float32), 'points', int(inl.sum())
     a, b = (cv2.GaussianBlur(x.astype(np.float32) / 255, (0, 0), 1.2) for x in (prev, cur))
     (dx, dy), _ = cv2.phaseCorrelate(a, b)
