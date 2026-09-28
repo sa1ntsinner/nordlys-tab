@@ -89,7 +89,9 @@ function filmOverlay() {
   const $ = (id) => root.querySelector(`#${id}`);
   const words = (text, delay0 = 0, step = 55) => text.split(' ').map((w, i) => `<span class="w" style="transition-delay:${delay0 + i * step}ms">${w}</span>`).join(' ');
   const pointer = $('fx-pointer'), ripple = $('fx-ripple');
-  document.addEventListener('mousemove', (e) => { pointer.style.transform = `translate(${e.clientX - 4}px, ${e.clientY - 3}px)`; }, true);
+  // pointermove, not mousemove: a MouseEvent's position is rounded to whole CSS pixels (3.6 pixels
+  // of a 5K plate), so a slow glide would step unevenly; a PointerEvent's is not.
+  document.addEventListener('pointermove', (e) => { pointer.style.transform = `translate(${e.clientX - 4}px, ${e.clientY - 3}px)`; }, true);
   document.addEventListener('mousedown', (e) => {
     pointer.classList.add('down');
     ripple.style.left = `${e.clientX}px`; ripple.style.top = `${e.clientY}px`;
