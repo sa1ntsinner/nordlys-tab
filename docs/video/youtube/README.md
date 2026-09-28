@@ -1,10 +1,19 @@
 # YouTube upload
 
-Video: `nordlys-youtube-4k.mp4` (3840x2160, 60 fps, 94 s, H.264 High,
-AAC 320 kb/s). It is not in the repo: render it in `tools/video/remotion/`
-(see its README), from plates filmed by `tools/video/plates.cjs`. Thumbnail:
-`thumbnail.png` (1280x720), made by `tools/video/thumbnail.cjs` from a frame of
-the dashboard with no caption on it.
+Video: `nordlys-4k.mp4` (3840x2160, 60 fps, 94 s, H.264 High, AAC 320 kb/s).
+It is not in the repo: render it in `tools/video/remotion/` (see its README),
+from plates filmed by `tools/video/plates.cjs`. Thumbnail: `thumbnail.png`
+(1280x720), made by `tools/video/thumbnail.cjs` from a frame of the dashboard
+with no caption on it.
+
+## Where this film is used
+
+It is the one film for Nordlys. The Chrome Web Store and Edge Add-ons listings
+take a YouTube link for their promo video, so both link to this film. Firefox
+Add-ons listings have no video. The Mac App Store preview is its 28-second cut
+(`app-preview-1080p30.mp4`, from `src/edit/preview.ts`): the same shots, words
+and music, fewer moments, at Apple's 1920x1080, 30 fps. The website's tour
+(`tour.mp4`) is this film at 1080.
 
 ## Title
 
@@ -15,24 +24,24 @@ Nordlys: a new tab page with your bookmarks and a dashboard for your day
 ## Description
 
 ```
-Nordlys replaces the new tab page with your bookmarks in folders, over an animated sky, and a dashboard for your day when you want one. Free, open source, no account.
+Nordlys puts your favourite sites in folders on every new tab, over a sky drawn live, with a dashboard for your day when you want one. Free and open source, with no account.
 
 0:00 Nordlys
-0:10 Bookmarks and search
-0:26 The dashboard
+0:10 Your sites and the search box
+0:22 The dashboard
 0:42 Focus mode
-0:54 Skies and themes
-1:08 Profiles and connected apps
-1:24 No account, nothing tracked
+0:58 Profiles
+1:10 Tasks and events from your apps
+1:22 Nothing tracked
 
 What's in it
-- Bookmark folders you arrange by dragging, with undo
-- Math and commands in the search box, and any site found as you type
-- A dashboard: tasks typed the way you say them, habits, a focus timer, notes, weather, world clocks and more; drag and stretch the cards, or start from one of five layouts
-- Focus mode with a Pomodoro or count-up timer and sounds made in the browser
-- Tasks from the task managers and code hosts you already use, and events from any calendar link
-- 9 animated skies and 21 themes, including black for OLED, and light ones
-- Profiles like Work and Home, each with its own look, synced through your browser's own sync
+- Your sites in folders, arranged by dragging
+- Sums in the search box, commands after a > sign, and any site found as you type
+- A dashboard for the day: tasks typed the way you say them, habits, world clocks, a countdown, weather and notes, on cards you drag and stretch, with layouts to start from
+- Focus mode: a calm timer with your tasks beside it, and rain, ocean or wind made in the browser
+- Tasks and events from the apps and calendars you already use
+- Profiles such as Work and Home, each with its own sites and look, synced through your browser's own sync
+- Colour themes, light or dark
 
 Chrome Web Store: https://chromewebstore.google.com/detail/nordlys/fepiibfbbjhaoldgcfpfcikbonnjbfdc
 Website and live demo: https://sa1ntsinner.github.io/nordlys-tab/
@@ -44,7 +53,7 @@ Music: "Ramp It Up" by Ahjay Stelino (Mixkit).
 ## Tags
 
 ```
-new tab, new tab page, chrome extension, start page, bookmarks, dashboard, productivity, focus timer, pomodoro, tasks, habit tracker, todoist, aurora, open source
+new tab, new tab page, browser extension, start page, bookmarks, dashboard, productivity, focus timer, pomodoro, tasks, habit tracker, calendar, aurora, open source
 ```
 
 ## Settings

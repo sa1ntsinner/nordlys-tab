@@ -1,11 +1,12 @@
 # The Nordlys films, edited in Remotion
 
-The promo films (a 94 s cut for YouTube, a 26.5 s cut for the stores) are
-edited here, in [Remotion](https://www.remotion.dev/) 4.0.529, cut to the
-music: "Ramp It Up" by Ahjay Stelino (Mixkit, Stock Music Free License).
-The pictures are the real extension: clean plates of the live demo, filmed by
+The promo film (94 s, for YouTube, which the Chrome Web Store and Edge Add-ons
+listings link to) and its 28-second cut for the Mac App Store are edited here,
+in [Remotion](https://www.remotion.dev/) 4.0.529, cut to the music: "Ramp It
+Up" by Ahjay Stelino (Mixkit, Stock Music Free License). The pictures are the
+real extension: clean plates of the live demo, filmed by
 `tools/video/plates.cjs`. Nothing of the interface is redrawn here. Remotion
-does the editing: the cuts on the beats, the camera, the transitions and their
+does the editing: the cuts on the music, the camera, the transitions and their
 motion blur, the words, the light on the drops.
 
 ## Where it is installed and rendered
@@ -36,7 +37,8 @@ PLATES=$(node -e "const f=require('../films/ramp-it-up.cjs'); console.log(f.plat
 THEMES=$(node -e "const f=require('../films/ramp-it-up.cjs'); console.log(f.plates({}).map(p=>p.name).filter(n=>n.startsWith('theme-')).join(','))")
 FFMPEG=/path/to/ffmpeg node ../plates.cjs ../films/ramp-it-up.cjs public/plates --only "$PLATES"
 FFMPEG=/path/to/ffmpeg node ../plates.cjs ../films/ramp-it-up.cjs public/plates --only "$THEMES" --scale 1.3333333333
-# Both films, the 1080 copy, the tour and its poster, the thumbnail, the checks, the maps (about 30 minutes):
+# The film, the tour and its poster, the app preview, the thumbnail, the checks (with the shake
+# measurement), the maps (about 30 minutes):
 FFMPEG=/path/to/ffmpeg node scripts/render.cjs      # into out/ (ignored); --out <dir> for elsewhere
 ```
 
@@ -74,7 +76,10 @@ uv run --with numpy python tools/video/glitches.py "$FFMPEG" tools/video/remotio
 # (in tools/video/remotion: node scripts/render.cjs --preview --plates plates-1080 --out out/ref):
 # frames where picture was lost (black, half decoded).
 R=tools/video/remotion/out
-uv run --with numpy python tools/video/dropouts.py $R/nordlys-youtube-4k.mp4 $R/ref/preview.mp4 "$FFMPEG"
+uv run --with numpy python tools/video/dropouts.py $R/nordlys-4k.mp4 $R/ref/preview.mp4 "$FFMPEG"
+# Where the picture shakes (bounces, steps, doubled or dropped frames, wobble, shimmer), per shot;
+# render.cjs runs it on every cut and writes it into checks.txt:
+uv run --with numpy --with opencv-python-headless python tools/video/shake.py $R/nordlys-4k.mp4 $R/edit-map.json youtube "$FFMPEG"
 ```
 
 ## How it is put together
@@ -83,24 +88,31 @@ uv run --with numpy python tools/video/dropouts.py $R/nordlys-youtube-4k.mp4 $R/
   and the cues the edit is cut to, checked on the spectrogram. The full map is
   `docs/video/music/ramp-it-up.json`, made by `tools/video/music-events.py`
   (beats, bars, and every hit, whoosh, riser, drop and stop found in the track).
-- `src/edit/youtube.ts`, `src/edit/store.ts`: the edits. Each shot is a
-  plate, the frames it is on (written as bars and beats of the music), what
-  the camera does over it, and how it arrives: a cut, a whip, a zoom through,
-  an iris, a wipe. Then the captions, the title, the statement, the end card,
-  and the accents (a flash or a light leak on a drop, a ring on the control
-  being used).
+- `src/edit/youtube.ts`: the edit. Each shot is a plate, the frames it is on
+  (written as bars and beats of the music), what the camera does over it, and
+  how it arrives: a cut, a zoom through, a dissolve. Then the few words, the
+  title, the end card, and the accents (a flash and a light leak on a drop).
+- `src/edit/preview.ts`: the Mac App Store preview, made from that edit: the
+  film's own moments laid end to end over one stretch of the track, so the
+  preview follows the film.
+- `src/camera.ts`: the camera. A move is one eased curve from one pose to the
+  next, with soft ends and no overshoot. When the zoom changes, it zooms about
+  the one point of the plate that the two poses share, so the subject stays
+  put, in log space, so the speed reads the same at any zoom.
 - `src/Shot.tsx`: a plate under the camera. Motion blur comes from the motion
   itself. The pose is taken half a frame before and after, and whatever moves
   fast is smeared along its path, as a 180-degree shutter would do it:
-  directional blur for pans and whips, zoom blur for punch-ins and
+  directional blur for pans and whips, zoom blur for pushes and
   fly-throughs. Also the page floating as a 3D window, the grid of themes, and
   the focus pulls.
 - `src/Type.tsx`: the words, in Outfit and Instrument Sans as on the website.
 - `scripts/setup.cjs`: the soundtracks. They are cut from the track at bar
   lines with ffmpeg and brought to about -14 LUFS with one static gain. The
-  store cut joins bar 15 to the final hit of bar 48.
-- `scripts/render.cjs`: renders both films and makes the deliverables. It
-  also runs the checks: loudness, a full decode, contact sheets around every
+  app preview joins bar 16 to the final hit of bar 48, the crossfade centred on
+  the bar line.
+- `scripts/render.cjs`: renders the film and its preview and makes the
+  deliverables. It also runs the checks: loudness, a full decode, the music
+  against the soundtrack, the shake measurement, contact sheets around every
   cut, the edit map.
 
 The shots come from data (`src/edit/*.ts`) rather than one hand-placed
