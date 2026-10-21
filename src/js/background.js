@@ -143,6 +143,19 @@ class NordlysBackgroundEngine {
     this.mouseX = 50;
     this.mouseY = 50;
     this.motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    /* The watchdog. The first painted frames of a moving sky are timed; a
+       sky that costs this computer too much (no GPU, a remote desktop, a
+       blocklisted driver) is held still, said once by the page, and
+       remembered for this device. `heavy` is that hold; `keepMoving` is the
+       person saying no to it. */
+    this.heavy = false;
+    this.watch = null;
+    this.onBattery = false;
+    globalThis.navigator?.getBattery?.().then((battery) => {
+      const read = () => { this.onBattery = !battery.charging; };
+      read();
+      battery.addEventListener?.("chargingchange", read);
+    }).catch(() => {});
 
     // Per-theme shader palette (filled from CSS --shader-1..3 tokens by default)
     this.palette = ["#35d6c0", "#5b6cff", "#9d4edd"];
@@ -526,7 +539,7 @@ class NordlysBackgroundEngine {
      least able to opt back into it. "Reduce motion" is not "remove the
      picture". */
   atRest() {
-    return this.motionQuery.matches || (this.motion ?? 1) === 0;
+    return this.heavy || this.motionQuery.matches || (this.motion ?? 1) === 0;
   }
 
   start() {
@@ -556,7 +569,9 @@ class NordlysBackgroundEngine {
          much again as a slower scene's own, which would otherwise lose time. */
       const dt = Math.min((now - this.lastFrame) / 16.666, Math.max(6, (budget * 1.5) / 16.666));
       this.lastFrame = now;
+      const began = performance.now();
       this.render(dt);
+      this.timeFrame(now, performance.now() - began);
       /* Nothing in the scene advances at rest, so a second frame would paint
          the same pixels. Holding the last one costs nothing to keep and lets
          every backdrop-filter above it sample a layer that never invalidates. */
@@ -575,8 +590,45 @@ class NordlysBackgroundEngine {
     this.frameRequest = requestAnimationFrame(this.loop);
   }
 
+  /* The first 24 painted frames of a moving sky, from the second on (the
+     first pays for setting the scene up). Too heavy is a median frame that
+     takes over 12 ms of the page's own time: at thirty frames a second that
+     is more than a third of it, and the board's own clicks and scrolling
+     compete with the sky. Only the frame's own cost is judged, never how late
+     frames arrive, which a busy computer does to every page. Measured with
+     software drawing: Aurora about 3 ms, Polaris and Silk about 28. */
+  watchFrames(mode) {
+    this.watch = { mode, costs: [], skip: 1 };
+  }
+
+  timeFrame(now, cost) {
+    const watch = this.watch;
+    if (!watch || watch.mode !== this.mode) return;
+    if (watch.skip > 0) { watch.skip--; return; }
+    watch.costs.push(cost);
+    if (watch.costs.length < 24) return;
+    this.watch = null;
+    if (!NordlysBackgroundEngine.tooHeavy(watch.costs)) return;
+    this.heavy = true;
+    window.dispatchEvent(new CustomEvent("nordlys:skyheavy", { detail: { mode: this.mode } }));
+  }
+
+  static tooHeavy(costs) {
+    const sorted = [...costs].sort((a, b) => a - b);
+    return sorted.length > 0 && sorted[Math.floor(sorted.length / 2)] > 12;
+  }
+
+  // Held still for being too heavy, or let move again.
+  setHeavy(heavy) {
+    this.heavy = Boolean(heavy);
+    this.watch = null;
+    if (this.heavy) this.repaint();
+    else this.resumeIfMoving();
+  }
+
   frameBudget(now) {
-    const base = now - this.lastInput > NORDLYS_IDLE_AFTER ? 1000 / 15 : 1000 / 30;
+    // On battery, the idle pace all the time: half the frames, the same sky.
+    const base = this.onBattery || now - this.lastInput > NORDLYS_IDLE_AFTER ? 1000 / 15 : 1000 / 30;
     const own = NORDLYS_SCENE_BUDGET[this.mode];
     if (!own) return base;
     return Math.max(base, this.mode === "meteors" ? this.meteorDue(own) : own);

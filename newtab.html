@@ -668,6 +668,11 @@
           <span><span data-i18n="background.realMoon">Follow the real moon</span><small id="bg-moon-tonight" class="setting-note-inline"></small></span>
           <label class="tg"><input id="cfg-bg-real-sky" type="checkbox" checked><i></i></label>
         </div>
+        <!-- Shown when the watchdog held this sky still on this computer (app.js judgeSkyLoad). -->
+        <div class="row setting-row" id="bg-heavy-row" hidden>
+          <span><span data-i18n="background.heavyHere">Held still on this computer: moving, it took too much of it.</span></span>
+          <button type="button" id="cfg-bg-keep-moving" class="glass-btn" data-i18n="background.keepMoving">Keep it moving</button>
+        </div>
         <div class="row setting-row" data-scene-only="procedural">
           <span><span data-i18n="background.motion">Motion</span> (<b id="lbl-bg-motion">100%</b>)</span>
           <input id="cfg-bg-motion" type="range" class="ipt" min="0" max="100" value="100">
@@ -779,6 +784,14 @@
         <div class="row restore-point" id="restore-point-row" hidden style="flex-direction: column; align-items: stretch; gap: 8px;">
           <span><span data-i18n="backup.restorePoint">Settings from before the last update</span> <b id="restore-point-when"></b></span>
           <button id="cfg-restore-point" class="glass-btn" data-i18n="backup.restorePointBtn">Put those back</button>
+        </div>
+
+        <!-- The setup as it was before each of the last three updates, kept
+             by itself on the first new tab after one. Filled by
+             renderUpdateCopies; empty, and so invisible, on a first install. -->
+        <div id="update-copies" class="update-copies" aria-labelledby="update-copies-title" role="group" hidden>
+          <span id="update-copies-title" class="update-copies-title" data-i18n="backup.updateCopies">Copies kept before updates</span>
+          <ul class="update-copies-list"></ul>
         </div>
 
         <!-- One step back from the last thing that replaced everything — a

@@ -69,12 +69,21 @@
 
   /* Paint the colour to know it: computed values arrive as rgb(), color(srgb ...)
      or color-mix() output, and only the painted pixel reads back the same in all. */
+  /* Every tile of a folder asks about the same few colours, and reading a
+     pixel back is the slow part, so each answer is kept. */
+  const painted = new Map();
   function paint(colour, base) {
+    const key = `${base || ''}|${colour}`;
+    const known = painted.get(key);
+    if (known) return [...known];
     const context = canvas2d(); context.canvas.width = context.canvas.height = 1;
     context.clearRect(0, 0, 1, 1);
     if (base) { context.fillStyle = base; context.fillRect(0, 0, 1, 1); }
     context.fillStyle = colour; context.fillRect(0, 0, 1, 1);
-    return [...context.getImageData(0, 0, 1, 1).data];
+    const pixel = [...context.getImageData(0, 0, 1, 1).data];
+    if (painted.size > 500) painted.clear();
+    painted.set(key, pixel);
+    return [...pixel];
   }
 
   /* Composite the plate over its ancestors until the stack is opaque, so a
@@ -96,6 +105,7 @@
     return `rgba(${Math.round(sum[0] / sum[3])}, ${Math.round(sum[1] / sum[3])}, ${Math.round(sum[2] / sum[3])}, ${alpha.toFixed(3)})`;
   }
 
+  const stacked = new Map();
   function plateLuminance(node) {
     const layers = [];
     for (let current = node; current; current = current.parentElement) {
@@ -106,11 +116,16 @@
       layers.unshift(...painted.reverse());
       if (painted.some(layer => paint(layer)[3] > 250)) break;
     }
+    // The same stack of layers is the same plate: most tiles share one.
+    const key = layers.join('>');
+    if (stacked.has(key)) return stacked.get(key);
     const context = canvas2d(); context.canvas.width = context.canvas.height = 1;
     context.clearRect(0, 0, 1, 1); context.fillStyle = '#000'; context.fillRect(0, 0, 1, 1);
     for (const layer of layers) { context.fillStyle = layer; context.fillRect(0, 0, 1, 1); }
     const [r, g, b] = [...context.getImageData(0, 0, 1, 1).data];
-    return luminanceOf(r, g, b);
+    if (stacked.size > 200) stacked.clear();
+    stacked.set(key, luminanceOf(r, g, b));
+    return stacked.get(key);
   }
 
   /* Average the opaque pixels of a raster icon. Returns null when the source
@@ -216,6 +231,8 @@
     // One frame used to be the whole wait, which measured the plate halfway
     // between two themes and toned marks for the one being left.
     await new Promise(resolve => requestAnimationFrame(resolve));
+    // And after that frame is drawn: the first new-tab frame never waits for it.
+    await new Promise(resolve => setTimeout(resolve, 0));
     await window.NordlysUI?.settled?.();
     if (!plate.isConnected) return;
     const surface = plateLuminance(plate);

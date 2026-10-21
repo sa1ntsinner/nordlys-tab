@@ -134,3 +134,17 @@ test('the icon picker, the cropper and the bookmark list speak the chosen langua
   await page.waitForFunction(() => Boolean(window.Nordlys.settings.cropperImage));
   expect((await visible()).filter(text => !brands.test(text)), 'English left in the cropper').toEqual([]);
 });
+
+/* The page says which language it is in, so a screen reader reads German
+   with a German voice. */
+test('the page is marked with the language in use', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await page.locator('#gear').click();
+  for (const [pick, lang] of [['de', 'de'], ['zh', 'zh-CN'], ['ja', 'ja']]) {
+    await page.locator('#cfg-language-select').evaluate((select, value) => { select.value = value; select.dispatchEvent(new Event('change', { bubbles: true })); }, pick);
+    await expect(page.locator('html')).toHaveAttribute('lang', lang);
+  }
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
+});

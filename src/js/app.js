@@ -132,6 +132,16 @@ function adoptLegacyLocalStorage() {
    never more than two copies of a config in storage. */
 const RESTORE_POINT_KEY = "nordlys_restore_point";
 const UNDO_POINT_KEY = "nordlys_undo_point";
+/* A third, wider net: the whole setup as a backup file, made on the first
+   new tab after the extension updated, before anything is migrated. Kept in
+   chrome.storage.local, which has no 5 MB ceiling, so a board heavy with
+   icons is kept too; the last three updates are kept, and a reset keeps
+   them. SEEN_VERSION_KEY is the version the last new tab ran. */
+const UPDATE_COPIES_KEY = "nordlys_update_copies";
+const SEEN_VERSION_KEY = "nordlys_seen_version";
+const UPDATE_COPIES_KEPT = 3;
+// Which skies this device found too heavy, and which the person keeps moving anyway (judgeSkyLoad).
+const SKY_LOAD_KEY = "nordlys_sky_load";
 /* A wallpaper is far too large to sit inside a snapshot, so a reset moves it to
    this one slot in the media vault instead of deleting it. One slot, overwritten
    by the next reset. */
@@ -252,10 +262,24 @@ function keepIdentity(before, after) {
 }
 
 class NordlysApp {
+  /* The settings drawer is wired the first time anything needs it (the
+     gear, a shortcut, a command) or once the first frame is drawn, whichever
+     comes first, so the board never waits for it. */
+  get settings() {
+    if (!this.builtSettings) this.builtSettings = new SettingsController(this);
+    return this.builtSettings;
+  }
+
+  // After the browser has drawn a frame: work the first paint need not wait for.
+  afterFirstFrame(task) {
+    requestAnimationFrame(() => setTimeout(task, 0));
+  }
+
   constructor() {
     adoptLegacyLocalStorage();
     this.defaultConfig = DEFAULT_CONFIG;
     this.config = this.loadConfig();
+    this.keepCopyBeforeUpdate();
     this.mediaObjectUrl = null;
     this.init();
   }
@@ -277,7 +301,7 @@ class NordlysApp {
       if (await sync.refresh(this.config)) {
         this.saveConfig();
         this.grid?.render();
-        this.settings?.renderBookmarksManager?.();
+        this.builtSettings?.renderBookmarksManager?.();
       }
     };
     await pull();
@@ -631,6 +655,46 @@ class NordlysApp {
     });
   }
 
+  /* The first new tab of a new version keeps the setup as it was under the
+     last one: the stored config before this load touched it, the stores
+     beside it and what the dashboard cards hold, as a backup file. The
+     version is marked seen only once the copy is written, so a copy that
+     could not be written is tried again on the next new tab. */
+  keepCopyBeforeUpdate() {
+    const store = typeof chrome !== "undefined" ? chrome.storage?.local : null;
+    let current = DEFAULT_CONFIG.version;
+    try { current = chrome.runtime.getManifest().version || current; } catch (error) { /* a plain page: the build's own version */ }
+    let seen = null;
+    try { seen = localStorage.getItem(SEEN_VERSION_KEY); } catch (error) { return; }
+    if (seen === current) return;
+    const markSeen = () => { try { localStorage.setItem(SEEN_VERSION_KEY, current); } catch (error) { /* tried again next time */ } };
+    // A first install has nothing to keep.
+    if (!this.storedBeforeLoad || !store || !window.NordlysConfigSchema?.buildBackupFile) { markSeen(); return; }
+    let config;
+    try { config = JSON.parse(this.storedBeforeLoad); } catch (error) { markSeen(); return; }
+    const side = (key, json) => { try { const raw = localStorage.getItem(key); return raw === null ? undefined : json ? JSON.parse(raw) : raw; } catch (error) { return undefined; } };
+    store.get(null, (items) => {
+      const all = items || {};
+      const dashboardData = {};
+      for (const [key, value] of Object.entries(all)) if (key.startsWith("nordlys_dash.")) dashboardData[key.slice("nordlys_dash.".length)] = value;
+      const file = window.NordlysConfigSchema.buildBackupFile(config, { customThemes: side("nordlys_custom_themes", true) || [], drawerWidth: side("nordlys_drawer_width", false) || "", dashboardData });
+      const copy = { savedAt: new Date().toISOString(), from: seen || config.version || "", to: current, file };
+      const copies = [copy, ...(Array.isArray(all[UPDATE_COPIES_KEY]) ? all[UPDATE_COPIES_KEY] : [])].slice(0, UPDATE_COPIES_KEPT);
+      store.set({ [UPDATE_COPIES_KEY]: copies }, () => {
+        let failed = false;
+        try { failed = Boolean(chrome.runtime?.lastError); } catch (error) { /* no error to read */ }
+        if (!failed) markSeen();
+        this.builtSettings?.renderUpdateCopies?.();
+      });
+    });
+  }
+
+  updateCopies() {
+    const store = typeof chrome !== "undefined" ? chrome.storage?.local : null;
+    if (!store) return Promise.resolve([]);
+    return new Promise((resolve) => store.get(UPDATE_COPIES_KEY, (items) => resolve(Array.isArray(items?.[UPDATE_COPIES_KEY]) ? items[UPDATE_COPIES_KEY] : [])));
+  }
+
   /* Everything a reset removes, in one object: the config, and the stores that
      live beside it. Deep-copied, because the caller is about to change the
      originals. */
@@ -717,8 +781,8 @@ class NordlysApp {
     this.widgets?.updateClock();
     const cssEditor = document.getElementById("css-editor");
     if (cssEditor) cssEditor.value = this.config.customCss || "";
-    this.settings?.syncFormValues?.();
-    this.settings?.renderBookmarksManager?.();
+    this.builtSettings?.syncFormValues?.();
+    this.builtSettings?.renderBookmarksManager?.();
   }
 
   loadConfig() {
@@ -728,6 +792,7 @@ class NordlysApp {
         const parsed = JSON.parse(stored);
         // What was stored, kept exactly as it was in case anything below changes it.
         const original = JSON.parse(stored);
+        this.storedBeforeLoad = stored;
         const aged = Boolean(window.NordlysConfigSchema?.migrateRaw(parsed));
         const cfg = Object.assign({}, DEFAULT_CONFIG, parsed);
         /* Remembered for the mirror: only a config this instance loaded or
@@ -884,8 +949,8 @@ class NordlysApp {
       this.widgets?.refreshLabels();
       this.widgets?.updateClock();
       this.grid?.render();
-      this.settings?.renderBookmarksManager();
-      this.settings?.renderThemeCards();
+      this.builtSettings?.renderBookmarksManager();
+      this.builtSettings?.renderThemeCards();
     });
 
     // Typography left the theme; carry any font a custom theme still stores.
@@ -904,6 +969,7 @@ class NordlysApp {
 
     // 2. Initialize background engine
     this.bgEngine = new NordlysBackgroundEngine();
+    this.watchSkyLoad();
     this.updateBackgroundMode();
 
     // 3. Initialize widgets
@@ -911,7 +977,9 @@ class NordlysApp {
     this.grid = new GridController(this);
     // Before the first render, which is where the first fit happens.
     this.pageFit = window.NordlysPageFit ? new window.NordlysPageFit.PageFit(this) : null;
-    this.settings = new SettingsController(this);
+    // A click on the gear before then builds them and opens them.
+    document.getElementById("gear")?.addEventListener("click", () => { if (!this.builtSettings) this.settings.open(); }, { once: true });
+    this.afterFirstFrame(() => this.settings);
     /* Profiles and sync. A failure here must never cost the page its board. */
     try { this.sync = window.NordlysSyncClient ? new window.NordlysSyncClient(this) : null; } catch (error) { this.sync = null; }
     try { this.syncUI = this.sync && window.NordlysSyncUI ? new window.NordlysSyncUI(this) : null; } catch (error) { this.syncUI = null; }
@@ -930,6 +998,58 @@ class NordlysApp {
     this.initColorModeListener();
     this.watchOtherTabs();
     this.restoreFromChromeStorage();
+  }
+
+  /* What this device has learned about each sky's cost, kept here and never
+     synced: a sky found too heavy is held still from the next tab on, and
+     one the person chose to keep moving is never judged again. */
+  skyLoad() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(SKY_LOAD_KEY) || "{}");
+      return { heavy: stored.heavy || {}, moving: stored.moving || {} };
+    } catch (error) { return { heavy: {}, moving: {} }; }
+  }
+
+  saveSkyLoad(load) {
+    try { localStorage.setItem(SKY_LOAD_KEY, JSON.stringify(load)); } catch (error) { /* judged again next time */ }
+  }
+
+  judgeSkyLoad(mode) {
+    const load = this.skyLoad();
+    const engine = this.bgEngine;
+    engine.heavy = !load.moving[mode] && Boolean(load.heavy[mode]);
+    engine.watch = null;
+    if (!engine.heavy && !load.moving[mode] && (this.config.bgMotion ?? 1) > 0) engine.watchFrames(mode);
+    this.builtSettings?.showSkyLoad?.();
+  }
+
+  /* The watchdog found the sky too heavy: it is held still, and said once,
+     with the way to keep it moving. */
+  watchSkyLoad() {
+    window.addEventListener("nordlys:skyheavy", (event) => {
+      const mode = event.detail?.mode;
+      if (!mode) return;
+      const load = this.skyLoad();
+      load.heavy[mode] = Date.now();
+      this.saveSkyLoad(load);
+      this.builtSettings?.showSkyLoad?.();
+      const say = (key, fallback) => { const value = window.I18N?.t(key); return value && value !== key ? value : fallback; };
+      window.NordlysUI?.showUndoToast?.({
+        message: say("background.heavy", "This sky is too much for this computer, so it is held still."),
+        actionLabel: say("background.keepMoving", "Keep it moving"),
+        duration: 10000,
+        onAction: () => this.keepSkyMoving(mode)
+      });
+    });
+  }
+
+  keepSkyMoving(mode) {
+    const load = this.skyLoad();
+    delete load.heavy[mode];
+    load.moving[mode] = true;
+    this.saveSkyLoad(load);
+    if (this.bgEngine?.mode === mode) this.bgEngine.setHeavy(false);
+    this.builtSettings?.showSkyLoad?.();
   }
 
   /* Every open new tab holds its own copy of the config, and a save writes
@@ -997,7 +1117,7 @@ class NordlysApp {
       this.applyLegibility();
       this.bgEngine?.setPalettes?.(Array.isArray(next.bgPalettes) ? next.bgPalettes : []);
       this.applyLoadedConfig();
-      this.settings?.renderThemeCards?.();
+      this.builtSettings?.renderThemeCards?.();
     });
   }
 
@@ -1100,8 +1220,8 @@ class NordlysApp {
 
     const apply = () => {
       this.applyThemeTokens();
-      this.settings?.renderThemeCards();
-      this.settings?.syncColorModeSwitcher?.();
+      this.builtSettings?.renderThemeCards();
+      this.builtSettings?.syncColorModeSwitcher?.();
     };
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1149,8 +1269,8 @@ class NordlysApp {
     } else {
       this.saveConfig();
       this.applyThemeTokens();
-      this.settings?.renderThemeCards();
-      this.settings?.syncColorModeSwitcher?.();
+      this.builtSettings?.renderThemeCards();
+      this.builtSettings?.syncColorModeSwitcher?.();
     }
   }
 
@@ -1204,7 +1324,7 @@ class NordlysApp {
             this.setTheme(target);
             this.config.colorMode = "auto"; // setTheme keeps auto, but be explicit
             this.saveConfig();
-            this.settings?.syncColorModeSwitcher?.();
+            this.builtSettings?.syncColorModeSwitcher?.();
           }
         }
       });
@@ -1468,6 +1588,7 @@ class NordlysApp {
         intensity: this.highLegibility ? Math.min(0.6, this.config.bgIntensity ?? 1) : (this.config.bgIntensity ?? 1),
         palette: this.config.bgPalette || "theme"
       });
+      this.judgeSkyLoad(bgMode);
       this.bgEngine.setMode(bgMode);
     } else if (bgMode === "custom-image" || bgMode === "custom-video") {
       this.bgEngine.setMode(bgMode);

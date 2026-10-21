@@ -6,6 +6,11 @@ Chrome Web Store's rule that they only ever go up.
 
 ## [Unreleased]
 
+### Added
+
+- A sky that is too much for the computer (no graphics chip, a remote desktop) is held still after its first second, said once, and remembered on that computer. Settings → Background has a button to keep it moving anyway. On battery, every sky paints half as often; it moves at the same pace.
+- A copy of your whole setup is kept by itself on the first new tab after Nordlys updates, before anything changes: folders, bookmarks, look, the themes you made and what the dashboard cards hold. The copies from the last three updates are in Settings → Backup, where each can be put back or saved as a file. A reset keeps them.
+
 ### Removed
 
 - The Ask card, and `? question` in the search box. Nordlys no longer talks to OpenAI, Anthropic, Gemini, OpenRouter or Ollama, and the model key it kept on this device is deleted. A question typed after `?` is now an ordinary search.
@@ -22,6 +27,8 @@ Chrome Web Store's rule that they only ever go up.
 
 ### Changed
 
+- A new tab draws its board sooner. Settings are made ready just after the first frame instead of before it, and each icon's contrast with its tile is checked after the board is on screen, from colours read once per theme instead of once per tile. On a board of nine folders the work before the first frame fell by about a fifth.
+- The page tells the browser which language it is in, so a screen reader reads German with a German voice. It used to say English in every language.
 - Pillars, Nacre and Baikal are replaced by three backgrounds that show the sky over you as it is now, worked out from your clock and time zone, not your location. Star map shows the bright stars and their constellations. Meteors is a calm night sky with a shooting star now and then, and more on the nights of the big meteor showers; Settings says when one is on. Midnight sun shows the sun where it stands, over a calm sea, and the sky's colour follows it through the day.
 - If you were using Pillars you now get Meteors, Nacre becomes Midnight sun, and Baikal becomes Star map. A shared look or a synced profile that names one of them gets the same.
 - In a window narrower than about 860px, such as a browser on half a screen, each folder still takes a line of its own, but its icons now spread across it and sit in the middle instead of keeping to the left half of an otherwise empty box.

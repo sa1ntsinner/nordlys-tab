@@ -8,7 +8,8 @@ const vm = require('node:vm');
    Driven here by a synthetic clock — vsyncs on a fixed grid, timers that fire
    when they are due (or as late as `late` says), a main thread that can stall —
    so the numbers are exact. */
-function harness({ late = () => 0 } = {}) {
+function harness({ late = () => 0, cost = 0 } = {}) {
+  const events = [];
   let now = 0;
   let hz = 60;
   let nextId = 1;
@@ -38,7 +39,7 @@ function harness({ late = () => 0 } = {}) {
   const context = vm.createContext({
     window: {
       addEventListener: (type, fn) => { (listeners[type] = listeners[type] || []).push(fn); },
-      dispatchEvent: noop, matchMedia: () => motion,
+      dispatchEvent: event => events.push(event), matchMedia: () => motion,
       devicePixelRatio: 1, innerWidth: 1440, innerHeight: 900
     },
     document,
@@ -56,13 +57,14 @@ function harness({ late = () => 0 } = {}) {
     // The minute a held real-sky scene keeps time by; never due within a test.
     setInterval: () => 0, clearInterval: noop,
     getComputedStyle: () => ({ getPropertyValue: () => '' }),
-    CustomEvent: class { constructor(type) { this.type = type; } }
+    CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } }
   });
   vm.runInContext(`${readFileSync('src/js/background.js', 'utf8')}\nthis.Engine = NordlysBackgroundEngine;`, context);
   const engine = new context.Engine();
   let paints = [];
   const render = engine.render.bind(engine);
-  engine.render = dt => { paints.push(now); render(dt); };
+  // A frame that costs `cost` ms of the main thread to draw.
+  engine.render = dt => { paints.push(now); render(dt); now += cost; };
 
   const nextVsync = () => {
     const period = 1000 / hz;
@@ -92,7 +94,7 @@ function harness({ late = () => 0 } = {}) {
     now = end;
   };
   return {
-    engine, stats, motion,
+    engine, stats, motion, events,
     get now() { return now; },
     get paints() { return paints; },
     pending: () => ({ frames: frames.length, timers: timers.size }),
@@ -356,4 +358,46 @@ test('Meteors sleep between meteors and paint every one from its start', () => {
     const during = times.filter(([, t]) => t >= meteor.start && t <= meteor.start + meteor.life).map(([at]) => at);
     for (const gap of gaps(during)) assert.ok(gap <= 1000 / 30 + 2, `gap ${gap.toFixed(1)} ms in flight`);
   }
+});
+
+/* The watchdog: the first frames of a moving sky are timed, and one that
+   takes too much of this computer is held still and said, once. */
+test('a sky that costs too much is held still, and the page is told once', () => {
+  const sky = harness({ cost: 20 });
+  sky.engine.watchFrames('aurora');
+  sky.engine.start();
+  sky.run(60, 3);
+  assert.strictEqual(sky.engine.heavy, true);
+  assert.deepStrictEqual(sky.events.filter(e => e.type === 'nordlys:skyheavy').map(e => e.detail.mode), ['aurora']);
+  const { renders } = sky.run(60, 2);
+  assert.strictEqual(renders, 0, 'held still: nothing more is painted');
+  sky.engine.setHeavy(false);
+  assert.ok(sky.run(60, 1).renders > 20, 'and moves again when asked');
+});
+
+test('a sky this computer draws easily keeps moving and is judged no more', () => {
+  const sky = harness({ cost: 2 });
+  sky.engine.watchFrames('aurora');
+  sky.engine.start();
+  sky.run(60, 3);
+  assert.strictEqual(sky.engine.heavy, false);
+  assert.strictEqual(sky.engine.watch, null, 'the watch ends after its frames');
+  assert.strictEqual(sky.events.filter(e => e.type === 'nordlys:skyheavy').length, 0);
+});
+
+test('too heavy is a slow median frame, not one slow frame', () => {
+  const Engine = harness().engine.constructor;
+  assert.strictEqual(Engine.tooHeavy(Array(24).fill(5)), false);
+  assert.strictEqual(Engine.tooHeavy(Array(24).fill(14)), true);
+  // One long frame (a tab switch, a GC) is not a verdict.
+  assert.strictEqual(Engine.tooHeavy([...Array(23).fill(4), 400]), false);
+});
+
+test('on battery the sky paints at the idle pace', () => {
+  const sky = harness();
+  sky.engine.onBattery = true;
+  sky.engine.start();
+  sky.run(60, 1);
+  const { renders } = sky.run(60, 2);
+  assert.ok(renders >= 28 && renders <= 32, `renders ${renders}`);
 });

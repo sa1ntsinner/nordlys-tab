@@ -84,9 +84,23 @@ class SettingsController {
     this.initScenePicker();
     this.initTypography();
     this.initLookShare();
+    this.showSkyLoad();
     // Every native dropdown gets a themed control drawn over it; the element
     // stays as the value source but stops painting platform chrome.
     window.NordlysUI?.enhanceSelects(document);
+  }
+
+  // The note that this sky is held still for being too heavy here, with the way out.
+  showSkyLoad() {
+    const row = document.getElementById("bg-heavy-row");
+    if (!row) return;
+    const engine = this.app.bgEngine;
+    row.hidden = !engine?.heavy;
+    const button = document.getElementById("cfg-bg-keep-moving");
+    if (button && !button.dataset.wired) {
+      button.dataset.wired = "1";
+      button.addEventListener("click", () => this.app.keepSkyMoving(this.app.bgEngine?.mode));
+    }
   }
 
   /* ── 0a. Background scenes ────────────────────────────────────── */
@@ -3678,6 +3692,7 @@ class SettingsController {
                        everything: a reset, or a restore. */
   initRestorePoint() {
     this.renderRecoveryRows();
+    this.renderUpdateCopies();
     document.getElementById("cfg-restore-point")?.addEventListener("click", () => this.useRestorePointWithUndo());
     document.getElementById("cfg-undo-point")?.addEventListener("click", () => this.stepBack());
   }
@@ -3700,6 +3715,57 @@ class SettingsController {
         ? this.text("backup.undoPointRestore", "Older settings were put back")
         : this.text("backup.undoPointReset", "Everything was reset");
     }
+  }
+
+  /* The copies made before updates, newest first: each can be put back in
+     place of the whole setup, or saved as a backup file. */
+  async renderUpdateCopies() {
+    const box = document.getElementById("update-copies");
+    const list = box?.querySelector(".update-copies-list");
+    if (!box || !list) return;
+    const copies = await this.app.updateCopies();
+    box.hidden = !copies.length;
+    list.replaceChildren(...copies.map((copy, index) => {
+      const item = document.createElement("li");
+      item.className = "update-copy";
+      const what = document.createElement("span");
+      what.textContent = `${this.text("backup.updateCopyFrom", "Before {version}", { version: copy.to || "" })} ${this.savedAtText(copy)}`;
+      const put = document.createElement("button");
+      put.type = "button";
+      put.className = "glass-btn";
+      put.dataset.copy = String(index);
+      put.textContent = this.text("backup.updateCopyUse", "Put it back");
+      put.addEventListener("click", () => this.useUpdateCopy(copy));
+      const save = document.createElement("button");
+      save.type = "button";
+      save.className = "glass-btn";
+      save.textContent = this.text("backup.updateCopySave", "Save as file");
+      save.addEventListener("click", () => this.download(JSON.stringify(copy.file, null, 2), `nordlys-before-${copy.to || "update"}-${String(copy.savedAt || "").slice(0, 10)}.json`, "application/json"));
+      const actions = document.createElement("span");
+      actions.className = "update-copy-actions";
+      actions.append(put, save);
+      item.append(what, actions);
+      return item;
+    }));
+  }
+
+  async useUpdateCopy(copy) {
+    const ok = await confirmDialog({
+      title: this.text("confirm.restoreTitle", "Put the older settings back?"),
+      message: this.text("backup.confirmRestore", "Your folders, bookmarks and appearance are replaced.", { when: this.savedAtText(copy) }),
+      confirmText: this.text("backup.updateCopyUse", "Put it back"),
+      cancelText: this.text("confirm.cancel", "Cancel")
+    });
+    if (ok) this.applyBackupObject(copy.file);
+  }
+
+  download(text, name, type) {
+    const url = URL.createObjectURL(new Blob([text], { type }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   savedAtText(point) {
@@ -3842,6 +3908,59 @@ class SettingsController {
     });
   }
 
+  /* A backup file put in place of the whole setup: from an imported file,
+     or from a copy kept before an update. Reloads once it has landed. */
+  applyBackupObject(parsed) {
+    const file = window.NordlysConfigSchema.readBackupFile(parsed);
+    const imported = window.NordlysConfigSchema.normalizeImportConfig(file.config);
+    window.NordlysConfigSchema.migrateRaw(imported);
+    /* Checked in full before anything is written. The old test was "has a
+       groups or a theme key", which let {"groups": {}} through — saved,
+       and then a page that failed on every open. The reasons are shown,
+       and the setup being replaced is kept in the restore point. */
+    const verdict = window.NordlysConfigSchema.validateConfig(imported);
+    if (!verdict.ok) {
+      const label = window.I18N ? window.I18N.t("toast.importInvalid") : "Invalid JSON configuration structure";
+      if (typeof toast === "function") toast(`${label}: ${verdict.errors.slice(0, 3).join("; ")}`, "danger", 7000);
+      return false;
+    }
+    /* Brought up to the current shape here, before it is written. There
+       is one restore-point slot. If the file still needed a migration on
+       the next load, that load would take a second snapshot — of the
+       imported file — over the one taken here of the setup being
+       replaced, and the user's own setup would exist nowhere. Every
+       export from 2.1.0 to 2.2.1 needs a migration. */
+    const incoming = Object.assign({}, DEFAULT_CONFIG, imported);
+    window.NordlysConfigSchema.repairConfig(incoming, this.app.defaultConfig);
+    this.app.normalizeStoredConfig(incoming);
+    /* One commit for the whole file. A file of embedded icons can be
+       megabytes, and it is written to four keys: when the write failed,
+       this reloaded anyway — and the page came back on the old config,
+       which reads as "the import did nothing" with nothing said. Worse,
+       the parts written before it stayed: the restore point spent on an
+       import that never happened, or the imported themes left under the
+       config they did not come with.
+
+       The restore point and the extras go first because they are
+       localStorage only and can be put back to the byte. The config
+       goes last because it is the one write that also reaches the
+       browser-storage mirror, and a mirror holding a refused import is
+       a copy of a setup that never existed. */
+    const previous = this.app.config;
+    const putBack = this.holdLocalKeys([RESTORE_POINT_KEY, STORAGE_KEY, "nordlys_custom_themes", "nordlys_drawer_width"]);
+    this.app.config = incoming;
+    if (!this.app.snapshotBeforeMigration(previous, "import")
+      || !this.adoptImportedExtras(file.extras)
+      || !this.app.saveConfig()) {
+      this.app.config = previous;
+      putBack();
+      this.sayNoRoom("toast.saveFailed");
+      return false;
+    }
+    location.reload();
+    return true;
+  }
+
   initBackupManager() {
     // Export JSON Backup
     document.getElementById("cfg-export")?.addEventListener("click", () => {
@@ -3948,53 +4067,7 @@ class SettingsController {
                is never validated as a setting and never stored as one; a file
                without one — every backup written before this build, including
                the 2.0 exports people still have — reads as itself. */
-            const file = window.NordlysConfigSchema.readBackupFile(JSON.parse(text));
-            const imported = window.NordlysConfigSchema.normalizeImportConfig(file.config);
-            window.NordlysConfigSchema.migrateRaw(imported);
-            /* Checked in full before anything is written. The old test was "has a
-               groups or a theme key", which let {"groups": {}} through — saved,
-               and then a page that failed on every open. The reasons are shown,
-               and the setup being replaced is kept in the restore point. */
-            const verdict = window.NordlysConfigSchema.validateConfig(imported);
-            if (!verdict.ok) {
-              const label = window.I18N ? window.I18N.t("toast.importInvalid") : "Invalid JSON configuration structure";
-              if (typeof toast === "function") toast(`${label}: ${verdict.errors.slice(0, 3).join("; ")}`, "danger", 7000);
-              return;
-            }
-            /* Brought up to the current shape here, before it is written. There
-               is one restore-point slot. If the file still needed a migration on
-               the next load, that load would take a second snapshot — of the
-               imported file — over the one taken here of the setup being
-               replaced, and the user's own setup would exist nowhere. Every
-               export from 2.1.0 to 2.2.1 needs a migration. */
-            const incoming = Object.assign({}, DEFAULT_CONFIG, imported);
-            window.NordlysConfigSchema.repairConfig(incoming, this.app.defaultConfig);
-            this.app.normalizeStoredConfig(incoming);
-            /* One commit for the whole file. A file of embedded icons can be
-               megabytes, and it is written to four keys: when the write failed,
-               this reloaded anyway — and the page came back on the old config,
-               which reads as "the import did nothing" with nothing said. Worse,
-               the parts written before it stayed: the restore point spent on an
-               import that never happened, or the imported themes left under the
-               config they did not come with.
-
-               The restore point and the extras go first because they are
-               localStorage only and can be put back to the byte. The config
-               goes last because it is the one write that also reaches the
-               browser-storage mirror, and a mirror holding a refused import is
-               a copy of a setup that never existed. */
-            const previous = this.app.config;
-            const putBack = this.holdLocalKeys([RESTORE_POINT_KEY, STORAGE_KEY, "nordlys_custom_themes", "nordlys_drawer_width"]);
-            this.app.config = incoming;
-            if (!this.app.snapshotBeforeMigration(previous, "import")
-              || !this.adoptImportedExtras(file.extras)
-              || !this.app.saveConfig()) {
-              this.app.config = previous;
-              putBack();
-              this.sayNoRoom("toast.saveFailed");
-              return;
-            }
-            location.reload();
+            this.applyBackupObject(JSON.parse(text));
           }
         } catch (err) {
           if (typeof toast === "function") {
@@ -4036,7 +4109,12 @@ class SettingsController {
         try { await MediaVault.deleteMedia("custom_bg"); } catch (e) {}
         NordlysUI.announce(this.text("toast.resetDone", "Everything was reset"));
         if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-          chrome.storage.local.clear(() => location.reload());
+          // The copies made before updates outlive a reset, as the restore point does.
+          const copies = await this.app.updateCopies();
+          chrome.storage.local.clear(() => {
+            if (copies.length) chrome.storage.local.set({ nordlys_update_copies: copies }, () => location.reload());
+            else location.reload();
+          });
           setTimeout(() => location.reload(), 400); // fallback if callback never fires
         } else {
           location.reload();

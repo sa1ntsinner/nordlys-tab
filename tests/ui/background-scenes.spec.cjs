@@ -555,3 +555,28 @@ test('a sky drawn from the real one says what it shows, and which shower is on',
   await page.evaluate(() => window.I18N.setLanguage('de'));
   await expect(note).toContainText('Sternschnuppe');
 });
+
+/* A sky too heavy for the computer is held still, said once, remembered for
+   the device, and can be set moving again. The heaviness is made here by
+   slowing every frame the engine draws. */
+test('a sky too heavy for this computer is held still and can be kept moving', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => {
+    const engine = window.Nordlys.bgEngine;
+    const render = engine.render.bind(engine);
+    engine.render = (dt) => { const end = performance.now() + 18; render(dt); while (performance.now() < end) { /* a slow machine */ } };
+    window.Nordlys.judgeSkyLoad(engine.mode);
+  });
+  await expect(page.locator('#toast-dock')).toContainText('held still', { timeout: 10000 });
+  expect(await page.evaluate(() => window.Nordlys.bgEngine.heavy)).toBe(true);
+  expect(await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('nordlys_sky_load')).heavy))).toEqual([await page.evaluate(() => window.Nordlys.bgEngine.mode)]);
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.bgEngine));
+  expect(await page.evaluate(() => window.Nordlys.bgEngine.heavy), 'remembered on the next tab').toBe(true);
+  await page.locator('#gear').click();
+  await page.locator('#settings-tab-background').click();
+  await expect(page.locator('#bg-heavy-row')).toBeVisible();
+  await page.locator('#cfg-bg-keep-moving').click();
+  expect(await page.evaluate(() => window.Nordlys.bgEngine.heavy)).toBe(false);
+  await expect(page.locator('#bg-heavy-row')).toBeHidden();
+});

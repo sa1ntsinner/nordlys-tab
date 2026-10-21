@@ -430,11 +430,11 @@ class GridController {
     create.addEventListener("click", () => this.addFolder());
     actions.append(create);
 
-    /* Offered only when there is something to open it with. A settings
-       controller exists by the time the board first renders, so in practice the
-       pair always arrives together; a button that cannot do what it says would
-       be worse than one fewer way in. */
-    if (this.app.settings) {
+    /* Offered only when there is something to open it with: a button that
+       cannot do what it says would be worse than one fewer way in. Asking
+       whether settings can be built, not building them, keeps them out of
+       the first frame. */
+    if (typeof SettingsController === "function") {
       const bring = document.createElement("button");
       bring.type = "button";
       bring.id = "board-empty-import";
