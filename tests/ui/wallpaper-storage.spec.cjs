@@ -30,3 +30,32 @@ test('a store that refuses Blobs still keeps the wallpaper, across a reload', as
   expect(await stored()).toEqual({ size: PIXEL.length, type: 'image/png' });
   expect(runtimeErrors.filter((line) => line.startsWith('pageerror'))).toEqual([]);
 });
+
+/* A photo larger than the screen is kept at the screen's size: every new tab
+   decodes it. One already small enough is kept byte for byte (above). */
+test('a large photo is kept at the size the screen can show', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  test.slow();
+  const big = Buffer.from(await page.evaluate(async () => {
+    const canvas = document.createElement('canvas'); canvas.width = 4800; canvas.height = 3200;
+    const ctx = canvas.getContext('2d');
+    const g = ctx.createLinearGradient(0, 0, 4800, 3200); g.addColorStop(0, '#123'); g.addColorStop(1, '#9cf');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 4800, 3200);
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.95));
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    let text = ''; for (let i = 0; i < bytes.length; i += 0x8000) text += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(text);
+  }), 'base64');
+  await page.locator('#gear').click();
+  await page.locator('#settings-tab-background').click();
+  await page.locator('#cfg-custom-media').setInputFiles({ name: 'camera.jpg', mimeType: 'image/jpeg', buffer: big });
+  await expect(page.locator('.scene-card[data-scene="custom-image"]')).toHaveAttribute('aria-checked', 'true');
+  const kept = await page.evaluate(async () => {
+    const blob = await MediaVault.getMedia('custom_bg');
+    const bitmap = await createImageBitmap(blob);
+    return { type: blob.type, width: bitmap.width, height: bitmap.height, size: blob.size };
+  });
+  expect(kept.type).toBe('image/webp');
+  expect(Math.max(kept.width, kept.height)).toBeLessThanOrEqual(3840);
+  expect(kept.width / kept.height).toBeCloseTo(1.5, 2);
+});

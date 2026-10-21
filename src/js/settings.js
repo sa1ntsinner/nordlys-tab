@@ -90,6 +90,28 @@ class SettingsController {
     window.NordlysUI?.enhanceSelects(document);
   }
 
+  /* A photo is kept at the size this screen can show, not the size the camera
+     took it: every new tab decodes it, and a 6000 by 4000 picture is about
+     96 MB of memory per open tab. Animated and vector pictures are kept as
+     they are, and so is one that is already small enough. */
+  async fitWallpaper(file) {
+    if (/image\/(gif|svg)/i.test(file.type) || typeof createImageBitmap !== "function") return file;
+    let bitmap;
+    try { bitmap = await createImageBitmap(file); } catch (error) { return file; }
+    const longest = Math.min(3840, Math.max(1920, Math.round(Math.max(screen.width || 0, screen.height || 0) * (window.devicePixelRatio || 1))));
+    const scale = longest / Math.max(bitmap.width, bitmap.height);
+    if (scale >= 1) { bitmap.close?.(); return file; }
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    const context = canvas.getContext("2d");
+    context.imageSmoothingQuality = "high";
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close?.();
+    const smaller = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.9));
+    return smaller && smaller.size < file.size ? smaller : file;
+  }
+
   // The note that this sky is held still for being too heavy here, with the way out.
   showSkyLoad() {
     const row = document.getElementById("bg-heavy-row");
@@ -1847,8 +1869,15 @@ class SettingsController {
 
       if (fileLabel) fileLabel.textContent = file.name;
 
+      // A loop larger than this is more than a new tab should read each time.
+      if (file.type.startsWith("video/") && file.size > 200 * 1024 * 1024) {
+        if (typeof toast === "function") toast(this.text("toast.videoTooLarge", "That video is over 200 MB. A shorter or smaller loop works better as a wallpaper."), "danger", 6000);
+        return;
+      }
+
       try {
-        await MediaVault.saveMedia("custom_bg", file, file.type);
+        const kept = file.type.startsWith("image/") ? await this.fitWallpaper(file) : file;
+        await MediaVault.saveMedia("custom_bg", kept, kept.type);
         this.app.config.bgMode = file.type.startsWith("video/") ? "custom-video" : "custom-image";
         this.app.saveConfig();
         this.app.updateBackgroundMode();

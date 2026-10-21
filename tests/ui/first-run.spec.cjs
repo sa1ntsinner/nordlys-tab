@@ -41,10 +41,10 @@ test('the empty board is an invitation, and says what to do with it', async ({ n
 
   // A way to start clean and ways to arrive with what you already have: the
   // browser's own bookmarks where it can hand them over — first, because that
-  // is where they already are — or a file. Nothing else.
+  // is where they already are — its most visited sites, or a file. Nothing else.
   const ways = (await empty.getByRole('button').evaluateAll(nodes => nodes.map(node => node.id)));
-  expect(ways.filter(id => id !== 'board-empty-browser')).toEqual(['board-empty-create', 'board-empty-import']);
-  if (ways.includes('board-empty-browser')) expect(ways[0]).toBe('board-empty-browser');
+  expect(ways.filter(id => id !== 'board-empty-browser' && id !== 'board-empty-visited')).toEqual(['board-empty-create', 'board-empty-import']);
+  if (ways.includes('board-empty-browser')) expect(ways.slice(0, 2)).toEqual(['board-empty-browser', 'board-empty-visited']);
   await expect(page.locator('#board-empty-create')).toBeVisible();
   await expect(page.locator('#board-empty-import')).toBeVisible();
 
@@ -334,4 +334,25 @@ test('with an empty bar, Other bookmarks come in instead, nested folders by thei
   await expect(page.locator('#board .card')).toHaveCount(2);
   const groups = await page.evaluate(() => window.Nordlys.config.groups.map(group => [group.label, group.links.map(link => link.name)]));
   expect(groups).toEqual([['Other bookmarks', ['Elsewhere']], ['Reading / Later', ['Essay']]]);
+});
+
+/* No bookmarks worth bringing: the sites the browser knows are opened most
+   become one folder, asked for on the click. */
+test('the empty board can start from the most visited sites', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.addInitScript(() => {
+    localStorage.setItem('nordlys_config', JSON.stringify({ groups: [] }));
+    window.__asked = [];
+    window.chrome.permissions = { contains: (p, done) => done(false), request: (p, done) => { window.__asked.push(...(p.permissions || [])); done(true); } };
+    window.chrome.bookmarks = { getTree: done => done([]), getChildren: (id, done) => done([]) };
+    window.chrome.topSites = { get: done => done([
+      { url: 'https://news.ycombinator.com/', title: 'Hacker News' }, { url: 'chrome://settings/', title: 'Settings' }, { url: 'https://mail.example/', title: '' }
+    ]) };
+  });
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  await page.locator('#board-empty-visited').click();
+  await expect(page.locator('#board .card')).toHaveCount(1);
+  expect(await page.evaluate(() => window.__asked)).toEqual(['topSites']);
+  expect(await page.evaluate(() => window.Nordlys.config.groups.map(g => [g.label, g.links.map(l => l.url)]))).toEqual([['Most visited', ['https://news.ycombinator.com/', 'https://mail.example/']]]);
 });

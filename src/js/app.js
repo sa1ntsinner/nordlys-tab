@@ -146,6 +146,8 @@ const SEEN_VERSION_KEY = "nordlys_seen_version";
 const UPDATE_COPIES_KEPT = 3;
 // Which skies this device found too heavy, and which the person keeps moving anyway (judgeSkyLoad).
 const SKY_LOAD_KEY = "nordlys_sky_load";
+// When the config was last saved, beside it in each store (saveConfig).
+const SAVED_AT_KEY = "nordlys_config_saved_at";
 /* A wallpaper is far too large to sit inside a snapshot, so a reset moves it to
    this one slot in the media vault instead of deleting it. One slot, overwritten
    by the next reset. */
@@ -163,7 +165,7 @@ const SIDE_STORAGE = {
 /* Everything this build writes, and everything any earlier build wrote — the
    list a reset clears. The two recovery slots are deliberately not in it. */
 const OWNED_LOCAL_KEYS = [
-  STORAGE_KEY, ...Object.values(SIDE_STORAGE).map((entry) => entry.key),
+  STORAGE_KEY, "nordlys_config_saved_at", ...Object.values(SIDE_STORAGE).map((entry) => entry.key),
   "aether_tab_config", "aurora_tab_config", "aurora_custom_themes",
   "aurora_drawer_width", "aurora_language", "aurora_search_history",
   // What One page fit remembers for the next new tab (page-fit.js); never in a backup.
@@ -835,19 +837,45 @@ class NordlysApp {
      to reload the page, or to destroy something, check it — a swallowed
      QuotaExceededError followed by a reload looks exactly like "nothing
      happened", which is the worst way for a product to lose something. */
+  /* localStorage is the fast copy the first frame reads; chrome.storage.local,
+     which has no 5 MB ceiling, is written every time as well, with the moment
+     of the save beside each. A board grown past localStorage (embedded icons,
+     mostly) is then still saved: the mirror holds it, and the next load takes
+     whichever copy is newer (restoreFromChromeStorage). Only when neither
+     takes the write is it reported as lost. */
   saveConfig() {
+    const at = Date.now();
+    const mirror = typeof chrome !== "undefined" && chrome.storage && chrome.storage.local;
+    let fast = true;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.config));
-      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.set({ [STORAGE_KEY]: this.config }, () => {
-          if (chrome.runtime?.lastError) this.reportSaveFailure();
-        });
-      }
-      return true;
+      localStorage.setItem(SAVED_AT_KEY, String(at));
+    } catch (e) {
+      fast = false;
+    }
+    if (!mirror) {
+      if (!fast) this.reportSaveFailure();
+      return fast;
+    }
+    try {
+      chrome.storage.local.set({ [STORAGE_KEY]: this.config, [SAVED_AT_KEY]: at }, () => {
+        if (chrome.runtime?.lastError) this.reportSaveFailure();
+        else if (!fast) this.reportSlowStore();
+      });
     } catch (e) {
       this.reportSaveFailure();
       return false;
     }
+    return true;
+  }
+
+  /* Saved, but only in the mirror: said once, plainly, without alarm. */
+  reportSlowStore() {
+    if (this.saidSlowStore) return;
+    this.saidSlowStore = true;
+    const value = window.I18N?.t("toast.savedInMirror");
+    const message = value && value !== "toast.savedInMirror" ? value : "Saved. This board is now too big for the quick store, so a new tab may take a moment longer to show it.";
+    if (typeof toast === "function") toast(message, "info", 7000);
   }
 
   /* A change that is not saved is gone on the next new tab, and nearly every
@@ -890,10 +918,23 @@ class NordlysApp {
   restoreFromChromeStorage() {
     if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) return;
     try {
-      chrome.storage.local.get([STORAGE_KEY, ...LEGACY_STORAGE_KEYS], (data) => {
+      chrome.storage.local.get([STORAGE_KEY, SAVED_AT_KEY, ...LEGACY_STORAGE_KEYS], (data) => {
         if (!data) return;
         const legacyPresent = LEGACY_STORAGE_KEYS.some((key) => data[key] !== undefined);
         let migrated = false;
+        /* The mirror was saved after the fast copy: a save that localStorage
+           refused for room. The newer board is the one to show. */
+        let fastAt = 0;
+        try { fastAt = Number(localStorage.getItem(SAVED_AT_KEY)) || 0; } catch (e) {}
+        if (this.loadedFromStore && data[STORAGE_KEY]?.groups && Number(data[SAVED_AT_KEY]) > fastAt) {
+          const newer = data[STORAGE_KEY];
+          window.NordlysConfigSchema?.migrateRaw(newer);
+          this.config = Object.assign({}, DEFAULT_CONFIG, newer);
+          window.NordlysConfigSchema?.repairConfig(this.config, DEFAULT_CONFIG);
+          this.normalizeStoredConfig(this.config);
+          this.applyLoadedConfig();
+          return;
+        }
 
         if (!this.loadedFromStore) {
           let source = null;

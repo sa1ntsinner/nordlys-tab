@@ -424,6 +424,18 @@ class GridController {
       actions.append(bring);
     }
 
+    /* Someone with no bookmarks worth bringing can start from the sites they
+       open most, which the browser already knows. Asked for on the click. */
+    if (canBring && window.NordlysPlatform?.name !== "safari") {
+      const visited = document.createElement("button");
+      visited.type = "button";
+      visited.id = "board-empty-visited";
+      visited.className = "glass-btn";
+      visited.textContent = t("board.emptyVisited", "Start from my most visited sites");
+      visited.addEventListener("click", () => this.bringMostVisited(visited));
+      actions.append(visited);
+    }
+
     const create = document.createElement("button");
     create.type = "button";
     create.id = "board-empty-create";
@@ -453,6 +465,30 @@ class GridController {
   /* The bookmarks bar, and each folder in it, as folders that follow the
      browser. Asked for on the click, as the permission has to be; read before
      anything is written; said in numbers afterwards, with a way back. */
+  // The browser's most visited sites, as one folder of copies.
+  async bringMostVisited(opener) {
+    const say = (key, fallback, params) => { const value = window.I18N?.t(key, params || {}); return value && value !== key ? value : fallback; };
+    const api = typeof chrome !== "undefined" ? chrome : null;
+    const granted = await new Promise((resolve) => {
+      if (!api?.permissions?.request) { resolve(Boolean(api?.topSites)); return; }
+      try { api.permissions.request({ permissions: ["topSites"] }, (ok) => resolve(Boolean(ok))); } catch (error) { resolve(false); }
+    });
+    if (!granted || !api?.topSites?.get) { toast(say("board.visitedRefused", "Nordlys was not allowed to see your most visited sites."), "info"); return; }
+    const sites = await new Promise((resolve) => { try { api.topSites.get((list) => resolve(list || [])); } catch (error) { resolve([]); } });
+    const links = sites.filter((site) => /^https?:\/\//i.test(site.url || "")).slice(0, 12).map((site) => ({ name: site.title || site.url, url: site.url, icon: "", color: "" }));
+    if (!links.length) { toast(say("board.visitedEmpty", "Your browser has no most visited sites yet."), "info"); return; }
+    const before = this.app.config.groups;
+    this.app.config.groups = [...before, { label: say("board.visitedFolder", "Most visited"), cols: Math.min(6, Math.max(2, Math.ceil(Math.sqrt(links.length)))), hidden: false, links }];
+    this.app.saveConfig();
+    this.render();
+    NordlysUI.showUndoToast({
+      message: say("board.visitedDone", `${links.length} sites came in, yours to change here.`, { count: links.length }),
+      duration: 9000,
+      onAction: () => { this.app.config.groups = before; this.app.saveConfig(); this.render(); }
+    });
+    this.focusTile(this.app.config.groups.length - 1, 0) || opener?.focus?.();
+  }
+
   async bringBrowserBookmarks(opener) {
     const sync = window.NordlysBookmarks;
     const say = (key, fallback, params) => {

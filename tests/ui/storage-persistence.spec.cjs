@@ -62,11 +62,20 @@ test('reset clears current, legacy, and auxiliary persisted settings before relo
    not depend on the storage that refused. */
 test('a save the browser refuses is said once, with a backup offered', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
+  // Both stores refuse: localStorage is full, and so is the mirror.
   await page.evaluate(() => {
     const setItem = Storage.prototype.setItem;
     Storage.prototype.setItem = function (key, value) {
       if (key === 'nordlys_config') throw new DOMException('full', 'QuotaExceededError');
       return setItem.call(this, key, value);
+    };
+    const local = window.chrome.storage.local;
+    const set = local.set.bind(local);
+    local.set = (values, callback) => {
+      if (!('nordlys_config' in values)) { set(values, callback); return; }
+      window.chrome.runtime.lastError = { message: 'QUOTA_BYTES quota exceeded' };
+      callback?.();
+      delete window.chrome.runtime.lastError;
     };
   });
   await page.evaluate(() => { window.Nordlys.config.showSeconds = true; window.Nordlys.saveConfig(); });
@@ -81,4 +90,24 @@ test('a save the browser refuses is said once, with a backup offered', async ({ 
   const download = page.waitForEvent('download');
   await warning.locator('.toast-action').click();
   expect((await download).suggestedFilename()).toMatch(/\.json$/);
+});
+
+/* A board that has outgrown localStorage is still saved: the mirror in
+   chrome.storage.local takes it, and the next tab shows the newer copy. */
+test('a save localStorage has no room for is kept in the mirror and comes back', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => {
+    const set = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (key === 'nordlys_config' && String(value).includes('Too big here')) throw new DOMException('quota', 'QuotaExceededError');
+      return set.call(this, key, value);
+    };
+    window.Nordlys.config.groups.push({ label: 'Too big here', cols: 2, hidden: false, links: [{ name: 'Kept', url: 'https://kept.example/' }] });
+    return window.Nordlys.saveConfig();
+  });
+  await expect(page.locator('#toast-dock')).toContainText('too big for the quick store');
+  expect(await page.evaluate(() => localStorage.getItem('nordlys_config').includes('Too big here'))).toBe(false);
+  await page.reload();
+  await page.waitForFunction(() => window.Nordlys?.config?.groups?.some(g => g.label === 'Too big here'));
+  await expect(page.locator('#board .card', { hasText: 'Too big here' })).toBeVisible();
 });

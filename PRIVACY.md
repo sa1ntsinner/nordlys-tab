@@ -73,6 +73,7 @@ Nordlys uses these permissions:
 - `bookmarks` is optional and isn't requested at install. Nordlys asks for it only when you link a folder to a Chrome bookmark folder. It only reads that folder to mirror its tiles. It never changes or sends your Chrome bookmarks. If you revoke access in `chrome://extensions`, mirroring stops and the tiles already on screen stay.
 - Nordlys asks for no site at install. It can't read, change or send data from pages you visit.
 - `tabs` is optional and isn't requested at install. Nordlys asks for it only when you press "Stash the tabs of this window" on the Tab stash card. It then reads the addresses and titles of that window's tabs once, saves them on your device and closes those tabs. Nothing is sent anywhere. Without it, Nordlys can't see your open tabs.
+- `topSites` is optional and isn't requested at install. Nordlys asks for it only when you press "Start from my most visited sites" on an empty board. It reads the browser's list of your most visited sites once, makes a folder of them on your device and keeps nothing else. Nothing is sent anywhere.
 - Optional site access (for connected apps and calendar links) is asked for one site at a time, when you connect it. You can take it back in the browser's extension settings.
 - Nordlys has no history access. It doesn't look at your browsing history.
 - Nordlys has no web-accessible resources. Sites you visit can't load an extension file to check whether it's installed.

@@ -12,6 +12,7 @@ Chrome Web Store's rule that they only ever go up.
 
 - Settings → General can hide the search box (Ctrl+K and / still open it) and turn off recent searches, which also forgets the ones kept.
 - Press ? anywhere outside a text field to see the keyboard shortcuts.
+- An empty board can start from your most visited sites, as one folder of copies. The browser asks for leave the first time, and only then.
 - Import from other new-tab extensions: Settings → Backup reads the backup files of FVD Speed Dial, Speed Dial 2, Infinity, nightTab, Bonjourr and Tabliss, and adds their folders after yours. The setup as it was is kept in the restore point.
 - A sky that is too much for the computer (no graphics chip, a remote desktop) is held still after its first second, said once, and remembered on that computer. Settings → Background has a button to keep it moving anyway. On battery, every sky paints half as often; it moves at the same pace.
 - A copy of your whole setup is kept by itself on the first new tab after Nordlys updates, before anything changes: folders, bookmarks, look, the themes you made and what the dashboard cards hold. The copies from the last three updates are in Settings → Backup, where each can be put back or saved as a file. A reset keeps them.
@@ -25,9 +26,11 @@ Chrome Web Store's rule that they only ever go up.
 
 ### Fixed
 
+- A board that outgrew the browser's quick store (5 MB, filled mostly by uploaded icons) stopped saving: every change was lost on the next new tab. Each save now also goes to the extension's own storage, which has no such limit, and a new tab shows whichever copy is newer.
 - Stashing the tabs of a window with more than 100 tabs closed all of them but kept only 100; the rest were lost. Now only the tabs the stash kept are closed, the card says how many stay open, and nothing is closed until the stash is saved.
 - Sync filled up and stopped as bookmarks were deleted, because every deleted bookmark kept its name and address in sync for ever. A deletion now takes a few bytes and is dropped 30 days later. When sync is full, Settings says so in your language and says what frees space; it used to tell you, in English, to delete a profile, which freed nothing.
 - Calendar links: events with their own time zone show at the right hour, repeats by month and year show (the 15th, the last Friday, a birthday), "Monday, Wednesday and Friday" gives three days a week, a meeting called off or moved shows as it is, and a weekly 9:00 stays at 9:00 across the change of clocks.
+- A wallpaper photo is kept at the size your screen can show (at most 3840 pixels across) instead of the size the camera took it, so a new tab doesn't decode a 24-megapixel picture each time. A video over 200 MB is turned down with a word about why.
 - Errors from connected apps (a refused token, a service that is down, no connection) are said in your language.
 - Sync is named for what it is in every browser, the browser's own sync, not "your Google account" or "Chrome sync".
 

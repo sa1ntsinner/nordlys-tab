@@ -6,7 +6,7 @@
    name starts with an underscore (Chrome refuses to load the folder), and a
    release guide that names the previous version's archive. */
 const { execFileSync } = require('node:child_process');
-const { existsSync, readFileSync, readdirSync, statSync, rmSync } = require('node:fs');
+const { copyFileSync, existsSync, readFileSync, readdirSync, statSync, rmSync } = require('node:fs');
 const { join, resolve, relative } = require('node:path');
 
 const ROOT = resolve(__dirname, '..');
@@ -40,14 +40,13 @@ for (const doc of ['RELEASE_GUIDE.md', 'docs/CHROME_STORE_GUIDE.md']) {
   if (stale.length) fail(`${doc} still names version ${[...new Set(stale)].join(', ')}`);
 }
 
+/* The archive itself is the Chrome port (build-ports.cjs), so a package made
+   by hand is the same as the one release.yml sends: the search-engine list a
+   store review once rejected never goes into it. */
 const archive = join(ROOT, `nordlys-v${manifest.version}.zip`);
 rmSync(archive, { force: true });
-if (process.platform === 'win32') {
-  const paths = INCLUDE.map(name => `'${name}'`).join(', ');
-  execFileSync('powershell', ['-NoProfile', '-Command', `Compress-Archive -Path ${paths} -DestinationPath '${archive}' -Force`], { cwd: ROOT, stdio: 'inherit' });
-} else {
-  execFileSync('zip', ['-r', '-q', archive, ...INCLUDE], { cwd: ROOT, stdio: 'inherit' });
-}
+execFileSync(process.execPath, [join(__dirname, 'build-ports.cjs'), 'chrome'], { cwd: ROOT, stdio: 'inherit' });
+copyFileSync(join(ROOT, `nordlys-chrome-v${manifest.version}.zip`), archive);
 
 const size = Math.round(statSync(archive).size / 1024);
 console.log(`${relative(ROOT, archive)}: ${files.length} files, ${size} KB, version ${manifest.version}`);
