@@ -265,7 +265,7 @@ test('a board from before the change survives it untouched', async ({ nordlysPag
 });
 
 /* Where the browser can hand its bookmarks over, the empty board offers that
-   first: the bar and each of its folders, as folders that follow the browser.
+   first: the bar and every folder in it, as copies that are yours to edit.
    The permission is asked on the click, never on install. */
 test('the empty board brings the browser bookmarks bar in, one click, one undo', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
@@ -297,13 +297,41 @@ test('the empty board brings the browser bookmarks bar in, one click, one undo',
   await expect(page.locator('#board .card')).toHaveCount(2);
   expect(await page.evaluate(() => window.__asked)).toBe(1);
   const groups = await page.evaluate(() => window.Nordlys.config.groups.map(group => ({ label: group.label, follows: group.source?.folderId, links: group.links.map(link => link.name) })));
+  // Copies, yours to edit and sync, not mirrors of the browser.
   expect(groups).toEqual([
-    { label: 'Bookmarks bar', follows: '1', links: ['Mail'] },
-    { label: 'Work', follows: '11', links: ['GitHub', 'Linear'] }
+    { label: 'Bookmarks bar', follows: undefined, links: ['Mail'] },
+    { label: 'Work', follows: undefined, links: ['GitHub', 'Linear'] }
   ]);
   await expect(page.locator('#toast-dock .toast')).toContainText('2 folders and 3 bookmarks');
 
   await page.locator('#toast-dock .toast-action').click();
   await expect(page.locator('#board .card')).toHaveCount(0);
   await expect(page.locator('#board-empty-browser')).toBeVisible();
+});
+
+/* A bar with nothing on it gives way to Other bookmarks, folders inside
+   folders included, each named by its path. */
+test('with an empty bar, Other bookmarks come in instead, nested folders by their path', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.addInitScript(() => {
+    const tree = [{ id: '0', title: '', children: [
+      { id: '1', title: 'Bookmarks bar', children: [] },
+      { id: '2', title: 'Other bookmarks', children: [
+        { id: '20', title: 'Elsewhere', url: 'https://elsewhere.example/' },
+        { id: '21', title: 'Reading', children: [
+          { id: '210', title: 'Later', children: [{ id: '2100', title: 'Essay', url: 'https://essay.example/' }] }
+        ] }
+      ] }
+    ] }];
+    const find = (nodes, id) => { for (const node of nodes) { if (node.id === id) return node; const inner = node.children && find(node.children, id); if (inner) return inner; } return null; };
+    localStorage.setItem('nordlys_config', JSON.stringify({ groups: [] }));
+    window.chrome.permissions = { contains: (p, done) => done(true), request: (p, done) => done(true) };
+    window.chrome.bookmarks = { getTree: done => done(tree), getChildren: (id, done) => done(find(tree, id)?.children || []) };
+  });
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  await page.locator('#board-empty-browser').click();
+  await expect(page.locator('#board .card')).toHaveCount(2);
+  const groups = await page.evaluate(() => window.Nordlys.config.groups.map(group => [group.label, group.links.map(link => link.name)]));
+  expect(groups).toEqual([['Other bookmarks', ['Elsewhere']], ['Reading / Later', ['Essay']]]);
 });

@@ -59,6 +59,15 @@
     return svg;
   };
   const locale = () => window.I18N?.currentLang || "en";
+  /* What went wrong talking to an app, in the person's language: the status
+     the app answered, or that it could not be reached at all. */
+  const explain = (error) => {
+    const status = Number(error?.status) || 0;
+    if (status === 401 || status === 403) return say("dash.errRefused", "The token was refused ({status}).", { status });
+    if (status) return say("dash.errStatus", "The service answered {status}.", { status });
+    if (error instanceof TypeError) return say("dash.errOffline", "It couldn't be reached. Check the connection.");
+    return error?.message || String(error);
+  };
   const storage = () => (typeof chrome !== "undefined" && chrome.storage?.local) || null;
 
   const ICONS = {
@@ -556,7 +565,7 @@
               render();
             } catch (error) {
               tick.checked = false; tick.disabled = false;
-              if (typeof toast === "function") toast(`${connector.name}: ${error.message}`, "danger", 4000);
+              if (typeof toast === "function") toast(`${connector.name}: ${explain(error)}`, "danger", 4000);
             }
           });
           return el("div", { class: `dash-inbox-row${it.priority ? " is-important" : ""}`, dataset: { id: it.id } }, [
@@ -1539,7 +1548,7 @@
       await Promise.all(ids.map(async (id) => {
         try {
           items.push(...await C.list(id, this.connections[id]));
-        } catch (error) { errors[id] = error.message || String(error); }
+        } catch (error) { errors[id] = explain(error); }
       }));
       return { items, errors };
     }
@@ -1602,7 +1611,7 @@
             this.afterConnections();
           } catch (e) {
             status.textContent = "";
-            error.textContent = e.message || String(e);
+            error.textContent = explain(e);
             submit.disabled = false;
           }
         };

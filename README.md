@@ -23,12 +23,13 @@ I wanted a new tab page with my bookmarks and something nice to look at, so I ma
 
 - Keep bookmarks in folders. Move the folders around, adjust tile size and spacing, and undo changes.
 - Pick from 9 animated backgrounds and 21 themes (11 dark, 10 light), or use your own picture or looping video.
-- Search with the engine set in Chrome. The box also does math and takes commands after `>`, such as `theme nord`.
+- Search with the engine set in Chrome. The box also does math and takes commands after `>`, such as `theme nord`. You can hide it.
 - Press Search to find brand icons from Iconify's Simple Icons set. You can also use a site's favicon, an image link or a letter.
-- Several profiles (say, Work and Home), and optional sync through your Google account. There's no account of ours: it uses Chrome's own sync.
-- A dashboard when you want one: tasks with dates and steps, habits, a focus timer and a full-page focus mode with sounds, notes, weather, world clocks, a countdown, a tab stash, and an Ask card for Chrome's built-in model, your own key or a local model. Drag the cards anywhere and stretch them by the corner. All of it is free.
-- Connect the apps you already use: tasks from Todoist, GitHub, GitLab, Trello, Asana, ClickUp, Linear, Jira and Notion, and events from any calendar with an ICS link. Nordlys talks to each app straight from your browser, with a token that stays on your device.
-- A folder can mirror a Chrome bookmark folder. Nordlys only reads it.
+- Several profiles (say, Work and Home), and optional sync through your browser's own sync. There's no account of ours.
+- A dashboard when you want one: tasks with dates and steps, a focus timer and a full-page focus mode with sounds, notes, weather, world clocks, a countdown and a tab stash. Drag the cards anywhere and stretch them by the corner.
+- Tasks from Todoist and GitHub, and events from any calendar link. Nordlys talks to each straight from your browser, with a token that stays on your device.
+- Bring your bookmarks from the browser, or a backup from FVD Speed Dial, Speed Dial 2, Infinity, nightTab, Bonjourr or Tabliss.
+- Before every update a copy of your whole setup is kept, so an update can always be undone.
 - It's in English, Russian, Spanish, German, French, Japanese, Chinese and Turkish.
 - There's no account and no tracking.
 
@@ -39,6 +40,10 @@ I wanted a new tab page with my bookmarks and something nice to look at, so I ma
 <p align="center">
   <img src="site/assets/skies.webp" alt="The nine backgrounds: Nordlys, Polaris, Halo, Star map, Meteors, Silk, Midnight sun, Contour and Fjord.">
 </p>
+
+## Free, and staying free
+
+Nordlys is free, and what is free stays free. There is no paid plan and there won't be one: no feature will be moved behind a subscription, no free one will start costing money, and there are no ads. If you'd like to help, there's a "Buy me a coffee" link in Settings → Support, and that's the whole business model.
 
 ## Install
 
@@ -54,7 +59,7 @@ To run it from source instead:
 
 ## Privacy
 
-Settings and bookmarks stay on your device, and in Chrome's own sync only if you turn sync on. Searches go through Chrome to your chosen search engine when you press Enter. Brand icon searches contact Iconify only after you press Search. Pasted image links may also load online. See [PRIVACY.md](PRIVACY.md) for the full details.
+Settings and bookmarks stay on your device, and in your browser's own sync only if you turn sync on. Searches go through Chrome to your chosen search engine when you press Enter. Brand icon searches contact Iconify only after you press Search. Pasted image links may also load online. See [PRIVACY.md](PRIVACY.md) for the full details.
 
 ## Development
 

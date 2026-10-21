@@ -8,8 +8,11 @@ Chrome Web Store's rule that they only ever go up.
 
 ### Added
 
+- A promise, in Settings → Support, the README and the website: Nordlys is free and what is free stays free. There is no paid plan and there won't be one.
+
 - Settings → General can hide the search box (Ctrl+K and / still open it) and turn off recent searches, which also forgets the ones kept.
 - Press ? anywhere outside a text field to see the keyboard shortcuts.
+- Import from other new-tab extensions: Settings → Backup reads the backup files of FVD Speed Dial, Speed Dial 2, Infinity, nightTab, Bonjourr and Tabliss, and adds their folders after yours. The setup as it was is kept in the restore point.
 - A sky that is too much for the computer (no graphics chip, a remote desktop) is held still after its first second, said once, and remembered on that computer. Settings → Background has a button to keep it moving anyway. On battery, every sky paints half as often; it moves at the same pace.
 - A copy of your whole setup is kept by itself on the first new tab after Nordlys updates, before anything changes: folders, bookmarks, look, the themes you made and what the dashboard cards hold. The copies from the last three updates are in Settings → Backup, where each can be put back or saved as a file. A reset keeps them.
 
@@ -25,12 +28,15 @@ Chrome Web Store's rule that they only ever go up.
 - Stashing the tabs of a window with more than 100 tabs closed all of them but kept only 100; the rest were lost. Now only the tabs the stash kept are closed, the card says how many stay open, and nothing is closed until the stash is saved.
 - Sync filled up and stopped as bookmarks were deleted, because every deleted bookmark kept its name and address in sync for ever. A deletion now takes a few bytes and is dropped 30 days later. When sync is full, Settings says so in your language and says what frees space; it used to tell you, in English, to delete a profile, which freed nothing.
 - Calendar links: events with their own time zone show at the right hour, repeats by month and year show (the 15th, the last Friday, a birthday), "Monday, Wednesday and Friday" gives three days a week, a meeting called off or moved shows as it is, and a weekly 9:00 stays at 9:00 across the change of clocks.
+- Errors from connected apps (a refused token, a service that is down, no connection) are said in your language.
 - Sync is named for what it is in every browser, the browser's own sync, not "your Google account" or "Chrome sync".
 
 ### Changed
 
 - A new tab draws its board sooner. Settings are made ready just after the first frame instead of before it, and each icon's contrast with its tile is checked after the board is on screen, from colours read once per theme instead of once per tile. On a board of nine folders the work before the first frame fell by about a fifth.
 - Settings are shorter: the font pickers and Share this look are each one closed line in Appearance until you open them, and the Habits and Line for the day cards are under More cards when you add a card.
+- "Bring my browser's bookmarks" brings copies you can rename, edit and sync, instead of folders that could only be changed in the browser. It brings every folder on the bookmarks bar, folders inside folders too, named by their path ("Work / Docs"), and when the bar is empty it brings Other bookmarks instead. A folder can still follow the browser from Settings → Bookmarks.
+- A bookmarks file with folders inside folders brings each bookmark once, into the folder it is in; it used to copy it into every folder above too. Folder names keep their own capitals.
 - Each folder is one Tab stop, as 2.5.0 meant it to be; it was four (the grip, the hide button, a tile and the column handle). Up from a folder's top row reaches its grip and hide button, Left and Right move between them, and Down from the bottom row reaches its columns. Escape goes back to the tiles.
 - The page tells the browser which language it is in, so a screen reader reads German with a German voice. It used to say English in every language.
 - Pillars, Nacre and Baikal are replaced by three backgrounds that show the sky over you as it is now, worked out from your clock and time zone, not your location. Star map shows the bright stars and their constellations. Meteors is a calm night sky with a shooting star now and then, and more on the nights of the big meteor showers; Settings says when one is on. Midnight sun shows the sun where it stands, over a calm sea, and the sky's colour follows it through the day.

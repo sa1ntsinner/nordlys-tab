@@ -463,42 +463,50 @@ class GridController {
       toast(say("board.browserRefused", "Nordlys was not allowed to read your bookmarks."), "info");
       return;
     }
-    let folders;
+    /* Copies, not mirrors: a first board is one to make your own, and a copy
+       can be renamed here and goes to sync. The bar comes with every folder
+       inside it, each named by its path; a bar with nothing in it gives way
+       to Other bookmarks. Settings → Bookmarks can still make a folder
+       follow the browser. */
+    let sets = [];
     try {
       const tree = await sync.folders();
-      /* The bar is the one the person arranged to see every day; its own
-         folders come with it, one level deep, the way the board is. */
+      const below = (root) => root ? [root, ...tree.filter((folder) => folder.path.startsWith(`${root.path} / `))] : [];
       const bar = tree.find((folder) => folder.id === "1") || tree[0];
-      folders = bar ? [bar, ...tree.filter((folder) => folder.path.startsWith(`${bar.path} / `) && folder.path.split(" / ").length === bar.path.split(" / ").length + 1)] : [];
+      const other = tree.find((folder) => folder.id === "2") || tree.find((folder) => folder !== bar && !folder.path.includes(" / "));
+      for (const root of [bar, other]) {
+        const found = [];
+        for (const folder of below(root).slice(0, 24)) {
+          let links;
+          try { links = await sync.linksIn(folder.id); } catch { continue; }
+          if (!links.length) continue;
+          const label = folder === root ? folder.title : folder.path.slice(root.path.length + 3);
+          found.push({ label, cols: Math.min(6, Math.max(2, Math.ceil(Math.sqrt(links.length)))), hidden: false,
+            links: links.map(({ name, url }) => ({ name, url, icon: "", color: "" })) });
+        }
+        if (found.length) { sets = found; break; }
+      }
     } catch {
       toast(say("bookmarks.linkUnavailable", "Browser bookmarks are not available"), "info");
       return;
     }
-    const groups = [];
-    for (const folder of folders.slice(0, 12)) {
-      let links;
-      try { links = await sync.linksIn(folder.id); } catch { continue; }
-      if (!links.length) continue;
-      groups.push({ label: folder.title, cols: Math.min(6, Math.max(2, Math.ceil(Math.sqrt(links.length)))), hidden: false, source: { type: "browser", folderId: folder.id, title: folder.title }, links });
-    }
+    const groups = sets;
     if (!groups.length) {
-      toast(say("board.browserEmpty", "Your browser's bookmarks bar is empty."), "info");
+      toast(say("board.browserEmpty", "Your browser has no bookmarks to bring."), "info");
       return;
     }
     const before = this.app.config.groups;
     this.app.config.groups = [...before, ...groups];
     this.app.saveConfig();
     this.render();
-    this.app.followBrowserFolders?.();
     const count = groups.reduce((sum, group) => sum + group.links.length, 0);
     NordlysUI.showUndoToast({
-      message: say("board.broughtIn", `${groups.length} folders and ${count} bookmarks came in. They follow your browser from now on.`, { folders: groups.length, count }),
+      message: say("board.broughtCopies", `${groups.length} folders and ${count} bookmarks came in, yours to change here.`, { folders: groups.length, count }),
       duration: 9000,
       onAction: () => {
         this.app.config.groups = before;
         this.app.saveConfig();
         this.render();
-        this.app.followBrowserFolders?.();
       }
     });
     this.focusTile(this.app.config.groups.indexOf(groups[0]), 0) || opener?.focus?.();

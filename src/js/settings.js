@@ -3978,6 +3978,34 @@ class SettingsController {
     return true;
   }
 
+  /* Folders from another extension's backup, added after the ones here. The
+     setup as it was is kept in the restore point first, as an import is. */
+  addImportedFolders({ from, groups }) {
+    if (!groups.length) {
+      if (typeof toast === "function") toast(this.text("toast.importNothing", "No web bookmarks were found in that file."), "danger");
+      return false;
+    }
+    const previous = JSON.parse(JSON.stringify(this.app.config));
+    if (!this.app.snapshotBeforeMigration(previous, "import")) { this.sayNoRoom("toast.recoveryFailed"); return false; }
+    const added = groups.map((group) => ({
+      label: group.label,
+      cols: Math.min(4, Math.max(2, Math.ceil(Math.sqrt(group.links.length)))),
+      hidden: false,
+      links: group.links.map((link) => ({ color: "#38bdf8", ...link }))
+    }));
+    this.app.config.groups = [...(this.app.config.groups || []), ...added];
+    window.NordlysSyncModel?.normalize?.(this.app.config);
+    if (!this.app.saveConfig()) { this.app.config = previous; this.sayNoRoom("toast.saveFailed"); return false; }
+    this.app.grid?.render();
+    this.renderBookmarksManager?.();
+    this.renderRecoveryRows?.();
+    const links = added.reduce((sum, group) => sum + group.links.length, 0);
+    const done = this.text("toast.importedFrom", "{links} bookmarks in {folders} folders came over from {app}.", { links, folders: added.length, app: from });
+    if (typeof toast === "function") toast(done, "success", 6000);
+    NordlysUI.announce(done);
+    return true;
+  }
+
   initBackupManager() {
     // Export JSON Backup
     document.getElementById("cfg-export")?.addEventListener("click", () => {
@@ -4031,12 +4059,28 @@ class SettingsController {
             const folderHeaders = dom.querySelectorAll("h3, H3");
 
             if (folderHeaders.length > 0) {
+              /* A folder inside a folder is a folder of its own, named by its
+                 path ("Work / Docs"), and each link comes over once: into the
+                 folder it sits in, not into every folder above it too. */
+              const folderOf = (h3) => {
+                const dt = h3.parentElement;
+                return [...(dt?.children || [])].find((child) => child.tagName.toLowerCase() === "dl")
+                  || (h3.nextElementSibling?.tagName.toLowerCase() === "dl" ? h3.nextElementSibling : null);
+              };
+              const pathOf = (h3) => {
+                const names = [h3.textContent.trim()];
+                for (let dl = h3.parentElement?.parentElement?.closest("dl"); dl; dl = dl.parentElement?.closest("dl")) {
+                  const above = [...(dl.parentElement?.children || [])].find((child) => child.tagName.toLowerCase() === "h3");
+                  if (above && folderOf(above) === dl) names.unshift(above.textContent.trim());
+                }
+                return names.filter(Boolean).join(" / ");
+              };
               folderHeaders.forEach((h3) => {
-                const folderTitle = h3.textContent.trim() || "Imported Folder";
+                const folderTitle = pathOf(h3) || "Imported Folder";
                 const links = [];
-                const next = h3.parentElement?.querySelector("dl, DL") || h3.nextElementSibling;
-                if (next && next.tagName.toLowerCase() === "dl") {
-                  next.querySelectorAll("a, A").forEach((a) => {
+                const next = folderOf(h3);
+                if (next) {
+                  [...next.querySelectorAll("a, A")].filter((a) => a.closest("dl") === next).forEach((a) => {
                     const url = a.getAttribute("href") || a.href;
                     if (url && !window.NordlysConfigSchema.isForbiddenUrl(url)) {
                       const name = a.textContent.trim() || url;
@@ -4046,7 +4090,7 @@ class SettingsController {
                 }
                 if (links.length > 0) {
                   newGroups.push({
-                    label: folderTitle.toUpperCase(),
+                    label: folderTitle,
                     cols: Math.min(4, Math.max(2, Math.ceil(Math.sqrt(links.length)))),
                     hidden: false,
                     links
@@ -4084,7 +4128,11 @@ class SettingsController {
                is never validated as a setting and never stored as one; a file
                without one — every backup written before this build, including
                the 2.0 exports people still have — reads as itself. */
-            this.applyBackupObject(JSON.parse(text));
+            const parsed = JSON.parse(text);
+            // Another new tab's backup adds its folders; a Nordlys one replaces the setup.
+            const other = window.NordlysImporters?.read(parsed);
+            if (other) this.addImportedFolders(other);
+            else this.applyBackupObject(parsed);
           }
         } catch (err) {
           if (typeof toast === "function") {
