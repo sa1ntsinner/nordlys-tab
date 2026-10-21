@@ -130,3 +130,60 @@ test('the light falls on a mood without making it another mood', () => {
   const grey = sky.lightMood(['#8a8a8a', '#bdbdbd', '#5c5c5c'], sky.daylight(new Date(Date.UTC(2024, 8, 22, 17, 5)), berlin));
   assert.ok(grey.every(hex => C(hex) > 0.02));
 });
+
+/* The Star map and the meteor radiants put a point of the sky where the
+   person sees it from the same two formulae the sun uses. Betelgeuse crosses
+   the meridian from Berlin at five in the morning in late October, as high as
+   ninety degrees less the latitude plus its declination; the pole star stands
+   at the latitude, whenever it is looked at. */
+test('a star stands where the sky has it', () => {
+  const { siderealAngle, horizontal } = sunlit();
+  const RAD = Math.PI / 180;
+  const at = (date, ra, dec, lat, lon) => horizontal(RAD * (siderealAngle(date, lon) - ra), RAD * dec, lat);
+  const betelgeuse = at(new Date(Date.UTC(2026, 9, 22, 3, 0)), 88.79, 7.41, 52.5, 13.4);
+  assert.ok(Math.abs(betelgeuse.azimuth - 180) < 2, `due south, not ${betelgeuse.azimuth}`);
+  assert.ok(Math.abs(betelgeuse.elevation - (90 - 52.5 + 7.41)) < 0.5, `at ${betelgeuse.elevation}`);
+  for (const hour of [0, 6, 12, 18]) {
+    const polaris = at(new Date(Date.UTC(2026, 0, 1, hour)), 37.95, 89.26, 52.5, 13.4);
+    assert.ok(Math.abs(polaris.elevation - 52.5) < 0.8, `the pole star at ${polaris.elevation}`);
+  }
+  // The sky turns once a sidereal day: four minutes short of twenty-four hours.
+  const start = new Date(Date.UTC(2026, 5, 1, 0, 0));
+  const later = new Date(start.getTime() + 86164090);
+  assert.ok(Math.abs(((siderealAngle(later, 0) - siderealAngle(start, 0) + 540) % 360) - 180) < 0.01);
+});
+
+/* At a total eclipse the moon is where the sun is, and at a full moon it is
+   opposite it — the two checks that place it over the right stretch of sea. */
+test('the moon stands where an eclipse and a full moon put it', () => {
+  const { sunPosition, moonPosition } = sunlit();
+  const apartDegrees = (a, b) => {
+    const R = Math.PI / 180;
+    return Math.acos(Math.sin(a.elevation * R) * Math.sin(b.elevation * R) + Math.cos(a.elevation * R) * Math.cos(b.elevation * R) * Math.cos((a.azimuth - b.azimuth) * R)) / R;
+  };
+  const eclipse = new Date(Date.UTC(2024, 3, 8, 18, 42)); // totality over Dallas
+  assert.ok(apartDegrees(sunPosition(eclipse, 32.78, -96.8), moonPosition(eclipse, 32.78, -96.8)) < 1.5, 'the moon covers the sun');
+  const full = new Date(Date.UTC(2024, 9, 17, 11, 26));
+  assert.ok(apartDegrees(sunPosition(full, 0, 0), moonPosition(full, 0, 0)) > 174, 'a full moon faces the sun');
+});
+
+/* The showers peak on their nights, a day or so either way as the calendar
+   falls, rise and fall over a few days, and between them nothing is on. */
+test('each meteor shower peaks on its night', () => {
+  const { meteorShowers } = sunlit();
+  const PEAKS = { quadrantids: [0, 3], lyrids: [3, 22], etaAquariids: [4, 6], perseids: [7, 12], orionids: [9, 21], leonids: [10, 17], geminids: [11, 14] };
+  for (const [name, [month, day]] of Object.entries(PEAKS)) {
+    let best = null;
+    for (let hour = 0; hour < 24 * 365; hour += 6) {
+      const date = new Date(Date.UTC(2026, 0, 1) + hour * 3600000);
+      const shower = meteorShowers(date).find(candidate => candidate.name === name);
+      if (shower && (!best || shower.activity > best.activity)) best = { date, activity: shower.activity };
+    }
+    const off = Math.abs(best.date - Date.UTC(2026, month, day, 12)) / 86400000;
+    assert.ok(off < 1.6, `${name} peaks ${off.toFixed(1)} days from its night`);
+    const weekAfter = meteorShowers(new Date(best.date.getTime() + 7 * 86400000)).find(candidate => candidate.name === name);
+    assert.ok(!weekAfter || weekAfter.activity < 0.25, `${name} has faded a week on`);
+  }
+  assert.equal(meteorShowers(new Date(Date.UTC(2026, 5, 21))).length, 0, 'midsummer has none of the seven');
+  assert.equal(meteorShowers(new Date(Date.UTC(2026, 2, 1))).length, 0, 'nor has March');
+});

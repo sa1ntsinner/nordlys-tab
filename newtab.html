@@ -601,10 +601,10 @@
             <option value="aurora">Nordlys</option>
             <option value="polaris">Polaris</option>
             <option value="halo">Halo</option>
-            <option value="pillars">Pillars</option>
-            <option value="nacre">Nacre</option>
+            <option value="starmap">Star map</option>
+            <option value="meteors">Meteors</option>
             <option value="silk">Silk</option>
-            <option value="baikal">Baikal</option>
+            <option value="midnightsun">Midnight sun</option>
             <option value="drift">Contour</option>
             <option value="horizon">Fjord</option>
             <option value="custom-image">Wallpaper</option>
@@ -615,6 +615,8 @@
           <span class="settings-block-label personal-label" data-i18n="background.personal">Personal</span>
           <div class="scene-grid personal-grid" id="bg-personal-grid"></div>
         </div>
+        <!-- What a sky drawn from the real one shows, and where it comes from. -->
+        <p id="bg-scene-note" class="scene-note" aria-live="polite" hidden></p>
         <!-- The mood chips are built in settings.js so the five that ship and the
              ones somebody mixes are the same kind of thing. The radiogroup holds
              nothing but radios; making a new mood, editing one and removing one
@@ -1411,6 +1413,7 @@
   <script src="src/js/icon-discovery.js"></script>
   <script src="src/js/sky-zones.js"></script>
   <script src="src/js/sky-clock.js"></script>
+  <script src="src/js/sky-stars.js"></script>
   <script src="src/js/look-share.js"></script>
   <script src="src/js/sky-gl.js"></script>
   <script src="src/js/background.js"></script>

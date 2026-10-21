@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { AxeBuilder } = require('@axe-core/playwright');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { startStaticServer } = require('../helpers/static-server.cjs');
@@ -19,6 +20,7 @@ const EDGE = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 const FIREFOX = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:143.0) Gecko/20100101 Firefox/143.0';
 const PHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
 const CHROME_STORE = 'https://chromewebstore.google.com/detail/nordlys/fepiibfbbjhaoldgcfpfcikbonnjbfdc';
+const phoneContext = browser => browser.newContext({ userAgent: PHONE, viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 
 async function open(page) {
   const errors = [];
@@ -30,11 +32,12 @@ async function open(page) {
 async function scrollThrough(page) {
   await page.evaluate(async () => {
     for (let y = 0; y < document.documentElement.scrollHeight; y += Math.round(innerHeight * 0.8)) {
-      window.scrollTo(0, y);
+      window.scrollTo({ top: y, behavior: 'instant' });
       await new Promise(done => setTimeout(done, 60));
     }
   });
 }
+
 
 test('the page asks nothing of any other host', async ({ page }) => {
   const elsewhere = [];
@@ -48,18 +51,53 @@ test('the page asks nothing of any other host', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('the hour ring turns the sky, and says what hour it shows', async ({ page }) => {
+test('the opening says what Nordlys is, in its own font, before anything moves', async ({ page }) => {
   await open(page);
-  const ring = page.getByRole('slider', { name: 'Hour of the sky' });
-  await expect(ring).toBeVisible();
-  const before = await ring.getAttribute('aria-valuenow');
-  await ring.focus();
-  for (let i = 0; i < 6; i++) await page.keyboard.press('ArrowRight');
-  const after = await ring.getAttribute('aria-valuenow');
-  expect(after).not.toBe(before);
-  const shown = await ring.getAttribute('aria-valuetext');
-  expect(shown).toMatch(/\d{2}:\d{2}/);
-  await expect(page.locator('#sky-time')).toHaveText(shown.match(/\d{2}:\d{2}/)[0]);
+  await expect(page.locator('h1')).toHaveText('Nordlys');
+  await expect(page.locator('.hero-line')).toHaveText('A new tab page for the sites you open every day.');
+  await page.evaluate(() => document.fonts.ready);
+  expect(await page.evaluate(() => document.fonts.check('600 88px Geist'))).toBe(true);
+  // A section heading names its section, on one line and in one colour.
+  for (const heading of await page.locator('main h2').all()) {
+    await expect(heading.locator('.dim, br')).toHaveCount(0);
+    expect((await heading.textContent()).trim().split(/\s+/).length).toBeLessThanOrEqual(5);
+  }
+});
+
+/* The words of the opening sit over the extension's own sky, drawn live in
+   its light theme. They keep 4.5:1 against the darkest of it under them: the
+   words are hidden, the page photographed, and each one's box read. */
+test('the words of the opening keep 4.5:1 over the sky drawn behind them', async ({ page }) => {
+  await open(page);
+  await expect(page.locator('#hero-sky')).toHaveClass(/is-live/);
+  await page.waitForTimeout(1500);
+  const words = await page.evaluate(() => [...document.querySelectorAll('.hero h1, .hero p, .bar-links a, .bar .brand span')].map(element => {
+    const box = element.getBoundingClientRect();
+    return { text: element.textContent.trim().slice(0, 30), box: [box.x, box.y, box.width, box.height], color: getComputedStyle(element).color.match(/\d+/g).slice(0, 3).map(Number) };
+  }));
+  await page.addStyleTag({ content: '.hero h1, .hero p, .bar a, .bar span { color: transparent !important; transition: none !important; }' });
+  const shot = (await page.screenshot()).toString('base64');
+  const worst = await page.evaluate(async ({ shot, words }) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${shot}`;
+    await image.decode();
+    const canvas = Object.assign(document.createElement('canvas'), { width: image.width, height: image.height });
+    const context = canvas.getContext('2d');
+    context.drawImage(image, 0, 0);
+    const channel = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+    const luminance = ([r, g, b]) => 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    return words.map(({ text, box: [x, y, w, h], color }) => {
+      const { data } = context.getImageData(Math.floor(x), Math.floor(y), Math.ceil(w), Math.ceil(h));
+      const ink = luminance(color);
+      let low = Infinity;
+      for (let i = 0; i < data.length; i += 4 * 3) {
+        const ground = luminance([data[i], data[i + 1], data[i + 2]]);
+        low = Math.min(low, (Math.max(ink, ground) + 0.05) / (Math.min(ink, ground) + 0.05));
+      }
+      return `${text}: ${low.toFixed(2)}`;
+    }).filter(line => Number(line.split(': ').pop()) < 4.5);
+  }, { shot, words });
+  expect(worst).toEqual([]);
 });
 
 test('the main button names this browser and goes to its store', async ({ page }) => {
@@ -67,8 +105,9 @@ test('the main button names this browser and goes to its store', async ({ page }
   const primary = page.locator('a[data-primary]').first();
   await expect(primary).toContainText("Add to Chrome, it's free");
   await expect(primary).toHaveAttribute('href', CHROME_STORE);
-  await expect(page.locator('.index [data-get]')).toHaveText('Get Nordlys');
-  await expect(page.locator('.index [data-get]')).toHaveAttribute('href', CHROME_STORE);
+  await expect(page.locator('[data-try-here]')).toBeVisible();
+  await expect(page.locator('.bar [data-get]')).toHaveText('Get Nordlys');
+  await expect(page.locator('.bar [data-get]')).toHaveAttribute('href', CHROME_STORE);
 });
 
 test('in Edge it says Edge, and installs from the Chrome Web Store until its own listing is up', async ({ browser }) => {
@@ -78,6 +117,7 @@ test('in Edge it says Edge, and installs from the Chrome Web Store until its own
   const primary = page.locator('a[data-primary]').first();
   await expect(primary).toContainText('Add to Edge');
   await expect(primary).toHaveAttribute('href', CHROME_STORE);
+  await expect(page.locator('[data-get-note]').first()).toHaveText('In Edge, it installs from the Chrome Web Store.');
   await context.close();
 });
 
@@ -87,247 +127,142 @@ test('in a browser whose store is not ready yet, the button offers the demo inst
   await open(page);
   const primary = page.locator('a[data-primary]').first();
   await expect(primary).toContainText('Try it here');
-  await expect(primary).toHaveAttribute('href', '#observe');
+  await expect(primary).toHaveAttribute('href', '#demo');
   await expect(page.locator('[data-try-here]')).toBeHidden();
-  // The index offers what the page can give here, not an install.
-  await expect(page.locator('.index [data-get]')).toHaveText('Try it');
-  await expect(page.locator('.index [data-get]')).toHaveAttribute('href', '#observe');
+  await expect(page.locator('[data-get-note]').first()).toContainText("The Firefox version is in the store's review.");
+  // The header offers what the page can give here, not an install.
+  await expect(page.locator('.bar [data-get]')).toHaveText('Try it');
+  await expect(page.locator('.bar [data-get]')).toHaveAttribute('href', '#demo');
   await context.close();
 });
 
-test('every plate of the atlas can be reached by its number', async ({ page }) => {
-  await open(page);
-  await page.locator('#plates').scrollIntoViewIfNeeded();
-  await page.locator('[data-plate-link="3"]').click();
-  await expect(page).toHaveURL(/#plate-3$/);
-  await expect(page.locator('[data-plate-link="3"]')).toHaveAttribute('aria-current', 'true');
-  await page.keyboard.press('5');
-  await expect(page.locator('[data-plate-link="5"]')).toHaveAttribute('aria-current', 'true');
+test('the opening shows the product in the visitor\'s own light or dark, and asks for no click', async ({ browser }) => {
+  for (const [scheme, picture, paper] of [['light', 'light.webp', 'rgb(245, 244, 242)'], ['dark', 'board.webp', 'rgb(13, 13, 12)']]) {
+    const context = await browser.newContext({ colorScheme: scheme });
+    const page = await context.newPage();
+    await open(page);
+    await expect.poll(() => page.locator('.hero .shot img').evaluate(img => img.currentSrc)).toContain(picture);
+    // The first new tab in the steps to install it follows the same setting.
+    await page.locator('.first').scrollIntoViewIfNeeded();
+    await expect.poll(() => page.locator('.first img').evaluate(img => img.currentSrc)).toContain(`first-${scheme}.webp`);
+    expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe(paper);
+    await expect(page.locator('.hero button')).toHaveCount(0);
+    await context.close();
+  }
 });
 
-// Scrolls to a point, then waits for the scrubbed animations to catch up with the page.
-async function scrollAndSettle(page, where) {
-  await page.evaluate(async where => {
-    const frame = () => new Promise(done => requestAnimationFrame(done));
-    window.scrollTo(0, where);
-    const started = performance.now();
-    let last = '';
-    for (;;) {
-      await frame();
-      const now = window.ScrollTrigger.getAll().map(t => (t.animation ? t.animation.progress().toFixed(3) : '')).join();
-      if (now === last && performance.now() - started > 700) break;
-      if (performance.now() - started > 8000) break;
-      last = now;
+test('the demo is the real extension, showing its views by itself in the visitor\'s theme', async ({ browser }) => {
+  for (const [scheme, theme] of [['light', 'porcelain-light'], ['dark', 'aurora-void']]) {
+    const context = await browser.newContext({ colorScheme: scheme });
+    const page = await context.newPage();
+    await open(page);
+    await page.locator('#deck').scrollIntoViewIfNeeded();
+    await expect(page.locator('#deck')).toHaveClass(/is-live/, { timeout: 20000 });
+    const frame = page.locator('#demo-frame');
+    await expect.poll(() => frame.evaluate(node => node.contentWindow.Nordlys.config.theme)).toBe(theme);
+    // A picture to the pointer and the keyboard: nothing in it can be pressed or reached.
+    await expect(frame).toHaveJSProperty('inert', true);
+    if (scheme === 'dark') {
+      // While it is on screen it moves on to the dashboard, and the line under it says so.
+      await expect(page.locator('[data-now]')).toHaveText('the dashboard', { timeout: 15000 });
+      await expect.poll(() => frame.evaluate(node => Boolean(node.contentWindow.Nordlys.dashboard?.on))).toBe(true);
     }
-  }, where);
-}
-
-test('the first screen has one lamp-red button, and so does the opening as it goes', async ({ page }) => {
-  await open(page);
-  await page.waitForTimeout(1800);
-  const lamps = () => page.evaluate(() => [...document.querySelectorAll('a, button')].filter(el => {
-    const style = getComputedStyle(el);
-    const box = el.getBoundingClientRect();
-    let seen = Number(style.opacity);
-    for (let up = el.parentElement; up; up = up.parentElement) seen *= Number(getComputedStyle(up).opacity);
-    return style.visibility !== 'hidden' && seen > 0.3 && box.width > 0 && box.bottom > 0 && box.top < innerHeight && style.backgroundColor === 'rgb(255, 106, 77)';
-  }).map(el => el.textContent.trim()));
-  expect(await lamps()).toEqual(["Add to Chrome, it's free"]);
-  // A little way into the opening's scroll: the header is solid, the opening's button is fading.
-  const { start, end } = await page.evaluate(() => { const t = window.ScrollTrigger.getAll().find(t => t.pin === document.querySelector('#top')); return { start: t.start, end: t.end }; });
-  await scrollAndSettle(page, start + (end - start) * 0.25);
-  expect((await lamps()).length).toBeLessThanOrEqual(1);
+    await expect(page.getByRole('link', { name: 'Open the demo in a new tab' })).toHaveAttribute('href', 'demo/index.html');
+    await context.close();
+  }
 });
 
-test('the window opens onto the whole sky as the page scrolls', async ({ page }) => {
+test('the skies are drawn on this page by the extension\'s own engine, and the picker changes them', async ({ page }) => {
   await open(page);
-  const end = await page.evaluate(() => window.ScrollTrigger.getAll().find(t => t.pin === document.querySelector('#top')).end);
-  await scrollAndSettle(page, end - 2);
-  const { mask, diagonal } = await page.evaluate(() => {
-    const style = getComputedStyle(document.querySelector('.plate-dim'));
-    return { mask: style.maskImage || style.webkitMaskImage, diagonal: Math.hypot(innerWidth, innerHeight) };
+  await page.locator('#skies').scrollIntoViewIfNeeded();
+  await expect(page.locator('#window')).toHaveClass(/is-live/);
+  const painted = () => page.evaluate(() => {
+    const canvas = document.querySelector('#window canvas');
+    const { data } = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+    let lit = 0;
+    for (let i = 3; i < data.length; i += 4 * 97) if (data[i] > 0) lit++;
+    return lit;
   });
-  const radius = Number(/radial-gradient\((?:circle\s+)?([\d.]+)px/.exec(mask)?.[1]);
-  expect(radius).toBeGreaterThan(diagonal);
-});
-
-for (const [width, height] of [[1440, 900], [1280, 720]]) test(`the stars fly into their sites, and the new tab they make settles into the deck (${width} x ${height})`, async ({ page }) => {
-  await page.setViewportSize({ width, height });
-  await open(page);
-  await expect(page.locator('#deck')).toHaveClass(/is-live/, { timeout: 20000 });
-  const { start, end } = await page.evaluate(() => { const t = window.ScrollTrigger.getAll().find(t => t.pin === document.querySelector('#chart')); return { start: t.start, end: t.end }; });
-  // The chart's words are still there as the pin begins.
-  await scrollAndSettle(page, start + (end - start) * 0.08);
-  expect(await page.evaluate(() => Number(getComputedStyle(document.querySelector('.chart-copy')).opacity))).toBeGreaterThan(0.99);
-  await scrollAndSettle(page, end - 2);
-  const landed = await page.evaluate(() => {
-    const frame = document.querySelector('#viewport').getBoundingClientRect();
-    const doc = document.querySelector('#demo').contentDocument;
-    const k = Math.min(innerWidth / 1440, innerHeight / 900);
-    const left = (innerWidth - 1440 * k) / 2;
-    const offset = (innerHeight - 900 * k) / 2;
-    const misses = [];
-    for (const star of document.querySelectorAll('.constellations .star[data-site]')) {
-      const tile = [...doc.querySelectorAll('.tile[data-group-idx]')].find(t => t.textContent.trim() === star.dataset.site);
-      if (!tile) continue;
-      const icon = (tile.querySelector('img, svg, .icon') || tile).getBoundingClientRect();
-      const want = [(icon.x + icon.width / 2) * k + left, (icon.y + icon.height / 2) * k + offset];
-      const got = star.getBoundingClientRect();
-      const miss = Math.hypot(got.x + got.width / 2 - want[0], got.y + got.height / 2 - want[1]);
-      if (miss > 6) misses.push(`${star.dataset.site} is ${Math.round(miss)}px off`);
-    }
-    return {
-      full: [frame.x - left, frame.y - offset, frame.width - 1440 * k].map(v => Math.round(v)),
-      nav: Math.round(document.querySelector('#nav').getBoundingClientRect().bottom),
-      misses, count: document.querySelectorAll('.constellations .star[data-site]').length
-    };
-  });
-  expect(landed.count).toBeGreaterThan(10);
-  expect(landed.misses).toEqual([]);
-  // The whole new tab fits the screen, and the index is out of its way.
-  for (const off of landed.full) expect(Math.abs(off)).toBeLessThanOrEqual(2);
-  expect(landed.nav).toBeLessThanOrEqual(1);
-  // While the frame shrinks past it, the demo's heading waits.
-  const hand = await page.evaluate(() => { const t = window.ScrollTrigger.getAll().find(t => t.trigger === document.querySelector('#observe')); return { start: t.start, end: t.end }; });
-  await scrollAndSettle(page, hand.start + (hand.end - hand.start) * 0.35);
-  expect(await page.evaluate(() => Number(getComputedStyle(document.querySelector('.observe-head')).opacity))).toBeLessThan(0.01);
-  // Once the demo's section is up, the new tab is back in its frame.
-  const settled = await page.evaluate(() => document.querySelector('#observe').getBoundingClientRect().top + scrollY);
-  await scrollAndSettle(page, settled);
-  await expect(page.locator('#viewport')).not.toHaveClass(/is-full/);
-  const sizes = await page.evaluate(() => [document.querySelector('#viewport').getBoundingClientRect().width, document.querySelector('#viewport').offsetWidth]);
-  expect(Math.abs(sizes[0] - sizes[1])).toBeLessThanOrEqual(1);
-});
-
-test('the ring says it can be turned, until it has been', async ({ page }) => {
-  await open(page);
-  const hint = page.locator('#ring-hint');
-  await expect(hint).toBeVisible();
-  await page.getByRole('slider', { name: 'Hour of the sky' }).focus();
+  await expect.poll(painted).toBeGreaterThan(100);
+  await page.getByRole('radio', { name: 'Polaris' }).click();
+  await expect(page.getByRole('radio', { name: 'Polaris' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.locator('[data-sky-name]')).toHaveText('Polaris');
+  await expect(page.locator('.window-still')).toHaveAttribute('src', /skies\/polaris\.webp$/);
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--shader-1').trim())).toBe('#7aa2f7');
   await page.keyboard.press('ArrowRight');
-  await expect(hint).toBeHidden();
+  await expect(page.getByRole('radio', { name: 'Halo' })).toBeFocused();
+  await expect(page.locator('[data-sky-name]')).toHaveText('Halo');
+  // A sky drawn from the real one brings its stars: the catalogue is borrowed with the engine.
+  await page.getByRole('radio', { name: 'Star map' }).click();
+  await expect(page.locator('.window-still')).toHaveAttribute('src', /skies\/starmap\.webp$/);
+  expect(await page.evaluate(() => (window.NORDLYS_STARS?.stars?.length || 0) / 4)).toBeGreaterThan(500);
+  await expect.poll(painted).toBeGreaterThan(100);
 });
 
-test('once, on arrival, the ring shows the other half of the day and comes back', async ({ page }) => {
+test('text, names and roles hold up to an accessibility check', async ({ page }) => {
   await open(page);
-  const ring = page.getByRole('slider', { name: 'Hour of the sky' });
-  const start = Number(await ring.getAttribute('aria-valuenow'));
-  const away = async () => { const now = Number(await ring.getAttribute('aria-valuenow')); const d = Math.abs(now - start) % 1440; return Math.min(d, 1440 - d); };
-  await expect.poll(away, { timeout: 8000 }).toBeGreaterThan(120);
-  await expect.poll(away, { timeout: 10000 }).toBeLessThan(3);
-  await expect(page.locator('#sky-now')).toBeHidden();
+  await scrollThrough(page);
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await page.waitForTimeout(900);
+  const results = await new AxeBuilder({ page }).exclude('#demo-frame').analyze();
+  const serious = results.violations.filter(item => ['serious', 'critical'].includes(item.impact));
+  expect(serious, serious.map(item => `${item.id}: ${item.help} (${item.nodes.length})`).join('\n')).toEqual([]);
 });
 
-test('the words of a plate show only over its own sky', async ({ page }) => {
+test('the keyboard reaches the page first through the skip link, and focus shows', async ({ page }) => {
   await open(page);
-  const wrong = await page.evaluate(async () => {
-    const plates = document.querySelector('#plates');
-    const nav = document.querySelector('#nav');
-    const settle = () => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)));
-    const start = plates.getBoundingClientRect().top + scrollY;
-    const end = start + plates.offsetHeight - innerHeight;
-    const wrongNow = () => {
-      const sky = document.querySelector('.plate-rail a[aria-current="true"]').dataset.plateLink;
-      return [...document.querySelectorAll('.plate h3, .plate p')].filter(words => {
-        const box = words.getBoundingClientRect();
-        return box.bottom > nav.getBoundingClientRect().bottom && box.top < innerHeight && words.closest('.plate').dataset.plate !== sky;
-      }).map(words => `plate ${words.closest('.plate').dataset.plate} over sky ${sky}`);
-    };
-    const found = [];
-    // Without a GPU the sky is drawn in software and frames are slow, so each
-    // step waits one frame, and a mismatch is counted only if it is still
-    // there a frame later (the observer reports a frame after the scroll).
-    for (let y = start; y <= end; y += 90) {
-      window.scrollTo(0, y);
-      await settle();
-      if (!wrongNow().length) continue;
-      await settle();
-      for (const problem of wrongNow()) found.push(`${Math.round(y)}: ${problem}`);
-    }
-    return found;
-  });
-  expect(wrong).toEqual([]);
-});
-
-test('the list of skies leaves with the last sky', async ({ page }) => {
-  await open(page);
-  const over = await page.evaluate(async () => {
-    const catalogue = document.querySelector('#catalogue');
-    const settle = () => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)));
-    const top = catalogue.getBoundingClientRect().top + scrollY;
-    const found = [];
-    for (let y = top - innerHeight; y <= top; y += 30) {
-      window.scrollTo(0, y);
-      await settle();
-      const edge = catalogue.getBoundingClientRect().top;
-      for (const link of document.querySelectorAll('.plate-rail a')) {
-        const box = link.getBoundingClientRect();
-        if (box.bottom > edge + 1 && box.top < innerHeight) found.push(`${Math.round(y)}: ${link.textContent.trim()}`);
-      }
-    }
-    return found;
-  });
-  expect(over).toEqual([]);
-});
-
-test('on a phone, a swipe that starts on the hour ring still scrolls the page', async ({ browser }) => {
-  // Headless Chromium scrolls for no synthesized touch, not even on a bare page, so
-  // this checks what decides it: the ring lets the page pan up and down, and only a
-  // touch that lands on its band is kept for turning it.
-  const context = await browser.newContext({ userAgent: PHONE, viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  const page = await context.newPage();
-  await open(page);
-  const result = await page.evaluate(() => {
-    const ring = document.querySelector('#hour-ring');
-    const kept = (x, y) => {
-      const touch = new Touch({ identifier: 1, target: ring, clientX: x, clientY: y });
-      const event = new TouchEvent('touchstart', { touches: [touch], targetTouches: [touch], changedTouches: [touch], cancelable: true, bubbles: true });
-      ring.dispatchEvent(event);
-      return event.defaultPrevented;
-    };
-    const box = ring.getBoundingClientRect();
-    const knob = ring.querySelector('.knob').getBoundingClientRect();
-    return {
-      panning: getComputedStyle(ring).touchAction,
-      centre: kept(box.left + box.width / 2, box.top + box.height / 2),
-      band: kept(knob.left + knob.width / 2, knob.top + knob.height / 2)
-    };
-  });
-  expect(result).toEqual({ panning: 'pan-y', centre: false, band: true });
-  await context.close();
-});
-
-test('on a phone, the page does not talk about keys it has not got', async ({ browser }) => {
-  const context = await browser.newContext({ userAgent: PHONE, viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  const page = await context.newPage();
-  await open(page);
-  await expect(page.getByText('Press 1 to 9, or pick one.')).toBeHidden();
-  await expect(page.getByText('Scroll through them.')).toBeVisible();
-  await expect(page.getByText('running on this page')).toBeHidden();
-  await context.close();
+  await page.keyboard.press('Tab');
+  const skip = page.locator('.skip');
+  await expect(skip).toBeFocused();
+  await expect.poll(() => skip.evaluate(element => element.getBoundingClientRect().top)).toBeGreaterThanOrEqual(0);
+  await page.keyboard.press('Tab');
+  const outline = await page.evaluate(() => { const style = getComputedStyle(document.activeElement); return parseFloat(style.outlineWidth) >= 2 && style.outlineStyle !== 'none'; });
+  expect(outline).toBe(true);
 });
 
 test('on a phone the demo waits to be asked for', async ({ browser }) => {
-  const context = await browser.newContext({ userAgent: PHONE, viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const context = await phoneContext(browser);
   const page = await context.newPage();
   const demoRequests = [];
   page.on('request', request => { if (request.url().includes('/demo/')) demoRequests.push(request.url()); });
   await open(page);
   await scrollThrough(page);
   expect(demoRequests).toEqual([]);
-  await page.locator('#observe').scrollIntoViewIfNeeded();
-  await page.getByRole('button', { name: 'Open the live demo' }).click();
-  await expect(page.locator('#demo')).toHaveAttribute('src', /demo\/index\.html/);
+  // It shows a picture instead, and a tab of its own on request.
+  await expect(page.locator('.deck-still')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Open the demo in a new tab' })).toHaveAttribute('target', '_blank');
   await context.close();
 });
 
-test('with reduced motion nothing is pinned, and every part reads in order', async ({ browser }) => {
+test('on a phone the page offers the demo, talks about tapping, and fits without sideways scroll', async ({ browser }) => {
+  const context = await phoneContext(browser);
+  const page = await context.newPage();
+  await open(page);
+  const primary = page.locator('a[data-primary]').first();
+  await expect(primary).toContainText('Try it here');
+  await expect(primary).toHaveAttribute('href', '#demo');
+  await expect(page.locator('[data-get-note]').first()).toHaveText('Nordlys is for the browser on your computer. You can try it right here.');
+  await expect(page.getByText('It shows you its folders, the dashboard and focus mode in turn')).toBeHidden();
+  await expect(page.getByText('Open it in a tab of its own to try it.')).toBeVisible();
+  await scrollThrough(page);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+  await context.close();
+});
+
+test('with reduced motion nothing moves on its own, and every part is there at once', async ({ browser }) => {
   const context = await browser.newContext({ reducedMotion: 'reduce' });
   const page = await context.newPage();
   const errors = await open(page);
+  // Nothing waits for the scroll to arrive.
+  const hidden = await page.evaluate(() => [...document.querySelectorAll('[data-reveal]')].filter(part => Number(getComputedStyle(part).opacity) < 1).length);
+  expect(hidden).toBe(0);
+  // The demo stays on its folders.
+  await page.locator('#deck').scrollIntoViewIfNeeded();
+  await expect(page.locator('#deck')).toHaveClass(/is-live/, { timeout: 20000 });
+  await page.waitForTimeout(10000);
+  await expect(page.locator('[data-now]')).toHaveText('the folders');
   await scrollThrough(page);
-  expect(await page.locator('.pin-spacer').count()).toBe(0);
-  for (const id of ['observe', 'plates', 'catalogue', 'get']) await expect(page.locator(`#${id}`)).toBeVisible();
+  for (const id of ['demo', 'skies', 'features', 'privacy', 'get', 'questions']) await expect(page.locator(`#${id}`)).toBeVisible();
   expect(errors).toEqual([]);
   await context.close();
 });

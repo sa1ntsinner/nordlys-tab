@@ -37,7 +37,7 @@ I wanted a new tab page with my bookmarks and something nice to look at, so I ma
 </p>
 
 <p align="center">
-  <img src="site/assets/skies.webp" alt="The nine backgrounds: Nordlys, Polaris, Halo, Pillars, Nacre, Silk, Baikal, Contour and Fjord.">
+  <img src="site/assets/skies.webp" alt="The nine backgrounds: Nordlys, Polaris, Halo, Star map, Meteors, Silk, Midnight sun, Contour and Fjord.">
 </p>
 
 ## Install

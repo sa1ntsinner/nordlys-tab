@@ -60,17 +60,17 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
 });
 
 /* The generated choices are compositions rather than effect-level variants:
-   curtains, star trails round the pole, an ice halo, pillars of light, a
-   mother-of-pearl cloud, a flow field, black ice, a contour map and a low
-   horizon. Personal media remains alongside them without pretending to be a
-   shader. */
+   curtains, star trails round the pole, an ice halo, a chart of the real
+   stars, meteors, a flow field, the real sun over the sea, a contour map and
+   a low horizon. Personal media remains alongside them without pretending to
+   be a shader. */
 test('the atmosphere gallery offers nine distinct compositions and personal media', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await openBackground(page);
   const offered = await page.locator('#cfg-bg-mode option').evaluateAll(
     nodes => nodes.map(node => node.value)
   );
-  expect(offered).toEqual(['aurora', 'polaris', 'halo', 'pillars', 'nacre', 'silk', 'baikal', 'drift', 'horizon', 'custom-image', 'custom-video', 'solid']);
+  expect(offered).toEqual(['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'drift', 'horizon', 'custom-image', 'custom-video', 'solid']);
   // And nothing anywhere still offers a composition to pick between.
   expect(await page.locator('#bg-gradient-grid').count()).toBe(0);
 });
@@ -139,17 +139,41 @@ test('a stored scene that no longer exists migrates to its closest survivor', as
     expect(await page.evaluate(() => 'gradient' in window.Nordlys.config),
       'the composition key is not carried forward').toBe(false);
   }
-  // Frost was retired for Baikal, the other sky made of ice.
-  await page.evaluate(() => {
-    window.Nordlys.config.bgMode = 'frost';
-    window.Nordlys.config.bgMotion = 0.3;
-    window.Nordlys.saveConfig();
+  /* Pillars, Nacre and Baikal were retired for skies drawn from the real one,
+     each for the nearest in kind, and Frost, retired for Baikal before, goes
+     straight on to the Star map. Each keeps its pace, and is painted. */
+  for (const [stored, successor] of [['pillars', 'meteors'], ['nacre', 'midnightsun'], ['baikal', 'starmap'], ['frost', 'starmap']]) {
+    await page.evaluate(mode => {
+      window.Nordlys.config.bgMode = mode;
+      window.Nordlys.config.bgMotion = 0.3;
+      window.Nordlys.saveConfig();
+    }, stored);
+    await page.reload();
+    await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+    expect(await page.evaluate(() => window.Nordlys.config.bgMode), `${stored} should become ${successor}`).toBe(successor);
+    expect(await page.evaluate(() => window.Nordlys.bgEngine.mode)).toBe(successor);
+    expect(await page.evaluate(() => window.Nordlys.config.bgMotion), 'at the pace it was').toBe(0.3);
+    await expect.poll(() => page.evaluate(() => {
+      const canvas = document.getElementById('bg-canvas');
+      const { data } = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+      let lit = 0;
+      for (let i = 3; i < data.length; i += 4 * 97) if (data[i] > 2) lit++;
+      return lit;
+    }), `${successor} is painted, not a blank sky`).toBeGreaterThan(100);
+  }
+});
+
+/* A retired sky can arrive after the load has migrated — from another tab,
+   another device, a profile or a restore — and is drawn as its successor and
+   kept as one, never left naming a scene the engine cannot paint. */
+test('a retired sky that arrives later is drawn as its successor', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const mode = await page.evaluate(async () => {
+    window.Nordlys.config.bgMode = 'nacre';
+    await window.Nordlys.updateBackgroundMode();
+    return [window.Nordlys.config.bgMode, window.Nordlys.bgEngine.mode, document.documentElement.dataset.bg];
   });
-  await page.reload();
-  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
-  expect(await page.evaluate(() => window.Nordlys.config.bgMode), 'frost should become baikal').toBe('baikal');
-  expect(await page.evaluate(() => window.Nordlys.bgEngine.mode)).toBe('baikal');
-  expect(await page.evaluate(() => window.Nordlys.config.bgMotion), 'at the pace it was').toBe(0.3);
+  expect(mode).toEqual(['midnightsun', 'midnightsun', 'midnightsun']);
 });
 
 /* Before this the procedural scenes differed only in the particles they drew, so
@@ -347,11 +371,19 @@ test('every moving part keeps the pace the slider sets', async ({ nordlysPage })
 test('the sky keeps its composition across reloads, and shuffle is one undo away', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   const still = async () => page.evaluate(async () => {
-    window.Nordlys.config.bgMode = 'baikal';
+    window.Nordlys.config.bgMode = 'meteors';
     window.Nordlys.config.bgMotion = 0;
     await window.Nordlys.updateBackgroundMode();
+    // The field keeps clear of the words, so it waits for where they are.
+    await window.NordlysUI?.settled?.();
+    window.Nordlys.sendQuietZones?.();
     const engine = window.Nordlys.bgEngine;
-    engine.t = NORDLYS_REST_PHASE.baikal;
+    // The night's showers come from the clock; held, so only the seed decides.
+    engine.now = () => new Date('2026-10-22T01:00:00Z');
+    engine.showerRates = null;
+    engine.t = NORDLYS_REST_PHASE.meteors;
+    // Solved again for this sky, not reused from the frame before the clock was held.
+    engine.quietSolvedAt = -Infinity;
     engine.render(0);
     return document.getElementById('bg-canvas').toDataURL();
   });
@@ -461,4 +493,65 @@ test('a mood becomes a theme in the studio, readable from the start', async ({ n
   // The page is wearing it, and the studio has nothing to warn about.
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim())).toBe('#ffd166');
   await expect(page.locator('#custom-theme-contrast-warning')).toBeHidden();
+});
+
+/* Three skies are the real one where the person is, at the engine's clock:
+   the Star map turns with it, the Midnight sun's sun climbs and sets with it,
+   and Meteors come from the radiant of the shower that is on. The same
+   moment is the same picture; another moment is another. */
+test('the real-sky scenes draw the sky of the moment they are given', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const at = (scene, iso) => page.evaluate(async ([scene, iso]) => {
+    window.Nordlys.config.bgMode = scene;
+    window.Nordlys.config.bgMotion = 0;
+    await window.Nordlys.updateBackgroundMode();
+    await window.NordlysUI?.settled?.();
+    window.Nordlys.sendQuietZones?.();
+    const engine = window.Nordlys.bgEngine;
+    engine.place = { lat: 52.5, lon: 13.4 };
+    engine.now = () => new Date(iso);
+    engine.showerRates = null;
+    engine.t = NORDLYS_REST_PHASE[scene];
+    engine.quietSolvedAt = -Infinity;
+    engine.render(0);
+    return document.getElementById('bg-canvas').toDataURL();
+  }, [scene, iso]);
+  for (const [scene, one, other] of [
+    ['starmap', '2026-10-22T03:00:00Z', '2026-10-22T09:00:00Z'],
+    ['midnightsun', '2026-10-21T10:00:00Z', '2026-10-21T16:20:00Z'],
+    ['meteors', '2026-10-22T01:00:00Z', '2026-06-20T22:00:00Z']
+  ]) {
+    const first = await at(scene, one);
+    expect(await at(scene, one), `${scene} at the same moment`).toBe(first);
+    expect(await at(scene, other), `${scene} at another moment`).not.toBe(first);
+  }
+  // Where the sun is, the Midnight sun's disc is: high at noon in Berlin, gone below the horizon at night.
+  const sun = iso => page.evaluate(iso => {
+    const engine = window.Nordlys.bgEngine;
+    engine.now = () => new Date(iso);
+    return engine.sunNow().elevation;
+  }, iso);
+  expect(await sun('2026-10-21T10:00:00Z')).toBeGreaterThan(20);
+  expect(await sun('2026-10-21T20:00:00Z')).toBeLessThan(-10);
+});
+
+/* The skies drawn from the real one say under the picker what they show,
+   and Meteors which shower is on, as Halo says which moon. */
+test('a sky drawn from the real one says what it shows, and which shower is on', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => { window.Nordlys.bgEngine.now = () => new Date('2026-08-12T22:00:00Z'); });
+  await openBackground(page);
+  const note = page.locator('#bg-scene-note');
+  await page.locator('.scene-card[data-scene="aurora"]').click();
+  await expect(note).toBeHidden();
+  await page.locator('.scene-card[data-scene="starmap"]').click();
+  await expect(note).toHaveText(/stars and their constellations/);
+  await page.locator('.scene-card[data-scene="meteors"]').click();
+  await expect(note).toContainText('Tonight: the Perseids');
+  await page.evaluate(() => { window.Nordlys.bgEngine.now = () => new Date('2026-06-21T22:00:00Z'); });
+  await page.locator('.scene-card[data-scene="midnightsun"]').click();
+  await page.locator('.scene-card[data-scene="meteors"]').click();
+  await expect(note).not.toContainText('Tonight');
+  await page.evaluate(() => window.I18N.setLanguage('de'));
+  await expect(note).toContainText('Sternschnuppe');
 });

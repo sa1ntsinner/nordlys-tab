@@ -6,6 +6,15 @@ Chrome Web Store's rule that they only ever go up.
 
 ## [Unreleased]
 
+### Changed
+
+- Pillars, Nacre and Baikal are replaced by three backgrounds that show the sky over you as it is now, worked out from your clock and time zone, not your location. Star map shows the bright stars and their constellations. Meteors is a calm night sky with a shooting star now and then, and more on the nights of the big meteor showers; Settings says when one is on. Midnight sun shows the sun where it stands, over a calm sea, and the sky's colour follows it through the day.
+- If you were using Pillars you now get Meteors, Nacre becomes Midnight sun, and Baikal becomes Star map. A shared look or a synced profile that names one of them gets the same.
+- In a window narrower than about 860px, such as a browser on half a screen, each folder still takes a line of its own, but its icons now spread across it and sit in the middle instead of keeping to the left half of an otherwise empty box.
+- Icons on the board have no outline of their own until you point at them, so a full board reads as folders of icons rather than boxes inside boxes. Light themes keep the edge, which white icons on a pale folder need.
+- Dashboard cards and the panels of Focus mode are named in ordinary letters at the size of the text around them, with a grey icon, instead of small spaced-out capitals in the accent colour.
+- In Settings, the section you're in is marked by a quiet highlight and the moving bar beside it, instead of a coloured fill.
+
 ## [2.5.1] — 2026-09-27
 
 ### Added

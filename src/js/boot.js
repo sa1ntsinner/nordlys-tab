@@ -111,6 +111,9 @@
     if (mode === "cosmos" || mode === "particles" || mode === "mesh-gradient" || mode === "gradient") {
       mode = "aurora";
     }
+    // The skies retired since, each to its successor (BACKGROUND_MIGRATIONS in app.js).
+    const RETIRED = { pillars: "meteors", nacre: "midnightsun", baikal: "starmap", frost: "starmap" };
+    if (Object.prototype.hasOwnProperty.call(RETIRED, mode)) mode = RETIRED[mode];
     root.setAttribute("data-bg", mode);
   } catch (error) { /* no config: the defaults below are a fine first frame */ }
 

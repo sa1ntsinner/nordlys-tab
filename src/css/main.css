@@ -199,9 +199,22 @@ html[data-bg="solid"] body {
   #page { gap: 18px; }
 }
 
+/* Narrower than this every folder takes a line of its own (page-fit.js
+   counts on it). Its tiles spread across that line and gather in the middle,
+   as on a phone: a full-width folder with its icons kept to the left half was
+   a half-empty box. The selector outweighs the column rules in components.css,
+   which load later; a board zoomed into the desktop flow keeps its columns,
+   and a phone keeps its own spread (components.css, 480px). */
 @media (max-width: 860px) {
   .card { flex: 1 1 100%; max-width: 100%; }
-  .grid[data-cols] { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); width: 100%; }
+}
+@media (min-width: 481px) and (max-width: 860px) {
+  #page:not([data-fit-wide]) .grid[data-cols]:not([data-cols="1"]) {
+    grid-template-columns: repeat(auto-fit, minmax(var(--tw), calc(var(--tw) * 1.2)));
+    justify-content: center;
+    justify-items: center;
+    width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

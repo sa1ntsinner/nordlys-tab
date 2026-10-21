@@ -6,8 +6,10 @@ async function openShare(page) {
   await page.locator('#look-share').scrollIntoViewIfNeeded();
 }
 
+/* Shared before Pillars was retired: the look still brings a sky, the one a
+   stored Pillars becomes. */
 const A_LOOK = {
-  theme: 'gruvbox-dark', bgMode: 'baikal', bgSeed: 99, iconShape: 'circle',
+  theme: 'gruvbox-dark', bgMode: 'pillars', bgSeed: 99, iconShape: 'circle',
   mood: { name: 'Hearth', colors: ['#ffb86c', '#ff5555', '#bd93f9'] }
 };
 
@@ -36,7 +38,7 @@ test('a pasted look is tried on without saving, and put back exactly', async ({ 
   await page.locator('#look-try').click();
   await expect(page.locator('#look-decide')).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'gruvbox-dark');
-  expect(await page.evaluate(() => window.Nordlys.bgEngine.mode)).toBe('baikal');
+  expect(await page.evaluate(() => window.Nordlys.bgEngine.mode)).toBe('meteors');
   expect(JSON.stringify(nordlysPage.storageState.nordlys_config), 'nothing written while trying').toBe(stored);
 
   await page.locator('#look-revert').click();

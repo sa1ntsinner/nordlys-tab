@@ -109,13 +109,16 @@ body.dash-carrying, body.dash-carrying * { cursor: grabbing !important; user-sel
 @keyframes dash-in { from { opacity: 0; transform: translateY(8px); } }
 
 .dash-head { display: flex; align-items: center; gap: var(--nl-space-2); min-height: 24px; margin: -2px -6px 0 0; }
+/* A card's title is a name in sentence case, at the size of the text around
+   it. Every card once opened on 11px tracked capitals in the accent's icon
+   colour: eight shouting labels on one page, read as a template. */
 .dash-head h2 {
   flex: 1; min-width: 0; margin: 0;
-  font-size: var(--nl-text-2xs); font-weight: 650; letter-spacing: var(--nl-track-wide); text-transform: uppercase;
-  color: var(--nl-text-tertiary);
+  font-size: var(--nl-text-md); font-weight: 600; letter-spacing: var(--nl-track-none);
+  color: var(--nl-text-secondary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.dash-type-icon { display: inline-grid; place-items: center; width: 16px; height: 16px; color: var(--nl-accent-text, var(--accent)); flex: none; }
+.dash-type-icon { display: inline-grid; place-items: center; width: 16px; height: 16px; color: var(--nl-text-tertiary); flex: none; }
 .dash-type-icon svg { width: 15px; height: 15px; }
 .dash-card svg, .dash-settings-type svg, .dash-add svg, .dash-pill svg, .dash-menu svg, .dash-settings-list svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
@@ -194,7 +197,7 @@ body.dash-carrying, body.dash-carrying * { cursor: grabbing !important; user-sel
   transition: color var(--nl-transition-control);
 }
 .dash-focus.is-done .dash-focus-text { color: var(--nl-text-tertiary); text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: color-mix(in srgb, var(--nl-text-primary) 35%, transparent); }
-.dash-focus-note { margin: 0; display: flex; align-items: center; gap: var(--nl-space-2); font-size: var(--nl-text-xs); letter-spacing: var(--nl-track-label); text-transform: uppercase; color: var(--nl-text-tertiary); }
+.dash-focus-note { margin: 0; display: flex; align-items: center; gap: var(--nl-space-2); font-size: var(--nl-text-sm); color: var(--nl-text-tertiary); }
 .dash-focus-note.is-done { color: var(--nl-accent-text, var(--accent)); }
 .dash-focus .dash-icon-btn { opacity: 0; }
 .dash-card:hover .dash-focus .dash-icon-btn, .dash-focus .dash-icon-btn:focus-visible { opacity: 1; }
@@ -233,7 +236,7 @@ body.dash-carrying, body.dash-carrying * { cursor: grabbing !important; user-sel
 .dash-card.is-rest .dash-timer-ring .fill { stroke: var(--nl-text-secondary); }
 .dash-timer-face { position: relative; font-size: var(--nl-text-2xl); font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: var(--nl-track-tight); line-height: 1; }
 .dash-timer-side { display: flex; flex-direction: column; gap: var(--nl-space-3); min-width: 0; }
-.dash-timer-phase { font-size: var(--nl-text-xs); font-weight: 600; letter-spacing: var(--nl-track-label); text-transform: uppercase; color: var(--nl-text-secondary); }
+.dash-timer-phase { font-size: var(--nl-text-sm); font-weight: 600; color: var(--nl-text-secondary); }
 .dash-card.is-rest .dash-timer-phase { color: var(--nl-accent-text, var(--accent)); }
 .dash-timer-controls { display: flex; align-items: center; gap: var(--nl-space-2); }
 .dash-round-btn {
@@ -256,7 +259,7 @@ body.dash-carrying, body.dash-carrying * { cursor: grabbing !important; user-sel
 .dash-clocks { list-style: none; margin: auto 0; padding: 0; display: flex; flex-direction: column; gap: var(--nl-space-2); }
 .dash-clocks li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: var(--nl-space-3); }
 .dash-clock-city { font-size: var(--nl-text-md); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dash-clock-shift { grid-column: 1; font-size: var(--nl-text-2xs); color: var(--nl-text-tertiary); letter-spacing: var(--nl-track-label); text-transform: uppercase; }
+.dash-clock-shift { grid-column: 1; font-size: var(--nl-text-xs); color: var(--nl-text-tertiary); }
 .dash-clock-time { grid-column: 2; grid-row: 1 / span 2; font-size: var(--nl-text-xl); font-weight: 400; font-variant-numeric: tabular-nums; }
 
 /* ── Countdown ──────────────────────────────────────────────── */
@@ -324,7 +327,7 @@ body.dash-carrying, body.dash-carrying * { cursor: grabbing !important; user-sel
 .dash-dialog h2 { margin: 0 0 var(--nl-space-5); font-size: var(--nl-text-lg); font-weight: 600; }
 .dash-form { display: flex; flex-direction: column; gap: var(--nl-space-4); }
 .dash-field { display: flex; flex-direction: column; gap: 6px; }
-.dash-field label { font-size: var(--nl-text-xs); font-weight: 600; letter-spacing: var(--nl-track-label); text-transform: uppercase; color: var(--nl-text-tertiary); }
+.dash-field label { font-size: var(--nl-text-sm); font-weight: 600; color: var(--nl-text-secondary); }
 .dash-field select.dash-input { appearance: auto; }
 .dash-form-actions { display: flex; justify-content: flex-end; gap: var(--nl-space-2); margin-top: var(--nl-space-2); }
 .dash-zone-list, .dash-place-results { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -530,7 +533,7 @@ html[data-dashboard][data-dash-folders="off"] :is(#board, #hiddenDock) { display
 .dash-brand { flex: none; display: inline-block; vertical-align: -2px; }
 .dash-source-chips .dash-tab { padding: 4px 8px; }
 .dash-inbox, .dash-agenda { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; scrollbar-width: thin; }
-.dash-inbox-group { margin: var(--nl-space-2) 0 2px; font-size: var(--nl-text-2xs); font-weight: 650; letter-spacing: var(--nl-track-wide); text-transform: uppercase; color: var(--nl-text-tertiary); }
+.dash-inbox-group { margin: var(--nl-space-2) 0 2px; font-size: var(--nl-text-sm); font-weight: 600; color: var(--nl-text-tertiary); }
 .dash-inbox-group:first-child { margin-top: 0; }
 .dash-inbox-group.is-overdue { color: var(--nl-danger, #ff7a7a); }
 .dash-inbox-row { display: flex; align-items: center; gap: var(--nl-space-3); padding: 5px 6px; margin: 0 -6px; border-radius: var(--nl-radius-sm); transition: background var(--nl-transition-fast); }

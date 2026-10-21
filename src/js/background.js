@@ -7,7 +7,7 @@
    to start the engine and settings.js decides which controls apply, and all
    three used to keep their own copy of this list — so adding a composition
    meant finding three places and the third one was always the one missed. */
-const NORDLYS_GENERATIVE_SCENES = new Set(["aurora", "polaris", "halo", "pillars", "nacre", "silk", "baikal", "drift", "horizon"]);
+const NORDLYS_GENERATIVE_SCENES = new Set(["aurora", "polaris", "halo", "starmap", "meteors", "silk", "midnightsun", "drift", "horizon"]);
 const NORDLYS_BACKGROUND_PALETTES = {
   polar: ["#68e1d1", "#6ea8fe", "#9d8cff"],
   violet: ["#8be9fd", "#8b7cff", "#cf78ff"],
@@ -19,10 +19,17 @@ const NORDLYS_BACKGROUND_PALETTES = {
    motion, the settings thumbnails — and the moment a moving one starts from.
    Chosen by looking, scene by scene, so a still sky is the best frame of it
    rather than whichever frame the clock happened to be on. */
-const NORDLYS_REST_PHASE = { aurora: 12, polaris: 20, halo: 7.4, pillars: 9, nacre: 14, silk: 31.7, baikal: 6, drift: 7.4, horizon: 7.4 };
+const NORDLYS_REST_PHASE = { aurora: 12, polaris: 20, halo: 7.4, starmap: 7.4, meteors: 9, silk: 31.7, midnightsun: 7.4, drift: 7.4, horizon: 7.4 };
 const NORDLYS_STILLS = new WeakMap();
 // A minute without input and the sky paints at its idle rate.
 const NORDLYS_IDLE_AFTER = 60000;
+/* The least time between paints some scenes need, in milliseconds. The real
+   sky turns a quarter of a degree a minute, so the Star map paints for its
+   twinkle alone, and the Midnight sun for the light on the water; Meteors
+   wait at this between meteors and take the full rate for one (meteorDue). */
+const NORDLYS_SCENE_BUDGET = { starmap: 100, meteors: 100, midnightsun: 80 };
+// The scenes that keep time with the real sky even when held still.
+const NORDLYS_CLOCK_SCENES = new Set(["starmap", "midnightsun"]);
 
 /* Silk strokes each thread three times, wide and faint first: the bloom gives a
    strand air, the core gives it an edge, and neither alone reads as fibre. */
@@ -37,17 +44,21 @@ const NORDLYS_SILK_BANDS = NORDLYS_SILK_PASSES.map((pass) => [pass.width, pass.a
    how fast the sky turns, per unit of the scene clock; and each trail's two
    bands, a faint glow either side of a fine core. */
 const NORDLYS_POLARIS = { length: 0.5, turn: 0.012, bands: [[3.4, 0.14], [1, 1]] };
-// Where Pillars puts its horizon, as a share of the height.
-const NORDLYS_HORIZON = 0.8;
-/* How a light falls off from its centre, as [offset, share] stops: a soft
-   glow; a column of light, held longer than a glint since it is a column;
-   a streak of cloud, long and thin; the body of a cloud, full nearly to its edge. */
+// How a light falls off from its centre, as [offset, share] stops: a soft glow.
 const NORDLYS_SOFT = [[0, 1], [0.32, 0.34], [1, 0]];
-const NORDLYS_PILLAR = [[0, 1], [0.25, 0.86], [0.55, 0.52], [0.8, 0.2], [1, 0]];
-const NORDLYS_STREAK = [[0, 1], [0.35, 0.6], [0.7, 0.18], [1, 0]];
-const NORDLYS_LOBE = [[0, 1], [0.4, 0.72], [0.75, 0.26], [1, 0]];
+/* The Star map and Meteors look out over a horizon low on the page with the
+   zenith at the top, both as shares of the height (skyView). */
+const NORDLYS_SKY_VIEW = { horizon: 0.9, zenith: 0.03 };
+/* Meteors: one in this many seconds outside the showers, and at the peak of
+   the strongest, at full motion — far livelier than the real sky, which
+   manages one a minute at a good peak, and still calm. The scene clock is
+   cut into slots of a second, each rolling its own dice. */
+const NORDLYS_METEORS = { sporadic: 45, peak: 5, slot: 0.3 };
+/* Midnight sun: the horizon, the zenith and the bearing the sun keeps to, as
+   shares of the page. */
+const NORDLYS_MIDNIGHT_SUN = { horizon: 0.78, zenith: 0.08, x: 0.79 };
 // The scenes that are a night thing, and step back further by day.
-const NORDLYS_NIGHT_SCENES = new Set(["aurora", "polaris", "pillars"]);
+const NORDLYS_NIGHT_SCENES = new Set(["aurora", "polaris", "starmap", "meteors"]);
 
 class NordlysBackgroundEngine {
   constructor() {
@@ -108,13 +119,18 @@ class NordlysBackgroundEngine {
     this.customPalettes = {};
     this.silk = [];
     this.polaris = [];
-    this.pillars = [];
-    this.dust = [];
-    this.towns = [];
-    this.nacre = [];
-    this.baikal = null;
-    // Baikal's ice, drawn once on the screen and laid down each frame.
-    this.iceLayer = null;
+    /* The real sky's scenes: the Star map's view and its layer of stars and
+       figures; the Meteors' field, its layer, and the showers of the minute;
+       the Midnight sun's coast. Each layer is drawn on the screen once and
+       laid down every frame. */
+    this.chart = null;
+    this.chartLayer = null;
+    this.field = [];
+    this.fieldLayer = null;
+    this.showerRates = null;
+    this.coast = [];
+    // The minute timer a held real-sky scene keeps time by (keepTime).
+    this.timeKeeper = null;
     this.terrain = [];
     this.contours = null;
     this.quietZones = [];
@@ -188,12 +204,7 @@ class NordlysBackgroundEngine {
   }
 
   readSky(date) {
-    if (!this.place) {
-      let zone;
-      try { zone = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { zone = ""; }
-      this.place = window.NordlysSky.zonePlace(zone || "", date);
-    }
-    return window.NordlysSky.daylight(date, this.place);
+    return window.NordlysSky.daylight(date, this.whereNow());
   }
 
   /* The sun itself, off the edge of the page. Facing the equator, east is on
@@ -352,9 +363,9 @@ class NordlysBackgroundEngine {
     this.initSilk();
     this.initTerrain();
     this.initPolaris();
-    this.initPillars();
-    this.initNacre();
-    this.initBaikal();
+    this.initChart();
+    this.initField();
+    this.initCoast();
     this.rng = null;
   }
 
@@ -393,7 +404,7 @@ class NordlysBackgroundEngine {
      The composition is laid out on a virtual viewport three times the size of
      the thumbnail and scaled down, so a hairline stays a hairline instead of
      turning into a bar. Each canvas keeps its seeded world, so a new colour
-     mood repaints the same stars and bubbles rather than a new scatter. */
+     mood repaints the same stars and threads rather than a new scatter. */
   paintStill(canvas, scene, { width = canvas?.clientWidth, height = canvas?.clientHeight, dpr = Math.min(window.devicePixelRatio || 1, 2), zoom = 3 } = {}) {
     if (!canvas || !NORDLYS_GENERATIVE_SCENES.has(scene)) return false;
     if (!width || !height) return false;
@@ -402,7 +413,7 @@ class NordlysBackgroundEngine {
       still = Object.assign(Object.create(NordlysBackgroundEngine.prototype), {
         canvas, ctx: canvas.getContext("2d"), w: width * zoom, h: height * zoom, mode: scene,
         t: NORDLYS_REST_PHASE[scene], ink: 1, motion: 0, intensity: 1, customPalettes: {}, seed: this.seed, rng: null,
-        stars: [], meteors: [], nebulae: [], silk: [], polaris: [], pillars: [], dust: [], towns: [], nacre: [], baikal: null, terrain: [], quietZones: [],
+        stars: [], meteors: [], nebulae: [], silk: [], polaris: [], chart: null, field: [], coast: [], terrain: [], quietZones: [],
         // A still is at rest by definition: nothing in it is mid-fall.
         atRest: () => true
       });
@@ -417,6 +428,7 @@ class NordlysBackgroundEngine {
     // A thumbnail shows the sky as it is now, sun and all.
     still.sky = this.sky;
     still.place = this.place;
+    still.now = this.now;
     still.nebulae.forEach((nebula, index) => { nebula.color = this.paletteRgb[index % 3].join(", "); });
     still.render(0);
     return true;
@@ -478,7 +490,8 @@ class NordlysBackgroundEngine {
     if (changed) {
       this.gl?.release();
       this.gl = undefined;
-      this.iceLayer = null;
+      this.chartLayer = null;
+      this.fieldLayer = null;
     }
     if (changed && NORDLYS_REST_PHASE[mode] !== undefined) this.t = NORDLYS_REST_PHASE[mode];
     if (NORDLYS_GENERATIVE_SCENES.has(mode)) {
@@ -492,6 +505,17 @@ class NordlysBackgroundEngine {
       if (this.canvas) this.canvas.style.display = "none";
       this.stop();
     }
+    this.keepTime();
+  }
+
+  /* A held Star map or Midnight sun still keeps time with the sky: nothing
+     in it moves, but once a minute the frame is painted again where the sky
+     has got to. One frame a minute, and none while the page is hidden. */
+  keepTime() {
+    const keeps = NORDLYS_CLOCK_SCENES.has(this.mode);
+    if (keeps === Boolean(this.timeKeeper)) return;
+    clearInterval(this.timeKeeper);
+    this.timeKeeper = keeps ? setInterval(() => { if (!document.hidden) this.repaint(); }, 60000) : null;
   }
 
   /* At rest the scene is painted once and held. Two things ask for that: the
@@ -522,12 +546,15 @@ class NordlysBackgroundEngine {
          again. Thirty a second is smooth for motion this slow; after a minute
          with no input, fifteen. The pace is unchanged, because dt is still the
          real time elapsed. */
-      if (now - this.lastFrame < this.frameBudget(now) - 2) {
+      const budget = this.frameBudget(now);
+      if (now - this.lastFrame < budget - 2) {
         this.scheduleFrame(now, true);
         return;
       }
-      // dt in 60fps units, capped so a long stall cannot jump the sky ahead.
-      const dt = Math.min((now - this.lastFrame) / 16.666, 6);
+      /* dt in 60fps units, capped so a long stall cannot jump the sky ahead:
+         at a tenth of a second for the budget everyone has, and at half as
+         much again as a slower scene's own, which would otherwise lose time. */
+      const dt = Math.min((now - this.lastFrame) / 16.666, Math.max(6, (budget * 1.5) / 16.666));
       this.lastFrame = now;
       this.render(dt);
       /* Nothing in the scene advances at rest, so a second frame would paint
@@ -549,7 +576,10 @@ class NordlysBackgroundEngine {
   }
 
   frameBudget(now) {
-    return now - this.lastInput > NORDLYS_IDLE_AFTER ? 1000 / 15 : 1000 / 30;
+    const base = now - this.lastInput > NORDLYS_IDLE_AFTER ? 1000 / 15 : 1000 / 30;
+    const own = NORDLYS_SCENE_BUDGET[this.mode];
+    if (!own) return base;
+    return Math.max(base, this.mode === "meteors" ? this.meteorDue(own) : own);
   }
 
   /* Waiting out the budget with a callback every vsync woke the page three
@@ -579,10 +609,12 @@ class NordlysBackgroundEngine {
   }
 
   /* Someone is here: the budget goes back up from its idle rate, and a frame
-     the idle rate put to sleep is woken for the sooner one. */
+     the idle rate put to sleep is woken for the sooner one. A scene that
+     paints less often anyway has nothing sooner to wake for. */
   noteInput() {
     this.lastInput = performance.now();
     if (this.frameTimer === null || this.frameWakeBudget <= 1000 / 30) return;
+    if (this.frameBudget(this.lastInput) >= this.frameWakeBudget) return;
     clearTimeout(this.frameTimer);
     this.frameTimer = null;
     this.scheduleFrame(this.lastInput);
@@ -684,7 +716,7 @@ class NordlysBackgroundEngine {
        scene that sets globalAlpha per stroke overwrites it — so the scenes
        multiply by `ink` instead, and the canvas default covers the rest. */
     this.ink = this.intensity ?? 1;
-    // By day the sky steps back, and the night skies most of all: aurora, stars, pillars of light.
+    // By day the sky steps back, and the night skies most of all: aurora, the stars, meteors.
     if (this.sky) this.ink *= 1 - this.sky.day * (NORDLYS_NIGHT_SCENES.has(this.mode) ? 0.45 : 0.18);
     this.ctx.globalAlpha = this.ink;
 
@@ -712,14 +744,14 @@ class NordlysBackgroundEngine {
       case "polaris":
         this.renderPolaris(dt);
         break;
-      case "pillars":
-        this.renderPillars();
+      case "starmap":
+        this.renderStarmap();
         break;
-      case "nacre":
-        this.renderNacre();
+      case "meteors":
+        this.renderShowers();
         break;
-      case "baikal":
-        this.renderBaikal();
+      case "midnightsun":
+        this.renderMidnightSun();
         break;
       case "drift":
         this.renderDrift();
@@ -728,7 +760,8 @@ class NordlysBackgroundEngine {
         this.renderHorizon();
         break;
     }
-    if (this.sky) this.renderSunlight();
+    // The Midnight sun draws its own sun, and the light of it.
+    if (this.sky && this.mode !== "midnightsun") this.renderSunlight();
     if (this.quietZones.length && !this.solvingQuiet) this.quieten();
     this.ctx.globalAlpha = 1;
   }
@@ -891,10 +924,12 @@ class NordlysBackgroundEngine {
   /* `share` thins the field and `glare` is a bright body that washes out the
      stars around it — a moon behind cloud leaves a dark disc of sky starless,
      and a halo scene that ignored that would look pasted together. */
-  renderStars({ share = 1, glare = null } = {}) {
+  renderStars({ share = 1, glare = null, night = null } = {}) {
     const light = this.lightMode;
-    // Following the sun, the stars are out at night and in the blue hour only.
-    const out = this.sky ? 0.15 + 0.85 * Math.max(this.sky.night, this.sky.blue * 0.55) : 1;
+    /* Following the sun, the stars are out at night and in the blue hour
+       only. A scene with a sun of its own says how much night there is. */
+    const dark = night ?? (this.sky ? Math.max(this.sky.night, this.sky.blue * 0.55) : null);
+    const out = dark === null ? 1 : 0.15 + 0.85 * dark;
     if (out < 0.2) return;
     this.ctx.fillStyle = light ? "rgba(60, 80, 130, 0.75)" : "rgba(225, 240, 255, 0.75)";
     const stride = Math.max(1, Math.round(1 / share));
@@ -1341,10 +1376,10 @@ class NordlysBackgroundEngine {
   /* A soft ellipse of light, rx by ry, turned by `angle`, its alpha falling off
      from the centre along `stops` ([offset, share] pairs). One radial gradient
      squashed to shape and one fill over its own box, like drawShaft, whatever
-     the size: the cheapest light the canvas has. */
-  glow(cx, cy, rx, ry, angle, rgb, alpha, stops = NORDLYS_SOFT) {
+     the size: the cheapest light the canvas has. On the scene's own context
+     unless given a layer's. */
+  glow(cx, cy, rx, ry, angle, rgb, alpha, stops = NORDLYS_SOFT, ctx = this.ctx) {
     if (!(alpha > 0.002) || !(rx > 0) || !(ry > 0)) return;
-    const ctx = this.ctx;
     const colour = `${rgb[0]}, ${rgb[1]}, ${rgb[2]}`;
     ctx.save();
     ctx.translate(cx, cy);
@@ -1519,478 +1554,885 @@ class NordlysBackgroundEngine {
     }
   }
 
-  /* ── Pillars: light over the frost ──────────────────────────────────
-     On a still night far below freezing, flat ice crystals settle level in the
-     air, and every light of a distant town throws a column straight up off
-     them into the sky. The columns stand over a low horizon in two or three
-     clusters, brightest at their feet and mirrored faintly in the snow, and
-     they breathe as the crystals drift. Nearer by, the crystals glint in the
-     air themselves — diamond dust — each lit in the colour of the column
-     nearest it. All of it is soft gradients, the cheapest thing the canvas
-     draws; nothing is stroked. */
-  initPillars() {
-    this.pillars = [];
-    this.dust = [];
-    this.towns = [];
-    if (!this.w) return;
-    const random = NordlysBackgroundEngine.stream((this.seed ^ 0x1b873593) >>> 0);
-    const towns = random() < 0.3 ? 2 : 3;
-    for (let town = 0; town < towns; town++) {
-      const centre = 0.08 + ((town + 0.2 + random() * 0.6) / towns) * 0.84;
-      const spread = 0.05 + random() * 0.06;
-      this.towns.push({ x: centre, spread, tone: Math.floor(random() * 3) });
-      const lights = 3 + Math.floor(random() * 3);
-      for (let i = 0; i < lights; i++) {
-        this.pillars.push({
-          x: centre + (random() - 0.5) * spread * 2,
-          height: 0.38 + random() * 0.36,
-          width: 1 + random() * 1.4,
-          alpha: 0.26 + random() * 0.2,
-          tone: Math.floor(random() * 3),
-          white: 0.5 + random() * 0.38,
-          phase: random() * Math.PI * 2,
-          rate: 0.5 + random() * 0.7
-        });
-      }
+  /* ── The real sky ───────────────────────────────────────────────────
+     Three scenes are drawn from the sky as it is for the person now: the
+     Star map, Meteors and the Midnight sun. Where they are is the time
+     zone's city (sky-zones.js), as it is for the daylight: no permission and
+     no network. When is the engine's clock, which a test can hold and
+     "Watch a day go by" runs through a day. */
+  whereNow() {
+    if (!this.place && window.NordlysSky?.zonePlace) {
+      let zone;
+      try { zone = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { zone = ""; }
+      this.place = window.NordlysSky.zonePlace(zone || "", this.now());
     }
-    const count = Math.round(Math.min(170, Math.max(60, (this.w * this.h) / 11000)));
-    for (let i = 0; i < count; i++) {
-      this.dust.push({ x: random(), y: random(), z: 0.35 + random() * 0.65, sway: random() * Math.PI * 2, glint: random() * Math.PI * 2, rate: 0.6 + random() * 1.2 });
-    }
+    return this.place || { lat: 52.5, lon: 13.4 };
   }
 
-  renderPillars() {
+  /* What the Star map and Meteors look out on: a stereographic view centred
+     on the horizon, which keeps a constellation its own shape wherever it
+     stands, with the horizon a straight line low on the page and the zenith
+     at the top. It faces the equator, where the sky does most of its
+     turning; a shuffled sky faces another way. */
+  skyView() {
+    const place = this.whereNow();
+    const facing = ((place.lat < 0 ? 0 : 180) + (this.chart?.turn || 0)) * Math.PI / 180;
+    const horizon = this.h * NORDLYS_SKY_VIEW.horizon;
+    const lat = place.lat * Math.PI / 180;
+    return {
+      place, horizon, cx: this.w / 2, scale: (horizon - this.h * NORDLYS_SKY_VIEW.zenith) / 2,
+      sin: Math.sin(facing), cos: Math.cos(facing), sinLat: Math.sin(lat), cosLat: Math.cos(lat),
+      // The local sidereal time in radians: the right ascension on the meridian now.
+      sidereal: (window.NordlysSky?.siderealAngle?.(this.now(), place.lon) ?? 0) * Math.PI / 180
+    };
+  }
+
+  /* A point of the sky by its right ascension and declination, as a
+     direction east, north and up from where the person stands. */
+  skyPoint(ascension, sinDec, cosDec, view) {
+    const hour = view.sidereal - ascension;
+    const cosHour = Math.cos(hour);
+    return [-cosDec * Math.sin(hour), sinDec * view.cosLat - cosDec * cosHour * view.sinLat, sinDec * view.sinLat + cosDec * cosHour * view.cosLat];
+  }
+
+  // A direction in the sky onto the page, or null when it is behind the viewer.
+  toPage(e, n, u, view) {
+    const ahead = e * view.sin + n * view.cos;
+    if (ahead < -0.5) return null;
+    const k = (2 * view.scale) / (1 + ahead);
+    return [view.cx + (e * view.cos - n * view.sin) * k, view.horizon - u * k];
+  }
+
+  // And back: the direction in the sky behind a point of the page.
+  fromPage(x, y, view) {
+    const px = (x - view.cx) / view.scale;
+    const py = (view.horizon - y) / view.scale;
+    const q = px * px + py * py;
+    const ahead = (4 - q) / (4 + q);
+    const right = (4 * px) / (4 + q);
+    return [ahead * view.sin + right * view.cos, ahead * view.cos - right * view.sin, (4 * py) / (4 + q)];
+  }
+
+  /* The bright stars of sky-stars.js, unpacked once for every engine: right
+     ascension, the sine and cosine of the declination, the magnitude, and how
+     warm the colour is, from -1 for the hottest blue-white to 1 for the
+     coolest orange (the colour index runs from about -0.3 to 2, and the
+     sun is 0.65). */
+  static catalogue() {
+    const source = typeof window !== "undefined" ? window.NORDLYS_STARS : null;
+    const cached = NordlysBackgroundEngine.starCache;
+    if (cached && cached.source === source) return cached;
+    if (!Array.isArray(source?.stars) || !source.stars.length) return null;
+    const count = Math.floor(source.stars.length / 4);
+    const stars = {
+      source, count, ascension: new Float32Array(count), sinDec: new Float32Array(count), cosDec: new Float32Array(count),
+      magnitude: new Float32Array(count), warmth: new Float32Array(count),
+      figures: Object.values(source.figures || {}).flat().filter(Array.isArray)
+    };
+    for (let i = 0; i < count; i++) {
+      const [ra, dec, magnitude, colour] = source.stars.slice(i * 4, i * 4 + 4).map((value) => value / 100);
+      stars.ascension[i] = ra * Math.PI / 180;
+      stars.sinDec[i] = Math.sin(dec * Math.PI / 180);
+      stars.cosDec[i] = Math.cos(dec * Math.PI / 180);
+      stars.magnitude[i] = magnitude;
+      stars.warmth[i] = Math.max(-1, Math.min(1, colour < 0.65 ? (colour - 0.65) / 0.9 : (colour - 0.65) / 1.1));
+    }
+    NordlysBackgroundEngine.starCache = stars;
+    return stars;
+  }
+
+  /* A star as the eye sees it: on a dark sky white, leaning blue or orange
+     by its colour and never as strongly as a photograph shows it; on a light
+     one the dark of printed ink, leaning the same way. */
+  starColour(warmth, light) {
+    const base = light ? [30, 40, 70] : [244, 247, 255];
+    const tint = warmth < 0 ? (light ? [26, 64, 160] : [190, 210, 255]) : (light ? [150, 66, 28] : [255, 205, 150]);
+    const k = Math.min(1, Math.abs(warmth)) * 0.9;
+    return base.map((value, i) => Math.round(value + (tint[i] - value) * k));
+  }
+
+  /* ── Star map: the sky as it is ─────────────────────────────────────
+     The bright stars over the person's place at this moment and the stick
+     figures of the constellations among them, the way a chart draws them: a
+     dot for each star, larger by its magnitude and coloured by its colour
+     index — Betelgeuse orange, Rigel blue-white — and a hairline in the
+     mood's colour from star to star of a figure, stopping short of each.
+     Below the horizon nothing is drawn, and near it the stars dim, through
+     the extra air. The sky turns at its real rate, a quarter of a degree a
+     minute: sped up, it would be the sky of some other hour within a minute,
+     and the point of it is that it is this one. So nothing moves to the eye,
+     and a tab left open shows Orion further round an hour later. The
+     brightest stars twinkle, more the lower they stand, which is all that
+     moves — and why the scene asks for a frame a tenth of a second at most.
+
+     Everything but the twinkle is drawn into a layer and laid down in one
+     drawImage; the layer is drawn again when the sky has turned a third of a
+     pixel, every ten seconds, and where the words sit it has no lines: a
+     line through the date reads as a strike-through. A still and the
+     quiet-zone sample draw the chart directly. */
+  initChart() {
+    const random = NordlysBackgroundEngine.stream((this.seed ^ 0x68e31da4) >>> 0);
+    // Seed zero faces the equator; a shuffle turns to face anywhere.
+    this.chart = { turn: this.seed ? random() * 360 : 0 };
+  }
+
+  renderStarmap() {
     const ctx = this.ctx;
     const light = this.lightMode;
-    if (!this.pillars.length) return;
-    const unit = Math.min(this.w, this.h);
-    const horizon = this.h * NORDLYS_HORIZON;
+    const view = this.skyView();
     ctx.save();
     ctx.globalCompositeOperation = light ? "multiply" : "screen";
+    this.paintHorizon(view, light);
+    // With the light following the sun the chart pales by day, and stays: a chart still says where the stars are.
+    const seen = this.sky ? 0.28 + 0.72 * Math.max(this.sky.night, this.sky.blue * 0.8) : 1;
+    let bright;
+    if (ctx === this.screen && this.canvas && typeof document.createElement === "function") {
+      const zones = this.quietZones.map((zone) => [zone.x, zone.y, zone.w, zone.h].map(Math.round).join()).join(";");
+      const key = `${this.seed}:${this.w}x${this.h}:${this.dpr}:${this.palette.join()}:${light}:${zones}:${view.place.lat},${view.place.lon}:${Math.floor(this.now().getTime() / 10000)}`;
+      if (this.chartLayer?.key !== key) {
+        const layer = this.chartLayer?.canvas || document.createElement("canvas");
+        if (layer.width !== this.canvas.width) layer.width = this.canvas.width;
+        if (layer.height !== this.canvas.height) layer.height = this.canvas.height;
+        const paint = layer.getContext("2d");
+        paint.setTransform(1, 0, 0, 1, 0, 0);
+        paint.clearRect(0, 0, layer.width, layer.height);
+        paint.setTransform(this.dpr || 1, 0, 0, this.dpr || 1, 0, 0);
+        this.chartLayer = { key, canvas: layer, bright: this.drawChart(paint, view, light, true) };
+      }
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = this.ink * seen;
+      ctx.drawImage(this.chartLayer.canvas, 0, 0);
+      ctx.restore();
+      bright = this.chartLayer.bright;
+    } else {
+      ctx.globalAlpha = this.ink * seen;
+      bright = this.drawChart(ctx, view, light, false);
+    }
+    // The brightest stars, painted each frame: scintillation, two slow beats, deeper in the thicker air low down.
+    for (const star of bright) {
+      const depth = 0.08 + 0.34 * (1 - star.up) ** 3;
+      const beat = 0.6 * Math.sin(this.t * star.rate + star.phase) + 0.4 * Math.sin(this.t * star.rate * 1.9 + star.phase * 2.3);
+      const alpha = Math.min(1, star.alpha * (1 + depth * beat)) * seen;
+      // A soft bloom, the more the brighter the star; ink on a light page has none.
+      if (!light) this.glow(star.x, star.y, star.r * 4.6, star.r * 4.6, 0, star.rgb, alpha * Math.min(0.32, 0.1 + 0.07 * (1.6 - star.m)));
+      ctx.fillStyle = `rgba(${star.rgb[0]}, ${star.rgb[1]}, ${star.rgb[2]}, ${alpha.toFixed(3)})`;
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
 
-    // The cold air over the horizon, lit from below by the town.
-    const air = ctx.createLinearGradient(0, horizon, 0, horizon - this.h * 0.55);
-    air.addColorStop(0, this.rgba(1, light ? 0.07 : 0.1));
+  /* The air just over the horizon, lit faintly from below by places out of
+     sight, and nothing under it: no stars below the line is what makes it
+     the ground. */
+  paintHorizon(view, light) {
+    const ctx = this.ctx;
+    const air = ctx.createLinearGradient(0, view.horizon, 0, view.horizon - this.h * 0.34);
+    air.addColorStop(0, this.rgba(2, light ? 0.08 : 0.12));
+    air.addColorStop(0.35, this.rgba(1, light ? 0.03 : 0.045));
     air.addColorStop(1, this.rgba(1, 0));
     ctx.fillStyle = air;
-    ctx.fillRect(0, horizon - this.h * 0.55, this.w, this.h * 0.55);
-    // The snow under it, paler than the sky where the town lights it.
-    const snow = ctx.createLinearGradient(0, horizon, 0, this.h);
-    snow.addColorStop(0, this.rgba(1, light ? 0.07 : 0.09));
-    snow.addColorStop(1, this.rgba(2, light ? 0.015 : 0.02));
-    ctx.fillStyle = snow;
-    ctx.fillRect(0, horizon, this.w, this.h - horizon);
-    // Each town a low band of light along the horizon.
-    for (const town of this.towns) {
-      this.glow(town.x * this.w, horizon, town.spread * this.w * 1.6, unit * 0.02, 0, this.pale(town.tone, light ? 0 : 0.6), light ? 0.16 : 0.24);
+    ctx.fillRect(0, view.horizon - this.h * 0.34, this.w, this.h * 0.34);
+    const line = ctx.createLinearGradient(0, 0, this.w, 0);
+    line.addColorStop(0, this.rgba(0, 0));
+    line.addColorStop(0.5, this.rgba(0, light ? 0.16 : 0.22));
+    line.addColorStop(1, this.rgba(0, 0));
+    ctx.fillStyle = line;
+    ctx.fillRect(0, view.horizon, this.w, 1);
+  }
+
+  /* The chart onto a context: the figures, the words cleared of them, then
+     the stars, all but the brightest, which are handed back to be painted
+     each frame with their twinkle. */
+  drawChart(ctx, view, light, onLayer) {
+    const stars = NordlysBackgroundEngine.catalogue();
+    if (!stars) return [];
+    const margin = 8;
+    const page = new Float32Array(stars.count * 3);
+    for (let i = 0; i < stars.count; i++) {
+      const [e, n, u] = this.skyPoint(stars.ascension[i], stars.sinDec[i], stars.cosDec[i], view);
+      const at = this.toPage(e, n, u, view);
+      // x, y, and how high it stands: below zero is under the horizon.
+      page[i * 3] = at ? at[0] : NaN;
+      page[i * 3 + 1] = at ? at[1] : NaN;
+      page[i * 3 + 2] = u;
     }
+    const unit = Math.max(0.8, Math.min(this.w, this.h) / 900);
+    const size = (m) => (0.55 + 0.55 * Math.max(0, 4.6 - m)) * unit;
+    // Dimmed close to the horizon, as the extra air does; gone under it.
+    const air = (u) => Math.max(0, Math.min(1, u / 0.28)) ** 0.7;
+    const scale = ctx.getTransform?.()?.a || 1;
+    // Off the screen the band goes behind what is already drawn, so the words' clearing leaves it whole.
+    if (!onLayer) this.drawMilkyWay(ctx, view, light);
 
-    const columns = this.pillars.map((pillar) => ({
-      pillar,
-      x: pillar.x * this.w,
-      breath: 0.8 + 0.2 * Math.sin(this.t * 0.42 * pillar.rate + pillar.phase),
-      height: pillar.height * this.h * (0.95 + 0.05 * Math.sin(this.t * 0.23 * pillar.rate + pillar.phase * 1.7)),
-      half: unit * 0.0055 * pillar.width,
-      rgb: this.pale(pillar.tone, light ? 0 : pillar.white)
-    }));
-
-    /* Above the horizon: a thin spread of stars, then the columns — a wide haze,
-       a softer glow, and the column itself. */
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, 0, this.w, horizon);
+    ctx.rect(0, 0, this.w, view.horizon);
     ctx.clip();
-    this.renderStars({ share: 0.35 });
-    for (const column of columns) {
-      const alpha = column.pillar.alpha * column.breath;
-      this.glow(column.x, horizon, column.half * 12, column.height * 0.7, 0, column.rgb, alpha * 0.14, NORDLYS_PILLAR);
-      this.glow(column.x, horizon, column.half * 3.2, column.height * 0.9, 0, column.rgb, alpha * 0.42, NORDLYS_PILLAR);
-      this.glow(column.x, horizon, column.half, column.height, 0, column.rgb, alpha, NORDLYS_PILLAR);
+    /* The figures: one hairline path, a device pixel wide, which the GPU
+       draws as it is however far it runs. Each line stops short of its stars. */
+    const figures = new Path2D();
+    for (const run of stars.figures) {
+      for (let k = 1; k < run.length; k++) {
+        const a = run[k - 1] * 3;
+        const b = run[k] * 3;
+        if (!(page[a + 2] > -0.05 && page[b + 2] > -0.05) || Number.isNaN(page[a]) || Number.isNaN(page[b])) continue;
+        const dx = page[b] - page[a];
+        const dy = page[b + 1] - page[a + 1];
+        const length = Math.hypot(dx, dy);
+        const gapA = size(stars.magnitude[run[k - 1]]) + 3.5;
+        const gapB = size(stars.magnitude[run[k]]) + 3.5;
+        if (length <= gapA + gapB + 2) continue;
+        figures.moveTo(page[a] + (dx * gapA) / length, page[a + 1] + (dy * gapA) / length);
+        figures.lineTo(page[b] - (dx * gapB) / length, page[b + 1] - (dy * gapB) / length);
+      }
     }
+    ctx.strokeStyle = this.rgba(0, light ? 0.32 : 0.28);
+    ctx.lineWidth = 1 / scale;
+    ctx.stroke(figures);
     ctx.restore();
 
-    // Below it, each column again in the snow, short and dim.
+    const bright = [];
+    for (let i = 0; i < stars.count; i++) {
+      const x = page[i * 3];
+      const y = page[i * 3 + 1];
+      const u = page[i * 3 + 2];
+      if (!(u > 0) || Number.isNaN(x) || x < -margin || x > this.w + margin || y < -margin || y > view.horizon) continue;
+      const m = stars.magnitude[i];
+      const r = size(m);
+      const alpha = Math.min(1, 0.32 + 0.2 * (4.6 - m)) * air(u);
+      if (alpha < 0.02) continue;
+      const rgb = this.starColour(stars.warmth[i], light);
+      if (m < 1.6) {
+        // A star under the words would read as a full stop.
+        if (!this.nearWords(x, y, r + 6)) bright.push({ x, y, r, m, rgb, alpha, up: u, rate: 8 + ((i * 7.31) % 6), phase: i * 2.399 });
+        continue;
+      }
+      ctx.fillStyle = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha.toFixed(3)})`;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Outside the clip: the rect that casts the clearing shadow lies off the page, and a clip culls it.
+    this.clearWords(ctx);
+    if (onLayer) {
+      ctx.save();
+      ctx.globalCompositeOperation = "destination-over";
+      this.drawMilkyWay(ctx, view, light);
+      ctx.restore();
+    }
+    return bright;
+  }
+
+  /* The Milky Way where it really runs: soft light along the galactic
+     equator, turned into the sky from galactic longitude (the north galactic
+     pole at 192.86°, 27.13° for J2000), brightest towards the centre in
+     Sagittarius and through Cygnus, faint towards Auriga on the far side, and
+     a little wider where it is brightest. A haze, a few hundredths of an
+     alpha, in the mood's middle colour. */
+  drawMilkyWay(ctx, view, light) {
+    const RAD = Math.PI / 180;
+    const poleRa = 192.85948 * RAD;
+    const poleDec = 27.12825 * RAD;
+    const node = 122.93192 * RAD;
+    const point = (l, b) => {
+      const dec = Math.asin(Math.sin(poleDec) * Math.sin(b) + Math.cos(poleDec) * Math.cos(b) * Math.cos(node - l));
+      const ra = poleRa + Math.atan2(Math.cos(b) * Math.sin(node - l), Math.cos(poleDec) * Math.sin(b) - Math.sin(poleDec) * Math.cos(b) * Math.cos(node - l));
+      const [e, n, u] = this.skyPoint(ra, Math.sin(dec), Math.cos(dec), view);
+      return u > -0.08 ? this.toPage(e, n, u, view) : null;
+    };
+    const rgb = this.pale(1, light ? 0 : 0.35);
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, horizon, this.w, this.h - horizon);
+    ctx.rect(0, 0, this.w, view.horizon);
     ctx.clip();
-    for (const column of columns) {
-      const alpha = column.pillar.alpha * column.breath;
-      this.glow(column.x, horizon, column.half * 3, column.height * 0.2, 0, column.rgb, alpha * 0.22, NORDLYS_PILLAR);
-      this.glow(column.x, horizon, column.half * 1.1, column.height * 0.14, 0, column.rgb, alpha * 0.4, NORDLYS_PILLAR);
-    }
-    ctx.restore();
-
-    // The lights themselves, on the horizon.
-    for (const column of columns) {
-      this.glow(column.x, horizon, column.half * 7, column.half * 2.4, 0, column.rgb, column.pillar.alpha * column.breath * 2.2);
-    }
-
-    // Diamond dust: falling slowly, swaying, glinting, lit by the nearest column.
-    for (const dust of this.dust) {
-      const fall = (dust.y + this.t * 0.01 * dust.rate) % 1;
-      const x = ((((dust.x + Math.sin(this.t * 0.15 * dust.rate + dust.sway) * 0.01) % 1) + 1) % 1) * this.w;
-      const y = this.h * (0.06 + fall * 0.9);
-      let near = columns[0];
-      let gap = Infinity;
-      for (const column of columns) {
-        const away = Math.abs(column.x - x);
-        if (away < gap) { gap = away; near = column; }
-      }
-      const lit = Math.max(0, 1 - gap / (unit * 0.3)) * near.breath;
-      const glint = Math.pow(Math.max(0, Math.sin(this.t * 1.6 * dust.rate + dust.glint)), 16);
-      const alpha = dust.z * Math.sin(Math.PI * fall) * (0.14 + 0.7 * lit) * (0.4 + 0.6 * glint);
-      if (alpha < 0.015) continue;
-      const rgb = light ? near.rgb : this.pale(near.pillar.tone, 0.75);
-      const size = 0.7 + dust.z * 1.2;
-      ctx.fillStyle = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${Math.min(1, alpha).toFixed(3)})`;
-      ctx.fillRect(x - size / 2, y - size / 2, size, size);
-      if (glint > 0.5 && lit > 0.25) {
-        const reach = 3 + glint * 6 * dust.z;
-        this.drawShaft(x, y, reach, 1, 0.1, rgb, alpha * 0.8);
-        this.drawShaft(x, y, reach, 0.1, 1, rgb, alpha * 0.8);
-      }
+    for (let degrees = 0; degrees < 360; degrees += 3) {
+      const l = degrees * RAD;
+      const at = point(l, 0);
+      if (!at || at[0] < -200 || at[0] > this.w + 200 || at[1] < -200) continue;
+      const centre = Math.pow(0.5 + 0.5 * Math.cos(l), 1.6);
+      const cygnus = Math.exp(-(((degrees - 75) / 22) ** 2));
+      const strength = 0.25 + 0.6 * centre + 0.3 * cygnus;
+      const edge = point(l, (7 + 6 * centre) * RAD);
+      const reach = edge ? Math.max(24, Math.hypot(edge[0] - at[0], edge[1] - at[1])) : 60;
+      this.glow(at[0], at[1], reach, reach, 0, rgb, strength * (light ? 0.035 : 0.045), NORDLYS_SOFT, ctx);
     }
     ctx.restore();
   }
 
-  /* ── Nacre: mother-of-pearl cloud ───────────────────────────────────
-     Nacreous clouds form high in the stratosphere over the Arctic in the
-     depth of winter, and just after sunset they shine with the colours of
-     mother-of-pearl: smooth lenses, banded like a film of oil. Each cloud here
-     is lenses one inside the next, each a step further round the mood, so the
-     colour runs in rings from its thin edge to its thick middle; soft lobes
-     break the outline, and long thin streaks give it a grain. The colours
-     drift slowly round the mood, the way the real ones shift as the sun goes
-     down. Soft gradients only. */
-  initNacre() {
-    this.nacre = [];
+  // Whether a point of the page is under, or close to, the words on the sky.
+  nearWords(x, y, pad = 0) {
+    return this.quietZones.some((zone) => x > zone.x - pad && x < zone.x + zone.w + pad && y > zone.y - pad && y < zone.y + zone.h + pad);
+  }
+
+  /* Takes the sky back from under the words the page puts on it, feathered
+     as the quiet zones are, so a figure fades out before the clock rather
+     than running through it and no star sits in the date like a full stop. */
+  clearWords(ctx) {
+    if (!this.quietZones.length) return;
+    const dpr = ctx.getTransform?.()?.a || 1;
+    ctx.save();
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.fillStyle = "#000";
+    for (const zone of this.quietZones) {
+      const feather = 18;
+      const away = this.w + feather * 4;
+      ctx.shadowColor = "rgba(0, 0, 0, 1)";
+      ctx.shadowBlur = feather * dpr;
+      ctx.shadowOffsetX = away * dpr;
+      ctx.fillRect(zone.x - away - 10, zone.y - 10, zone.w + 20, zone.h + 20);
+    }
+    ctx.restore();
+  }
+
+  /* ── Meteors ────────────────────────────────────────────────────────
+     A calm field of faint stars and, now and then, a meteor: a short bright
+     streak with a fading tail, gone in under a second. On most nights they
+     are sporadic, one a minute or so, each from a direction of its own. On
+     the nights of the big showers (sky-clock.js) they come more often and
+     all from one point of the sky, the shower's radiant, from wherever it
+     stands for the person now — and only while it is above their horizon,
+     the higher the more. Even at the peak of the Geminids it is one every
+     few seconds, where the real sky manages one a minute.
+
+     Every meteor is a pure function of the scene clock and the seed. The
+     clock is cut into slots, and each slot's dice say whether one starts in
+     it, when, for how long, where and how bright; so a meteor is the same
+     at any frame rate, and the engine knows when the next is due. Between
+     meteors only the brighter stars twinkle, and the scene asks for a frame
+     a tenth of a second at most; for a meteor it takes the full rate. */
+  initField() {
+    this.field = [];
     if (!this.w) return;
     const random = NordlysBackgroundEngine.stream((this.seed ^ 0x2545f491) >>> 0);
-    const clouds = 4 + Math.floor(random() * 2);
-    for (let i = 0; i < clouds; i++) {
-      const cloud = {
-        x: ((i + 0.2 + random() * 0.6) / clouds) * 1.6,
-        y: 0.1 + ((i % 3) * 0.12) + random() * 0.2,
-        length: 0.26 + random() * 0.3,
-        thick: 0.16 + random() * 0.12,
-        tilt: (random() - 0.5) * 0.18,
-        drift: 0.6 + random() * 0.8,
-        phase: random(),
-        lobes: [],
-        streaks: []
-      };
-      /* The body: a few soft lobes along the lens, largest in the middle, so
-         the cloud has a thickness that varies like a real one. */
-      const lobes = 6 + Math.floor(random() * 5);
-      for (let j = 0; j < lobes; j++) {
-        const along = (j / (lobes - 1) - 0.5) * 1.5 + (random() - 0.5) * 0.12;
-        cloud.lobes.push({
-          along,
-          u: (random() - 0.5) * 0.7,
-          length: (0.28 + random() * 0.22) * (1 - Math.abs(along) * 0.35),
-          thick: (0.35 + random() * 0.45) * (1 - Math.abs(along) * 0.45),
-          alpha: 0.6 + random() * 0.4
-        });
-      }
-      // The grain: long thin streaks over it.
-      const streaks = 16 + Math.floor(random() * 12);
-      for (let j = 0; j < streaks; j++) {
-        const u = random() * 2 - 1;
-        cloud.streaks.push({
-          u,
-          along: (random() - 0.5) * 1.2 * (1 - Math.abs(u) * 0.5),
-          length: (1 - u * u * 0.7) * (0.3 + random() * 0.4),
-          thick: 0.05 + random() * 0.1,
-          band: random() * 0.2,
-          alpha: 0.45 + random() * 0.55,
-          wave: random() * Math.PI * 2
-        });
-      }
-      this.nacre.push(cloud);
-    }
-  }
-
-  /* Mother-of-pearl: a colour that walks round the mood's three smoothly and
-     comes back — `k` is where on that walk, `white` how pale. */
-  iridescent(k, white) {
-    const f = (((k % 1) + 1) % 1) * 3;
-    const i = Math.floor(f) % 3;
-    const m = f - Math.floor(f);
-    const s = m * m * (3 - 2 * m);
-    const a = this.paletteRgb[i];
-    const b = this.paletteRgb[(i + 1) % 3];
-    return [0, 1, 2].map((c) => {
-      const v = a[c] + (b[c] - a[c]) * s;
-      return Math.round(v + (255 - v) * white);
-    });
-  }
-
-  renderNacre() {
-    const ctx = this.ctx;
-    const light = this.lightMode;
-    ctx.save();
-    ctx.globalCompositeOperation = light ? "multiply" : "screen";
-    /* The twilight they shine in: the sun just under the horizon, warm at the
-       bottom of the sky and cooling upward into the night. */
-    const dusk = ctx.createLinearGradient(0, this.h, 0, this.h * 0.2);
-    dusk.addColorStop(0, this.rgba(0, light ? 0.1 : 0.17));
-    dusk.addColorStop(0.35, this.rgba(1, light ? 0.05 : 0.08));
-    dusk.addColorStop(1, this.rgba(2, 0));
-    ctx.fillStyle = dusk;
-    ctx.fillRect(0, this.h * 0.2, this.w, this.h * 0.8);
-    const shift = this.t * 0.01;
-    const pale = light ? 0 : 1;
-    for (const cloud of this.nacre) {
-      const span = 1.6;
-      const along = ((((cloud.x + this.t * 0.0035 * cloud.drift) % span) + span) % span) - 0.3;
-      const length = cloud.length * this.w * 0.5;
-      const thick = Math.max(8, cloud.thick * this.h * 0.5);
-      ctx.save();
-      ctx.translate(along * this.w, cloud.y * this.h);
-      ctx.rotate(cloud.tilt);
-      /* The bands: lenses one inside the next, each a step further round the
-         mood and a little paler, and each lifted a touch, so the colour runs in
-         rings from the thin edge to the thick middle as it does in a film of
-         oil — the thing that makes the cloud read as nacre, not as mist. */
-      for (let band = 0; band < 5; band++) {
-        const size = 1 - band * 0.17;
-        const colour = this.iridescent(cloud.phase + shift + band * 0.17, (0.12 + band * 0.05) * pale);
-        this.glow(0, -band * thick * 0.06, length * size, thick * (0.35 + 0.65 * size), 0, colour, (light ? 0.1 : 0.16) + band * 0.02, NORDLYS_LOBE);
-      }
-      // The lobes give it an edge that is not a perfect lens.
-      for (const lobe of cloud.lobes) {
-        const colour = this.iridescent(cloud.phase + shift + lobe.along * 0.22, 0.28 * pale);
-        this.glow(lobe.along * length, lobe.u * thick, length * lobe.length, thick * lobe.thick, 0, colour, lobe.alpha * (light ? 0.14 : 0.2), NORDLYS_LOBE);
-      }
-      // The streaks, finer and paler, are the grain of it.
-      for (const streak of cloud.streaks) {
-        const y = (streak.u + Math.sin(this.t * 0.16 + streak.wave) * 0.05) * thick * 0.8;
-        const colour = this.iridescent(cloud.phase + shift + streak.along * 0.22 + streak.u * 0.12 + streak.band, 0.3 * pale);
-        const alpha = streak.alpha * (light ? 0.16 : 0.26) * (1 - streak.u * streak.u * 0.6);
-        this.glow(streak.along * length, y, length * streak.length, thick * streak.thick, 0, colour, alpha, NORDLYS_STREAK);
-      }
-      // And a bright core down the middle, where the lens is thickest.
-      this.glow(0, 0, length * 0.62, thick * 0.12, 0, this.pale(0, 0.85 * pale), light ? 0.1 : 0.15, NORDLYS_STREAK);
-      ctx.restore();
-    }
-    /* The words sit on clear sky: a cloud thins out as it passes behind the
-       clock and the search field, as the ice clears there in Baikal. A bright
-       lens behind a pale glass field is the one thing here a reader loses. */
-    ctx.globalCompositeOperation = "destination-out";
-    this.glow(this.w * 0.5, this.h * 0.25, this.w * 0.3, this.h * 0.2, 0, [0, 0, 0], 0.5, NORDLYS_LOBE);
-    ctx.restore();
-  }
-
-  /* ── Baikal: black ice ──────────────────────────────────────────────
-     In late winter the ice on Lake Baikal is clear enough to see a metre
-     down, and it holds what the lake breathed out as it froze: flat white
-     bubbles of gas, stacked one under the next in columns, each smaller and
-     dimmer with depth; and the long cracks the ice splits along as it moves.
-     Nothing in it moves but the light — a low sun sweeping slowly over the
-     ice, picking out the bubbles and the cracks it passes, and the water
-     glowing faintly underneath.
-
-     Because the ice holds still, on the screen it is drawn once into a layer
-     of its own and laid down each frame in one drawImage; the moving light
-     goes on top of it. A still and the quiet-zone sample draw it directly. */
-  initBaikal() {
-    this.baikal = { bubbles: [], cracks: [] };
-    if (!this.w) return;
-    const random = NordlysBackgroundEngine.stream((this.seed ^ 0x68e31da4) >>> 0);
-    const unit = Math.min(this.w, this.h);
-    const columns = Math.round(Math.max(9, Math.min(20, (this.w * this.h) / 80000)));
-    for (let c = 0; c < columns; c++) {
-      let x = random();
-      const y = random();
-      // The clock, the date and the search field sit top centre; the ice there is clear.
-      if (y < 0.46 && Math.abs(x - 0.5) < 0.2) x += x < 0.5 ? -0.24 : 0.24;
-      const top = unit * (0.012 + random() * 0.022);
-      const depth = 2 + Math.floor(random() * 4);
-      /* A column goes down into the ice, so seen from above each bubble lies a
-         little further along one way than the one over it, like a stack of
-         coins leaning — close, not a chain. */
-      const heading = random() * Math.PI * 2;
-      const spacing = top * (0.28 + random() * 0.3);
-      const squash = 0.36 + random() * 0.3;
-      const tilt = (random() - 0.5) * 0.6;
-      // Deepest first, so the nearest bubble is drawn over the rest.
-      for (let k = depth - 1; k >= 0; k--) {
-        this.baikal.bubbles.push({
-          x: x * this.w + Math.cos(heading) * spacing * k,
-          y: y * this.h + Math.sin(heading) * spacing * k,
-          r: top * Math.pow(0.86, k) * (0.85 + random() * 0.3),
-          squash: squash * (0.9 + random() * 0.2),
-          tilt: tilt + (random() - 0.5) * 0.25,
-          alpha: Math.pow(0.62, k),
-          glint: random() * Math.PI * 2
-        });
-      }
-    }
-    // Loose bubbles, small and alone.
-    for (let i = 0; i < 30; i++) {
-      this.baikal.bubbles.push({
-        x: random() * this.w, y: random() * this.h, r: unit * (0.003 + random() * 0.006),
-        squash: 0.55 + random() * 0.35, tilt: random() * Math.PI, alpha: 0.4 + random() * 0.4, glint: random() * Math.PI * 2
+    const count = Math.round(Math.min(420, Math.max(150, (this.w * this.h) / 3400)));
+    for (let i = 0; i < count; i++) {
+      const bright = random() < 0.06;
+      this.field.push({
+        x: random(),
+        y: random() * 0.95,
+        r: bright ? 0.85 + random() * 0.7 : 0.3 + random() * 0.55,
+        alpha: bright ? 0.5 + random() * 0.35 : 0.1 + Math.pow(random(), 1.6) * 0.45,
+        tone: Math.floor(random() * 3),
+        white: 0.55 + random() * 0.4,
+        phase: random() * Math.PI * 2,
+        rate: 6 + random() * 8,
+        bright
       });
     }
-    const cracks = 4 + Math.floor(random() * 3);
-    for (let i = 0; i < cracks; i++) this.growCrack(random, unit, null);
   }
 
-  /* A crack runs in from an edge, jagged but keeping a direction, and now and
-     then splits off a short branch. */
-  growCrack(random, unit, from) {
-    const branch = Boolean(from);
-    let x, y, heading;
-    if (branch) ({ x, y, heading } = from);
-    else {
-      const side = Math.floor(random() * 4);
-      const along = 0.1 + random() * 0.8;
-      [x, y] = [[along * this.w, -4], [this.w + 4, along * this.h], [along * this.w, this.h + 4], [-4, along * this.h]][side];
-      heading = [Math.PI / 2, Math.PI, -Math.PI / 2, 0][side] + (random() - 0.5) * 1.1;
-    }
-    /* Ice splits in long, nearly straight runs with a sudden kink now and
-       then; a wander at every step reads as a root or a vein, not a crack. */
-    const steps = branch ? 4 + Math.floor(random() * 7) : 24 + Math.floor(random() * 22);
-    const stride = unit * (branch ? 0.018 : 0.03);
-    const points = [x, y];
-    for (let i = 0; i < steps; i++) {
-      heading += (random() - 0.5) * 0.12 + (random() < 0.12 ? (random() - 0.5) * 0.9 : 0);
-      x += Math.cos(heading) * stride * (0.7 + random() * 0.6);
-      y += Math.sin(heading) * stride * (0.7 + random() * 0.6);
-      points.push(x, y);
-      if (x < -20 || y < -20 || x > this.w + 20 || y > this.h + 20) break;
-      if (!branch && i > 2 && random() < 0.08) {
-        this.growCrack(random, unit, { x, y, heading: heading + (random() < 0.5 ? -1 : 1) * (0.6 + random() * 0.6) });
-      }
-    }
-    // Here and there a crack is a sheet turned to the light, and shines along its length.
-    this.baikal.cracks.push({ points, weight: branch ? 0.5 : 1, sheet: !branch && random() < 0.5 });
-  }
-
-  /* Everything in the ice that holds still: the cracks, a faint sheet of light
-     either side of a fine bright line, and the bubbles, each a disc of white
-     with a brighter rim. */
-  drawIce(ctx, light) {
-    const white = (light ? this.pale(1, 0) : this.pale(0, 0.8)).join(", ");
-    ctx.save();
-    ctx.globalCompositeOperation = light ? "multiply" : "screen";
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    for (const crack of this.baikal.cracks) {
-      ctx.beginPath();
-      ctx.moveTo(crack.points[0], crack.points[1]);
-      for (let i = 2; i < crack.points.length; i += 2) ctx.lineTo(crack.points[i], crack.points[i + 1]);
-      if (crack.sheet) {
-        ctx.strokeStyle = `rgba(${white}, ${light ? 0.035 : 0.05})`;
-        ctx.lineWidth = 14;
-        ctx.stroke();
-      }
-      ctx.strokeStyle = `rgba(${white}, ${(light ? 0.05 : 0.08) * crack.weight})`;
-      ctx.lineWidth = 4 * crack.weight;
-      ctx.stroke();
-      ctx.strokeStyle = `rgba(${white}, ${(light ? 0.34 : 0.45) * crack.weight})`;
-      ctx.lineWidth = 0.9;
-      ctx.stroke();
-    }
-    /* A bubble is a flat disc of gas: white, brightest just inside its edge
-       where the ice curves round it, a little clearer in the middle. */
-    for (const bubble of this.baikal.bubbles) {
-      ctx.save();
-      ctx.translate(bubble.x, bubble.y);
-      ctx.rotate(bubble.tilt);
-      ctx.scale(1, bubble.squash);
-      const disc = ctx.createRadialGradient(0, 0, 0, 0, 0, bubble.r);
-      disc.addColorStop(0, `rgba(${white}, ${(light ? 0.18 : 0.3) * bubble.alpha})`);
-      disc.addColorStop(0.8, `rgba(${white}, ${(light ? 0.3 : 0.5) * bubble.alpha})`);
-      disc.addColorStop(1, `rgba(${white}, ${(light ? 0.14 : 0.22) * bubble.alpha})`);
-      ctx.fillStyle = disc;
-      ctx.beginPath();
-      ctx.arc(0, 0, bubble.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = `rgba(${white}, ${(light ? 0.45 : 0.7) * bubble.alpha})`;
-      ctx.lineWidth = Math.max(0.7, bubble.r * 0.05);
-      ctx.stroke();
-      ctx.restore();
-    }
-    /* The ice is clear where the clock, the date and the search field sit: a
-       crack through a word reads as a strike-through, whatever the contrast. */
-    ctx.globalCompositeOperation = "destination-out";
-    const clear = this.w * 0.27;
-    ctx.save();
-    ctx.translate(this.w * 0.5, this.h * 0.22);
-    ctx.scale(1, (this.h * 0.25) / clear);
-    const hole = ctx.createRadialGradient(0, 0, 0, 0, 0, clear);
-    hole.addColorStop(0, "rgba(0, 0, 0, 0.88)");
-    hole.addColorStop(0.6, "rgba(0, 0, 0, 0.6)");
-    hole.addColorStop(1, "rgba(0, 0, 0, 0)");
-    ctx.fillStyle = hole;
-    ctx.fillRect(-clear, -clear, clear * 2, clear * 2);
-    ctx.restore();
-    ctx.restore();
-  }
-
-  renderBaikal() {
+  renderShowers() {
     const ctx = this.ctx;
     const light = this.lightMode;
-    if (!this.baikal) return;
-    const unit = Math.min(this.w, this.h);
+    const view = this.skyView();
     ctx.save();
+    ctx.globalCompositeOperation = light ? "multiply" : "screen";
+    // The night sky's own faint light, gathering towards the horizon.
+    const low = ctx.createLinearGradient(0, this.h, 0, this.h * 0.3);
+    low.addColorStop(0, this.rgba(1, light ? 0.07 : 0.1));
+    low.addColorStop(0.5, this.rgba(2, light ? 0.025 : 0.035));
+    low.addColorStop(1, this.rgba(2, 0));
+    ctx.fillStyle = low;
+    ctx.fillRect(0, this.h * 0.3, this.w, this.h * 0.7);
+    /* The field, all but its brighter stars, cleared from under the words: a
+       layer on the screen, drawn directly elsewhere. */
     if (ctx === this.screen && this.canvas && typeof document.createElement === "function") {
-      const key = `${this.seed}:${this.w}x${this.h}:${this.dpr}:${this.palette.join()}:${light}`;
-      if (this.iceLayer?.key !== key) {
+      const zones = this.quietZones.map((zone) => [zone.x, zone.y, zone.w, zone.h].map(Math.round).join()).join(";");
+      const key = `${this.seed}:${this.w}x${this.h}:${this.dpr}:${this.palette.join()}:${light}:${zones}`;
+      if (this.fieldLayer?.key !== key) {
         const layer = document.createElement("canvas");
         layer.width = this.canvas.width;
         layer.height = this.canvas.height;
         const paint = layer.getContext("2d");
         paint.setTransform(this.dpr || 1, 0, 0, this.dpr || 1, 0, 0);
-        this.drawIce(paint, light);
-        this.iceLayer = { key, canvas: layer };
+        this.drawField(paint, light);
+        this.clearWords(paint);
+        this.fieldLayer = { key, canvas: layer };
       }
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.drawImage(this.iceLayer.canvas, 0, 0);
+      ctx.drawImage(this.fieldLayer.canvas, 0, 0);
       ctx.restore();
-    } else this.drawIce(ctx, light);
-
-    // The low sun, sweeping over the ice: "atop", so it lands only on what is in it.
-    const sweep = ((this.t * 0.03) % 1.6) - 0.3;
-    const x = this.w * sweep;
-    const sun = ctx.createLinearGradient(x - unit * 0.6, this.h, x + unit * 0.6, 0);
-    sun.addColorStop(0, "rgba(255, 255, 255, 0)");
-    sun.addColorStop(0.5, light ? this.rgba(0, 0.35) : "rgba(236, 246, 255, 0.5)");
-    sun.addColorStop(1, "rgba(255, 255, 255, 0)");
-    ctx.globalCompositeOperation = "source-atop";
-    ctx.fillStyle = sun;
-    ctx.fillRect(0, 0, this.w, this.h);
-
-    // A few bubbles catch it, one glint at a time.
-    ctx.globalCompositeOperation = light ? "multiply" : "screen";
-    const sparkle = this.pale(0, light ? 0 : 0.9);
-    for (const bubble of this.baikal.bubbles) {
-      if (bubble.r < unit * 0.012) continue;
-      const glint = Math.pow(Math.max(0, Math.sin(this.t * 0.8 + bubble.glint)), 8);
-      if (glint < 0.08) continue;
-      const angle = bubble.tilt - 2.3;
-      const gx = bubble.x + Math.cos(angle) * bubble.r * 0.7;
-      const gy = bubble.y + Math.sin(angle) * bubble.r * 0.7 * bubble.squash;
-      const reach = bubble.r * (0.35 + glint * 0.5);
-      this.drawShaft(gx, gy, reach, 1, 0.12, sparkle, glint * 0.5 * bubble.alpha);
-      this.drawShaft(gx, gy, reach, 0.12, 1, sparkle, glint * 0.5 * bubble.alpha);
+    } else {
+      this.drawField(ctx, light);
+      this.clearWords(ctx);
     }
+    for (const star of this.field) {
+      if (!star.bright || this.nearWords(star.x * this.w, star.y * this.h, star.r + 6)) continue;
+      const alpha = star.alpha * (0.78 + 0.22 * Math.sin(this.t * star.rate + star.phase));
+      const rgb = this.pale(star.tone, light ? 0 : star.white);
+      ctx.fillStyle = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha.toFixed(3)})`;
+      ctx.beginPath();
+      ctx.arc(star.x * this.w, star.y * this.h, star.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    /* A meteor is motion: held still, the sky keeps a few at their
+       brightest, the way a long exposure catches them. */
+    const falling = this.atRest() ? this.stillMeteors(view) : this.meteorsAt(this.t, view);
+    for (const meteor of falling) this.drawMeteor(meteor, light);
+    ctx.restore();
+  }
 
-    // The water under the ice, laid behind everything.
-    ctx.globalCompositeOperation = "destination-over";
-    for (let i = 0; i < 3; i++) {
-      const cx = this.w * (0.2 + i * 0.3 + Math.sin(this.t * 0.05 + i * 2.1) * 0.05);
-      const cy = this.h * (0.35 + (i % 2) * 0.3 + Math.cos(this.t * 0.04 + i) * 0.04);
-      const r = Math.max(this.w, this.h) * 0.55;
-      const deep = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-      deep.addColorStop(0, this.rgba(1 + (i % 2), light ? 0.06 : 0.12));
-      deep.addColorStop(1, this.rgba(1 + (i % 2), 0));
-      ctx.fillStyle = deep;
-      ctx.fillRect(0, 0, this.w, this.h);
+  drawField(ctx, light) {
+    for (const star of this.field) {
+      if (star.bright) continue;
+      const rgb = this.pale(star.tone, light ? 0 : star.white);
+      ctx.fillStyle = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${(star.alpha * (light ? 0.8 : 1)).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.arc(star.x * this.w, star.y * this.h, star.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  /* How often meteors fall now, per second at full motion: the sporadic
+     ones, and each shower under way by its activity and its rate — a strong
+     shower's peak far livelier than a weak one's, but by the square root,
+     so the Lyrids still show — and by how high its radiant stands: one on
+     the horizon sends almost none, one below it none. Worked out once a
+     minute; the radiant turns with the sky a quarter of a degree in that. */
+  meteorRates(view) {
+    const minute = Math.floor(this.now().getTime() / 60000);
+    const where = `${minute}:${view.place.lat}:${view.place.lon}`;
+    if (this.showerRates?.where === where) return this.showerRates;
+    const showers = (window.NordlysSky?.meteorShowers?.(this.now()) || []).map((shower) => {
+      const dec = shower.declination * Math.PI / 180;
+      const point = this.skyPoint(shower.ascension * Math.PI / 180, Math.sin(dec), Math.cos(dec), view);
+      const rate = (Math.max(0, point[2]) * shower.activity * Math.sqrt(shower.rate / 150)) / NORDLYS_METEORS.peak;
+      return { name: shower.name, point, rate };
+    }).filter((shower) => shower.rate > 0.0005);
+    const total = 1 / NORDLYS_METEORS.sporadic + showers.reduce((sum, shower) => sum + shower.rate, 0);
+    this.showerRates = { where, showers, total };
+    return this.showerRates;
+  }
+
+  // A slot's dice: the same for the same seed and slot, whoever rolls them.
+  slotDice(slot) {
+    return NordlysBackgroundEngine.stream((Math.imul(slot | 0, 0x9e3779b1) ^ this.seed ^ 0x7f4a7c15) >>> 0);
+  }
+
+  /* The meteor that starts in a slot of the scene clock, if one does: when,
+     for how long, and from which shower, if any. Its path is worked out only
+     when it is drawn, from the same dice. */
+  meteorIn(slot, rates) {
+    const dice = this.slotDice(slot);
+    // A slot is a second at full motion, so the rate per second is the chance per slot.
+    if (dice() >= rates.total * (NORDLYS_METEORS.slot / 0.3)) return null;
+    let pick = dice() * rates.total;
+    let shower = null;
+    for (const candidate of rates.showers) {
+      if (pick < candidate.rate) { shower = candidate; break; }
+      pick -= candidate.rate;
+    }
+    const start = (slot + dice()) * NORDLYS_METEORS.slot;
+    return { dice, shower, start, life: 0.16 + dice() * 0.12 };
+  }
+
+  // The meteors alight at a moment of the scene clock, with how far through its life each is.
+  meteorsAt(t, view) {
+    const rates = this.meteorRates(view);
+    const { slot } = NORDLYS_METEORS;
+    const out = [];
+    for (let k = Math.floor((t - 0.3) / slot); k <= Math.floor(t / slot); k++) {
+      const meteor = this.meteorIn(k, rates);
+      if (!meteor || t < meteor.start || t > meteor.start + meteor.life) continue;
+      const path = this.meteorPath(meteor, view);
+      if (path) out.push({ ...path, age: (t - meteor.start) / meteor.life });
+    }
+    return out;
+  }
+
+  /* Where a meteor runs: from a point of the sky — anywhere but behind the
+     clock and the search field — away from its radiant along the great
+     circle through both, so a shower's meteors all point back to one place
+     even when it is off the page. Near the radiant they come almost towards
+     the viewer and are short; far from it, long. A sporadic meteor has a
+     radiant of its own, anywhere on the sky. */
+  meteorPath({ dice, shower }, view) {
+    let x = this.w * (0.05 + 0.9 * dice());
+    const y = view.horizon * (0.05 + 0.72 * dice());
+    if (y < this.h * 0.36 && Math.abs(x - this.w / 2) < this.w * 0.2) x += (x < this.w / 2 ? -1 : 1) * this.w * 0.3;
+    const from = this.fromPage(x, y, view);
+    const z = dice() * 2 - 1;
+    const turn = dice() * Math.PI * 2;
+    const radiant = shower?.point || [Math.sqrt(1 - z * z) * Math.cos(turn), Math.sqrt(1 - z * z) * Math.sin(turn), z];
+    const along = from[0] * radiant[0] + from[1] * radiant[1] + from[2] * radiant[2];
+    const away = [0, 1, 2].map((i) => from[i] * along - radiant[i]);
+    const span = Math.hypot(away[0], away[1], away[2]);
+    if (span < 0.02) return null;
+    const length = (0.1 + 0.2 * dice()) * Math.max(0.3, span);
+    const to = [0, 1, 2].map((i) => from[i] * Math.cos(length) + (away[i] / span) * Math.sin(length));
+    let end = this.toPage(to[0], to[1], to[2], view);
+    if (!end) return null;
+    /* Far from the radiant a great circle bends in a view this wide, and
+       streaks that bend do not point back to one place. So the streak runs
+       straight out from where the radiant stands on the page, as a
+       perspective view would draw it, as long as the sphere makes it; only a
+       radiant behind the viewer is left to the sphere. */
+    const centre = this.toPage(radiant[0], radiant[1], radiant[2], view);
+    const out = centre ? Math.hypot(x - centre[0], y - centre[1]) : 0;
+    if (out > 1) {
+      const reach = Math.hypot(end[0] - x, end[1] - y);
+      end = [x + ((x - centre[0]) / out) * reach, y + ((y - centre[1]) / out) * reach];
+    }
+    const bright = 0.5 + 0.5 * dice() ** 2;
+    return { x0: x, y0: y, x1: end[0], y1: end[1], bright, width: 0.9 + bright * 0.8 };
+  }
+
+  /* The still: a long exposure's worth, up to three of the meteors the seed
+     proposes — long enough to read at a thumbnail's size, clear of the board
+     and of each other — all from the radiant of the strongest shower that is
+     up, if one is. */
+  stillMeteors(view) {
+    const rates = this.meteorRates(view);
+    const shower = rates.showers.reduce((best, candidate) => (!best || candidate.rate > best.rate ? candidate : best), null);
+    const unit = Math.min(this.w, this.h);
+    // A thumbnail lays the sky out three times its size; its streaks are drawn bolder to stay streaks.
+    const bold = Math.max(1, Math.pow(1440 / Math.max(1, this.w), 0.75));
+    const kept = [];
+    for (let attempt = 0; attempt < 48 && kept.length < 3; attempt++) {
+      const dice = NordlysBackgroundEngine.stream((this.seed ^ 0x6c8e9cf5 ^ Math.imul(attempt + 1, 0x85ebca6b)) >>> 0);
+      const path = this.meteorPath({ dice, shower }, view);
+      if (!path) continue;
+      const length = Math.hypot(path.x1 - path.x0, path.y1 - path.y0);
+      const mid = [(path.x0 + path.x1) / 2, (path.y0 + path.y1) / 2];
+      // An exposure keeps the whole of each trail, longer than the eye catches one.
+      const trail = { ...path, x1: path.x0 + (path.x1 - path.x0) * 1.6, y1: path.y0 + (path.y1 - path.y0) * 1.6 };
+      const open = Math.max(trail.y0, trail.y1) < this.h * 0.62 && (Math.abs(mid[0] - this.w / 2) > this.w * 0.24 || mid[1] < this.h * 0.3);
+      const apart = kept.every((other) => Math.hypot(mid[0] - other.mid[0], mid[1] - other.mid[1]) > unit * 0.22);
+      if (!open || !apart || length * 1.6 < unit * (kept.length ? 0.16 : 0.24)) continue;
+      kept.push({ ...trail, mid, bright: kept.length ? 0.72 : 0.95, width: (kept.length ? 1.7 : 2.3) * bold, still: true });
+    }
+    return kept;
+  }
+
+  /* A meteor at a point of its life: the head travels the path, quickest at
+     the start; it flares to its brightest early and burns out; behind it the
+     tail is what it has just come through, fading to nothing. A streak and
+     nothing else — no glow round the head. */
+  drawMeteor({ x0, y0, x1, y1, bright, width, age = 0, still = false }, light) {
+    const ctx = this.ctx;
+    // Held still it is the whole trail an exposure keeps, bright at its end.
+    const flare = still ? 1 : age < 0.15 ? age / 0.15 : Math.pow(1 - (age - 0.15) / 0.85, 1.4);
+    const alpha = bright * flare * (light ? 0.75 : 1);
+    if (alpha < 0.02) return;
+    const travelled = still ? 1 : Math.pow(age, 0.8);
+    const hx = x0 + (x1 - x0) * travelled;
+    const hy = y0 + (y1 - y0) * travelled;
+    const back = still ? 0.85 : Math.min(travelled, 0.38);
+    const tx = hx - (x1 - x0) * back;
+    const ty = hy - (y1 - y0) * back;
+    if (Math.hypot(hx - tx, hy - ty) < 1) return;
+    const head = light ? [28, 38, 72] : [255, 255, 255];
+    const tint = light ? this.paletteRgb[1] : this.pale(0, 0.55);
+    const trail = ctx.createLinearGradient(hx, hy, tx, ty);
+    trail.addColorStop(0, `rgba(${head.join(", ")}, ${alpha.toFixed(3)})`);
+    trail.addColorStop(0.3, `rgba(${tint.join(", ")}, ${(alpha * 0.55).toFixed(3)})`);
+    trail.addColorStop(1, `rgba(${tint.join(", ")}, 0)`);
+    ctx.strokeStyle = trail;
+    ctx.lineWidth = width;
+    ctx.lineCap = "butt";
+    ctx.beginPath();
+    ctx.moveTo(hx, hy);
+    ctx.lineTo(tx, ty);
+    ctx.stroke();
+  }
+
+  /* How long the next paint can wait in Meteors: a meteor in flight, or due
+     within the budget, takes the full rate; otherwise the twinkle's. */
+  meteorDue(budget) {
+    if (!this.w) return budget;
+    const view = this.skyView();
+    const rates = this.meteorRates(view);
+    // Scene time per millisecond at this motion.
+    const pace = (0.005 * (this.motion ?? 1)) / 16.666;
+    if (!(pace > 0)) return budget;
+    const ahead = this.t + budget * pace;
+    const { slot } = NORDLYS_METEORS;
+    for (let k = Math.floor((this.t - 0.3) / slot); k <= Math.floor(ahead / slot); k++) {
+      const meteor = this.meteorIn(k, rates);
+      if (!meteor || meteor.start + meteor.life < this.t) continue;
+      if (meteor.start <= ahead) return Math.max(0, (meteor.start - this.t) / pace);
+    }
+    return budget;
+  }
+
+  /* ── Midnight sun ───────────────────────────────────────────────────
+     The sun where it really is for the person now (sky-clock.js), over a
+     flat sea with a low coast: as high above the horizon as it stands, a
+     small disc, white by day and turning gold and then red as it sinks, and
+     flattened at the horizon by the air it is seen through. The sky takes
+     its light from how high the sun is — the blue of day, the gold hour, the
+     rose and violet just after it sets, the blue hour, then night and its
+     stars — the mood colouring the sky the light falls on and the warm light
+     its own, never mixed with it. North of the Arctic Circle in June it
+     circles all night without setting; anywhere else it does what it does
+     there, which is the point of it.
+
+     The view turns with the sun, so the disc keeps to the clear strip right
+     of the board, and once the sun's light has gone it turns, over the half
+     hour of dusk, to the moon, if the moon is up: in winter it is night most
+     evenings, and a night sea with nothing in its sky says nothing. Which
+     way the view looks is told by the coast, laid round the compass from the
+     seed, which the sun travels along through the day. The only motion a
+     glance can see is the light on the water. */
+  initCoast() {
+    this.coast = [];
+    const random = NordlysBackgroundEngine.stream((this.seed ^ 0x1b873593) >>> 0);
+    const hills = 4 + Math.floor(random() * 3);
+    for (let i = 0; i < hills; i++) {
+      const steps = 14;
+      const knolls = 1 + random() * 2.5;
+      const phase = random() * Math.PI * 2;
+      const back = [];
+      // A low rise with a knoll or two along its back, never a box.
+      for (let k = 0; k <= steps; k++) {
+        const along = k / steps;
+        back.push(Math.pow(Math.sin(Math.PI * along), 0.85) * (0.82 + 0.18 * Math.sin(along * knolls * Math.PI * 2 + phase)));
+      }
+      this.coast.push({
+        // Round the compass, unevenly, so some bearings look out to open sea.
+        bearing: ((i + random() * 0.6) / hills) * 360,
+        span: 12 + random() * 26,
+        height: 0.006 + random() * 0.018,
+        back
+      });
+    }
+  }
+
+  // The sun now; an evening's sun at the gold hour where there is no sky to read.
+  sunNow() {
+    if (!window.NordlysSky?.daylight) return { elevation: 5, azimuth: 290, day: 0.4, golden: 0.8, blue: 0, night: 0, rising: false };
+    return window.NordlysSky.daylight(this.now(), this.whereNow());
+  }
+
+  /* The moon now: where it stands and how much of it is lit — tonight's,
+     or a full one when the real moon is turned off, as in Halo. */
+  moonNow() {
+    if (!window.NordlysSky?.moonPosition) return null;
+    const place = this.whereNow();
+    const lit = this.realSky === false ? { phase: 0.5, illumination: 1 } : window.NordlysSky.moonPhase(this.now());
+    return { ...window.NordlysSky.moonPosition(this.now(), place.lat, place.lon), ...lit, south: place.lat < 0 };
+  }
+
+  renderMidnightSun() {
+    const ctx = this.ctx;
+    const light = this.lightMode;
+    const sun = this.sunNow();
+    const moon = this.moonNow();
+    const horizon = this.h * NORDLYS_MIDNIGHT_SUN.horizon;
+    const scale = (horizon - this.h * NORDLYS_MIDNIGHT_SUN.zenith) / 2;
+    const x = this.w * NORDLYS_MIDNIGHT_SUN.x;
+    const unit = Math.min(this.w, this.h);
+    const disc = Math.max(5, unit * 0.0085);
+    const mix = (a, b, k) => a.map((value, i) => Math.round(value + (b[i] - value) * k));
+    const rgba = ([r, g, b], alpha) => `rgba(${r}, ${g}, ${b}, ${Math.max(0, alpha).toFixed(3)})`;
+    const smooth = (from, to, value) => {
+      const k = Math.min(1, Math.max(0, (value - from) / (to - from)));
+      return k * k * (3 - 2 * k);
+    };
+    const turn = (to, from) => ((to - from + 540) % 360) - 180;
+    // Facing the sun, and the moon once dusk is over and it has risen.
+    const toMoon = moon ? smooth(-4, -10, sun.elevation) * smooth(-3, 2, moon.elevation) : 0;
+    const facing = sun.azimuth + (moon ? turn(moon.azimuth, sun.azimuth) : 0) * toMoon;
+    // A bearing and a height onto the page, as the stereographic view has them: a degree is about six pixels at the horizon.
+    const across = (bearing) => x + scale * 2 * Math.tan((Math.max(-170, Math.min(170, turn(bearing, facing))) * Math.PI) / 360);
+    const above = (elevation) => horizon - scale * 2 * Math.tan((Math.max(-10, elevation) * Math.PI) / 360);
+    const [c1, c2, c3] = this.paletteRgb;
+    const e = sun.elevation;
+    const sx = across(sun.azimuth);
+    const sy = above(e);
+    // The sun's own light: white high up, gold low down, red at the horizon.
+    const tone = e > 14 ? mix([255, 238, 200], [255, 251, 242], smooth(14, 40, e))
+      : e > 2 ? mix([255, 176, 92], [255, 238, 200], smooth(2, 14, e))
+      : mix([248, 112, 70], [255, 176, 92], smooth(-2, 2, e));
+    // How much of the disc is up.
+    const up = smooth(-1.2, 0.8, e);
+    const day = sun.day;
+
+    ctx.save();
+    ctx.globalCompositeOperation = light ? "multiply" : "screen";
+    /* The sky, top to horizon: the mood at night, drawn towards the blue of
+       day by daylight — a deep blue overhead, where the clock is, paling to
+       the horizon, as a clear day's sky does. */
+    const top = light ? mix(c2, [130, 175, 235], 0.7 * day) : mix(c3, [36, 104, 214], 0.72 * day);
+    const low = light ? mix(c1, [190, 215, 248], 0.75 * day) : mix(c2, [150, 205, 255], 0.78 * day);
+    const lowAlpha = (light ? 0.06 : 0.05) + (light ? 0.13 : 0.32) * day + 0.08 * sun.blue;
+    const air = ctx.createLinearGradient(0, 0, 0, horizon);
+    air.addColorStop(0, rgba(top, (light ? 0.05 : 0.035) + (light ? 0.1 : 0.1) * day + 0.04 * sun.blue));
+    air.addColorStop(0.55, rgba(mix(top, low, 0.45), (light ? 0.05 : 0.04) + (light ? 0.11 : 0.17) * day + 0.06 * sun.blue));
+    air.addColorStop(1, rgba(low, lowAlpha));
+    ctx.fillStyle = air;
+    ctx.fillRect(0, 0, this.w, horizon);
+    // The blue hour: twilight blue rising off the whole horizon.
+    if (sun.blue > 0.02) {
+      const band = ctx.createLinearGradient(0, horizon, 0, horizon * 0.35);
+      const blue = mix(light ? [120, 140, 205] : [70, 110, 225], c2, 0.25);
+      band.addColorStop(0, rgba(blue, sun.blue * (light ? 0.12 : 0.2)));
+      band.addColorStop(1, rgba(blue, 0));
+      ctx.fillStyle = band;
+      ctx.fillRect(0, 0, this.w, horizon);
+    }
+    /* The gold hour and the minutes after the sun has gone: gold where it
+       is, coral round it, a violet haze above, along the horizon on its side. */
+    if (sun.golden > 0.02) {
+      const stops = light
+        ? (sun.rising ? [[255, 214, 186], [255, 198, 208], [214, 202, 240]] : [[255, 206, 166], [255, 186, 176], [222, 192, 232]])
+        : (sun.rising ? [[255, 186, 118], [255, 118, 146], [128, 108, 222]] : [[255, 162, 78], [255, 96, 82], [150, 78, 190]]);
+      const strength = sun.golden * (light ? 0.3 : 0.5);
+      const reach = Math.max(this.w, this.h) * 0.9;
+      const glow = ctx.createRadialGradient(sx, horizon, 0, sx, horizon, reach);
+      glow.addColorStop(0, rgba(stops[0], strength));
+      glow.addColorStop(0.22, rgba(stops[1], strength * 0.5));
+      glow.addColorStop(0.55, rgba(stops[2], strength * 0.16));
+      glow.addColorStop(1, rgba(stops[2], 0));
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, this.w, horizon);
+    }
+    /* Night: the faint glow of the air itself along the horizon, so the coast
+       still stands against something, and the stars above it. */
+    const night = Math.max(sun.night, sun.blue * 0.45);
+    if (night > 0.05) {
+      const glow = ctx.createLinearGradient(0, horizon, 0, horizon - this.h * 0.16);
+      glow.addColorStop(0, rgba(mix(c1, c2, 0.5), night * (light ? 0.08 : 0.1)));
+      glow.addColorStop(1, rgba(c2, 0));
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, horizon - this.h * 0.16, this.w, this.h * 0.16);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, this.w, horizon);
+      ctx.clip();
+      this.renderStars({ share: 0.6, night });
+      ctx.restore();
+    }
+    /* The sun: by day the sky round it turns white, far wider than the disc,
+       which is what says sun rather than moon; then the disc, cut by the
+       horizon as it goes down. */
+    if (e > -3) {
+      const aureole = unit * (0.15 + 0.26 * day);
+      // On a light page white light cannot show; there the aureole is the sun's own warm tint.
+      this.glow(sx, sy, aureole, aureole, 0, light ? mix(tone, [255, 200, 130], 0.4) : mix(tone, [255, 255, 255], 0.4 * day), (light ? 0.24 : 0.22 + 0.24 * day) * up);
+      this.glow(sx, sy, disc * 4, disc * 4, 0, tone, (light ? 0.35 : 0.6) * up);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, this.w, horizon);
+      ctx.clip();
+      // Within a few degrees of the horizon the air flattens the disc.
+      ctx.translate(sx, sy);
+      ctx.scale(1, 1 - 0.16 * (1 - smooth(-0.5, 4, e)));
+      ctx.beginPath();
+      ctx.arc(0, 0, disc, 0, Math.PI * 2);
+      ctx.fillStyle = rgba(light ? mix(tone, [214, 120, 40], 0.45) : tone, light ? 0.7 : 0.95);
+      ctx.fill();
+      ctx.restore();
+    }
+    // The moon, when it is up: its phase as tonight's, faint by day, bright by night.
+    let lamp = { x: sx, tone, shine: Math.max(up * (0.4 + 0.35 * sun.golden + 0.25 * day), sun.golden * 0.4, sun.blue * 0.1) };
+    if (moon && moon.elevation > -1) {
+      const mx = across(moon.azimuth);
+      const my = above(moon.elevation);
+      const seen = (0.3 + 0.7 * moon.illumination) * (1 - 0.75 * day) * smooth(-1, 1.5, moon.elevation);
+      const silver = light ? mix([96, 106, 134], c2, 0.2) : [236, 242, 255];
+      if (mx > -disc * 20 && mx < this.w + disc * 20 && seen > 0.02) {
+        this.glow(mx, my, unit * 0.1, unit * 0.1, 0, silver, (light ? 0.1 : 0.16) * seen);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, 0, this.w, horizon);
+        ctx.clip();
+        // Earthshine, the dark of the disc just visible, so a crescent is a moon.
+        ctx.beginPath();
+        ctx.arc(mx, my, disc * 0.96, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(silver, (light ? 0.1 : 0.08) * seen);
+        ctx.fill();
+        ctx.fillStyle = rgba(silver, (light ? 0.55 : 0.92) * seen);
+        this.traceMoon(mx, my, disc, moon);
+        ctx.fill();
+        ctx.restore();
+      }
+      // Once the sun's light is gone the water shines with the moon's.
+      const glade = moon.illumination * night * smooth(-1, 2, moon.elevation) * 0.55;
+      if (glade > lamp.shine) lamp = { x: mx, tone: silver, shine: glade };
+    }
+    this.paintSea({ horizon, disc, light, low, lowAlpha, lamp, golden: sun.golden, mix, rgba });
+    this.paintCoast({ horizon, across, light, rgba });
+    ctx.restore();
+  }
+
+  /* The sea: the sky's light thrown back, darker the nearer it is; under the
+     sun — or the moon, at night — a column of reflected light, and across it
+     fine glints that widen towards the viewer and come and go as the water
+     moves. */
+  paintSea({ horizon, disc, light, low, lowAlpha, lamp, golden, mix, rgba }) {
+    const ctx = this.ctx;
+    const [c1, , c3] = this.paletteRgb;
+    const away = this.h - horizon;
+    const water = ctx.createLinearGradient(0, horizon, 0, this.h);
+    water.addColorStop(0, rgba(low, lowAlpha * 0.55));
+    water.addColorStop(0.45, rgba(mix(low, c3, 0.5), lowAlpha * 0.25));
+    water.addColorStop(1, rgba(c3, light ? 0.04 : 0.02));
+    ctx.fillStyle = water;
+    ctx.fillRect(0, horizon, this.w, away);
+    // The horizon itself: a fine line, brightest under the light.
+    const line = ctx.createLinearGradient(0, 0, this.w, 0);
+    const at = Math.max(0, Math.min(1, lamp.x / this.w));
+    line.addColorStop(0, rgba(c1, light ? 0.06 : 0.04));
+    line.addColorStop(at, rgba(mix(c1, lamp.tone, 0.6), (light ? 0.14 : 0.2) + (light ? 0.1 : 0.14) * Math.min(1, lamp.shine * 2)));
+    line.addColorStop(1, rgba(c1, 0.04));
+    ctx.fillStyle = line;
+    ctx.fillRect(0, horizon - 0.5, this.w, 1);
+    if (lamp.shine < 0.02 || lamp.x < -this.w * 0.2 || lamp.x > this.w * 1.2) return;
+    const glints = light ? mix(lamp.tone, [190, 110, 50], 0.5) : lamp.tone;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, horizon + 0.5, this.w, away);
+    ctx.clip();
+    // The column: the light laid on the water, longest when it is low.
+    this.glow(lamp.x, horizon, disc * 2.4 + this.w * 0.03, away * (0.5 + 0.5 * golden), 0, glints, lamp.shine * (light ? 0.22 : 0.32));
+    // Lighter water where the light lands: on a light theme, taken back towards the page.
+    if (light) ctx.globalCompositeOperation = "destination-out";
+    const rows = 30;
+    for (let i = 0; i < rows; i++) {
+      const depth = (i + 0.6) / rows;
+      const row = horizon + away * depth ** 1.7;
+      const spread = disc * 1.2 + this.w * 0.07 * depth;
+      for (let j = 0; j < 4; j++) {
+        const flicker = 0.5 + 0.5 * Math.sin(this.t * (2.4 + j * 0.8) + i * 1.7 + j * 2.1);
+        const offset = Math.sin(i * 12.9898 + j * 78.233) * spread;
+        const near = Math.pow(1 - Math.min(1, Math.abs(offset) / spread), 1.4);
+        const length = spread * (0.12 + 0.3 * flicker) * (0.6 + 0.4 * near);
+        const alpha = lamp.shine * flicker * near * (1 - depth * 0.5) * (light ? 0.55 : 0.8);
+        if (alpha < 0.015) continue;
+        ctx.fillStyle = light ? `rgba(0, 0, 0, ${alpha.toFixed(3)})` : rgba(glints, alpha);
+        ctx.fillRect(lamp.x + offset - length / 2, row, length, 0.6 + depth * 1.2);
+      }
+    }
+    ctx.restore();
+  }
+
+  /* The coast: low hills and islands on the horizon, each at its bearing,
+     where the view would see them. On a dark sky they are where the sky's
+     light stops; on a light one, a soft grey. */
+  paintCoast({ horizon, across, light, rgba }) {
+    const ctx = this.ctx;
+    const shade = this.pale(2, 0.35);
+    ctx.save();
+    ctx.globalCompositeOperation = light ? "multiply" : "destination-out";
+    ctx.fillStyle = light ? rgba(shade, 0.3) : "rgba(0, 0, 0, 0.85)";
+    for (const hill of this.coast) {
+      const points = [];
+      hill.back.forEach((rise, k) => {
+        const x = across(hill.bearing + (k / (hill.back.length - 1) - 0.5) * hill.span);
+        if (x > -this.w * 0.5 && x < this.w * 1.5) points.push([x, horizon - rise * hill.height * this.h]);
+      });
+      if (points.length < 3) continue;
+      ctx.beginPath();
+      ctx.moveTo(points[0][0], horizon + 0.5);
+      for (const [px, py] of points) ctx.lineTo(px, py);
+      ctx.lineTo(points[points.length - 1][0], horizon + 0.5);
+      ctx.closePath();
+      ctx.fill();
     }
     ctx.restore();
   }

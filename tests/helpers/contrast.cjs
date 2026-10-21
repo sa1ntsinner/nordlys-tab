@@ -272,10 +272,12 @@ const failing = runs => runs.filter(run => !run.disabled && run.nominal != null 
 /* One look — theme, scene, mood, a moment of the scene and how bright it is —
    applied the way the settings apply it, then held still for the camera. */
 /* `daylight` is a moment, as an ISO string, for a look with the sky following
-   the sun — held at a fixed city so a sweep is the same sweep wherever it
-   runs. Without one the sky is the mood as mixed. */
-function setLook(page, { theme, scene, mood, phase, intensity = 1.5, daylight = null }) {
-  return page.evaluate(async ({ theme, scene, mood, phase, intensity, daylight }) => {
+   the sun; `at` is one for the light as mixed, for the skies drawn from the
+   real one, which are a function of the hour as much as of the phase. Both
+   are held at a fixed city so a sweep is the same sweep wherever it runs.
+   Without either the sky is the mood as mixed. */
+function setLook(page, { theme, scene, mood, phase, intensity = 1.5, daylight = null, at = null }) {
+  return page.evaluate(async ({ theme, scene, mood, phase, intensity, daylight, at }) => {
     const app = window.Nordlys;
     app.config.theme = theme;
     delete app.config.customTheme;
@@ -287,7 +289,10 @@ function setLook(page, { theme, scene, mood, phase, intensity = 1.5, daylight = 
     const engine = app.bgEngine;
     if (engine) {
       engine.place = { lat: 52.5, lon: 13.4 };
-      engine.now = daylight ? () => new Date(daylight) : () => new Date();
+      const moment = daylight || at;
+      engine.now = moment ? () => new Date(moment) : () => new Date();
+      // The night's showers are worked out from the clock, once a minute.
+      engine.showerRates = null;
     }
     app.applyThemeTokens();
     await app.updateBackgroundMode();
@@ -297,7 +302,7 @@ function setLook(page, { theme, scene, mood, phase, intensity = 1.5, daylight = 
     app.sendQuietZones?.();
     if (engine && scene !== 'solid') { engine.t = phase; engine.quietSolvedAt = -Infinity; engine.render(0); }
     await new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)));
-  }, { theme, scene, mood, phase, intensity, daylight });
+  }, { theme, scene, mood, phase, intensity, daylight, at });
 }
 
 /* The hardest looks per theme in a full sweep: the two home scenarios whose
@@ -311,7 +316,7 @@ function worstLooks(results, perTheme = 2) {
     const margins = scenario.runs.filter(run => !run.disabled && run.nominal != null).map(run => run.nominal / run.required);
     if (!margins.length) continue;
     const list = byTheme.get(scenario.theme) || [];
-    list.push({ scene: scenario.scene, mood: scenario.mood, phase: scenario.phase, ...(scenario.daylight ? { daylight: scenario.daylight } : {}), margin: Math.min(...margins) });
+    list.push({ scene: scenario.scene, mood: scenario.mood, phase: scenario.phase, ...(scenario.daylight ? { daylight: scenario.daylight } : {}), ...(scenario.at ? { at: scenario.at } : {}), margin: Math.min(...margins) });
     byTheme.set(scenario.theme, list);
   }
   const out = {};
@@ -319,7 +324,7 @@ function worstLooks(results, perTheme = 2) {
     const picked = [];
     for (const look of list.sort((a, b) => a.margin - b.margin)) {
       if (picked.some(p => p.scene === look.scene && p.mood === look.mood)) continue;
-      picked.push({ scene: look.scene, mood: look.mood, phase: look.phase, ...(look.daylight ? { daylight: look.daylight } : {}), margin: +look.margin.toFixed(3) });
+      picked.push({ scene: look.scene, mood: look.mood, phase: look.phase, ...(look.daylight ? { daylight: look.daylight } : {}), ...(look.at ? { at: look.at } : {}), margin: +look.margin.toFixed(3) });
       if (picked.length === perTheme) break;
     }
     out[theme] = picked;

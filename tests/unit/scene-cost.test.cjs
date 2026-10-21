@@ -116,7 +116,7 @@ function engineOn(size = [1600, 900], dpr = 1.5) {
       documentElement: { classList: { contains: () => false }, style: { setProperty: noop, removeProperty: noop } }
     },
     performance: { now: () => 0 },
-    requestAnimationFrame: () => 1, cancelAnimationFrame: noop, setTimeout: () => 1, clearTimeout: noop,
+    requestAnimationFrame: () => 1, cancelAnimationFrame: noop, setTimeout: () => 1, clearTimeout: noop, setInterval: () => 1, clearInterval: noop,
     getComputedStyle: () => ({ getPropertyValue: () => '' }),
     CustomEvent: class { constructor(type) { this.type = type; } },
     Path2D: RecordedPath
@@ -124,6 +124,9 @@ function engineOn(size = [1600, 900], dpr = 1.5) {
   // The GPU layer's script is loaded, but there is no WebGL2 here: every scene
   // shows what it would ask of the 2D canvas on a machine without one, except
   // those that hand their long lines to the layer, which say so in its place.
+  /* The real sky's scenes read the star catalogue and the sun, the moon and
+     the showers from the clock, as the page loads them before the engine. */
+  for (const file of ['sky-zones.js', 'sky-clock.js', 'sky-stars.js']) vm.runInContext(readFileSync(`src/js/${file}`, 'utf8'), context);
   vm.runInContext(`${readFileSync('src/js/sky-gl.js', 'utf8')}\n${readFileSync('src/js/background.js', 'utf8')}
     this.Engine = NordlysBackgroundEngine; this.SCENES = [...NORDLYS_GENERATIVE_SCENES]; this.SkyGL = NordlysSkyGL;`, context);
   return { context, log };
@@ -147,10 +150,10 @@ function frameOf(scene, { gl = true } = {}) {
 
 test('the scenes on offer are the ones the gallery shows', () => {
   const { context } = engineOn();
-  assert.deepEqual(Array.from(context.SCENES), ['aurora', 'polaris', 'halo', 'pillars', 'nacre', 'silk', 'baikal', 'drift', 'horizon']);
+  assert.deepEqual(Array.from(context.SCENES), ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'drift', 'horizon']);
 });
 
-for (const scene of ['aurora', 'polaris', 'halo', 'pillars', 'nacre', 'silk', 'baikal', 'drift', 'horizon']) {
+for (const scene of ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'drift', 'horizon']) {
   test(`${scene} strokes no thick line across the window on the screen canvas`, () => {
     const log = frameOf(scene);
     const heavy = log.strokes.filter(s => s.width > THICK && s.area > MAX_BOX && !s.circle);

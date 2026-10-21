@@ -152,3 +152,24 @@ test('turning sync on where sync already has a setup asks what to do', async ({ 
   await expect.poll(() => labels(page)).toEqual(['From the laptop']);
   await expect.poll(() => page.evaluate(() => window.Nordlys.config.theme)).toBe('nord-frost');
 });
+
+/* A device still on an older build can save a profile that names a sky
+   retired since. It arrives here as the sky a stored one becomes, rather
+   than leaving the page on a scene nothing can draw. */
+test('a synced profile that names a retired sky arrives with its successor', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.locator('#gear').click();
+  await page.locator('#settings-tab-sync').click();
+  await page.locator('label.tg:has(#cfg-sync-on)').click();
+  await expect(page.locator('#sec-sync .sync-state')).toHaveClass(/is-ready/);
+  await page.evaluate(async () => {
+    const M = window.NordlysSyncModel;
+    const other = M.create('laptop');
+    M.merge(other, window.__syncState());
+    const view = M.materialize(other);
+    view.profiles[0].config.bgMode = 'baikal';
+    M.update(other, view);
+    await window.__syncRemote(M.exportChunks(other));
+  });
+  await expect.poll(() => page.evaluate(() => [window.Nordlys.config.bgMode, window.Nordlys.bgEngine.mode]), { timeout: 8000 }).toEqual(['starmap', 'starmap']);
+});

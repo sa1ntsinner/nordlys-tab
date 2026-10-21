@@ -93,11 +93,12 @@ afterwards, and it varies by viewport: sampled once each, not a benchmark.
 The atmosphere is `bgMode` in the saved config (`DEFAULT_CONFIG.bgMode` is
 `aurora`, in `src/js/app.js`). The canvas draws nine of them, the names in
 `NORDLYS_GENERATIVE_SCENES` (`src/js/background.js`): `aurora`, `polaris`,
-`halo`, `pillars`, `nacre`, `silk`, `baikal`, `drift` and `horizon`. The settings
-panel shows `aurora` as Nordlys and the last two as Contour and Fjord.
-`--scene` takes the internal names. `frost` was retired on 2026-09-25 (a stored
-Frost becomes Baikal), so older evidence that names it cannot be re-run on this
-build.
+`halo`, `starmap`, `meteors`, `silk`, `midnightsun`, `drift` and `horizon`. The
+settings panel shows `aurora` as Nordlys and the last two as Contour and Fjord.
+`--scene` takes the internal names. `frost` was retired on 2026-09-25, and
+`pillars`, `nacre` and `baikal` on 2026-10-21 (a stored one becomes the sky that
+took its place: `pillars` `meteors`, `nacre` `midnightsun`, `baikal` and `frost`
+`starmap`), so older evidence that names them cannot be re-run on this build.
 
 ### The GPU layer (`--gl on|off`)
 
@@ -146,22 +147,29 @@ produce a report with no samples.
 values the engine ended up with:
 - `motion` 1, `intensity` 1 (the settings sliders), `palette` `theme` (the
   colours come from the `aurora-void` theme's `--shader-1..3`), `seed` 0 (the
-  scatter of Silk's threads, the stars, the trails, the pillars, the clouds and
-  the ice), dark UI, and daylight off.
+  scatter of Silk's threads, the stars, the trails, the meteors and the
+  Midnight sun's coast; at seed 0 the Star map faces the equator), dark UI,
+  and daylight off.
   High legibility is off; it would cap the intensity at 0.6.
 - `realSky`: Halo draws tonight's moon from the date and the machine's time
   zone (`bgRealSky`, on by default). Two Halo runs on different days draw a
   different moon. `--real-sky off` seeds `bgRealSky: false`, which holds the moon
   full, and `--real-sky on` seeds `true`. Without the flag nothing is seeded.
   `startup.scene.moon` shows the phase that was drawn, and `timeZone` the
-  zone.
+  zone. The Star map, Meteors and the Midnight sun always draw the sky of the
+  moment over the time zone's city, so their runs differ by the hour too: a
+  Meteors run on the night of a big shower draws more meteors, and paints
+  more frames for them.
 - `silk`: the thread count and total walk steps (66 threads and 2971 steps at
   2048 × 1152), since both scale with the viewport.
 - Each scene starts at its own rest phase (`NORDLYS_REST_PHASE`: Aurora 12,
-  Polaris 20, Pillars 9, Nacre 14, Silk 31.7, Baikal 6, the others 7.4). `--fixed-phase` still sets `t = 12` for every
+  Polaris 20, Meteors 9, Silk 31.7, the others 7.4). `--fixed-phase` still sets `t = 12` for every
   scene, so a fixed-phase Silk is not the frame the settings thumbnail shows.
 - The frame budget (30 fps, 15 after a minute idle) is the same for every
-  scene. A scene that renders more slowly than that reports it in
+  scene but the three real-sky ones, which ask for fewer frames
+  (`NORDLYS_SCENE_BUDGET`): the Star map 10 a second, Meteors 10 between
+  meteors and the full rate during one, the Midnight sun 12.5. A scene that
+  renders more slowly than its budget reports it in
   `renderCadence` (see the smoke below): check `renderCadence.fps` before
   setting two scenes' CPU per second side by side.
 

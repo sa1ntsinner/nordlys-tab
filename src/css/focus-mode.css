@@ -85,7 +85,7 @@ body.focus-mode-open #fit-surface, body.focus-mode-open #gear { visibility: hidd
 .fm-panel[hidden] { display: none; }
 .fm-left { grid-area: left; justify-self: start; }
 .fm-right { grid-area: right; justify-self: end; width: 100%; }
-.fm-panel h2 { margin: 0; display: flex; align-items: center; gap: var(--nl-space-2); font-size: var(--nl-text-2xs); font-weight: 650; letter-spacing: var(--nl-track-wide); text-transform: uppercase; color: rgba(243, 246, 251, 0.6); }
+.fm-panel h2 { margin: 0; display: flex; align-items: center; gap: var(--nl-space-2); font-size: var(--nl-text-md); font-weight: 600; color: rgba(243, 246, 251, 0.78); }
 .fm-panel h2 svg { width: 14px; height: 14px; }
 .fm-sounds { display: flex; flex-wrap: wrap; gap: 6px; }
 .fm-chip { appearance: none; cursor: pointer; padding: 6px 12px; border-radius: 999px; border: 0; font: inherit; font-size: var(--nl-text-sm); color: rgba(243, 246, 251, 0.8); background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.1); transition: background var(--nl-transition-fast), color var(--nl-transition-fast); }

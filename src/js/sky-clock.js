@@ -34,22 +34,90 @@
      the Astronomical Almanac, good to a fraction of a degree for decades
      either side of 2000 — a sky's colour needs far less. */
   const RAD = Math.PI / 180;
+  // Days since noon UTC on 1 January 2000, the moment the formulae count from.
+  const sinceEpoch = (date) => date.getTime() / DAY - 10957.5;
+
+  /* The local sidereal time, as an angle: the right ascension standing on the
+     meridian at a longitude at that moment, in degrees. A point of the sky's
+     hour angle is this less its right ascension. */
+  function siderealAngle(date, lon) {
+    const sidereal = ((18.697374558 + 24.06570982441908 * sinceEpoch(date)) % 24 + 24) % 24;
+    return ((sidereal * 15 + lon) % 360 + 360) % 360;
+  }
+
+  /* A point of the sky as it stands for someone at a latitude: its height
+     above the horizon and its bearing from north, in degrees, from its hour
+     angle and declination in radians. The sun is one such point, and so is
+     every star of the Star map and the radiant of every meteor shower. */
+  function horizontal(hour, declination, lat) {
+    const phi = RAD * lat;
+    const elevation = Math.asin(Math.sin(phi) * Math.sin(declination) + Math.cos(phi) * Math.cos(declination) * Math.cos(hour)) / RAD;
+    const azimuth = ((Math.atan2(-Math.sin(hour), Math.tan(declination) * Math.cos(phi) - Math.sin(phi) * Math.cos(hour)) / RAD) + 360) % 360;
+    return { elevation, azimuth };
+  }
+
   function sunPosition(date, lat, lon) {
-    const days = date.getTime() / DAY - 10957.5; // since noon UTC, 1 January 2000
+    const days = sinceEpoch(date);
     const anomaly = RAD * (((357.529 + 0.98560028 * days) % 360) + 360);
     const mean = (280.459 + 0.98564736 * days) % 360;
     const ecliptic = RAD * (mean + 1.915 * Math.sin(anomaly) + 0.020 * Math.sin(2 * anomaly));
     const tilt = RAD * (23.439 - 0.00000036 * days);
     const ascension = Math.atan2(Math.cos(tilt) * Math.sin(ecliptic), Math.cos(ecliptic));
     const declination = Math.asin(Math.sin(tilt) * Math.sin(ecliptic));
-    const sidereal = ((18.697374558 + 24.06570982441908 * days) % 24 + 24) % 24;
-    const hour = RAD * (sidereal * 15 + lon) - ascension;
-    const phi = RAD * lat;
-    const elevation = Math.asin(Math.sin(phi) * Math.sin(declination) + Math.cos(phi) * Math.cos(declination) * Math.cos(hour)) / RAD;
-    const azimuth = ((Math.atan2(-Math.sin(hour), Math.tan(declination) * Math.cos(phi) - Math.sin(phi) * Math.cos(hour)) / RAD) + 360) % 360;
+    const hour = RAD * siderealAngle(date, lon) - ascension;
+    const { elevation, azimuth } = horizontal(hour, declination, lat);
     // The hour angle, folded into ±180°: negative before the sun's highest point.
     const angle = ((hour / RAD) % 360 + 540) % 360 - 180;
-    return { elevation, azimuth, declination: declination / RAD, rising: angle < 0 };
+    // Where the sun is on the ecliptic, which is what the calendar of meteor showers is kept in.
+    const longitude = ((ecliptic / RAD) % 360 + 360) % 360;
+    return { elevation, azimuth, declination: declination / RAD, longitude, rising: angle < 0 };
+  }
+
+  /* The moon's place in the sky, from the same Almanac's low-precision
+     formulae: its longitude to a third of a degree, its latitude a little
+     better, and the parallax of a body this near — up to a degree low on the
+     horizon — left out. Enough to put it over the right stretch of sea. */
+  function moonPosition(date, lat, lon) {
+    const days = sinceEpoch(date);
+    const anomaly = RAD * (134.963 + 13.064993 * days);
+    const node = RAD * (93.272 + 13.22935 * days);
+    const longitude = RAD * (218.316 + 13.176396 * days) + RAD * 6.289 * Math.sin(anomaly);
+    const latitude = RAD * 5.128 * Math.sin(node);
+    const tilt = RAD * (23.439 - 0.00000036 * days);
+    const ascension = Math.atan2(Math.sin(longitude) * Math.cos(tilt) - Math.tan(latitude) * Math.sin(tilt), Math.cos(longitude));
+    const declination = Math.asin(Math.sin(latitude) * Math.cos(tilt) + Math.cos(latitude) * Math.sin(tilt) * Math.sin(longitude));
+    return horizontal(RAD * siderealAngle(date, lon) - ascension, declination, lat);
+  }
+
+  /* ── Meteor showers ─────────────────────────────────────────────
+     The seven big showers of the year, as the International Meteor
+     Organization lists them: where the sun stands on the ecliptic at the peak
+     (which keeps a shower on the same night each year, a leap day aside), the
+     zenithal hourly rate at the peak, the radiant in degrees of right
+     ascension and declination, and how many days the shower takes to rise and
+     to fall. The radiant creeps a degree or so a day; it is held where it
+     stands at the peak, which nobody watching a new tab could tell apart. */
+  const SHOWERS = [
+    // name, solar longitude at the peak, rate, radiant, days either side
+    ["quadrantids", 283.15, 110, 230, 49, 0.8],
+    ["lyrids", 32.32, 18, 271, 34, 1.3],
+    ["etaAquariids", 45.5, 50, 338, -1, 4],
+    ["perseids", 140, 100, 48, 58, 2.5],
+    ["orionids", 208, 20, 95, 16, 3.5],
+    ["leonids", 235.27, 15, 152, 22, 1.5],
+    ["geminids", 262.2, 150, 112, 33, 1.8]
+  ];
+
+  /* The showers under way at a moment, each with how far it is from its peak
+     in days and its activity: a bell around the peak, 1 at it, nearly
+     nothing three spreads away. */
+  function meteorShowers(date = new Date()) {
+    const sun = sunPosition(date, 0, 0).longitude;
+    return SHOWERS.map(([name, peak, rate, ascension, declination, spread]) => {
+      // The sun moves a little under a degree a day.
+      const days = (((sun - peak) % 360 + 540) % 360 - 180) / 0.9856;
+      return { name, rate, ascension, declination, days, activity: Math.exp(-((days / spread) ** 2) / 2) };
+    }).filter((shower) => shower.activity > 0.01);
   }
 
   /* Where the person roughly is, from nothing but their time zone — the
@@ -125,5 +193,5 @@
     });
   }
 
-  window.NordlysSky = { moonPhase, phaseName, SYNODIC_DAYS, sunPosition, zonePlace, daylight, lightMood };
+  window.NordlysSky = { moonPhase, phaseName, SYNODIC_DAYS, sunPosition, moonPosition, siderealAngle, horizontal, meteorShowers, zonePlace, daylight, lightMood };
 })();

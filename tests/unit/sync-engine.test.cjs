@@ -94,7 +94,7 @@ test('a look kept on this device only', async () => {
   await a.enable({ snapshot: snapshot([], { theme: 'aurora-void', bgMode: 'aurora' }), mode: 'merge' });
   const b = await engine(sync, 'B');
   await b.enable({ snapshot: snapshot([]), mode: 'use-sync' });
-  await b.keepLookHere('main', { theme: 'porcelain-light', bgMode: 'baikal' });
+  await b.keepLookHere('main', { theme: 'porcelain-light', bgMode: 'starmap' });
   assert.strictEqual((await b.view()).profiles[0].config.theme, 'porcelain-light');
   assert.strictEqual((await a.pull()), null, 'the other device never hears of it');
   await b.keepLookHere('main', null);

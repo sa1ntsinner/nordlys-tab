@@ -151,6 +151,8 @@
     adoptLive(live) {
       const next = Object.assign({}, this.app.defaultConfig, live);
       window.NordlysConfigSchema?.repairConfig(next, this.app.defaultConfig);
+      // A profile saved by an older build, here or on another device, may name a retired sky or theme.
+      this.app.normalizeStoredConfig?.(next);
       this.app.config = next;
       this.applying = true;
       try { this.saveQuietly(); } finally { this.applying = false; }

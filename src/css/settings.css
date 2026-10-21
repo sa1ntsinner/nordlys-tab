@@ -1694,7 +1694,7 @@ input[type="range"].ipt:focus-visible {
 .settings-nav-label { padding: 0 10px 5px; color: var(--nl-text-tertiary); font-size: var(--nl-text-2xs); font-weight: 650; letter-spacing: var(--nl-track-label); text-transform: uppercase; }
 .ctab { position: relative; min-height: 42px; padding: 0 12px; border-radius: var(--nl-radius-sm); text-align: left; display: flex; align-items: center; gap: 10px; }
 .settings-tab-icon { width: 17px; height: 17px; flex: 0 0 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; opacity: .82; }
-.ctab.active { color: var(--nl-text-primary); background: color-mix(in srgb, var(--nl-accent) 14%, transparent); box-shadow: none; }
+.ctab.active { color: var(--nl-text-primary); background: color-mix(in srgb, var(--nl-text-primary) 8%, transparent); box-shadow: none; }
 .ctab.active::before { content: ''; position: absolute; left: 0; inset-block: 9px; width: 3px; border-radius: 4px; background: var(--nl-accent); }
 .cbody { min-width: 0; padding: 20px 24px 32px; overflow-y: auto; }
 .csec[hidden] { display: none !important; }
@@ -1860,6 +1860,7 @@ input[type="range"].ipt:focus-visible {
 .scene-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scene-block { display: grid; gap: 10px; margin-bottom: 6px; }
 .scene-block .personal-label { margin-top: 8px; }
+.scene-note { margin: 0 0 4px; font-size: var(--nl-text-xs); line-height: 1.45; color: var(--nl-text-secondary); max-width: 52ch; }
 
 @media (max-width: 560px) {
   .atmosphere-grid { grid-template-columns: 1fr; }

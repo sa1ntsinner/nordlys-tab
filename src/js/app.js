@@ -179,9 +179,19 @@ const BACKGROUND_MIGRATIONS = {
   "particles": "aurora",
   "mesh-gradient": "aurora",
   "gradient": "aurora",
-  // Frost was retired for Baikal: the other sky made of ice, and just as still.
-  "frost": "baikal"
+  /* Pillars, Nacre and Baikal were retired for three skies drawn from the
+     real one. Each goes to the nearest in kind: Pillars was one of the night
+     skies that step back by day, and Meteors takes its place among them;
+     Nacre was clouds lit by a sun just under the horizon, which is the
+     Midnight sun's light; Baikal was the stillest sky there was, and so is
+     the Star map. Frost, retired for Baikal before, goes straight on. */
+  "pillars": "meteors",
+  "nacre": "midnightsun",
+  "baikal": "starmap",
+  "frost": "starmap"
 };
+// The sky a retired one became, if it is one: own keys only, so a stored "constructor" stays a name.
+const migratedSky = (mode) => (Object.prototype.hasOwnProperty.call(BACKGROUND_MIGRATIONS, mode) ? BACKGROUND_MIGRATIONS[mode] : null);
 const STILL_MIGRATIONS = new Set(["particles", "mesh-gradient", "gradient"]);
 
 const THEME_MIGRATIONS = {
@@ -336,7 +346,8 @@ class NordlysApp {
     };
     if (typeof ResizeObserver === "function") {
       const observer = new ResizeObserver(() => this.queueQuietZones());
-      for (const id of ["hero", "searchwrap"]) {
+      // The board too: a sky that keeps its folders quiet follows them as they move.
+      for (const id of ["hero", "searchwrap", "board"]) {
         const node = document.getElementById(id);
         if (node) observer.observe(node);
       }
@@ -353,7 +364,12 @@ class NordlysApp {
       this.measureWallpaper();
       return;
     }
-    const zones = this.textZones();
+    /* The Midnight sun is the one sky that lights the horizon behind the
+       folders: by day the air and the sea there are pale, and the board's
+       glass alone did not keep every name at its ratio on every machine. Its
+       folders are quiet zones too, so the engine takes back as much of that
+       light as their names need, and no more. */
+    const zones = this.textZones({ cards: this.config.bgMode === "midnightsun" });
     const signature = JSON.stringify(zones.map((zone) => [Math.round(zone.x), Math.round(zone.y), Math.round(zone.w), Math.round(zone.h), zone.inks, zone.cover, zone.ground]));
     if (signature === this.quietSignature) return;
     this.quietSignature = signature;
@@ -567,10 +583,10 @@ class NordlysApp {
       for (const dead of ["glassBlur", "glassSaturate", "glassOpacity", "glassSheen"]) delete config[dead];
       changed = true;
     }
-    if (BACKGROUND_MIGRATIONS[config.bgMode]) {
+    if (migratedSky(config.bgMode)) {
       // Whatever held still keeps holding still.
       if (STILL_MIGRATIONS.has(config.bgMode)) config.bgMotion = 0;
-      config.bgMode = BACKGROUND_MIGRATIONS[config.bgMode];
+      config.bgMode = migratedSky(config.bgMode);
       changed = true;
     }
     if (config.gradient !== undefined) { delete config.gradient; changed = true; }
@@ -1399,7 +1415,13 @@ class NordlysApp {
   }
 
   async updateBackgroundMode() {
+    /* A retired sky can still arrive after the load has migrated: from another
+       tab or device, a profile, a restore. It is drawn as its successor and
+       kept as one, never left on a scene the engine cannot paint. */
+    if (migratedSky(this.config.bgMode)) this.config.bgMode = migratedSky(this.config.bgMode);
     const bgMode = this.config.bgMode || "aurora";
+    // Whether the folders are quiet zones depends on the sky (sendQuietZones).
+    this.queueQuietZones?.();
     const canvas = document.getElementById("bg-canvas");
     const media = document.getElementById("bg-media");
     const video = document.getElementById("bg-video");

@@ -53,6 +53,8 @@ function harness({ late = () => 0 } = {}) {
       return id;
     },
     clearTimeout: id => { timers.delete(id); },
+    // The minute a held real-sky scene keeps time by; never due within a test.
+    setInterval: () => 0, clearInterval: noop,
     getComputedStyle: () => ({ getPropertyValue: () => '' }),
     CustomEvent: class { constructor(type) { this.type = type; } }
   });
@@ -299,4 +301,59 @@ test('a parked scene repaints at once; a moving one keeps its single queued fram
   assert.ok(renders >= 28 && renders <= 30, `renders ${renders}`);
   assert.equal(sky.stats.overlaps, 0);
   assert.equal(sky.stats.maxTimers, 1);
+});
+
+/* The real sky turns a quarter of a degree a minute, so the Star map asks for
+   a frame a tenth of a second at most, for its twinkle; it moves at the same
+   pace as every other scene, and an idle minute changes nothing. */
+test('the Star map paints ten times a second, at the pace every scene keeps', () => {
+  const sky = harness();
+  sky.engine.setMode('starmap');
+  sky.run(60, 1);
+  const awake = sky.run(60, 4);
+  assert.ok(awake.renders >= 37 && awake.renders <= 41, `renders ${awake.renders}`);
+  assert.ok(Math.abs(awake.advanced - 1.2) < 0.06, `pace ${awake.advanced}`);
+  sky.skip(61000);
+  sky.run(144, 1);
+  const idle = sky.run(144, 4);
+  assert.ok(idle.renders >= 37 && idle.renders <= 41, `idle renders ${idle.renders}`);
+  assert.ok(sky.engine.frameWakeBudget >= 99, 'no faster for being idle, and no slower');
+  // Input wakes nothing sooner: the scene had no faster rate to go back to.
+  const timer = sky.pending().timers;
+  sky.touch();
+  assert.equal(sky.pending().timers, timer);
+});
+
+/* Meteors wait between meteors at the twinkle's rate and take the full rate
+   for each one, from its start: a meteor that began between two slow frames
+   would be half gone before it was seen. */
+test('Meteors sleep between meteors and paint every one from its start', () => {
+  const sky = harness();
+  const engine = sky.engine;
+  engine.setMode('meteors');
+  // Far more meteors than any real night, so twenty seconds hold plenty of both.
+  const rates = { showers: [], total: 0.45 };
+  engine.meteorRates = () => rates;
+  sky.run(60, 1);
+  const times = [];
+  const paint = engine.render.bind(engine);
+  engine.render = dt => { paint(dt); times.push([sky.now, engine.t]); };
+  const from = engine.t;
+  const { renders } = sky.run(60, 20);
+  const meteors = [];
+  for (let slot = Math.ceil(from / 0.3); slot < Math.floor(engine.t / 0.3) - 1; slot++) {
+    const meteor = engine.meteorIn(slot, rates);
+    if (meteor) meteors.push(meteor);
+  }
+  assert.ok(meteors.length >= 4, `${meteors.length} meteors`);
+  assert.ok(renders < 20 * 30 * 0.8, `${renders} paints in twenty seconds: it slept between meteors`);
+  assert.ok(renders > 20 * 10, `${renders} paints: still the twinkle's ten a second`);
+  // Scene time per millisecond at full motion.
+  const pace = 0.005 / 16.666;
+  for (const meteor of meteors) {
+    const first = times.find(([, t]) => t >= meteor.start);
+    assert.ok(first[1] - meteor.start <= pace * 36, `first seen ${((first[1] - meteor.start) / pace).toFixed(0)} ms after it began`);
+    const during = times.filter(([, t]) => t >= meteor.start && t <= meteor.start + meteor.life).map(([at]) => at);
+    for (const gap of gaps(during)) assert.ok(gap <= 1000 / 30 + 2, `gap ${gap.toFixed(1)} ms in flight`);
+  }
 });

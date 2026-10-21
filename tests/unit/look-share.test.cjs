@@ -12,7 +12,7 @@ function looks() {
 const plain = value => JSON.parse(JSON.stringify(value));
 
 const CONFIG = {
-  theme: 'nord-frost', bgMode: 'baikal', bgPalette: 'mood-1', bgMotion: 0.4, bgIntensity: 1.2, bgSeed: 2654435761,
+  theme: 'nord-frost', bgMode: 'starmap', bgPalette: 'mood-1', bgMotion: 0.4, bgIntensity: 1.2, bgSeed: 2654435761,
   bgPalettes: [{ id: 'mood-1', name: 'Midwinter', colors: ['#aabbcc', '#334455', '#ffeedd'] }],
   fonts: { display: 'Outfit', interface: 'Instrument Sans' }, cardRadius: 20, iconShape: 'circle',
   userName: 'Alex', customCss: 'body { background: url(https://tracker.test/x) }',
@@ -24,7 +24,7 @@ test('a look carries the appearance and nothing the person keeps on the board', 
   const code = encode(capture(CONFIG));
   const { look } = decode(code);
   assert.equal(look.theme, 'nord-frost');
-  assert.equal(look.bgMode, 'baikal');
+  assert.equal(look.bgMode, 'starmap');
   assert.equal(look.bgSeed, 2654435761);
   assert.deepEqual(plain(look.mood), { name: 'Midwinter', colors: ['#aabbcc', '#334455', '#ffeedd'] });
   assert.deepEqual(plain(look.fonts), { display: 'Outfit', interface: 'Instrument Sans' });
@@ -85,11 +85,19 @@ test('a look carries the size and spacing of the board, and refuses what it cann
   assert.equal('tileLabels' in hostile, false);
 });
 
-/* Frost was retired for Baikal. A look shared before that still brings a sky,
-   the same one a stored Frost becomes, rather than quietly losing it. */
-test('a look shared with the retired Frost arrives as Baikal', () => {
+/* A look shared before a sky was retired still brings a sky — the same one
+   a stored config of it becomes — rather than quietly losing it: Pillars
+   becomes Meteors, Nacre the Midnight sun, Baikal and Frost (which became
+   Baikal) the Star map. */
+test('a look shared with a retired sky arrives with its successor', () => {
   const { encode, decode } = looks();
-  const { look } = decode(encode({ theme: 'nord-frost', bgMode: 'frost', bgSeed: 7 }));
-  assert.equal(look.bgMode, 'baikal');
-  assert.equal(look.bgSeed, 7);
+  for (const [retired, successor] of [['pillars', 'meteors'], ['nacre', 'midnightsun'], ['baikal', 'starmap'], ['frost', 'starmap']]) {
+    const { look } = decode(encode({ theme: 'nord-frost', bgMode: retired, bgSeed: 7 }));
+    assert.equal(look.bgMode, successor, retired);
+    assert.equal(look.bgSeed, 7);
+  }
+  // And the skies that are there arrive as themselves.
+  for (const scene of ['starmap', 'meteors', 'midnightsun']) assert.equal(decode(encode({ bgMode: scene })).look.bgMode, scene);
+  // A name that only looks like a key of the table is still refused.
+  assert.equal(decode(encode({ bgMode: 'constructor', iconShape: 'circle' })).look.bgMode, undefined);
 });

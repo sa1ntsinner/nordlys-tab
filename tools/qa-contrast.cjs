@@ -39,7 +39,7 @@ const args = Object.fromEntries(process.argv.slice(2).map(arg => {
 }));
 const list = value => (value && value !== 'true' ? value.split(',').filter(Boolean) : null);
 
-const SCENES = ['aurora', 'polaris', 'halo', 'pillars', 'nacre', 'silk', 'baikal', 'drift', 'horizon'];
+const SCENES = ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'drift', 'horizon'];
 const MOODS = ['theme', 'polar', 'violet', 'ember', 'mono'];
 // The fonts pass is opt-in (--surfaces=fonts): it re-renders every tab per face.
 const SURFACES = list(args.surfaces) || ['home', 'search', 'settings', 'menus', 'panels'];
@@ -55,6 +55,12 @@ const PHASES = (list(args.phases) || ['7.4', '31.7']).map(Number);
    the golden light of sunrise and sunset, the pale day, and the blue hour.
    Opt-in with --surfaces=home,daylight (or daylight alone). */
 const DAYLIGHT = list(args.daylight) || ['2026-09-22T05:02:00Z', '2026-09-22T11:00:00Z', '2026-09-22T17:05:00Z', '2026-09-22T17:42:00Z'];
+/* The skies drawn from the real one change with the hour rather than with the
+   phase of the scene clock, so they are measured at moments of the same
+   equinox day in Berlin instead: the sun high, low, just set, and gone. The
+   theme's own mood at all four; the others at noon and in the night. */
+const REAL_SKY = new Set(['starmap', 'meteors', 'midnightsun']);
+const MOMENTS = list(args.moments) || ['2026-09-22T11:00:00Z', '2026-09-22T16:50:00Z', '2026-09-22T17:42:00Z', '2026-09-22T22:00:00Z'];
 const DAYLIGHT_MOODS = ['theme', 'ember', 'mono'];
 /* The Atmosphere slider goes to 150%, and a brighter sky is the harder test,
    so that is the default; --intensity=1 measures the out-of-the-box look. */
@@ -106,7 +112,7 @@ async function main() {
     window.Nordlys.grid.render();
   }, DEMO_BOARD.groups);
 
-  const applyLook = (theme, scene, mood, phase, daylight = null) => setLook(page, { theme, scene, mood, phase, intensity: INTENSITY, daylight });
+  const applyLook = (theme, scene, mood, phase, daylight = null, at = null) => setLook(page, { theme, scene, mood, phase, intensity: INTENSITY, daylight, at });
 
   const setFonts = family => page.evaluate(async family => {
     const app = window.Nordlys;
@@ -143,6 +149,14 @@ async function main() {
       for (const scene of scenes) {
         const sceneMoods = scene === 'solid' ? ['theme'] : moods;
         for (const mood of sceneMoods) {
+          if (REAL_SKY.has(scene)) {
+            for (const at of mood === 'theme' ? MOMENTS : [MOMENTS[0], MOMENTS[3]]) {
+              await applyLook(theme, scene, mood, PHASES[0], null, at);
+              await record({ surface: 'home', theme, scene, mood, phase: PHASES[0], at });
+              done++;
+            }
+            continue;
+          }
           const phases = scene === 'solid' ? [0] : mood === 'theme' ? PHASES : PHASES.slice(0, 1);
           for (const phase of phases) {
             await applyLook(theme, scene, mood, phase);
@@ -352,10 +366,10 @@ async function main() {
     scenario.surface, scenario.theme, scenario.scene, scenario.mood, scenario.phase, scenario.tab || '', scenario.font || '',
     run.where, run.kind, run.text, run.nominal == null ? null : +run.nominal.toFixed(2),
     run.rendered == null ? null : +run.rendered.toFixed(2), run.required, run.size, run.weight, run.family, run.background, run.truncated,
-    run.color, +run.opacity.toFixed(3), scenario.daylight || ''
+    run.color, +run.opacity.toFixed(3), scenario.daylight || '', scenario.at || ''
   ]));
   await writeFile(resolve(outDir, 'runs.json'), JSON.stringify({
-    columns: ['surface', 'theme', 'scene', 'mood', 'phase', 'tab', 'font', 'where', 'kind', 'text', 'nominal', 'rendered', 'required', 'size', 'weight', 'family', 'background', 'truncated', 'color', 'opacity', 'daylight'],
+    columns: ['surface', 'theme', 'scene', 'mood', 'phase', 'tab', 'font', 'where', 'kind', 'text', 'nominal', 'rendered', 'required', 'size', 'weight', 'family', 'background', 'truncated', 'color', 'opacity', 'daylight', 'at'],
     rows: dump
   }));
   await writeFile(resolve(outDir, 'report.md'), `${lines.join('\n')}\n`);

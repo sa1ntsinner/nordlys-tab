@@ -204,13 +204,16 @@ every other improvement.
 
 ## Backgrounds
 
-Nine authored skies — Nordlys, Polaris, Halo, Pillars, Nacre, Silk, Baikal,
-Contour and Fjord — the user's own image or video, and a flat colour. Each sky
-is a different *kind* of picture: curtains, star trails turning round the pole,
-an optical display around a moon, columns of light over a far horizon, banded
-mother-of-pearl cloud, threads walked through a vector field, black ice with
-its bubbles and cracks, a survey map of hills and hollows, a low horizon. Frost,
-rime grown in from the edges, was retired; a stored Frost becomes Baikal.
+Nine authored skies — Nordlys, Polaris, Halo, Star map, Meteors, Silk,
+Midnight sun, Contour and Fjord — the user's own image or video, and a flat
+colour. Each sky is a different *kind* of picture: curtains, star trails
+turning round the pole, an optical display around a moon, a chart of the stars
+overhead, shooting stars on a still night, threads walked through a vector
+field, the sun over a calm sea, a survey map of hills and hollows, a low
+horizon. Frost, rime grown in from the edges, was retired, and later Pillars,
+Nacre and Baikal; a stored one becomes the nearest sky in kind that is left:
+Pillars, a night sky, Meteors; Nacre, cloud lit by a low sun, the Midnight
+sun; Baikal, the stillest, and Frost the Star map.
 Contour was once nine sine waves at an eighth of an opacity —
 a paler Silk that vanished on dark themes — and became a map: closed contour
 lines traced from a seeded, slowly wandering terrain (marching squares), a
@@ -227,7 +230,8 @@ with the code that paints the full one, in the palette the sky has resolved, so
 a preview cannot fall behind its scene the way the CSS imitations did.
 
 **Every scene is a pure function of time, and of a seed.** Stars, threads,
-bubbles and cracks are scattered from `config.bgSeed` — zero is the authored composition —
+meteors and coasts are scattered from `config.bgSeed`, and the Star map turned
+by it — zero is the authored composition, and the chart facing the equator —
 so a new tab is the same sky, and "Shuffle this sky" is a new one kept until
 shuffled again. Each scene has a rest phase, the frame chosen by looking at it,
 which is what motion at zero, reduced motion and the thumbnails all hold.
@@ -243,7 +247,7 @@ stroke that runs across the window it rasterises on the processor, box and all:
 Silk's threads cost a hundred milliseconds a frame that way and it ran at a
 third of its budget. So soft light is gradients (`glow`, `drawShaft`), fine
 lines are hairlines, whatever holds still is drawn once into a layer and laid
-down each frame (Baikal's ice), and long lines go to the GPU layer
+down each frame (the Star map's chart), and long lines go to the GPU layer
 (`sky-gl.js`: Silk, Polaris, Contour), which draws them as triangle strips and
 lays the frame onto the canvas in one `drawImage`. A still and the quiet-zone
 sample are small enough to paint in 2D, and do. `tests/unit/scene-cost` holds
@@ -274,6 +278,25 @@ light averaged with a cool mood is brown). By day the sky pales and steps
 back, the aurora most; stars come out in the blue hour and the night. The quiet
 zones solve against whatever is painted, and the contrast sweep measures four
 moments of an equinox day (`--surfaces=daylight`).
+
+**Three skies are the real one, and say so.** The Star map, Meteors and the
+Midnight sun draw the sky over the person's place at this moment, found the
+way the daylight finds it. The Star map is the Yale Bright Star Catalogue down
+to magnitude 4 (`sky-stars.js`, public domain) with the stick figures of the
+constellations, put on the sky by the local sidereal time and drawn in a
+stereographic view centred on the horizon, which keeps a constellation its
+shape wherever it stands; nothing below the horizon is drawn. It turns at the
+real rate, so no motion shows but the twinkle of the brightest stars: sped
+up, it would be some other hour's sky within a minute. Meteors fall at the
+rate of the meteor shower calendar (`sky-clock.js`), each shower's from its
+radiant while that is above the horizon, and never busily: one every few
+seconds at the Geminids' peak. The Midnight sun stands where the sun does,
+and the sky takes its colour from how high that is. The settings say under
+the picker what the sky shows, and which shower is on tonight. Moving this
+little, each asks for fewer frames than the budget allows
+(`NORDLYS_SCENE_BUDGET`): the Star map and Meteors ten a second for the
+twinkle, Meteors waking to the full rate for each meteor from its first
+frame, and the Midnight sun twelve for the light on the water.
 
 **A wallpaper is measured the same way, and treated only where it must be.**
 The photo is sampled as the stylesheet shows it. Behind the clock it gets a

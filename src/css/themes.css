@@ -793,9 +793,8 @@ html[data-theme="oled-obsidian"] #veil {
 }
 
 .light-ui .ctab.active {
-  background: var(--accent);
-  color: #071018;
-  box-shadow: var(--nl-shadow-1);
+  background: rgba(15, 23, 42, 0.07);
+  color: var(--ink);
 }
 
 .light-ui .cbody::-webkit-scrollbar-thumb {

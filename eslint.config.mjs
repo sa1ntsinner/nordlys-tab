@@ -46,9 +46,7 @@ export default [
     ignores: [
       "node_modules/**", "dist/**", "playwright-report/**", "test-results/**", ".playwright-artifacts/**",
       ".*/**", "docs/**", "tools/artwork/.scratch/**",
-      "**/*.sweep.cjs", "sweeps.config.cjs", "scratch-*",
-      // Third-party builds served with the site as they are.
-      "site/vendor/**"
+      "**/*.sweep.cjs", "sweeps.config.cjs", "scratch-*"
     ]
   },
   js.configs.recommended,
@@ -82,7 +80,7 @@ export default [
     languageOptions: {
       ecmaVersion: 2023,
       sourceType: "script",
-      globals: { ...globals.browser, NordlysBackgroundEngine: "readonly", gsap: "readonly", ScrollTrigger: "readonly", Lenis: "readonly" }
+      globals: { ...globals.browser, NordlysBackgroundEngine: "readonly" }
     },
     rules: {
       "no-unused-vars": ["error", { args: "none", caughtErrors: "none" }],

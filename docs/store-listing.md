@@ -44,7 +44,7 @@ Icons
 Press Search to look up brand icons from Iconify's Simple Icons set. The icon you pick is saved on your device. You can also use Chrome's favicon, an image link, a file or a letter. Dark logos are adjusted on dark themes, and you can turn that off per bookmark.
 
 Backgrounds
-Choose from 9 animated backgrounds: Nordlys (the aurora), Polaris (star trails round the pole star), Halo (a moon inside an ice ring), Pillars (columns of light over a frozen town), Nacre (mother-of-pearl clouds at dusk), Silk (threads in a slow current), Baikal (black lake ice with frozen bubbles), Contour (a map of slowly moving hills) and Fjord. You can also use your own picture, a looping video or a plain colour. Colour moods tint the background, and you can mix one from three colours. Slow the motion down to Still; it switches to Still automatically if your system asks for reduced motion. Follow the time of day uses your clock and time zone to change the light. It doesn't ask for your location.
+Choose from 9 animated backgrounds: Nordlys (the aurora), Polaris (star trails round the pole star), Halo (a moon inside an ice ring), Star map (the bright stars and their constellations as they stand over you now), Meteors (shooting stars, and more on the nights of the big showers), Silk (threads in a slow current), Midnight sun (the sun where it is in your sky, over a calm sea), Contour (a map of slowly moving hills) and Fjord. You can also use your own picture, a looping video or a plain colour. Colour moods tint the background, and you can mix one from three colours. Slow the motion down to Still; it switches to Still automatically if your system asks for reduced motion. Follow the time of day uses your clock and time zone to change the light, and Star map, Meteors and Midnight sun use them to show the sky where you are. It doesn't ask for your location.
 
 Themes
 There are 21 themes: 11 dark and 10 light. Each also recolours the background, so Gruvbox gets an amber sky and OLED Obsidian stays black. You can follow the system setting, choose dark or light, make a theme or write CSS. Pick bundled fonts or fonts on your computer for the clock, interface and monospace text. Nordlys dims the area behind the clock, date and search box when needed, including over your own wallpaper.
@@ -274,7 +274,7 @@ The artwork generators aren't part of `npm test`; they don't check a result.
 | `screenshot-5-connect.png` | 1280x800 | "Your tasks from the apps you use": the dashboard on Polaris, and the apps it connects to |
 | `screenshot-6-arrange.png` | 1280x800 | "Move folders around": Catppuccin Mocha on Silk, Fitted, with Size & spacing open |
 | `screenshot-7-extras.png` | 1280x800 | "Search, icons and time of day": math and commands, brand icon search, and Boreal Emerald through a day in Berlin |
-| `screenshot-8-themes.png` | 1280x800 | "21 themes": Porcelain Light on Baikal, and Gruvbox Dark on Silk with the themes open |
+| `screenshot-8-themes.png` | 1280x800 | "21 themes": Porcelain Light on the Star map, and Gruvbox Dark on Silk with the themes open |
 | `promo-marquee-1400x560.png` | 1400x560 | Marquee tile |
 | `promo-small-440x280.png` | 440x280 | Small tile |
 | `docs/brand/buymeacoffee-cover.png` | 2400x600 | Cover for the Buy Me a Coffee page (not uploaded to the store) |

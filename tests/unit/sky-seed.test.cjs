@@ -10,7 +10,7 @@ function sky(seed, w = 1440, h = 900) {
   const context = vm.createContext({ window: {}, document: {} });
   vm.runInContext(`${readFileSync('src/js/background.js', 'utf8')}\nthis.Engine = NordlysBackgroundEngine;`, context);
   const engine = Object.assign(Object.create(context.Engine.prototype), {
-    w, h, seed, rng: null, stars: [], nebulae: [], silk: [], polaris: [], pillars: [], dust: [], nacre: [], baikal: null
+    w, h, seed, rng: null, stars: [], nebulae: [], silk: [], polaris: [], chart: null, field: [], coast: []
   });
   engine.seedFields();
   return engine;
@@ -21,9 +21,10 @@ const WORLDS = {
   stars: e => e.stars,
   silk: e => e.silk,
   polaris: e => e.polaris.slice(0, 300),
-  pillars: e => ({ pillars: e.pillars, dust: e.dust }),
-  nacre: e => e.nacre,
-  baikal: e => ({ bubbles: e.baikal.bubbles, cracks: e.baikal.cracks.map(crack => Array.from(crack.points).slice(0, 40)) })
+  // The Star map's stars are the real ones; the seed turns the way it looks.
+  starmap: e => e.chart,
+  meteors: e => e.field,
+  midnightsun: e => e.coast
 };
 
 for (const [name, world] of Object.entries(WORLDS)) {
@@ -40,13 +41,33 @@ for (const [name, world] of Object.entries(WORLDS)) {
 test('every new composition has something in it', () => {
   const engine = sky(0);
   assert.ok(engine.polaris.length > 200, `${engine.polaris.length} stars`);
-  assert.ok(engine.pillars.length >= 4 && engine.dust.length >= 40);
-  assert.ok(engine.nacre.length >= 3 && engine.nacre.every(cloud => cloud.streaks.length >= 8));
-  assert.ok(engine.baikal.bubbles.length >= 20 && engine.baikal.cracks.length >= 3);
+  assert.ok(engine.field.length >= 150, `${engine.field.length} stars behind the meteors`);
+  assert.ok(engine.coast.length >= 4 && engine.coast.every(hill => hill.back.length >= 8));
+  // Seed zero is the authored view, facing the equator; any other faces some other way.
+  assert.equal(engine.chart.turn, 0);
+  assert.ok(sky(7).chart.turn > 0 && sky(7).chart.turn < 360);
 });
 
 test('seeding does not leave the engine drawing from the seed afterwards', () => {
   const engine = sky(7, 800, 600);
   // Meteors and anything else at runtime stay unseeded.
   assert.equal(engine.rng, null);
+});
+
+/* A meteor is a pure function of the scene clock and the seed, so any frame
+   at a moment shows the same one, at any frame rate, and a held frame the
+   one meant for it; another seed is another night's. */
+test('a meteor is where the clock and the seed put it, whoever asks', () => {
+  const night = seed => {
+    const engine = sky(seed);
+    engine.now = () => new Date(Date.UTC(2026, 9, 22, 1));
+    engine.meteorRates = () => ({ showers: [], total: 0.5 });
+    return engine;
+  };
+  const moments = Array.from({ length: 400 }, (_, i) => 3 + i * 0.037);
+  const trace = engine => JSON.stringify(moments.map(t => engine.meteorsAt(t, engine.skyView())));
+  const first = night(5);
+  assert.ok(moments.some(t => first.meteorsAt(t, first.skyView()).length), 'some of the moments hold a meteor');
+  assert.equal(trace(night(5)), trace(first));
+  assert.notEqual(trace(night(6)), trace(first));
 });
