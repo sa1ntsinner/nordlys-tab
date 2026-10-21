@@ -11,7 +11,7 @@
    hundred milliseconds a frame: it ran at ten to eighteen frames a second
    while every other scene held thirty. The cost followed the box and not the
    ink — thinner passes, mitred joins or flat colour barely moved it, while
-   half the device pixels halved it (docs/performance-plan.md).
+   half the device pixels halved it.
 
    Here the same lines are triangle strips: the CPU lists the points, the GPU
    fills the strip's pixels and nothing around them, and the frame is laid

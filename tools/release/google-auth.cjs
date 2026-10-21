@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-/* One-time: lets the release workflow publish to the Chrome Web Store, and
-   lets tools/release/youtube.cjs upload videos, as you.
+/* One-time: lets the release workflow publish to the Chrome Web Store as you.
 
      node tools/release/google-auth.cjs <client_secret_….json> <publisher-id>
 
@@ -8,12 +7,9 @@
    Console (see docs/release/AUTOPILOT.md). This opens Google's sign-in in
    your browser, listens on 127.0.0.1 for the answer, and then:
      - sets CWS_CLIENT_ID, CWS_CLIENT_SECRET, CWS_REFRESH_TOKEN and
-       CWS_PUBLISHER_ID as secrets of sa1ntsinner/nordlys-tab (through gh);
-     - keeps the same refresh token in ~/.nordlys/google.json for YouTube.
+       CWS_PUBLISHER_ID as secrets of sa1ntsinner/nordlys-tab (through gh).
    Nothing is printed that would let anyone else use it. */
 const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
 const http = require('node:http');
 const crypto = require('node:crypto');
 const { execFileSync, spawn } = require('node:child_process');
@@ -23,7 +19,7 @@ if (!clientFile || !publisher) { console.error('usage: node tools/release/google
 const raw = JSON.parse(fs.readFileSync(clientFile, 'utf8'));
 const client = raw.installed || raw.web;
 if (!client) { console.error('That file is not an OAuth client JSON.'); process.exit(1); }
-const SCOPES = ['https://www.googleapis.com/auth/chromewebstore', 'https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/youtube'];
+const SCOPES = ['https://www.googleapis.com/auth/chromewebstore'];
 const REPO = 'sa1ntsinner/nordlys-tab';
 
 const verifier = crypto.randomBytes(32).toString('base64url');
@@ -40,11 +36,8 @@ const server = http.createServer(async (req, res) => {
   if (!token.refresh_token) { res.end('Google did not return a refresh token. Remove the app at myaccount.google.com/permissions and run again.'); console.error('no refresh token:', token.error || tokenRes.status); server.close(); return; }
   const gh = (name, value) => execFileSync('gh', ['secret', 'set', name, '-R', REPO], { input: value, env: { ...process.env, GH_TOKEN: execFileSync('gh', ['auth', 'token', '--user', 'sa1ntsinner'], { encoding: 'utf8' }).trim() } });
   gh('CWS_CLIENT_ID', client.client_id); gh('CWS_CLIENT_SECRET', client.client_secret); gh('CWS_REFRESH_TOKEN', token.refresh_token); gh('CWS_PUBLISHER_ID', publisher);
-  const dir = path.join(os.homedir(), '.nordlys');
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, 'google.json'), JSON.stringify({ client_id: client.client_id, client_secret: client.client_secret, refresh_token: token.refresh_token, scopes: SCOPES }, null, 1), { mode: 0o600 });
   res.end('Done. You can close this tab.');
-  console.log(`Done: four CWS_* secrets are set on ${REPO}, and ~/.nordlys/google.json holds the YouTube access.`);
+  console.log(`Done: four CWS_* secrets are set on ${REPO}.`);
   server.close();
 });
 server.listen(0, '127.0.0.1', () => {

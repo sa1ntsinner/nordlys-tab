@@ -8,8 +8,7 @@ Chrome Web Store's rule that they only ever go up.
 
 ### Added
 
-- A promise, in Settings → Support, the README and the website: Nordlys is free and what is free stays free. There is no paid plan and there won't be one.
-
+- A promise, in Settings → Support and the README: Nordlys is free and what is free stays free. There is no paid plan and there won't be one.
 - Settings → General can hide the search box (Ctrl+K and / still open it) and turn off recent searches, which also forgets the ones kept.
 - Press ? anywhere outside a text field to see the keyboard shortcuts.
 - Rest the mouse on a control that has a shortcut (the gear, the search box, the first nine bookmarks, the timer, the light and dark switch and others) and a small label shows its keys. Settings → General turns it off.
@@ -28,6 +27,9 @@ Chrome Web Store's rule that they only ever go up.
 
 ### Fixed
 
+- Focus mode could lose what you typed or started in its first moment, while it was still reading the timer from storage: the timer that came back took no notice of it. It now opens once the timer is read.
+- Closing the keyboard shortcuts sheet and going straight to the search box could send the letters you typed to the board instead, where A started arranging it.
+- The folder dialog showed "1 column" for a folder of four until you opened the list.
 - A board that outgrew the browser's quick store (5 MB, filled mostly by uploaded icons) stopped saving: every change was lost on the next new tab. Each save now also goes to the extension's own storage, which has no such limit, and a new tab shows whichever copy is newer.
 - Stashing the tabs of a window with more than 100 tabs closed all of them but kept only 100; the rest were lost. Now only the tabs the stash kept are closed, the card says how many stay open, and nothing is closed until the stash is saved.
 - Sync filled up and stopped as bookmarks were deleted, because every deleted bookmark kept its name and address in sync for ever. A deletion now takes a few bytes and is dropped 30 days later. When sync is full, Settings says so in your language and says what frees space; it used to tell you, in English, to delete a profile, which freed nothing.
@@ -38,6 +40,8 @@ Chrome Web Store's rule that they only ever go up.
 
 ### Changed
 
+- The menus of a bookmark, a folder and the board say what they do in plain words (Edit, Change icon, Copy address, Delete), show their keys beside the items that have one, and mark the item under the pointer with a quiet grey instead of the accent. The theme switch left the board menu, and Show hidden folders appears only when a folder is hidden.
+- The bookmark and folder dialogs end the same way: Delete on the left, Cancel and Save on the right. Enter in a field saves.
 - A new tab draws its board sooner. Settings are made ready just after the first frame instead of before it, and each icon's contrast with its tile is checked after the board is on screen, from colours read once per theme instead of once per tile. On a board of nine folders the work before the first frame fell by about a fifth.
 - The store listing is a quarter of its old length, with privacy and the price first, and says nothing about features that are gone. Its first picture is the board as installed; the dashboard, off by default, is second. The summary names no count of skies or themes.
 - Settings are shorter: the font pickers and Share this look are each one closed line in Appearance until you open them, and the Habits and Line for the day cards are under More cards when you add a card.

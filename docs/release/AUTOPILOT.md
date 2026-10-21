@@ -26,12 +26,11 @@ paste from `docs/store-listing.md` into each dashboard when they change.
 
 ## One-time setup
 
-### Chrome Web Store and YouTube (one Google sign-in for both)
+### Chrome Web Store
 
 1. In [Google Cloud Console](https://console.cloud.google.com/), create a
    project (any name, e.g. "Nordlys release").
-2. APIs & Services → Library: enable **Chrome Web Store API** and
-   **YouTube Data API v3**.
+2. APIs & Services → Library: enable **Chrome Web Store API**.
 3. APIs & Services → OAuth consent screen: External; app name "Nordlys
    release"; your email as support and developer contact; add yourself as a
    **test user**. Then **Publish app** (to "In production"), or the refresh
@@ -43,18 +42,11 @@ paste from `docs/store-listing.md` into each dashboard when they change.
 6. Run, from the repo:
 
    ```sh
-   node tools/release/google-auth.cjs "C:\Users\smile\Downloads\client_secret_….json" <publisher-id>
+   node tools/release/google-auth.cjs <client_secret_….json> <publisher-id>
    ```
 
    Sign in with the Google account that owns the Chrome Web Store item and
-   the YouTube channel, and allow access. The script sets the four `CWS_*`
-   secrets and keeps the YouTube access in `~/.nordlys/google.json`.
-
-YouTube keeps videos uploaded through an unaudited API project private.
-After `node tools/release/youtube.cjs docs/video/nordlys-youtube-4k.mp4`,
-switch the video to Public in YouTube Studio, or request the project audit
-once (YouTube API Services → Audit and Quota Extension form). Custom
-thumbnails need the channel to be verified by phone once.
+   allow access. The script sets the four `CWS_*` secrets.
 
 ### Edge
 

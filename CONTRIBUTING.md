@@ -104,8 +104,6 @@ real defect that a user saw.
   house style.
 - Run `npm test` before opening the pull request. If a real-extension test is
   the right place for your check, put it there even though it is slower.
-- Screenshots of the store listing are generated, not hand-made: `npm run
-  artwork` rebuilds them.
 - The store listing text lives in `docs/store-listing.md` and is pasted into
   the Developer Dashboard verbatim. Field limits are enforced by tests.
 

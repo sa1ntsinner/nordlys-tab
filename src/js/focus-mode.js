@@ -87,17 +87,18 @@
     /* It opens at once, keys and all; the timer it reads may still be on
        its way from storage, and is drawn the moment it is there. */
     async show() {
-      if (!this.dash || this.open) return;
+      if (!this.dash || this.open || this.opening) return;
       this.opener = document.activeElement;
-      this.timer = this.dash.data.get(KEY) || this.timer || K.timer.create({ focus: 25, rest: 5 });
+      /* The timer is read from storage before anything can be typed or
+         pressed: a key that came first used to write nothing under the key,
+         and the timer the read brought back then took no notice of it. */
+      this.opening = true;
+      try { this.timer = await this.dash.shared(KEY, () => this.timer || K.timer.create({ focus: 25, rest: 5 })); } finally { this.opening = false; }
       if (!this.root) this.build();
       this.root.hidden = false;
       document.body.classList.add("focus-mode-open");
       requestAnimationFrame(() => this.root.classList.add("is-open"));
       document.addEventListener("keydown", this.onKey, true);
-      this.draw();
-      this.go.focus({ preventScroll: true });
-      this.timer = await this.dash.shared(KEY, () => this.timer);
       this.draw();
       this.tick();
       this.go.focus({ preventScroll: true });

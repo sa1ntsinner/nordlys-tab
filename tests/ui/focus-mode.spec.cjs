@@ -91,7 +91,25 @@ test('what you will focus on is kept, and Enter starts the timer', async ({ nord
   await expect(fm(page)).toHaveClass(/is-running/);
 });
 
-test('a sound plays only while a focus runs', async ({ nordlysPage, browserName }) => {
+/* Focus mode used to open before its timer was read from storage, so what
+   was typed in that gap was written under no timer and then lost. */
+test('a slow storage read does not lose what is typed or started first', async ({ nordlysPage }) => {
+  const { page, runtimeErrors } = nordlysPage;
+  await page.evaluate(() => {
+    const local = window.chrome.storage.local;
+    const get = local.get.bind(local);
+    local.get = (keys, callback) => setTimeout(() => get(keys, callback), 400);
+  });
+  await command(page, 'focus');
+  const intent = fm(page).getByRole('textbox', { name: 'I will focus on…' });
+  await intent.fill('The release notes');
+  await intent.press('Enter');
+  await expect(fm(page)).toHaveClass(/is-running/);
+  expect(await page.evaluate(() => window.Nordlys.dashboard.data.get('focus-timer')?.intent)).toBe('The release notes');
+  expect(runtimeErrors).toEqual([]);
+});
+
+test('a sound plays only while a focus runs',async ({ nordlysPage, browserName }) => {
   test.skip(browserName === 'webkit' && process.platform === 'win32', 'Playwright WebKit on Windows has no AudioContext; Safari has');
   const { page } = nordlysPage;
   await command(page, 'focus');

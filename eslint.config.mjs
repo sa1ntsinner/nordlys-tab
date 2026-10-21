@@ -45,7 +45,7 @@ export default [
   {
     ignores: [
       "node_modules/**", "dist/**", "playwright-report/**", "test-results/**", ".playwright-artifacts/**",
-      ".*/**", "docs/**", "tools/artwork/.scratch/**",
+      ".*/**", "docs/**",
       "**/*.sweep.cjs", "sweeps.config.cjs", "scratch-*"
     ]
   },
@@ -69,21 +69,6 @@ export default [
       // document a callback's signature are fine too.
       "no-unused-vars": ["error", { vars: "local", args: "none", caughtErrors: "none" }],
       "no-empty": ["error", { allowEmptyCatch: true }],
-      "eqeqeq": ["error", "smart"],
-      "no-var": "error",
-      "prefer-const": ["error", { destructuring: "all" }]
-    }
-  },
-  {
-    // The project site: its script, and the stand-in for Chrome in the demo.
-    files: ["site/**/*.js"],
-    languageOptions: {
-      ecmaVersion: 2023,
-      sourceType: "script",
-      globals: { ...globals.browser, NordlysBackgroundEngine: "readonly" }
-    },
-    rules: {
-      "no-unused-vars": ["error", { args: "none", caughtErrors: "none" }],
       "eqeqeq": ["error", "smart"],
       "no-var": "error",
       "prefer-const": ["error", { destructuring: "all" }]

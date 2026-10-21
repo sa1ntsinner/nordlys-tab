@@ -379,7 +379,14 @@
       dialog.setAttribute('aria-labelledby', title.id);
       const opener = document.activeElement;
       close.addEventListener('click', () => dialog.close());
-      dialog.addEventListener('close', () => { dialog.remove(); if (opener?.isConnected) opener.focus?.({ preventScroll: true }); });
+      /* The close event comes a moment after the sheet is gone. By then the
+         browser has put focus back, or the reader has moved it on (into the
+         search box, say); it is only taken back when it was lost. */
+      dialog.addEventListener('close', () => {
+        const lost = !document.activeElement || document.activeElement === document.body || dialog.contains(document.activeElement);
+        dialog.remove();
+        if (lost && opener?.isConnected) opener.focus?.({ preventScroll: true });
+      });
       dialog.append(title, list, close);
       document.body.append(dialog);
       dialog.showModal();

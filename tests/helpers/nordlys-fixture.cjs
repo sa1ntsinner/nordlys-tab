@@ -75,7 +75,7 @@ const test = base.extend({
             callback(Boolean(window.__bookmarks?.granted));
           },
           request(request, callback) {
-            /* Leave to reach a site (an AI provider): given unless a test says
+            /* Leave to reach a site (a connected app): given unless a test says
                otherwise with window.__origins = { grant: false }. */
             if (request?.origins?.length) { (window.__origins ||= {}).asked = [...(window.__origins.asked || []), ...request.origins]; callback(window.__origins.grant !== false); return; }
             if (request?.permissions?.includes("tabs")) {

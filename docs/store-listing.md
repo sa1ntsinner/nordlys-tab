@@ -232,37 +232,3 @@ The app works the same in all regions. Its interface is in English, Russian, Spa
 Not applicable: Nordlys is not in a regulated industry and includes no protected third-party material.
 ```
 
-The App Store preview is `docs/video/app-preview-1080p30.mp4`, the film's
-28-second cut. Its end card leaves out the line that names other browsers.
-
-## Artwork
-
-Run `npm run artwork` to capture the extension for `docs/store-assets/`, the
-link preview and `site/assets/`. It takes about five minutes. The aurora needs
-about fourteen seconds to settle, and the icon close-up needs a connection to
-Iconify.
-
-The artwork generators aren't part of `npm test`; they don't check a result.
-
-| File | Size | Shows |
-| --- | --- | --- |
-| `screenshot-1-board.png` | 1280x800 | "Your sites on every new tab": Aurora Void on Nordlys, as a new tab looks once installed, with two folders folded under the board |
-| `screenshot-2-dashboard.png` | 1280x800 | "A dashboard for your day": Nord Frost on Halo, the Planner layout with a morning's tasks |
-| `screenshot-3-focus.png` | 1280x800 | "Focus mode": OLED Obsidian, a Pomodoro six minutes in, rain on |
-| `screenshot-4-skies.png` | 1280x800 | "9 animated backgrounds": every background, each in a different theme |
-| `screenshot-5-connect.png` | 1280x800 | "Tasks from Todoist and GitHub": the dashboard on Polaris, and the three apps it reads from |
-| `screenshot-6-arrange.png` | 1280x800 | "Move folders around": Catppuccin Mocha on Silk, Fitted, with Size & spacing open |
-| `screenshot-7-extras.png` | 1280x800 | "Search, icons and time of day": math and commands, brand icon search, and Boreal Emerald through a day in Berlin |
-| `screenshot-8-themes.png` | 1280x800 | "21 themes": Porcelain Light on the Star map, and Gruvbox Dark on Silk with the themes open |
-| `promo-marquee-1400x560.png` | 1400x560 | Marquee tile |
-| `promo-small-440x280.png` | 440x280 | Small tile |
-| `docs/brand/buymeacoffee-cover.png` | 2400x600 | Cover for the Buy Me a Coffee page (not uploaded to the store) |
-| `site/assets/og.png` | 1200x630 | The picture chats and social sites show for a link to the website |
-
-`store-board.cjs` sets up the boards. `store-shots.spec.cjs`, `dash-shots.spec.cjs`
-(the dashboard, Focus mode and connected apps) and `promo.spec.cjs` take the captures; `compose.cjs` lays them out. `site-assets.cjs` makes the
-WebP files for the site and README. Upload the screenshots in number order.
-The store shows the first one in search, so it is the board as installed: the
-dashboard is off by default and is second. The Chrome Web Store takes five: use 1 to 5.
-Edge Add-ons takes up to ten and addons.mozilla.org has no limit: use all eight. To retake only the store pictures:
-`npx playwright test --config=tools/artwork/playwright.config.cjs store-shots promo`.
