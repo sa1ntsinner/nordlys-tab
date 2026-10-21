@@ -8,6 +8,8 @@ async function openSettings(page, section = null) {
   if (section) {
     await page.locator(`#settings-tab-${section}`).click();
     await expect(page.locator(`#sec-${section}`)).toBeVisible();
+    // The font pickers sit in a closed block of their own.
+    if (section === 'appearance') await page.locator('#more-fonts > summary').click();
   }
 }
 

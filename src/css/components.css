@@ -2309,3 +2309,7 @@ body.arranging:has(.arrange-size:not([hidden])) #page { padding-bottom: 560px; }
 @media (max-width: 720px) {
   .arrange-divider { display: none; }
 }
+
+/* The search box turned off in Settings → General. Ctrl+K and / bring it back
+   for as long as it is in use (widgets.js reveal). */
+body[data-search="off"]:not([data-search-peek]) #searchwrap { display: none; }

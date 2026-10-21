@@ -8,6 +8,8 @@ Chrome Web Store's rule that they only ever go up.
 
 ### Added
 
+- Settings → General can hide the search box (Ctrl+K and / still open it) and turn off recent searches, which also forgets the ones kept.
+- Press ? anywhere outside a text field to see the keyboard shortcuts.
 - A sky that is too much for the computer (no graphics chip, a remote desktop) is held still after its first second, said once, and remembered on that computer. Settings → Background has a button to keep it moving anyway. On battery, every sky paints half as often; it moves at the same pace.
 - A copy of your whole setup is kept by itself on the first new tab after Nordlys updates, before anything changes: folders, bookmarks, look, the themes you made and what the dashboard cards hold. The copies from the last three updates are in Settings → Backup, where each can be put back or saved as a file. A reset keeps them.
 
@@ -28,6 +30,8 @@ Chrome Web Store's rule that they only ever go up.
 ### Changed
 
 - A new tab draws its board sooner. Settings are made ready just after the first frame instead of before it, and each icon's contrast with its tile is checked after the board is on screen, from colours read once per theme instead of once per tile. On a board of nine folders the work before the first frame fell by about a fifth.
+- Settings are shorter: the font pickers and Share this look are each one closed line in Appearance until you open them, and the Habits and Line for the day cards are under More cards when you add a card.
+- Each folder is one Tab stop, as 2.5.0 meant it to be; it was four (the grip, the hide button, a tile and the column handle). Up from a folder's top row reaches its grip and hide button, Left and Right move between them, and Down from the bottom row reaches its columns. Escape goes back to the tiles.
 - The page tells the browser which language it is in, so a screen reader reads German with a German voice. It used to say English in every language.
 - Pillars, Nacre and Baikal are replaced by three backgrounds that show the sky over you as it is now, worked out from your clock and time zone, not your location. Star map shows the bright stars and their constellations. Meteors is a calm night sky with a shooting star now and then, and more on the nights of the big meteor showers; Settings says when one is on. Midnight sun shows the sun where it stands, over a calm sea, and the sky's colour follows it through the day.
 - If you were using Pillars you now get Meteors, Nacre becomes Midnight sun, and Baikal becomes Star map. A shared look or a synced profile that names one of them gets the same.

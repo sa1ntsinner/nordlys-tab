@@ -51,6 +51,8 @@ test('reset clears current, legacy, and auxiliary persisted settings before relo
   await page.locator('#gear').click(); await page.getByRole('tab', { name: 'Backup' }).click(); await page.locator('#cfg-reset').click();
   const resetDialog = page.getByRole('alertdialog', { name: /Reset everything/i }); await expect(resetDialog).toBeVisible();
   const navigation = page.waitForEvent('load'); await resetDialog.getByRole('button', { name: 'Reset' }).click(); await navigation; await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  // The copies made before updates are the one thing a reset keeps (update-copies.spec.cjs).
+  delete storageState.nordlys_update_copies;
   expect(storageState).toEqual({}); expect(await page.evaluate(() => localStorage.getItem('nordlys_custom_themes'))).toBeNull();
 });
 

@@ -344,8 +344,37 @@
         { chords: [['←→↑↓'], [alt, 'Shift', '←→↑↓']], key: 'support.keyBoard', fallback: 'On a bookmark: walk its folder, or carry the bookmark with it' },
         { chords: [['Enter'], ['←→↑↓']], key: 'support.keyArrange', fallback: "On a folder's handle: Enter arranges the board, then the arrows move the folder" },
         { chords: [['Shift', 'F10'], ['Menu']], key: 'support.keyMenu', fallback: 'Menu for the focused bookmark' },
-        { chords: [[mod, 'Z']], key: 'support.keyUndo', fallback: 'Undo the last change: while its notice is showing, even inside a dialog, and while arranging' }
+        { chords: [[mod, 'Z']], key: 'support.keyUndo', fallback: 'Undo the last change: while its notice is showing, even inside a dialog, and while arranging' },
+        { chords: [['↑'], ['↓']], key: 'support.keyFolder', fallback: "Past a folder's top row: its handle and hide button; past its bottom row: its columns. Escape goes back" },
+        { chords: [['?']], key: 'support.keySheet', fallback: 'Show these shortcuts' }
       ];
+    }
+
+    /* The same list over the page, from ? anywhere outside a text field, so
+       the keys are found without going to Settings. */
+    openSheet() {
+      if (document.getElementById('shortcut-sheet')?.open) return;
+      const list = document.createElement('dl');
+      list.className = 'support-shortcut-list';
+      for (const shortcut of this.shortcuts()) list.append(this.shortcutRow(shortcut));
+      const close = document.createElement('button');
+      close.type = 'button';
+      close.className = 'glass-btn';
+      close.textContent = this.text('support.close', 'Close');
+      const title = document.createElement('h2');
+      title.id = 'shortcut-sheet-title';
+      title.textContent = this.text('support.shortcuts', 'Keyboard shortcuts');
+      const dialog = document.createElement('dialog');
+      dialog.id = 'shortcut-sheet';
+      dialog.className = 'dash-dialog glass-panel shortcut-sheet';
+      dialog.setAttribute('aria-labelledby', title.id);
+      const opener = document.activeElement;
+      close.addEventListener('click', () => dialog.close());
+      dialog.addEventListener('close', () => { dialog.remove(); if (opener?.isConnected) opener.focus?.({ preventScroll: true }); });
+      dialog.append(title, list, close);
+      document.body.append(dialog);
+      dialog.showModal();
+      close.focus();
     }
 
     shortcutLegend() {

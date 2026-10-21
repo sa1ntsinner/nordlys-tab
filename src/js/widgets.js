@@ -207,6 +207,7 @@ class SearchWidget {
       setTimeout(() => {
         if (!document.activeElement || !document.activeElement.closest("#searchwrap")) {
           document.body.classList.remove("searching");
+          delete document.body.dataset.searchPeek;
           this.endCommandMode();
           this.closeSuggestions();
         }
@@ -227,6 +228,7 @@ class SearchWidget {
       const activeTag = document.activeElement ? document.activeElement.tagName : "";
       if (e.key === "/" && activeTag !== "INPUT" && activeTag !== "TEXTAREA") {
         e.preventDefault();
+        this.reveal();
         this.input.focus();
         this.input.select();
       } else if (e.key === "Escape" && document.body.classList.contains("searching")) {
@@ -237,6 +239,13 @@ class SearchWidget {
     });
   }
 
+  // A hidden search box shows while it is in use (the shortcuts, a command).
+  reveal() {
+    if (document.body.dataset.search === "off") document.body.dataset.searchPeek = "";
+  }
+
+  remembers() { return this.app?.config?.rememberSearches !== false; }
+
   refreshLabels() {
     if (this.input) {
       this.input.placeholder = window.I18N ? window.I18N.t("search.placeholder") : "Search or enter URL";
@@ -244,6 +253,7 @@ class SearchWidget {
   }
 
   saveSearchHistory(query) {
+    if (!this.remembers()) return;
     const q = (query || "").trim();
     if (!q || q.length < 2 || /^https?:\/\//i.test(q)) return;
     try {
@@ -256,6 +266,7 @@ class SearchWidget {
   }
 
   getSearchHistory(filter = "") {
+    if (!this.remembers()) return [];
     try {
       const history = JSON.parse(localStorage.getItem("nordlys_search_history") || "[]");
       if (!filter) return history.slice(0, 5);
@@ -792,6 +803,8 @@ class SearchWidget {
       document.body.classList.remove("searching");
       this.closeSuggestions();
       NordlysUI.announce(window.I18N ? window.I18N.t("search.suggestionsClosed") : "Search suggestions closed");
+      // A box that is hidden in Settings goes away again.
+      if ("searchPeek" in document.body.dataset) this.input.blur();
       return;
     }
 

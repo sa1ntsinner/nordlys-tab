@@ -399,8 +399,11 @@
           </section>
         </div>
 
+        <!-- Fonts and sharing a look are for the few who want them: each is
+             one closed line until opened. -->
+        <details id="more-fonts" class="advanced-settings">
+          <summary data-i18n="typography.title">Typography</summary>
         <div id="typography-controls" class="card-customizer-card" style="margin-top: 16px;">
-          <div class="settings-block-label" data-i18n="typography.title">Typography</div>
           <div class="row setting-row">
             <span><label for="cfg-font-display" data-i18n="typography.display">Clock &amp; headings</label></span>
             <select id="cfg-font-display" class="ipt"></select>
@@ -415,6 +418,7 @@
           </div>
           <p class="settings-note" id="cfg-font-note" data-i18n="typography.note">Pick “All fonts on this device” to use the fonts installed on your computer.</p>
         </div>
+        </details>
 
         <details id="advanced-glass-settings" class="advanced-settings">
           <summary data-i18n="appearance.advancedGlass">Advanced glass &amp; geometry</summary>
@@ -508,8 +512,9 @@
 
         <!-- A look is shared as a line of text and a picture; what it carries is
              listed in look-share.js, and nothing outside that list is read. -->
+        <details id="more-look-share" class="advanced-settings">
+          <summary data-i18n="look.title">Share this look</summary>
         <div id="look-share" class="card-customizer-card look-share">
-          <div class="settings-block-label" data-i18n="look.title">Share this look</div>
           <p class="settings-note" data-i18n="look.note">Theme, sky, colour mood, fonts and the shape of the board. Never your bookmarks, your name, a wallpaper or custom CSS.</p>
           <div class="look-actions">
             <button id="look-copy" type="button" class="glass-btn" data-i18n="look.copy">Copy this look</button>
@@ -529,6 +534,7 @@
             </div>
           </div>
         </div>
+        </details>
       </section>
 
       <!-- 3. General Section -->
@@ -575,6 +581,14 @@
         <div class="row">
           <span data-i18n="general.openNewTab">Open bookmarks in new tab</span>
           <label class="tg"><input id="cfg-open-newtab" type="checkbox"><i></i></label>
+        </div>
+        <div class="row setting-row">
+          <span id="cfg-show-search-label"><span data-i18n="general.showSearch">Show the search box</span><small class="row-hint" data-i18n="general.showSearchHint">Hidden, it still opens with Ctrl+K or /.</small></span>
+          <label class="tg"><input id="cfg-show-search" type="checkbox" aria-labelledby="cfg-show-search-label" checked><i></i></label>
+        </div>
+        <div class="row setting-row">
+          <span id="cfg-remember-searches-label"><span data-i18n="general.rememberSearches">Remember recent searches</span><small class="row-hint" data-i18n="general.rememberSearchesHint">Kept on this device only. Turning it off forgets them.</small></span>
+          <label class="tg"><input id="cfg-remember-searches" type="checkbox" aria-labelledby="cfg-remember-searches-label" checked><i></i></label>
         </div>
         <!-- Only in a browser that has no search API of its own (Safari):
              the engine is the person's choice, never ours (widgets.js). -->

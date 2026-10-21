@@ -294,6 +294,8 @@ class GridController {
     if (!this.board) return;
     for (const grid of this.board.querySelectorAll(".card .grid")) {
       const tiles = [...grid.querySelectorAll(".tile")];
+      const grip = grid.closest(".card")?.querySelector(".groupGrip");
+      if (grip) grip.tabIndex = tiles.length ? -1 : 0;
       if (!tiles.length) continue;
       const current = Math.min(this.rovingIndex.get(Number(tiles[0].dataset.groupIdx)) ?? 0, tiles.length - 1);
       tiles.forEach((tile, index) => { tile.tabIndex = index === current ? 0 : -1; });
@@ -524,6 +526,24 @@ class GridController {
 
     // Folder Fold action
     const foldBtn = cat.querySelector(".foldBtn");
+    /* One Tab stop per folder: its tiles. The grip and the hide button sit
+       one arrow up from the top row, and Left and Right move between them;
+       Down goes back. A folder with no tiles keeps its grip as its stop. */
+    const headControls = [cat.querySelector(".groupGrip"), foldBtn];
+    headControls.forEach((control) => {
+      control.tabIndex = -1;
+      control.addEventListener("keydown", (event) => {
+        if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+        const at = headControls.indexOf(control);
+        if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+          event.preventDefault();
+          headControls[(at + (event.key === "ArrowRight" ? 1 : headControls.length - 1)) % headControls.length].focus();
+        } else if (event.key === "ArrowDown" || event.key === "Escape") {
+          const tile = card.querySelector('.tile[tabindex="0"]');
+          if (tile) { event.preventDefault(); tile.focus(); }
+        }
+      });
+    });
     // Folded, the folder shrinks into its chip in the dock (board-arrange.js).
     foldBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -589,13 +609,14 @@ class GridController {
     resizeHandle.className = "card-resize-handle";
     resizeHandle.title = window.I18N ? window.I18N.t('hint.dragResizeFolder') : "Drag to resize folder columns";
     resizeHandle.setAttribute("role", "slider");
-    resizeHandle.tabIndex = 0;
+    resizeHandle.tabIndex = -1;
     const folderName = group.label || (window.I18N ? window.I18N.t('bookmarks.newFolder') : 'folder');
     resizeHandle.setAttribute("aria-label", window.I18N?.t('hint.columnsFor', { name: folderName }) || `Columns for ${folderName}`);
     resizeHandle.setAttribute("aria-valuemin", String(MIN_COLUMNS));
     resizeHandle.setAttribute("aria-valuemax", String(MAX_COLUMNS));
     resizeHandle.setAttribute("aria-valuenow", String(group.cols || 4));
     resizeHandle.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") { const tile = card.querySelector('.tile[tabindex="0"]'); if (tile) { event.preventDefault(); tile.focus(); } return; }
       const step = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 };
       let next;
       if (event.key in step) next = (group.cols || 4) + step[event.key];
@@ -678,6 +699,9 @@ class GridController {
       if (arrow && !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
         const target = this.tileToward(a, e.key);
         if (target) { e.preventDefault(); this.roveTo(target); }
+        // Past the top row, the folder's own controls; past the bottom, its columns.
+        else if (e.key === "ArrowUp") { e.preventDefault(); a.closest(".card")?.querySelector(".groupGrip")?.focus(); }
+        else if (e.key === "ArrowDown") { e.preventDefault(); a.closest(".card")?.querySelector(".card-resize-handle")?.focus(); }
         return;
       }
       if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) {

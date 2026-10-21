@@ -3,6 +3,8 @@ const { test, expect } = require('../helpers/nordlys-fixture.cjs');
 async function openShare(page) {
   await page.locator('#gear').click();
   await page.locator('#settings-tab-appearance').click();
+  // Closed until opened: sharing a look is for the few who want it.
+  await page.locator('#more-look-share > summary').click();
   await page.locator('#look-share').scrollIntoViewIfNeeded();
 }
 

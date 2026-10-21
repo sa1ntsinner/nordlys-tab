@@ -15,7 +15,8 @@ async function tabThrough(page, presses = 60) {
 }
 
 /* Everything the canvas offers has to be reachable without a mouse — the tiles,
-   the folder controls, the search field and the way into settings. */
+   the folder controls, the search field and the way into settings — and each
+   folder is one Tab stop: its controls are an arrow away from its tiles. */
 test('the canvas can be operated from the keyboard alone', async ({ nordlysPage, browserName }) => {
   test.skip(browserName === 'webkit' && process.platform === 'darwin', 'WebKit on macOS moves Tab only between text fields until keyboard navigation is turned on in System Settings');
   test.skip(browserName === 'firefox', 'Gecko starts Tab elsewhere after a click, and Playwright cannot Tab back from the browser toolbar');
@@ -26,16 +27,35 @@ test('the canvas can be operated from the keyboard alone', async ({ nordlysPage,
   const wanted = {
     'the search field': item => item === 'q',
     'a bookmark tile': item => /tile/.test(item),
-    // The grip moves the folder, and pressed, opens the arrangement.
-    'the folder move handle': item => /^Move /.test(item),
-    'the folder fold control': item => /hide this folder/i.test(item),
-    'the folder resize slider': item => /Columns for/i.test(item),
     'the settings button': item => item === 'gear'
   };
   const missing = Object.entries(wanted)
     .filter(([, matches]) => !reached.some(matches))
     .map(([name]) => name);
   expect(missing, `never reached by Tab: ${missing.join(', ')}`).toEqual([]);
+  expect(reached.some(item => /^Move |hide this folder|Columns for/i.test(item)), 'folder controls are not Tab stops').toBe(false);
+
+  const first = page.locator('#board .card').first();
+  await first.locator('.tile').first().focus();
+  await page.keyboard.press('ArrowUp');
+  await expect(first.locator('.groupGrip')).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(first.locator('.foldBtn')).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(first.locator('.tile').first()).toBeFocused();
+  await first.locator('.tile').last().focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(first.locator('.card-resize-handle')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(first.locator('.tile[tabindex="0"]')).toBeFocused();
+});
+
+test('each folder is one Tab stop', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const stops = await page.evaluate(() => [...document.querySelectorAll('#board .card')].map(card =>
+    [...card.querySelectorAll('a, button, input, [tabindex]')].filter(node => node.tabIndex >= 0 && !node.disabled).length));
+  expect(stops.length).toBeGreaterThan(1);
+  expect([...new Set(stops)]).toEqual([1]);
 });
 
 /* Focus must not be able to leave the page into browser chrome and strand the

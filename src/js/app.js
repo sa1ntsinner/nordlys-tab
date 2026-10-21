@@ -31,6 +31,10 @@ const DEFAULT_CONFIG = {
   showSeconds: false,
   userName: "",
   openNewTab: false,
+  // The search box on the page; Ctrl+K and / open it even when it is hidden.
+  showSearch: true,
+  // Whether the last searches are kept to offer again.
+  rememberSearches: true,
   cardRadius: 18,
   // "round", or "smooth": the continuous corner of an app icon (CSS corner-shape).
   cornerShape: "round",
@@ -347,6 +351,7 @@ class NordlysApp {
 
   applyHeaderStyle() {
     document.body.dataset.header = this.config.headerStyle || "full";
+    document.body.dataset.search = this.config.showSearch === false ? "off" : "on";
     this.queueQuietZones?.();
     this.pageFit?.request();
   }
@@ -1460,9 +1465,17 @@ class NordlysApp {
         e.preventDefault();
         const searchInput = document.getElementById("q");
         if (searchInput) {
+          this.widgets?.search?.reveal();
           searchInput.focus();
           searchInput.select();
         }
+        return;
+      }
+
+      // ? outside a text field: the list of shortcuts.
+      if (e.key === "?" && !isInput && !isCmd && !e.altKey) {
+        e.preventDefault();
+        this.settings.support?.openSheet();
         return;
       }
 

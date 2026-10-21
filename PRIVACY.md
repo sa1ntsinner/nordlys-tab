@@ -28,7 +28,7 @@ Everything is saved on your device. Settings and bookmarks use Chrome's extensio
 | Theme and background settings | `chrome.storage.local` / `localStorage` | Your palette, glass blur and background | No |
 | Clock and greeting | `chrome.storage.local` / `localStorage` | 12 or 24 hours, the name in the greeting, seconds | No |
 | Bookmarks and folders | `chrome.storage.local` / `localStorage` | Your links, titles, colours and icons | No |
-| Search history | `localStorage` | The optional list of recent searches shown when you click into the search box. You can delete each one, and Reset clears them all | No |
+| Search history | `localStorage` | The list of recent searches shown when you click into the search box. Settings → General → Remember recent searches turns it off and forgets them; you can also delete each one, and Reset clears them all | No |
 | Custom CSS | `chrome.storage.local` / `localStorage` | Stylesheets you added | No |
 | One page fit sizes | `localStorage` | With One page fit on, the sizes it last worked out for up to four window sizes, so a new tab opens already fitted. Never in backups, cleared by Reset | No |
 | Your own wallpaper | IndexedDB | The picture or video loop you picked as the background | No |

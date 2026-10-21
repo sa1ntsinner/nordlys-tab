@@ -873,6 +873,8 @@
     }
   };
   const ORDER = ["focus", "tasks", "habits", "timer", "notes", "weather", "clocks", "countdown", "inbox", "agenda", "stash", "quote"];
+  // Offered last, under "More": cards few people add.
+  const MORE = new Set(["habits", "quote"]);
   /* How big each kind of card starts, and how small or large it may be
      made, in cells of the twelve-column grid (dash-layout.js). */
   const SIZES = {
@@ -1002,9 +1004,15 @@
           type: "button", class: "dash-preset", "data-focus-key": `preset-${key}`, onclick: () => this.applyPreset(key)
         }, [this.presetPicture(preset), el("span", { class: "dash-preset-name", text: preset.name() }), el("small", { text: preset.note() })]))));
         parts.push(el("span", { class: "settings-block-label", text: say("dash.addTitle", "Add a card") }));
-        parts.push(el("div", { class: "dash-settings-add" }, this.types().map(({ type, name, network }) => el("button", {
+        const adder = ({ type, name, network }) => el("button", {
           type: "button", class: "dash-settings-type", "data-focus-key": `add-${type}`, onclick: () => this.add(type)
-        }, [icon(ICONS[type]), el("span", { text: name }), network ? el("small", { text: say("dash.usesNetwork", "Uses {host}", { host: network }) }) : null]))));
+        }, [icon(ICONS[type]), el("span", { text: name }), network ? el("small", { text: say("dash.usesNetwork", "Uses {host}", { host: network }) }) : null]);
+        const types = this.types();
+        parts.push(el("div", { class: "dash-settings-add" }, types.filter((t) => !t.more).map(adder)));
+        parts.push(el("details", { class: "advanced-settings dash-more-cards" }, [
+          el("summary", { text: say("dash.moreCards", "More cards") }),
+          el("div", { class: "dash-settings-add" }, types.filter((t) => t.more).map(adder))
+        ]));
       }
       if (this.on) {
         const folders = el("input", { type: "checkbox", id: "cfg-dash-folders", "data-focus-key": "folders", "aria-labelledby": "cfg-dash-folders-label" });
@@ -1102,7 +1110,10 @@
       window.NordlysUI?.showUndoToast?.({ message: say("dash.presetApplied", "Layout: {name}", { name: preset.name() }), onAction: () => this.write(before) });
     }
     setBalance(patch) { this.write({ ...this.state, balance: { on: false, start: "09:00", end: "18:00", weekdays: true, ...(this.state.balance || {}), ...patch } }); }
-    types() { return ORDER.map((type) => ({ type, name: TYPES[type].name(), network: TYPES[type].network || null })); }
+    types() {
+      const list = ORDER.map((type) => ({ type, name: TYPES[type].name(), network: TYPES[type].network || null, more: MORE.has(type) }));
+      return [...list.filter((t) => !t.more), ...list.filter((t) => t.more)];
+    }
 
     setOn(on) {
       const state = { ...this.state, on: Boolean(on), widgets: [...(this.state.widgets || [])] };
@@ -1438,6 +1449,7 @@
       const node = el("div", { class: "dash-menu glass-context-menu open", role: "menu", "aria-label": label });
       for (const item of items) {
         if (!item) continue;
+        if (item.heading) { node.append(el("div", { class: "dash-menu-heading", role: "presentation", text: item.heading })); continue; }
         node.append(el("button", { type: "button", role: "menuitem", class: `ctx-item dash-menu-item${item.danger ? " danger" : ""}`, onclick: () => { this.closeMenu(); item.run(); } }, [
           item.mark || (item.icon ? icon(item.icon) : null), el("span", { text: item.label }), item.note ? el("small", { text: item.note }) : null
         ]));
@@ -1482,10 +1494,14 @@
       ], say("dash.cardMenu", "{name} options", { name: this.title(widget) }));
     }
     openAdd(opener) {
-      this.popup(opener, this.types().map(({ type, name, network }) => ({
+      const types = this.types();
+      const at = types.findIndex((t) => t.more);
+      const items = types.map(({ type, name, network }) => ({
         label: name, icon: ICONS[type], note: network ? say("dash.usesNetwork", "Uses {host}", { host: network }) : "",
         run: () => this.add(type)
-      })), say("dash.addCard", "Add a card"));
+      }));
+      if (at >= 0) items.splice(at, 0, { heading: say("dash.moreCards", "More cards") });
+      this.popup(opener, items, say("dash.addCard", "Add a card"));
     }
 
     // ── Connected apps ───────────────────────────────────────────

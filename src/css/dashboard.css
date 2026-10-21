@@ -556,3 +556,8 @@ html[data-dashboard][data-dash-folders="off"] :is(#board, #hiddenDock) { display
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
 }
+
+/* The cards few people add, after a quiet label in the adder menu, and in a
+   closed block in Settings → Dashboard. */
+.dash-menu-heading { padding: 8px 12px 4px; font-size: var(--nl-text-xs); color: var(--nl-text-secondary); }
+.dash-more-cards { margin-top: var(--nl-space-3); }

@@ -1153,6 +1153,10 @@ class SettingsController {
     if (headerStyle) headerStyle.value = cfg.headerStyle || "full";
     if (showSeconds) showSeconds.checked = !!cfg.showSeconds;
     if (openNewTab) openNewTab.checked = !!cfg.openNewTab;
+    const showSearch = document.getElementById("cfg-show-search");
+    if (showSearch) showSearch.checked = cfg.showSearch !== false;
+    const rememberSearches = document.getElementById("cfg-remember-searches");
+    if (rememberSearches) rememberSearches.checked = cfg.rememberSearches !== false;
 
     // Aesthetics Sliders & Selects
     const glassLevel = document.getElementById("cfg-glass-level");
@@ -1764,6 +1768,19 @@ class SettingsController {
       this.app.config.openNewTab = e.target.checked;
       this.app.saveConfig();
       this.app.grid?.render();
+    });
+
+    document.getElementById("cfg-show-search")?.addEventListener("change", (e) => {
+      this.app.config.showSearch = e.target.checked;
+      this.app.saveConfig();
+      this.app.applyHeaderStyle();
+    });
+
+    document.getElementById("cfg-remember-searches")?.addEventListener("change", (e) => {
+      this.app.config.rememberSearches = e.target.checked;
+      // Off means forgotten, not just hidden.
+      if (!e.target.checked) { try { localStorage.removeItem("nordlys_search_history"); } catch (error) { /* nothing kept */ } }
+      this.app.saveConfig();
     });
 
   }

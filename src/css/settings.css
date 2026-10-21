@@ -2345,3 +2345,8 @@ html[data-legibility="high"] .glass-solid-note { display: block; }
 .update-copies-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .update-copy { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .update-copy-actions { display: flex; gap: 8px; }
+
+/* The shortcuts over the page (? anywhere): the Support list in a dialog. */
+.shortcut-sheet { width: min(92vw, 520px); }
+.shortcut-sheet .support-shortcut-list { padding: 0 0 var(--nl-space-5); }
+.shortcut-sheet .support-shortcut-what { font-size: var(--nl-text-sm); }

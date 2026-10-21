@@ -253,7 +253,7 @@ test('the shortcut legend is collapsed, complete, and describes the keys that ex
 
   await page.locator('.support-shortcuts > summary').click();
   const rows = page.locator('.support-shortcut');
-  await expect(rows).toHaveCount(9);
+  await expect(rows).toHaveCount(11);
 
   const keys = await rows.locator('.support-shortcut-keys').allInnerTexts();
   const expected = await page.evaluate(() => (navigator.platform || '').toUpperCase().includes('MAC') ? ['⌘', '⌥'] : ['Ctrl', 'Alt']);
@@ -269,6 +269,8 @@ test('the shortcut legend is collapsed, complete, and describes the keys that ex
   expect(keys[6]).toContain('←→↑↓');
   expect(keys[7]).toContain('F10');
   expect(keys[7]).toContain('Menu');
+  expect(keys[9]).toContain('↑');
+  expect(keys[10].trim()).toBe('?');
 
   // Every cap is a <kbd>, and every row says what the cap does.
   expect(await rows.locator('kbd').count()).toBeGreaterThanOrEqual(8);
