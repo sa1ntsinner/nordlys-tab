@@ -587,6 +587,10 @@
           <label class="tg"><input id="cfg-show-search" type="checkbox" aria-labelledby="cfg-show-search-label" checked><i></i></label>
         </div>
         <div class="row setting-row">
+          <span id="cfg-shortcut-hints-label"><span data-i18n="general.shortcutHints">Show shortcuts on hover</span><small class="row-hint" data-i18n="general.shortcutHintsHint">Rest the mouse on a control to see the keys that do the same. Press ? for all of them.</small></span>
+          <label class="tg"><input id="cfg-shortcut-hints" type="checkbox" aria-labelledby="cfg-shortcut-hints-label" checked><i></i></label>
+        </div>
+        <div class="row setting-row">
           <span id="cfg-remember-searches-label"><span data-i18n="general.rememberSearches">Remember recent searches</span><small class="row-hint" data-i18n="general.rememberSearchesHint">Kept on this device only. Turning it off forgets them.</small></span>
           <label class="tg"><input id="cfg-remember-searches" type="checkbox" aria-labelledby="cfg-remember-searches-label" checked><i></i></label>
         </div>
@@ -1237,7 +1241,7 @@
   <div id="quick-edit-modal" class="quick-modal-backdrop" aria-labelledby="quick-edit-title">
     <div class="quick-modal-card">
       <div class="quick-modal-head">
-        <b id="quick-edit-title" data-i18n="modal.editBookmarkTitle">Edit Bookmark</b>
+        <b id="quick-edit-title" data-i18n="modal.editBookmarkTitle">Edit bookmark</b>
         <button id="quick-modal-x" type="button" class="xbtn" aria-label="Close bookmark editor" data-i18n-aria="a11y.closeBookmarkEditor">✕</button>
       </div>
       <div class="quick-modal-body">
@@ -1283,8 +1287,12 @@
           </div>
         </details>
 
-        <div style="display: flex; gap: 8px; margin-top: 8px;">
-          <button id="quick-save-btn" class="glass-btn accent" style="flex: 1;" data-i18n="modal.saveChanges">Save Changes</button>
+        <!-- Every dialog ends the same way: what destroys on the left, Cancel and
+             the one primary on the right. Enter saves. -->
+        <div class="quick-modal-foot">
+          <button id="quick-delete-btn" type="button" class="glass-btn plain danger" data-i18n="modal.delete">Delete</button>
+          <button id="quick-cancel-btn" type="button" class="glass-btn" data-i18n="confirm.cancel">Cancel</button>
+          <button id="quick-save-btn" type="button" class="glass-btn accent" data-i18n="modal.save">Save</button>
         </div>
       </div>
     </div>
@@ -1293,25 +1301,25 @@
   <!-- Frosted Glass Context Menu for Folders -->
   <div id="folder-ctx-menu" class="glass-context-menu">
     <div class="ctx-header"><span class="ctx-target-title" data-i18n="ctx.folder">Folder</span></div>
+    <div class="ctx-item" data-action="add-link">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span data-i18n="ctx.addBookmark">Add Bookmark</span>
+    </div>
     <div class="ctx-item" data-action="quick-edit-folder">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       <span data-i18n="ctx.editFolder">Edit Folder</span>
-    </div>
-    <div class="ctx-item" data-action="arrange">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>
-      <span data-i18n="arrange.title">Arrange folders</span>
     </div>
     <div class="ctx-item" data-action="open-all">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
       <span data-i18n="ctx.openAll">Open every bookmark</span>
     </div>
-    <div class="ctx-item" data-action="add-link">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      <span data-i18n="ctx.addBookmark">Add Bookmark</span>
-    </div>
     <div class="ctx-item" data-action="hide-folder">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
       <span data-i18n="ctx.hideFolder">Hide / Fold Folder</span>
+    </div>
+    <div class="ctx-item" data-action="arrange" data-keys="A">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>
+      <span data-i18n="arrange.title">Arrange folders</span>
     </div>
     <div class="ctx-item" data-action="device-folder-here-only" data-device-only hidden>
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
@@ -1337,9 +1345,9 @@
       <div class="quick-modal-body">
         <div id="nl-form-fields" class="nl-form-fields"></div>
         <p id="nl-form-note" class="nl-form-note" hidden></p>
-        <div class="nl-form-actions">
-          <button id="nl-form-ok" type="submit" class="glass-btn accent"></button>
+        <div class="quick-modal-foot">
           <button id="nl-form-cancel" type="button" class="glass-btn" data-i18n="confirm.cancel">Cancel</button>
+          <button id="nl-form-ok" type="submit" class="glass-btn accent"></button>
         </div>
       </div>
     </form>
@@ -1349,7 +1357,7 @@
   <div id="quick-edit-folder-modal" class="quick-modal-backdrop" aria-labelledby="quick-folder-title">
     <div class="quick-modal-card">
       <div class="quick-modal-head">
-        <b id="quick-folder-title" data-i18n="modal.editFolderTitle">Edit Folder</b>
+        <b id="quick-folder-title" data-i18n="modal.editFolderTitle">Edit folder</b>
         <button id="quick-folder-modal-x" type="button" class="xbtn" aria-label="Close folder editor" data-i18n-aria="a11y.closeFolderEditor">✕</button>
       </div>
       <div class="quick-modal-body">
@@ -1361,20 +1369,21 @@
         <div>
           <label class="quick-label" for="quick-folder-cols-select" data-i18n="modal.folderColumns">Folder Columns (1-8)</label>
           <select id="quick-folder-cols-select" class="glass-input" style="cursor: pointer;">
-            <option value="1">1 Column (Vertical List)</option>
-            <option value="2">2 Columns</option>
-            <option value="3">3 Columns</option>
-            <option value="4">4 Columns (Standard)</option>
-            <option value="5">5 Columns</option>
-            <option value="6">6 Columns (Wide)</option>
-            <option value="7">7 Columns</option>
-            <option value="8">8 Columns</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
           </select>
         </div>
 
-        <div style="display: flex; gap: 8px; margin-top: 8px;">
-          <button id="quick-folder-save-btn" class="glass-btn accent" style="flex: 1;" data-i18n="modal.saveChanges">Save Changes</button>
-          <button id="quick-folder-delete-btn" class="glass-btn danger" style="padding: 8px 14px;" data-i18n="modal.delete">Delete</button>
+        <div class="quick-modal-foot">
+          <button id="quick-folder-delete-btn" type="button" class="glass-btn plain danger" data-i18n="modal.delete">Delete</button>
+          <button id="quick-folder-cancel-btn" type="button" class="glass-btn" data-i18n="confirm.cancel">Cancel</button>
+          <button id="quick-folder-save-btn" type="button" class="glass-btn accent" data-i18n="modal.save">Save</button>
         </div>
       </div>
     </div>
@@ -1382,11 +1391,7 @@
 
   <!-- Frosted Glass Context Menu for Empty Board Space -->
   <div id="board-ctx-menu" class="glass-context-menu">
-    <div class="ctx-item" data-action="arrange">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>
-      <span data-i18n="arrange.title">Arrange folders</span>
-    </div>
-    <div class="ctx-item" data-action="new-folder">
+    <div class="ctx-item" data-action="new-folder" data-keys="N">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
       <span data-i18n="ctx.newFolder">New Folder</span>
     </div>
@@ -1394,18 +1399,18 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       <span data-i18n="ctx.addBookmark">Add Bookmark</span>
     </div>
+    <div class="ctx-item" data-action="arrange" data-keys="A">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>
+      <span data-i18n="arrange.title">Arrange folders</span>
+    </div>
     <div class="ctx-item" data-action="restore-all-folders">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
       <span data-i18n="ctx.restoreFolders">Unhide All Folders</span>
     </div>
     <div class="ctx-divider"></div>
-    <div class="ctx-item" data-action="open-settings">
+    <div class="ctx-item" data-action="open-settings" data-keys="mod+,">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
       <span data-i18n="ctx.openSettings">Open Settings</span>
-    </div>
-    <div class="ctx-item" data-action="toggle-themes">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-      <span data-i18n="ctx.themeShaders">Theme &amp; Shaders...</span>
     </div>
   </div>
 
@@ -1472,6 +1477,7 @@
   <script src="src/js/focus-mode.js"></script>
   <script src="src/js/settings.js"></script>
   <script src="src/js/importers.js"></script>
+  <script src="src/js/shortcut-hints.js"></script>
   <script src="src/js/config-schema.js"></script>
   <script src="src/js/app.js"></script>
 </body>

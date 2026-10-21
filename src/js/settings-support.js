@@ -346,7 +346,16 @@
         { chords: [['Shift', 'F10'], ['Menu']], key: 'support.keyMenu', fallback: 'Menu for the focused bookmark' },
         { chords: [[mod, 'Z']], key: 'support.keyUndo', fallback: 'Undo the last change: while its notice is showing, even inside a dialog, and while arranging' },
         { chords: [['↑'], ['↓']], key: 'support.keyFolder', fallback: "Past a folder's top row: its handle and hide button; past its bottom row: its columns. Escape goes back" },
-        { chords: [['?']], key: 'support.keySheet', fallback: 'Show these shortcuts' }
+        { chords: [['?']], key: 'support.keySheet', fallback: 'Show these shortcuts' },
+        // One letter, outside a text field (app.js runLetter).
+        { chords: [['D']], key: 'support.keyDashboard', fallback: 'Turn the dashboard on or off' },
+        { chords: [['F']], key: 'support.keyFocus', fallback: 'Focus mode, with the dashboard on' },
+        { chords: [['T']], key: 'support.keyTimer', fallback: 'Start or pause the focus timer' },
+        { chords: [['N']], key: 'support.keyNewFolder', fallback: 'A new folder' },
+        { chords: [['A']], key: 'support.keyArrangeBoard', fallback: 'Arrange the board' },
+        { chords: [['S']], key: 'support.keyShuffle', fallback: 'Shuffle this sky' },
+        { chords: [['L']], key: 'support.keyMode', fallback: 'Switch between light and dark' },
+        { chords: [['P']], key: 'support.keyProfile', fallback: 'The next profile' }
       ];
     }
 

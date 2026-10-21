@@ -61,6 +61,7 @@ class GridController {
     }, true);
 
     this.initContextMenusAndModals();
+    this.showMenuKeys();
     this.drag = window.NordlysBoardDrag ? new window.NordlysBoardDrag(this) : null;
     this.arrange = window.NordlysBoardArranger ? new window.NordlysBoardArranger(this) : null;
   }
@@ -991,9 +992,7 @@ class GridController {
             this.app.saveConfig();
           });
         } else if (action === "open-settings") {
-          this.app.settings?.openDrawer("general");
-        } else if (action === "toggle-themes") {
-          this.app.settings?.openDrawer("appearance");
+          this.app.settings?.open();
         }
       });
     });
@@ -1004,6 +1003,18 @@ class GridController {
     const quickSaveBtn = document.getElementById("quick-save-btn");
 
     quickModalX?.addEventListener("click", () => this.closeQuickEditModal());
+    document.getElementById("quick-cancel-btn")?.addEventListener("click", () => this.closeQuickEditModal());
+    document.getElementById("quick-delete-btn")?.addEventListener("click", () => {
+      if (!this.activeTileTarget) return;
+      const { gIdx, lIdx } = this.activeTileTarget;
+      if (this.app.config.groups[gIdx]?.source?.folderId) return;
+      this.closeQuickEditModal();
+      this.deleteBookmarkWithUndo(gIdx, lIdx);
+    });
+    // Enter in a field saves, as it does in every other form.
+    this.quickModal?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && e.target.matches("input:not([type=color])")) { e.preventDefault(); quickSaveBtn?.click(); }
+    });
     this.quickModal?.addEventListener("click", (e) => {
       if (e.target === this.quickModal) this.closeQuickEditModal();
     });
@@ -1097,6 +1108,10 @@ class GridController {
     const quickFolderDeleteBtn = document.getElementById("quick-folder-delete-btn");
 
     quickFolderModalX?.addEventListener("click", () => this.closeQuickFolderModal());
+    document.getElementById("quick-folder-cancel-btn")?.addEventListener("click", () => this.closeQuickFolderModal());
+    this.quickFolderModal?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && e.target.matches("input")) { e.preventDefault(); quickFolderSaveBtn?.click(); }
+    });
     this.quickFolderModal?.addEventListener("click", (e) => {
       if (e.target === this.quickFolderModal) this.closeQuickFolderModal();
     });
@@ -1259,6 +1274,24 @@ class GridController {
     });
   }
 
+  /* A menu item that has a shortcut shows its keys at the right, drawn as
+     keys, as the hover labels and the ? sheet draw them. */
+  showMenuKeys() {
+    const mod = String(navigator.platform || "").toUpperCase().includes("MAC") ? "⌘" : "Ctrl";
+    for (const item of document.querySelectorAll(".glass-context-menu .ctx-item[data-keys]")) {
+      if (item.querySelector(".ctx-keys")) continue;
+      const keys = document.createElement("span");
+      keys.className = "ctx-keys";
+      keys.setAttribute("aria-hidden", "true");
+      for (const cap of item.dataset.keys.split("+")) {
+        const kbd = document.createElement("kbd");
+        kbd.textContent = cap === "mod" ? mod : cap;
+        keys.append(kbd);
+      }
+      item.append(keys);
+    }
+  }
+
   openTileContextMenu(e, gIdx, lIdx) {
     this.closeContextMenus();
     if (!this.tileCtxMenu) return;
@@ -1267,11 +1300,8 @@ class GridController {
     const link = this.app.config.groups[gIdx]?.links[lIdx];
     this.activeTileLink = link;
     const titleEl = this.tileCtxMenu.querySelector(".ctx-target-title");
-    if (titleEl) {
-      const bmkWord = window.I18N ? window.I18N.t('ctx.bookmark') : "Bookmark";
-      const linkWord = window.I18N ? window.I18N.t('ctx.link') : "Link";
-      titleEl.textContent = `${bmkWord} • ${link?.name || linkWord}`;
-    }
+    // The menu is headed by what it acts on, by name; the items need no noun.
+    if (titleEl) titleEl.textContent = link?.name || (window.I18N ? window.I18N.t('ctx.link') : "Link");
     /* A followed bookmark is removed in the browser: deleted here, the next
        refresh would bring it straight back. */
     const followed = Boolean(this.app.config.groups[gIdx]?.source?.folderId);
@@ -1293,7 +1323,7 @@ class GridController {
     const titleEl = this.folderCtxMenu.querySelector(".ctx-target-title");
     if (titleEl) {
       const folderWord = window.I18N ? window.I18N.t('ctx.folder') : "Folder";
-      titleEl.textContent = `${folderWord} • ${group?.label || `${folderWord} ${gIdx + 1}`}`;
+      titleEl.textContent = group?.label || `${folderWord} ${gIdx + 1}`;
     }
 
     this.positionMenu(this.folderCtxMenu, e.clientX, e.clientY, e.currentTarget || document.activeElement);
@@ -1305,6 +1335,9 @@ class GridController {
     // Nothing on the board is nothing to arrange.
     const arrange = this.boardCtxMenu.querySelector('[data-action="arrange"]');
     if (arrange) arrange.hidden = !this.board?.querySelector(".card");
+    // Offered only when something is folded away.
+    const unhide = this.boardCtxMenu.querySelector('[data-action="restore-all-folders"]');
+    if (unhide) unhide.hidden = !(this.app.config.groups || []).some((group) => group.hidden);
 
     this.positionMenu(this.boardCtxMenu, e.clientX, e.clientY, e.currentTarget || document.activeElement);
   }
@@ -1336,6 +1369,9 @@ class GridController {
        the next refresh would quietly undo. */
     const followed = Boolean(this.app.config.groups[gIdx]?.source?.folderId);
     for (const input of [titleInput, urlInput]) if (input) input.readOnly = followed;
+    // Removed in the browser, not here (the next refresh would bring it back).
+    const deleteButton = document.getElementById("quick-delete-btn");
+    if (deleteButton) deleteButton.hidden = followed;
     const linkedNote = document.getElementById("quick-edit-linked-note");
     if (linkedNote) linkedNote.hidden = !followed;
     if (colorInput) colorInput.value = link.color || "#35d6c0";
@@ -1400,6 +1436,8 @@ class GridController {
 
     if (nameInput) nameInput.value = group.label || "";
     if (colsSelect) colsSelect.value = String(group.cols || 4);
+    // The themed list drawn over the select shows its value, not the first option.
+    window.NordlysUI?.refreshSelects(this.quickFolderModal);
 
     this.quickFolderDialog.open(document.querySelector(`.card[data-group-idx="${gIdx}"] .cat`) || document.activeElement, nameInput);
   }

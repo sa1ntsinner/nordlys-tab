@@ -1623,7 +1623,7 @@ body.arranging .fit-toggle { display: none; }
 .glass-context-menu {
   position: fixed;
   z-index: var(--nl-z-menu);
-  min-width: 190px;
+  min-width: 220px;
   background: rgba(11, 18, 36, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 14px;
@@ -1650,18 +1650,18 @@ body.arranging .fit-toggle { display: none; }
   transition: opacity var(--nl-transition-fast), transform var(--nl-transition-enter-fast), visibility 0s;
 }
 
+/* A menu is headed by the name of what it acts on, in ink, at the size of
+   its items: a name, not a label in the accent. */
 .ctx-header {
-  padding: 4px 10px 6px;
-  font-size: var(--nl-text-2xs);
-  font-weight: 700;
-  letter-spacing: var(--nl-track-wide);
-  text-transform: uppercase;
-  color: var(--nl-accent-text);
+  max-width: 260px;
+  padding: 6px 12px 6px;
+  font-size: var(--nl-text-sm);
+  font-weight: 600;
+  color: var(--nl-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   user-select: none;
 }
 
@@ -1691,12 +1691,33 @@ body.arranging .fit-toggle { display: none; }
   transition: color var(--nl-transition-fast);
 }
 
-.ctx-item:hover {
-  background: color-mix(in srgb, var(--accent) 20%, transparent);
-  color: #ffffff;
+/* Hover is a neutral step, as in every menu of the system: the accent is
+   for the one thing chosen, not for the row under the pointer. */
+.ctx-item:hover,
+.ctx-item:focus-visible {
+  background: color-mix(in srgb, var(--nl-text-primary) 9%, transparent);
+  color: var(--nl-text-primary);
 }
-.ctx-item:hover svg {
-  color: var(--accent);
+.ctx-item:hover svg,
+.ctx-item:focus-visible svg {
+  color: var(--nl-text-primary);
+}
+.ctx-item[hidden] { display: none; }
+/* The keys that do the same, at the right end of the item. */
+.ctx-keys { margin-left: auto; padding-left: 16px; display: inline-flex; gap: 3px; }
+.ctx-keys kbd,
+.quick-modal-foot kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 5px;
+  border: 1px solid var(--nl-border);
+  border-bottom-width: 2px;
+  color: var(--nl-text-secondary);
+  font: 600 var(--nl-text-2xs)/1 var(--font-mono, ui-monospace, monospace);
 }
 
 .ctx-item[disabled] {
@@ -1735,8 +1756,28 @@ body.arranging .fit-toggle { display: none; }
 .ctx-divider {
   height: 1px;
   background: rgba(255, 255, 255, 0.08);
-  margin: 3px 0;
+  margin: 4px 6px;
 }
+
+/* Every dialog ends the same way: what destroys on the left, as a quiet red
+   word; Cancel and the one primary on the right. */
+.quick-modal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.quick-modal-foot .glass-btn { min-height: var(--nl-target-min); padding: 0 16px; }
+.quick-modal-foot .danger { margin-right: auto; }
+.quick-modal-foot .danger[hidden] { display: none; }
+.glass-btn.plain {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.glass-btn.plain.danger:hover { background: color-mix(in srgb, var(--nl-status-danger) 12%, transparent); }
 
 /* ── Quick Edit Bookmark Modal ────────────────────────────────── */
 .quick-modal-backdrop {
@@ -2313,3 +2354,54 @@ body.arranging:has(.arrange-size:not([hidden])) #page { padding-bottom: 560px; }
 /* The search box turned off in Settings → General. Ctrl+K and / bring it back
    for as long as it is in use (widgets.js reveal). */
 body[data-search="off"]:not([data-search-peek]) #searchwrap { display: none; }
+
+/* The shortcut for what the mouse rests on (shortcut-hints.js): the same
+   material as a notice, smaller, with the keys drawn as keys. It rises two
+   pixels into place, and only fades where motion is reduced. */
+.shortcut-hint {
+  position: fixed;
+  z-index: var(--nl-z-toast);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(calc(100vw - 16px), 320px);
+  padding: 5px 6px 5px 10px;
+  border-radius: var(--nl-radius-sm);
+  border: 1px solid var(--nl-polish-hairline);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 92%, transparent);
+  box-shadow: var(--nl-shadow-2);
+  backdrop-filter: blur(14px) saturate(125%);
+  -webkit-backdrop-filter: blur(14px) saturate(125%);
+  color: var(--nl-text-secondary);
+  font: 500 var(--nl-text-xs)/1.2 var(--font-main, inherit);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity var(--nl-transition-enter-fast), transform var(--nl-transition-enter-fast);
+}
+.shortcut-hint[data-side="below"] { transform: translateY(-2px); }
+.shortcut-hint.on { opacity: 1; transform: none; }
+.shortcut-hint-name { overflow: hidden; text-overflow: ellipsis; color: var(--nl-text-primary); }
+.shortcut-hint-keys { display: inline-flex; align-items: center; gap: 3px; flex: none; }
+.shortcut-hint-or { padding: 0 2px; color: var(--nl-text-tertiary); }
+.shortcut-hint kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 5px;
+  border: 1px solid var(--nl-border);
+  border-bottom-width: 2px;
+  background: color-mix(in srgb, var(--nl-text-primary) 7%, transparent);
+  color: var(--nl-text-primary);
+  font: 600 var(--nl-text-2xs)/1 var(--font-mono, ui-monospace, monospace);
+}
+@media (prefers-reduced-motion: reduce) {
+  .shortcut-hint, .shortcut-hint[data-side="below"] { transform: none; transition: opacity var(--nl-transition-fast); }
+}
+@media (forced-colors: active) {
+  .shortcut-hint { border-color: CanvasText; background: Canvas; color: CanvasText; }
+}

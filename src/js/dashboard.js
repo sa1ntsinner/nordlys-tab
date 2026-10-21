@@ -586,7 +586,7 @@
           if (!ids.length) {
             chips.replaceChildren();
             list.replaceChildren(el("div", { class: "dash-app-empty" }, [
-              el("p", { text: say("dash.inboxEmpty", "Tasks from Todoist, GitHub, Trello, Asana, Linear, Jira and more, in one list.") }),
+              el("p", { text: say("dash.inboxEmpty", "Your tasks from Todoist and your GitHub issues and reviews, in one list.") }),
               el("button", { type: "button", class: "dash-cta", onclick: (e) => dash.openConnectPicker(e.currentTarget, "tasks") }, [icon(ICONS.plus), el("span", { text: say("dash.connectApp", "Connect an app") })])
             ]));
             foot.replaceChildren();
@@ -709,9 +709,9 @@
       draw(card) {
         const face = el("div", { class: "dash-timer-face", role: "timer", "aria-live": "off" });
         const phase = el("div", { class: "dash-timer-phase" });
-        const go = el("button", { type: "button", class: "dash-round-btn accent" });
+        const go = el("button", { type: "button", class: "dash-round-btn accent", "data-shortcut-hint": "timer" });
         const reset = el("button", { type: "button", class: "dash-round-btn", "aria-label": say("dash.timerReset", "Reset"), title: say("dash.timerReset", "Reset") }, icon(ICONS.reset));
-        const whole = el("button", { type: "button", class: "dash-round-btn", "aria-label": say("focus.open", "Open focus mode"), title: say("focus.open", "Open focus mode"), onclick: () => card.app.focusMode?.show() }, icon(ICONS.expand));
+        const whole = el("button", { type: "button", class: "dash-round-btn", "data-shortcut-hint": "focus", "aria-label": say("focus.open", "Open focus mode"), title: say("focus.open", "Open focus mode"), onclick: () => card.app.focusMode?.show() }, icon(ICONS.expand));
         const dots = el("div", { class: "dash-timer-dots" });
         const sound = () => card.settings.sound;
         go.addEventListener("click", () => {
@@ -980,7 +980,7 @@
     renderSection() {
       if (!this.section) return;
       const focused = document.activeElement?.closest?.("#sec-dashboard") ? document.activeElement.dataset.focusKey : null;
-      const toggle = el("input", { type: "checkbox", id: "cfg-dashboard", "data-focus-key": "toggle" });
+      const toggle = el("input", { type: "checkbox", id: "cfg-dashboard", "data-focus-key": "toggle", "data-shortcut-hint": "dashboard", "data-hint-name": say("nav.dashboard", "Dashboard") });
       toggle.checked = this.on;
       toggle.addEventListener("change", () => this.setOn(toggle.checked));
       const parts = [

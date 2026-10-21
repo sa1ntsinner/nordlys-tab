@@ -253,7 +253,7 @@ test('the shortcut legend is collapsed, complete, and describes the keys that ex
 
   await page.locator('.support-shortcuts > summary').click();
   const rows = page.locator('.support-shortcut');
-  await expect(rows).toHaveCount(11);
+  await expect(rows).toHaveCount(19);
 
   const keys = await rows.locator('.support-shortcut-keys').allInnerTexts();
   const expected = await page.evaluate(() => (navigator.platform || '').toUpperCase().includes('MAC') ? ['⌘', '⌥'] : ['Ctrl', 'Alt']);

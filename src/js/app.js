@@ -31,6 +31,8 @@ const DEFAULT_CONFIG = {
   showSeconds: false,
   userName: "",
   openNewTab: false,
+  // The small label with a control's shortcut, when the mouse rests on it.
+  shortcutHints: true,
   // The search box on the page; Ctrl+K and / open it even when it is hidden.
   showSearch: true,
   // Whether the last searches are kept to offer again.
@@ -757,7 +759,7 @@ class NordlysApp {
     window.NordlysConfigSchema?.repairConfig(this.config, DEFAULT_CONFIG);
     /* If it will not persist, nothing has happened: the page keeps the config
        it had rather than showing one that the next reload will contradict. */
-    if (!this.saveConfig()) { this.config = previous; return false; }
+    if (!this.saveConfig({ strict: true })) { this.config = previous; return false; }
     this.loadedFromStore = true;
     for (const [field, entry] of Object.entries(SIDE_STORAGE)) {
       try {
@@ -842,8 +844,13 @@ class NordlysApp {
      of the save beside each. A board grown past localStorage (embedded icons,
      mostly) is then still saved: the mirror holds it, and the next load takes
      whichever copy is newer (restoreFromChromeStorage). Only when neither
-     takes the write is it reported as lost. */
-  saveConfig() {
+     takes the write is it reported as lost.
+
+     strict is for a save that replaces the whole setup and then reloads (an
+     import, a restore): the mirror's write may not have landed by the reload,
+     so there only the fast copy counts, and when it refuses nothing is
+     written anywhere and the caller puts everything back. */
+  saveConfig({ strict = false } = {}) {
     const at = Date.now();
     const mirror = typeof chrome !== "undefined" && chrome.storage && chrome.storage.local;
     let fast = true;
@@ -853,7 +860,7 @@ class NordlysApp {
     } catch (e) {
       fast = false;
     }
-    if (!mirror) {
+    if (!mirror || (strict && !fast)) {
       if (!fast) this.reportSaveFailure();
       return fast;
     }
@@ -1040,6 +1047,7 @@ class NordlysApp {
 
     // 5. Global Keyboard Shortcuts & Lifecycle
     this.initGlobalShortcuts();
+    this.hints = window.NordlysShortcutHints ? new window.NordlysShortcutHints.ShortcutHints({ enabled: () => this.config.shortcutHints !== false }) : null;
     this.initVisibilityListener();
     this.initColorModeListener();
     this.watchOtherTabs();
@@ -1060,12 +1068,14 @@ class NordlysApp {
     try { localStorage.setItem(SKY_LOAD_KEY, JSON.stringify(load)); } catch (error) { /* judged again next time */ }
   }
 
-  judgeSkyLoad(mode) {
+  /* A browser driven by automation (the tests, the store pictures) is timed
+     only when asked: its software drawing is not a person's computer. */
+  judgeSkyLoad(mode, { watch = !navigator.webdriver } = {}) {
     const load = this.skyLoad();
     const engine = this.bgEngine;
     engine.heavy = !load.moving[mode] && Boolean(load.heavy[mode]);
     engine.watch = null;
-    if (!engine.heavy && !load.moving[mode] && (this.config.bgMotion ?? 1) > 0) engine.watchFrames(mode);
+    if (watch && !engine.heavy && !load.moving[mode] && (this.config.bgMotion ?? 1) > 0) engine.watchFrames(mode);
     this.builtSettings?.showSkyLoad?.();
   }
 
@@ -1531,6 +1541,12 @@ class NordlysApp {
         return;
       }
 
+      // One letter, alone, outside a text field and with nothing open over the page.
+      if (!isInput && !isCmd && !e.altKey && !e.ctrlKey && !e.metaKey && !e.repeat && e.key.length === 1 && this.runLetter(e.key.toLowerCase())) {
+        e.preventDefault();
+        return;
+      }
+
       // 3. Alt+1 .. Alt+9 -> the first nine tiles on the board, in reading order
       if (e.altKey && !e.ctrlKey && !e.metaKey && !isInput && e.code.startsWith("Digit")) {
         const digit = parseInt(e.code.replace("Digit", ""), 10);
@@ -1555,6 +1571,33 @@ class NordlysApp {
     const release = () => { clearTimeout(altTimer); this.showShortcutNumbers(false); };
     document.addEventListener("keyup", (e) => { if (e.key === "Alt") release(); });
     window.addEventListener("blur", release);
+  }
+
+  /* The one-letter shortcuts (the list is in shortcut-hints.js). Answers
+     whether the letter did something, so an unused one types as usual. */
+  runLetter(letter) {
+    const open = document.body.classList.contains("cfgopen") || document.querySelector("dialog[open], .dash-menu.open, .glass-context-menu.open, #focus-mode.open, .arrange-bar:not([hidden])")
+      || document.activeElement?.isContentEditable || document.activeElement?.tagName === "SELECT";
+    if (open) return false;
+    const dash = this.dashboard;
+    const search = this.widgets?.search;
+    switch (letter) {
+      case "d": if (!dash) return false; dash.setOn(!dash.on); return true;
+      case "f": if (!this.focusMode || !dash?.on) return false; this.focusMode.show(); return true;
+      case "t": if (!dash?.on) return false; dash.toggleTimer(); return true;
+      case "n": this.grid?.addFolder(); return true;
+      case "a": if (!this.grid?.arrange) return false; this.grid.arrange.enter(); return true;
+      case "s": if (!NORDLYS_GENERATIVE_SCENES.has(this.config.bgMode) || !search) return false; search.runCommand({ kind: "shuffle" }); return true;
+      case "l": this.setColorMode(this.isLightTheme() ? "dark" : "light"); this.builtSettings?.syncColorModeSwitcher?.(); return true;
+      case "p": {
+        const list = this.sync?.list?.() || [];
+        if (list.length < 2) return false;
+        const at = list.findIndex((profile) => profile.id === this.sync.active()?.id);
+        this.sync.switchTo(list[(at + 1) % list.length].id);
+        return true;
+      }
+      default: return false;
+    }
   }
 
   showShortcutNumbers(show) {

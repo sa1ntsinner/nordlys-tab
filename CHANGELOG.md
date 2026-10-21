@@ -12,6 +12,8 @@ Chrome Web Store's rule that they only ever go up.
 
 - Settings → General can hide the search box (Ctrl+K and / still open it) and turn off recent searches, which also forgets the ones kept.
 - Press ? anywhere outside a text field to see the keyboard shortcuts.
+- Rest the mouse on a control that has a shortcut (the gear, the search box, the first nine bookmarks, the timer, the light and dark switch and others) and a small label shows its keys. Settings → General turns it off.
+- New one-key shortcuts, outside text fields: D turns the dashboard on or off, F opens Focus mode, T starts or pauses the timer, N makes a folder, A arranges the board, S shuffles the sky, L switches between light and dark, P goes to the next profile.
 - An empty board can start from your most visited sites, as one folder of copies. The browser asks for leave the first time, and only then.
 - Import from other new-tab extensions: Settings → Backup reads the backup files of FVD Speed Dial, Speed Dial 2, Infinity, nightTab, Bonjourr and Tabliss, and adds their folders after yours. The setup as it was is kept in the restore point.
 - A sky that is too much for the computer (no graphics chip, a remote desktop) is held still after its first second, said once, and remembered on that computer. Settings → Background has a button to keep it moving anyway. On battery, every sky paints half as often; it moves at the same pace.
@@ -37,6 +39,7 @@ Chrome Web Store's rule that they only ever go up.
 ### Changed
 
 - A new tab draws its board sooner. Settings are made ready just after the first frame instead of before it, and each icon's contrast with its tile is checked after the board is on screen, from colours read once per theme instead of once per tile. On a board of nine folders the work before the first frame fell by about a fifth.
+- The store listing is a quarter of its old length, with privacy and the price first, and says nothing about features that are gone. Its first picture is the board as installed; the dashboard, off by default, is second. The summary names no count of skies or themes.
 - Settings are shorter: the font pickers and Share this look are each one closed line in Appearance until you open them, and the Habits and Line for the day cards are under More cards when you add a card.
 - "Bring my browser's bookmarks" brings copies you can rename, edit and sync, instead of folders that could only be changed in the browser. It brings every folder on the bookmarks bar, folders inside folders too, named by their path ("Work / Docs"), and when the bar is empty it brings Other bookmarks instead. A folder can still follow the browser from Settings → Bookmarks.
 - A bookmarks file with folders inside folders brings each bookmark once, into the folder it is in; it used to copy it into every folder above too. Folder names keep their own capitals.

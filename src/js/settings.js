@@ -1177,6 +1177,8 @@ class SettingsController {
     if (openNewTab) openNewTab.checked = !!cfg.openNewTab;
     const showSearch = document.getElementById("cfg-show-search");
     if (showSearch) showSearch.checked = cfg.showSearch !== false;
+    const shortcutHints = document.getElementById("cfg-shortcut-hints");
+    if (shortcutHints) shortcutHints.checked = cfg.shortcutHints !== false;
     const rememberSearches = document.getElementById("cfg-remember-searches");
     if (rememberSearches) rememberSearches.checked = cfg.rememberSearches !== false;
 
@@ -1796,6 +1798,11 @@ class SettingsController {
       this.app.config.showSearch = e.target.checked;
       this.app.saveConfig();
       this.app.applyHeaderStyle();
+    });
+
+    document.getElementById("cfg-shortcut-hints")?.addEventListener("change", (e) => {
+      this.app.config.shortcutHints = e.target.checked;
+      this.app.saveConfig();
     });
 
     document.getElementById("cfg-remember-searches")?.addEventListener("change", (e) => {
@@ -3997,7 +4004,7 @@ class SettingsController {
     this.app.config = incoming;
     if (!this.app.snapshotBeforeMigration(previous, "import")
       || !this.adoptImportedExtras(file.extras)
-      || !this.app.saveConfig()) {
+      || !this.app.saveConfig({ strict: true })) {
       this.app.config = previous;
       putBack();
       this.sayNoRoom("toast.saveFailed");

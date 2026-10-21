@@ -62,3 +62,15 @@ test('the dashboard copy never offers a search engine', () => {
   }
   assert.deepStrictEqual(offenders, [], `dashboard copy offers an engine:\n${offenders.join('\n')}`);
 });
+
+/* Read before "More": the store shows about 1,500 characters. And nothing
+   pasted into a store may sell a feature that is gone or never worked. */
+test('the description fits before "More" and sells only what ships', () => {
+  const description = LISTING.match(/## Detailed description\n\n```\n([\s\S]*?)\n```/)[1];
+  assert.ok(description.length <= 1500, `description is ${description.length} characters`);
+  assert.match(description, /what is free stays free/);
+  const blocks = [...LISTING.matchAll(/```\n([\s\S]*?)\n```/g)].map(match => match[1]).join('\n');
+  for (const gone of ['Ask card', 'Ollama', 'OpenAI', 'GitLab', 'Trello', 'Asana', 'ClickUp', 'Linear', 'Jira', 'Notion', 'Google Tasks', 'Microsoft To Do', 'identity', 'beta']) {
+    assert.ok(!new RegExp(`\\b${gone}\\b`, 'i').test(blocks), `the listing still mentions ${gone}`);
+  }
+});

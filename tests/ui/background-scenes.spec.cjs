@@ -565,7 +565,7 @@ test('a sky too heavy for this computer is held still and can be kept moving', a
     const engine = window.Nordlys.bgEngine;
     const render = engine.render.bind(engine);
     engine.render = (dt) => { const end = performance.now() + 18; render(dt); while (performance.now() < end) { /* a slow machine */ } };
-    window.Nordlys.judgeSkyLoad(engine.mode);
+    window.Nordlys.judgeSkyLoad(engine.mode, { watch: true });
   });
   await expect(page.locator('#toast-dock')).toContainText('held still', { timeout: 10000 });
   expect(await page.evaluate(() => window.Nordlys.bgEngine.heavy)).toBe(true);

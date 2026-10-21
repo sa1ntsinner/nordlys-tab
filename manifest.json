@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Nordlys",
   "version": "2.5.1",
-  "description": "A Chrome new tab page with bookmark folders, a dashboard for tasks and focus, 9 animated backgrounds and 21 themes.",
+  "description": "Your favourite sites in folders on every new tab, over a sky that moves. Free, with no account and no tracking.",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   },

@@ -832,8 +832,7 @@ html[data-theme="oled-obsidian"] #veil {
 }
 
 .light-ui .ctx-header {
-  color: var(--nl-accent-text);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  color: #0f172a;
 }
 
 .light-ui .ctx-item {
@@ -844,13 +843,15 @@ html[data-theme="oled-obsidian"] #veil {
   color: var(--dim);
 }
 
-.light-ui .ctx-item:hover {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+.light-ui .ctx-item:hover,
+.light-ui .ctx-item:focus-visible {
+  background: rgba(15, 23, 42, 0.07);
   color: #0f172a;
 }
 
-.light-ui .ctx-item:hover svg {
-  color: var(--accent);
+.light-ui .ctx-item:hover svg,
+.light-ui .ctx-item:focus-visible svg {
+  color: #0f172a;
 }
 
 .light-ui .ctx-divider {

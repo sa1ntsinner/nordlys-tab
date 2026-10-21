@@ -36,8 +36,10 @@ What ships in 2.5.1:
 - The search box uses the browser's search engine, finds your sites as you type, does math, and takes commands after `>`.
 - Brand icons by name (Iconify's Simple Icons), a site's favicon, an image link or a letter.
 - Profiles such as Work and Home, with optional sync through the browser's own sync.
-- A dashboard when wanted: tasks with dates and steps, habits, a focus timer and a full-page focus mode with sounds, notes, weather, world clocks, a countdown, a tab stash, and an Ask card for a model the person chooses (the browser's built-in model, their own key, or a model on their computer). Cards can be dragged and stretched.
-- Tasks from the task managers and code hosts people already use, and events from any calendar with an ICS link, read straight from the browser with a token that stays on the device.
+- A dashboard when wanted: tasks with dates and steps, a focus timer and a full-page focus mode with sounds, notes, weather, world clocks, a countdown and a tab stash; habits and a line for the day under More cards. Cards can be dragged and stretched.
+- Tasks from Todoist and GitHub, and events from any calendar link, read straight from the browser with a token that stays on the device. (2.6.0 cut the Ask card, seven other connectors and the never-working Google and Microsoft sign-ins.)
+- A first board from the browser's bookmarks (copies), its most visited sites, a bookmarks file, or the backup of FVD Speed Dial, Speed Dial 2, Infinity, nightTab, Bonjourr or Tabliss.
+- A copy of the whole setup before every update, kept in Settings → Backup.
 - A folder can mirror a browser bookmark folder (read only).
 - The extension is in English, Russian, Spanish, German, French, Japanese, Chinese and Turkish.
 
@@ -47,7 +49,7 @@ Website constraints:
 
 Copy constraints:
 - Plain, human and short; no slogans, no business hype, no superlatives.
-- Promise and claim as little as possible. On price, say only that it is free; never "free forever", and never mention future paid plans (they exist only as ideas in `docs/product-plan.md`).
+- Promise and claim as little as possible, with one exception the owner chose on 2026-10-21: what is free stays free. Say it as "free, and what is free stays free; there is no paid plan and there won't be one", and never hedge it. (This replaces the earlier rule against promising it.)
 - Never compare Nordlys with other products or name them.
 - British spelling, as in the product (colour, favourite).
 - Store availability is stated as it is at the time, with as little promise as possible for the stores still in review.
