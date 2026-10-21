@@ -56,10 +56,10 @@ test('two apps merge into one list, and a filter shows one of them', async ({ no
   const { page } = nordlysPage;
   await page.route('https://api.github.com/issues?**', route => route.fulfill({ json: [{ id: 10, title: 'Fix the port', html_url: 'https://github.com/a/b/issues/10', repository: { full_name: 'a/b' } }] }));
   await page.route('https://api.github.com/search/issues?**', route => route.fulfill({ json: { items: [] } }));
-  await page.route('https://api.linear.app/graphql', route => route.fulfill({ json: { data: { viewer: { assignedIssues: { nodes: [{ id: 'l1', identifier: 'NOR-1', title: 'Store copy', url: 'https://linear.app/x/issue/NOR-1', dueDate: '2026-09-28', team: { key: 'NOR' } }] } } } } }));
+  await page.route('https://api.todoist.com/api/v1/tasks?**', route => route.fulfill({ json: { results: [{ id: '1', content: 'Store copy', due: { date: '2026-09-28' } }] } }));
   await connect(page, 'GitHub', { token: 'gh' });
-  await connect(page, 'Linear', { token: 'ln' });
-  await expect(inbox(page).locator('.dash-inbox-title')).toHaveText(['NOR-1 Store copy', 'Fix the port']);
+  await connect(page, 'Todoist', { token: 'td' });
+  await expect(inbox(page).locator('.dash-inbox-title')).toHaveText(['Store copy', 'Fix the port']);
   await inbox(page).getByRole('tab', { name: 'GitHub' }).click();
   await expect(inbox(page).locator('.dash-inbox-title')).toHaveText(['Fix the port']);
   // GitHub issues can't be ticked from here: they open in GitHub instead.
@@ -82,12 +82,13 @@ test('one app failing leaves the others shown, with the error at the foot', asyn
   const { page } = nordlysPage;
   let fail = false;
   await page.route('https://api.todoist.com/**', route => fail ? route.fulfill({ status: 500, body: 'down' }) : route.fulfill({ json: { results: [{ id: '1', content: 'From Todoist' }] } }));
-  await page.route('https://api.trello.com/**', route => route.fulfill({ json: [{ id: 'c', name: 'From Trello', shortUrl: 'https://trello.com/c/c', board: { name: 'Home' } }] }));
+  await page.route('https://api.github.com/issues?**', route => route.fulfill({ json: [{ id: 10, title: 'From GitHub', html_url: 'https://github.com/a/b/issues/10', repository: { full_name: 'a/b' } }] }));
+  await page.route('https://api.github.com/search/issues?**', route => route.fulfill({ json: { items: [] } }));
   await connect(page, 'Todoist', { token: 't' });
-  await connect(page, 'Trello', { key: 'k', token: 't' });
+  await connect(page, 'GitHub', { token: 'g' });
   fail = true;
   await inbox(page).getByRole('button', { name: 'Refresh' }).click();
-  await expect(inbox(page).locator('.dash-inbox-title')).toHaveText(['From Trello']);
+  await expect(inbox(page).locator('.dash-inbox-title')).toHaveText(['From GitHub']);
   await expect(inbox(page).locator('.dash-inbox-error')).toContainText('Todoist: The service answered 500');
 });
 
@@ -102,13 +103,20 @@ test('a calendar link: the next events by day, all-day ones marked', async ({ no
   await expect(agenda(page).locator('.dash-event').nth(1).locator('.dash-event-time')).toHaveText('All day');
 });
 
-test('with nothing connected the cards offer to connect, and Google says it comes next', async ({ nordlysPage }) => {
+test('with nothing connected the cards offer the apps that work, and nothing marked Soon', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await inbox(page).getByRole('button', { name: 'Connect an app' }).click();
-  await expect(page.locator('.dash-menu [role="menuitem"]').first()).toBeVisible();
-  await page.locator('.dash-menu').getByRole('menuitem', { name: /Google Tasks/ }).click();
-  await expect(page.locator('.dash-dialog')).toContainText('comes in the next update');
-  await expect(page.locator('.dash-dialog').getByRole('button', { name: 'Sign in' })).toBeDisabled();
+  await expect(page.locator('.dash-menu [role="menuitem"]')).toHaveText([/Todoist/, /GitHub/]);
+  await expect(page.locator('.dash-menu')).not.toContainText('Soon');
+});
+
+test('a token for an app Nordlys no longer reads from is forgotten', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => new Promise(r => chrome.storage.local.set({ nordlys_connections: { trello: { key: 'k', token: 'old-secret' }, todoist: { token: 'kept' } } }, r)));
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.dashboard));
+  await expect.poll(async () => page.evaluate(async () => JSON.stringify(await new Promise(r => chrome.storage.local.get('nordlys_connections', r))))).not.toContain('old-secret');
+  expect(await page.evaluate(async () => JSON.stringify(await new Promise(r => chrome.storage.local.get('nordlys_connections', r))))).toContain('kept');
 });
 
 test('disconnecting takes the tasks away and forgets the token', async ({ nordlysPage }) => {

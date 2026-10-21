@@ -59,7 +59,6 @@
     return svg;
   };
   const locale = () => window.I18N?.currentLang || "en";
-  const root = window;
   const storage = () => (typeof chrome !== "undefined" && chrome.storage?.local) || null;
 
   const ICONS = {
@@ -82,9 +81,7 @@
     habits: "M9 11l3 3 8-8M20 12v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11",
     flame: "M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-7 1.5 1 2 2 2 3 1-2 1-4 1-6Z",
     stash: "M4 7h16v12H4zM4 7l2-3h12l2 3M9 12h6",
-    send: "M5 12h14M13 6l6 6-6 6",
     stopSquare: "M7 7h10v10H7z",
-    ai: "M12 3l1.8 4.9L19 9.7l-4.3 3 1.3 5.3L12 15.3 7.9 18l1.3-5.3L5 9.7l5.2-1.8z",
     inbox: "M3 13h5l1.5 3h5L16 13h5M5 5h14l2 8v6H3v-6z",
     agenda: "M4 5h16v15H4zM4 10h16M9 3v4M15 3v4M8 14h3M8 17h6",
     external: "M14 4h6v6M20 4l-9 9M18 14v5H5V6h5",
@@ -449,15 +446,26 @@
             if (typeof toast === "function") toast(say("dash.stashNeeds", "Nordlys needs to see your tabs to put them away."), "info", 4000);
             return;
           }
-          api().tabs.query({ currentWindow: true }, (tabs) => {
+          api().tabs.query({ currentWindow: true }, async (tabs) => {
             const picked = K.stash.pick(tabs || [], self);
             const group = K.stash.add(card.data, picked, card.now());
             if (!group) { if (typeof toast === "function") toast(say("dash.stashNothing", "No other tabs to put away"), "info", 3000); return; }
-            card.save();
             render();
-            api().tabs.remove(picked.map((tab) => tab.id), () => {});
+            /* A tab is closed only once the stash holding it is saved, and
+               only the tabs the group kept: past its limit the rest stay open. */
+            if (!(await card.save())) {
+              K.stash.remove(card.data, group.id);
+              render();
+              if (typeof toast === "function") toast(say("dash.stashFailed", "The tabs could not be saved, so they stay open."), "error", 5000);
+              return;
+            }
+            const closing = picked.slice(0, group.tabs.length);
+            api().tabs.remove(closing.map((tab) => tab.id), () => {});
+            const left = picked.length - closing.length;
             window.NordlysUI?.showUndoToast?.({
-              message: say("dash.stashDone", "{count} tabs put away", { count: group.tabs.length }),
+              message: left
+                ? say("dash.stashDoneSome", "{count} tabs put away. {left} more stay open.", { count: group.tabs.length, left })
+                : say("dash.stashDone", "{count} tabs put away", { count: group.tabs.length }),
               onAction: () => { group.tabs.forEach((tab) => openTab(tab.url)); K.stash.remove(card.data, group.id); card.save(); render(); }
             });
           });
@@ -495,112 +503,6 @@
         };
         card.update = render;
         card.body.replaceChildren(put, list);
-        render();
-      }
-    },
-
-    ai: {
-      name: () => say("dash.ai", "Ask"), size: 1,
-      data: () => ({ messages: [] }),
-      draw(card) {
-        const dash = card.app.dashboard;
-        const AI = window.NordlysAI;
-        const log = el("div", { class: "dash-ai-log", role: "log", "aria-live": "polite", "aria-label": card.title() });
-        const input = el("textarea", { class: "dash-input dash-ai-input", rows: "1", maxlength: "4000", placeholder: say("dash.aiAsk", "Ask anything"), "aria-label": say("dash.aiAsk", "Ask anything") });
-        const send = el("button", { type: "button", class: "dash-round-btn accent dash-ai-send", "aria-label": say("dash.aiSend", "Send") }, icon(ICONS.send));
-        const status = el("p", { class: "dash-ai-status" });
-        let controller = null;
-        // Words only: whatever the model says is text, never markup.
-        const rich = (text) => {
-          const box = el("div", { class: "dash-ai-text" });
-          const parts = String(text).split(/```/);
-          parts.forEach((part, i) => {
-            if (i % 2) { box.append(el("pre", {}, el("code", { text: part.replace(/^\w*\n/, "") }))); return; }
-            for (const para of part.split(/\n{2,}/)) {
-              const trimmed = para.trim();
-              if (!trimmed) continue;
-              const lines = trimmed.split("\n");
-              if (lines.every((l) => /^\s*([-*•]|\d+\.)\s+/.test(l))) {
-                box.append(el(/^\s*\d/.test(lines[0]) ? "ol" : "ul", {}, lines.map((l) => el("li", {}, inline(l.replace(/^\s*([-*•]|\d+\.)\s+/, ""))))));
-              } else box.append(el("p", {}, inline(trimmed)));
-            }
-          });
-          return box;
-        };
-        const inline = (text) => text.split(/(`[^`]+`|\*\*[^*]+\*\*)/).filter(Boolean).map((bit) => {
-          if (bit.startsWith("`") && bit.endsWith("`")) return el("code", { text: bit.slice(1, -1) });
-          if (bit.startsWith("**") && bit.endsWith("**")) return el("strong", { text: bit.slice(2, -2) });
-          return document.createTextNode(bit);
-        });
-        const render = () => {
-          const messages = card.data.messages || [];
-          const setup = dash.aiSetup;
-          if (!messages.length) {
-            log.replaceChildren(el("div", { class: "dash-ai-empty" }, [
-              el("p", { text: setup ? say("dash.aiHello", "Ask a question, get a plain answer. {model}", { model: AI.PROVIDERS[setup.provider]?.name || "" }) : say("dash.aiNone", "Choose a model to talk to: the one in Chrome, your own key, or one on your computer.") }),
-              setup ? null : el("button", { type: "button", class: "dash-cta", onclick: () => card.openSettings() }, [icon(ICONS.gear), el("span", { text: say("dash.aiChoose", "Choose a model") })])
-            ]));
-          } else {
-            log.replaceChildren(...messages.map((m, i) => el("div", { class: `dash-ai-msg is-${m.role}${m.error ? " is-error" : ""}` }, [
-              m.role === "assistant" ? rich(m.content) : el("p", { class: "dash-ai-text", text: m.content }),
-              m.role === "assistant" && !m.error && m.content ? el("div", { class: "dash-ai-actions" }, [
-                el("button", { type: "button", class: "dash-link", text: say("dash.aiCopy", "Copy"), onclick: () => navigator.clipboard?.writeText(m.content).then(() => window.NordlysUI?.announce?.(say("dash.aiCopied", "Copied"))) }),
-                el("button", { type: "button", class: "dash-link", text: say("dash.aiTask", "Make it a task"), onclick: () => dash.addTask(m.content.split("\n")[0].replace(/[*#`]/g, "").slice(0, 200)) })
-              ]) : null,
-              i === messages.length - 1 && controller ? el("span", { class: "dash-ai-typing", "aria-hidden": "true" }, [el("i"), el("i"), el("i")]) : null
-            ])));
-          }
-          log.scrollTop = log.scrollHeight;
-          send.replaceChildren(icon(controller ? ICONS.stopSquare : ICONS.send));
-          send.setAttribute("aria-label", controller ? say("dash.aiStop", "Stop") : say("dash.aiSend", "Send"));
-        };
-        card.ask = async (question) => {
-          const text = String(question || "").trim();
-          if (!text) return;
-          const setup = dash.aiSetup;
-          if (!setup) { card.openSettings(); return; }
-          const messages = (card.data.messages ||= []);
-          messages.push({ role: "user", content: text });
-          const answer = { role: "assistant", content: "" };
-          messages.push(answer);
-          if (messages.length > 40) messages.splice(0, messages.length - 40);
-          controller = new AbortController();
-          render();
-          const system = `You are a helpful assistant on a browser new tab page called Nordlys. Answer plainly and briefly unless asked for more. Today is ${new Date().toDateString()}. Answer in the language of the question.`;
-          let painted = 0;
-          try {
-            await AI.ask(setup, messages.slice(0, -1), {
-              system, signal: controller.signal,
-              onText: (piece) => {
-                answer.content += piece;
-                // Redraw at most a few times a second: the words arrive faster than that.
-                const now = performance.now();
-                if (now - painted > 90) { painted = now; render(); }
-              }
-            });
-          } catch (error) {
-            if (error.name !== "AbortError") { answer.error = true; answer.content = error.message || String(error); }
-          } finally {
-            controller = null;
-            card.save();
-            render();
-          }
-        };
-        const go = () => {
-          if (controller) { controller.abort(); return; }
-          const text = input.value;
-          input.value = "";
-          input.style.height = "";
-          card.ask(text);
-        };
-        send.addEventListener("click", go);
-        input.addEventListener("keydown", (event) => {
-          if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); go(); }
-        });
-        input.addEventListener("input", () => { input.style.height = "auto"; input.style.height = `${Math.min(120, input.scrollHeight)}px`; });
-        const clear = el("button", { type: "button", class: "dash-link", text: say("dash.aiClear", "New conversation"), onclick: () => { card.data.messages = []; card.save(); render(); input.focus(); } });
-        card.update = render;
-        card.body.replaceChildren(log, el("div", { class: "dash-ai-row" }, [input, send]), el("div", { class: "dash-foot" }, [status, clear]));
         render();
       }
     },
@@ -674,7 +576,7 @@
           const ids = sources();
           if (!ids.length) {
             chips.replaceChildren();
-            list.replaceChildren(el("div", { class: "dash-ai-empty" }, [
+            list.replaceChildren(el("div", { class: "dash-app-empty" }, [
               el("p", { text: say("dash.inboxEmpty", "Tasks from Todoist, GitHub, Trello, Asana, Linear, Jira and more, in one list.") }),
               el("button", { type: "button", class: "dash-cta", onclick: (e) => dash.openConnectPicker(e.currentTarget, "tasks") }, [icon(ICONS.plus), el("span", { text: say("dash.connectApp", "Connect an app") })])
             ]));
@@ -732,7 +634,7 @@
         };
         const render = () => {
           if (!sources().length) {
-            list.replaceChildren(el("div", { class: "dash-ai-empty" }, [
+            list.replaceChildren(el("div", { class: "dash-app-empty" }, [
               el("p", { text: say("dash.agendaEmpty", "Your next events, from Google Calendar or any calendar link (Outlook, iCloud, Proton).") }),
               el("button", { type: "button", class: "dash-cta", onclick: (e) => dash.openConnectPicker(e.currentTarget, "events") }, [icon(ICONS.plus), el("span", { text: say("dash.connectCalendar", "Connect a calendar") })])
             ]));
@@ -970,7 +872,7 @@
       }
     }
   };
-  const ORDER = ["focus", "tasks", "habits", "timer", "notes", "weather", "clocks", "countdown", "inbox", "agenda", "stash", "ai", "quote"];
+  const ORDER = ["focus", "tasks", "habits", "timer", "notes", "weather", "clocks", "countdown", "inbox", "agenda", "stash", "quote"];
   /* How big each kind of card starts, and how small or large it may be
      made, in cells of the twelve-column grid (dash-layout.js). */
   const SIZES = {
@@ -978,7 +880,6 @@
     tasks: { w: 3, h: 3, minW: 3, minH: 2 },
     habits: { w: 4, h: 3, minW: 3, minH: 2 },
     stash: { w: 4, h: 3, minW: 3, minH: 2 },
-    ai: { w: 4, h: 4, minW: 3, minH: 3 },
     inbox: { w: 4, h: 4, minW: 3, minH: 3 },
     agenda: { w: 4, h: 3, minW: 3, minH: 2 },
     timer: { w: 3, h: 2, minW: 3, minH: 2, maxH: 3 },
@@ -1039,22 +940,20 @@
       });
       document.addEventListener("visibilitychange", () => this.schedule());
       window.addEventListener("nordlys:languagechange", () => { this.signature = ""; this.render(); this.renderSection(); });
-      /* Which model the Ask card talks to, and the key for it. Kept on this
-         device only: never in the config, never synced, never in a backup. */
-      /* The apps a person connected: their tokens, on this device only,
-         the same as the model key above. */
+      /* The apps a person connected: their tokens, on this device only:
+         never in the config, never synced, never in a backup. */
       this.connections = {};
       storage()?.get?.("nordlys_connections", (items) => {
         this.connections = items?.nordlys_connections || {};
+        // Tokens for an app Nordlys no longer reads from are not kept.
+        const known = window.NordlysConnectors?.CONNECTORS;
+        const gone = known ? Object.keys(this.connections).filter((id) => !known[id]) : [];
+        if (gone.length) { for (const id of gone) delete this.connections[id]; this.saveConnections(); }
         this.renderSection();
         for (const c of this.cards.values()) if (c.widget.type === "inbox" || c.widget.type === "agenda") c.update?.();
       });
-      this.aiSetup = null;
-      storage()?.get?.("nordlys_ai", (items) => {
-        const saved = items?.nordlys_ai;
-        this.aiSetup = saved && window.NordlysAI?.PROVIDERS[saved.provider] ? saved : (root.LanguageModel ? { provider: "chrome" } : null);
-        for (const c of this.cards.values()) if (c.widget.type === "ai") c.update?.();
-      });
+      // The Ask card is gone, and the model key it kept goes with it.
+      storage()?.remove?.("nordlys_ai");
       this.section = document.getElementById("sec-dashboard");
       this.arrange = window.NordlysDashArrange ? new window.NordlysDashArrange(this) : null;
       // Read now, so a backup taken while the dashboard is off still has it.
@@ -1397,14 +1296,25 @@
       const found = await new Promise((resolve) => store.get(missing.map((id) => DATA + id), (items) => resolve(items || {})));
       for (const id of missing) if (found[DATA + id]) this.data.set(id, found[DATA + id]);
     }
+    /* Resolves true once the browser has the value, false if it refused it
+       (storage full) or there is no storage to write to. */
     persist(id, value, { soon = false } = {}) {
       this.data.set(id, value);
       clearTimeout(this.saveTimers.get(id));
-      const write = () => {
-        storage()?.set?.({ [DATA + id]: value }, () => { setTimeout(() => this.saveTimers.delete(id), 50); });
-      };
-      if (soon) this.saveTimers.set(id, setTimeout(write, 400));
-      else { this.saveTimers.set(id, 0); write(); }
+      return new Promise((resolve) => {
+        const write = () => {
+          const store = storage();
+          if (!store?.set) { resolve(false); return; }
+          store.set({ [DATA + id]: value }, () => {
+            let failed = false;
+            try { failed = Boolean(chrome.runtime?.lastError); } catch (error) {}
+            setTimeout(() => this.saveTimers.delete(id), 50);
+            resolve(!failed);
+          });
+        };
+        if (soon) this.saveTimers.set(id, setTimeout(write, 400));
+        else { this.saveTimers.set(id, 0); write(); }
+      });
     }
 
     // ── Drawing ──────────────────────────────────────────────────
@@ -1483,7 +1393,7 @@
         now: () => Date.now(),
         title: () => this.title(widget),
         greeting: () => (this.app.config.userName ? say("dash.focusHello", "{name}, what matters most today?", { name: this.app.config.userName }) : say("dash.focusIntro", "One thing for today")),
-        save: (options) => { this.persist(key, card.data, options); this.refreshKey(key, card.data, card); },
+        save: (options) => { const saved = this.persist(key, card.data, options); this.refreshKey(key, card.data, card); return saved; },
         openSettings: () => this.openSettings(widget)
       };
       if (!stored && type.data) this.data.set(key, card.data);
@@ -1561,7 +1471,7 @@
       const spot = this.layout().find((it) => it.id === widget.id);
       const limits = SIZES[widget.type];
       this.popup(opener, [
-        type.settings || widget.type === "tasks" || widget.type === "notes" || widget.type === "ai" ? { label: say("dash.settings", "Settings"), run: () => this.openSettings(widget) } : null,
+        type.settings || widget.type === "tasks" || widget.type === "notes" ? { label: say("dash.settings", "Settings"), run: () => this.openSettings(widget) } : null,
         spot.x + spot.w + 3 <= DL.COLS && spot.w + 3 <= (limits.maxW || DL.COLS) ? { label: say("dash.wider", "Make wider"), run: () => this.resize(widget.id, spot.w + 3, spot.h) } : null,
         spot.w - 3 >= limits.minW ? { label: say("dash.narrower", "Make narrower"), run: () => this.resize(widget.id, spot.w - 3, spot.h) } : null,
         spot.h < (limits.maxH || DL.MAX_H) ? { label: say("dash.taller", "Make taller"), run: () => this.resize(widget.id, spot.w, spot.h + 1) } : null,
@@ -1578,71 +1488,6 @@
       })), say("dash.addCard", "Add a card"));
     }
 
-    // ── A card's settings ────────────────────────────────────────
-    /* The Ask card's model: which one, and where its key lives. Saving asks
-       Chrome for leave to reach that one address, from the click itself. */
-    openAiSettings(widget) {
-      const AI = window.NordlysAI;
-      const setup = { provider: "chrome", model: "", key: "", base: "", ...(this.aiSetup || {}) };
-      const form = el("form", { class: "dash-form" });
-      const dialog = el("dialog", { class: "dash-dialog glass-panel", "aria-labelledby": "dash-dialog-title" }, [el("h2", { id: "dash-dialog-title", text: say("dash.aiModel", "The model to ask") }), form]);
-      const provider = el("select", { id: "dash-ai-provider", class: "dash-input" }, Object.entries(AI.PROVIDERS).filter(([key]) => key !== "chrome" || root.LanguageModel).map(([key, p]) => el("option", { value: key, text: p.name })));
-      provider.value = AI.PROVIDERS[setup.provider] && (setup.provider !== "chrome" || root.LanguageModel) ? setup.provider : "openai";
-      const model = el("input", { id: "dash-ai-model", class: "dash-input", type: "text", autocomplete: "off", spellcheck: "false" });
-      const key = el("input", { id: "dash-ai-key", class: "dash-input", type: "password", autocomplete: "off", spellcheck: "false", placeholder: say("dash.aiKeyHint", "Paste your key") });
-      const base = el("input", { id: "dash-ai-base", class: "dash-input", type: "url", autocomplete: "off", spellcheck: "false", placeholder: "https://…/v1" });
-      model.value = setup.model || "";
-      key.value = setup.key || "";
-      base.value = setup.base || "";
-      const field = (id, label, control) => el("div", { class: "dash-field", dataset: { field: id } }, [el("label", { for: control.id, text: label }), control]);
-      const rows = {
-        model: field("model", say("dash.aiModelName", "Model"), model),
-        key: field("key", say("dash.aiKey", "Key"), key),
-        base: field("base", say("dash.aiBase", "Address"), base)
-      };
-      const note = el("small", { class: "dash-note-small" });
-      const sync = () => {
-        const p = AI.PROVIDERS[provider.value];
-        rows.model.hidden = provider.value === "chrome";
-        rows.key.hidden = !p.key;
-        rows.base.hidden = provider.value !== "custom" && provider.value !== "ollama";
-        model.placeholder = p.model || "";
-        if (provider.value === "ollama" && !base.value) base.placeholder = p.base;
-        note.textContent = provider.value === "chrome"
-          ? say("dash.aiChromeNote", "Chrome's own model runs on this device. Nothing leaves your computer.")
-          : provider.value === "ollama"
-            ? say("dash.aiLocalNote", "The model runs on your computer. Nordlys talks to it at this address and nowhere else.")
-            : say("dash.aiKeyNote", "Your key stays on this device: it is not synced and not in backups. Questions go straight to {name}; Nordlys never sees them.", { name: p.name });
-      };
-      provider.addEventListener("change", sync);
-      const error = el("p", { class: "dash-form-error", role: "alert" });
-      const cancel = el("button", { type: "button", class: "glass-btn", text: say("dash.cancel", "Cancel"), onclick: () => dialog.close() });
-      form.append(field("provider", say("dash.aiProvider", "Talk to"), provider), rows.model, rows.key, rows.base, note, error,
-        el("div", { class: "dash-form-actions" }, [cancel, el("button", { type: "submit", class: "glass-btn accent", text: say("dash.save", "Save") })]));
-      form.addEventListener("submit", (event) => {
-        event.preventDefault();
-        const next = { provider: provider.value, model: model.value.trim(), key: key.value.trim(), base: base.value.trim() };
-        if (AI.PROVIDERS[next.provider].key && !next.key && next.provider !== "custom") { error.textContent = say("dash.aiNeedsKey", "This one needs a key."); key.focus(); return; }
-        const finish = () => {
-          this.aiSetup = next;
-          storage()?.set?.({ nordlys_ai: next });
-          dialog.close();
-          for (const c of this.cards.values()) if (c.widget.type === "ai") c.update?.();
-        };
-        const origin = AI.origin(next);
-        const perms = typeof chrome !== "undefined" ? chrome.permissions : null;
-        if (!origin || !perms?.request) { finish(); return; }
-        perms.request({ origins: [origin] }, (granted) => {
-          if (granted) finish();
-          else error.textContent = say("dash.aiNoLeave", "Without leave to reach {site}, Nordlys can't ask it.", { site: origin.replace("/*", "") });
-        });
-      });
-      dialog.addEventListener("close", () => { dialog.remove(); this.cards.get(widget.id)?.root.querySelector(".dash-menu-btn")?.focus(); });
-      document.body.append(dialog);
-      sync();
-      dialog.showModal();
-      provider.focus();
-    }
     // ── Connected apps ───────────────────────────────────────────
     connected(id) { return window.NordlysConnectors?.ready(id, this.connections[id]) || false; }
     connectedOf(kind) { const C = window.NordlysConnectors; return Object.keys(C?.CONNECTORS || {}).filter((id) => C.CONNECTORS[id].kind === kind && this.connected(id)); }
@@ -1677,7 +1522,6 @@
       const errors = {};
       await Promise.all(ids.map(async (id) => {
         try {
-          if (C.CONNECTORS[id].oauth) { this.connections[id] = await C.refresh(id, this.connections[id]); this.saveConnections(); }
           items.push(...await C.list(id, this.connections[id]));
         } catch (error) { errors[id] = error.message || String(error); }
       }));
@@ -1691,7 +1535,7 @@
       const C = window.NordlysConnectors;
       this.popup(opener, Object.entries(C.CONNECTORS).filter(([, c]) => !kind || c.kind === kind).map(([id, c]) => ({
         // Each app by its own mark, so the list reads at a glance.
-        label: c.name, mark: this.brandIcon(id, 18), note: this.connected(id) ? say("dash.connected", "Connected") : !this.canSignIn(c) ? say("dash.soon", "Soon") : "", run: () => this.openConnect(id)
+        label: c.name, mark: this.brandIcon(id, 18), note: this.connected(id) ? say("dash.connected", "Connected") : "", run: () => this.openConnect(id)
       })), say("dash.connectApp", "Connect an app"));
     }
     /* Connecting one app: its fields, where to find them, leave to reach
@@ -1716,31 +1560,26 @@
       }
       const error = el("p", { class: "dash-form-error", role: "alert" });
       const status = el("p", { class: "dash-note-small", role: "status" });
-      // Safari has no identity API, so no sign-in window to open.
-      const clientReady = this.canSignIn(c);
-      form.append(el("small", { class: "dash-note-small", text: c.oauth
-        ? (clientReady ? say("dash.oauthNote", "You sign in with {who} in a window of theirs. Nordlys keeps the access on this device only.", { who: c.oauth === "google" ? "Google" : "Microsoft" }) : say("dash.oauthLater", "Signing in with {who} comes in the next update.", { who: c.oauth === "google" ? "Google" : "Microsoft" }))
-        : say("dash.tokenNote", "The token stays on this device: not synced, not in backups. Nordlys talks to {app} directly and reads only your tasks.", { app: c.name }) }), status, error);
+      form.append(el("small", { class: "dash-note-small", text: say("dash.tokenNote", "The token stays on this device: not synced, not in backups. Nordlys talks to {app} directly and reads only your tasks.", { app: c.name }) }), status, error);
       const disconnect = this.connected(id) ? el("button", { type: "button", class: "glass-btn danger", text: say("dash.disconnect", "Disconnect"), onclick: () => {
         delete this.connections[id]; this.saveConnections(); dialog.close(); this.afterConnections();
       } }) : null;
-      const submit = el("button", { type: "submit", class: "glass-btn accent", text: c.oauth ? say("dash.signIn", "Sign in") : say("dash.connect", "Connect"), disabled: !clientReady || undefined });
+      const submit = el("button", { type: "submit", class: "glass-btn accent", text: say("dash.connect", "Connect") });
       form.append(el("div", { class: "dash-form-actions" }, [disconnect, el("button", { type: "button", class: "glass-btn", text: say("dash.cancel", "Cancel"), onclick: () => dialog.close() }), submit]));
       form.addEventListener("submit", (event) => {
         event.preventDefault();
         error.textContent = "";
         const creds = { ...saved };
         for (const [key, input] of Object.entries(inputs)) creds[key] = input.value.trim();
-        if (!c.oauth && !C.ready(id, creds)) { error.textContent = say("dash.fillFields", "Fill in the fields above."); return; }
+        if (!C.ready(id, creds)) { error.textContent = say("dash.fillFields", "Fill in the fields above."); return; }
         const origins = C.originsOf(id, creds);
         const perms = typeof chrome !== "undefined" ? chrome.permissions : null;
         const go = async () => {
           submit.disabled = true;
           status.textContent = say("dash.checking", "Checking…");
           try {
-            const finalCreds = c.oauth ? { ...creds, ...(await C.signIn(id)) } : creds;
-            const found = await C.list(id, finalCreds);
-            this.connections[id] = finalCreds;
+            const found = await C.list(id, creds);
+            this.connections[id] = creds;
             this.saveConnections();
             status.textContent = say("dash.connectedFound", "Connected. {count} found.", { count: found.length });
             setTimeout(() => dialog.close(), 700);
@@ -1751,12 +1590,8 @@
             submit.disabled = false;
           }
         };
-        // Chrome and Edge ask for identity when it is first needed; Firefox
-        // grants it at install and refuses a request for it.
-        const optional = (typeof chrome !== "undefined" && chrome.runtime?.getManifest?.().optional_permissions) || ["identity"];
-        const permissions = c.oauth && optional.includes("identity") ? ["identity"] : [];
         if (!perms?.request) { go(); return; }
-        perms.request({ origins, ...(permissions.length ? { permissions } : {}) }, (granted) => {
+        perms.request({ origins }, (granted) => {
           if (granted) go();
           else error.textContent = say("dash.aiNoLeave", "Without leave to reach {site}, Nordlys can't ask it.", { site: origins.map((o) => o.replace("/*", "")).join(", ") });
         });
@@ -1770,24 +1605,14 @@
       this.renderSection();
       for (const c of this.cards.values()) if (c.widget.type === "inbox" || c.widget.type === "agenda") { c.data.at = 0; c.update?.(); }
     }
-    // An app behind a company sign-in needs its registered client id, and a
-    // browser with a sign-in window (Safari has none).
-    canSignIn(c) { return !c.oauth || (Boolean(window.NordlysOAuthClients?.[c.oauth]?.clientId) && window.NordlysPlatform?.name !== "safari"); }
     connectionsBlock() {
       const C = window.NordlysConnectors;
       if (!C) return null;
       return el("div", { class: "dash-connections" }, Object.entries(C.CONNECTORS).map(([id, c]) => el("button", {
         type: "button", class: `dash-connection${this.connected(id) ? " is-on" : ""}`, "data-focus-key": `conn-${id}`, onclick: () => this.openConnect(id)
-      }, [this.brandIcon(id, 22), el("span", { class: "dash-connection-name", text: c.name }), el("small", { text: this.connected(id) ? say("dash.connected", "Connected") : !this.canSignIn(c) ? say("dash.soon", "Soon") : c.kind === "events" ? say("dash.kindEvents", "Events") : say("dash.kindTasks", "Tasks") })])));
-    }
-    // From the search box: "? question" asks the Ask card.
-    async ask(question) {
-      const card = await this.ensure("ai");
-      card?.root.querySelector(".dash-ai-input")?.focus();
-      await card?.ask?.(question);
+      }, [this.brandIcon(id, 22), el("span", { class: "dash-connection-name", text: c.name }), el("small", { text: this.connected(id) ? say("dash.connected", "Connected") : c.kind === "events" ? say("dash.kindEvents", "Events") : say("dash.kindTasks", "Tasks") })])));
     }
     async openSettings(widget) {
-      if (widget.type === "ai") { this.openAiSettings(widget); return; }
       const type = TYPES[widget.type];
       const fields = [...(widget.type === "tasks" || widget.type === "notes" ? [{ key: "title", type: "text", value: "", label: () => say("dash.cardName", "Name of the card") }] : []), ...(type.settings || [])];
       const values = structuredClone(widget.settings || {});

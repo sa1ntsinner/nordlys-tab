@@ -127,7 +127,7 @@ test('a full sync area stops sending and keeps every edit here', async () => {
   await a.enable({ snapshot: big, mode: 'merge' });
   const status = await a.status();
   assert.strictEqual(status.state, 'full');
-  assert.match(status.error, /100 KB/);
+  assert.strictEqual(status.reason, 'full', 'the page says why in the person\'s language');
   assert.strictEqual(sync.data.size, 0, 'nothing cut down was sent');
   assert.strictEqual(names(await a.view()).length, 600, 'the board here is whole');
 });
@@ -152,4 +152,54 @@ test('turning sync on keeps a backup of the board as it was', async () => {
   const backups = await e.backups();
   assert.strictEqual(backups.length, 1);
   assert.deepStrictEqual(backups[0].snapshot, start);
+});
+
+/* Deleted bookmarks cost only their deletion, and nothing once they are old.
+   Replacing a board again and again used to grow sync until it was full. */
+test('replacing a board does not fill sync, and old deletions free their space', async () => {
+  const sync = area({ limits: true });
+  let clock = Date.UTC(2026, 0, 1);
+  const a = new NordlysSyncEngine({ local: area(), sync, deviceName: 'A', now: () => clock });
+  await a.load();
+  const board = round => snapshot(Array.from({ length: 10 }, (_, g) => folder(`r${round}g${g}`, `Folder ${g}`, Array.from({ length: 20 }, (_, l) => [`r${round}g${g}l${l}`, `Site ${g}.${l}`]))));
+  await a.enable({ snapshot: board(0), mode: 'merge' });
+  const first = (await a.status()).bytes;
+  for (let round = 1; round <= 3; round++) { clock += 86400000; await a.push(board(round)); }
+  const replaced = await a.status();
+  assert.strictEqual(replaced.state, 'ready');
+  assert.ok(replaced.bytes < first * 1.8, `600 deletions cost ${replaced.bytes - first} bytes over a board of ${first}`);
+  clock += 31 * 86400000;
+  await a.push(board(3));
+  const later = (await a.status()).bytes;
+  assert.ok(later < first * 1.1, `after 30 days sync holds about one board (${later} against ${first})`);
+});
+
+test('a bookmark dropped after 30 days does not come back from an old item of another device', async () => {
+  const sync = area({ limits: true });
+  let clock = Date.UTC(2026, 0, 1);
+  const make = name => new NordlysSyncEngine({ local: area(), sync, deviceName: name, now: () => clock });
+  const a = make('A'); await a.load();
+  const start = snapshot([folder('g1', 'Daily', [['l1', 'Gmail'], ['l2', 'Drive']])]);
+  await a.enable({ snapshot: start, mode: 'merge' });
+  const b = make('B'); await b.load();
+  await b.enable({ snapshot: snapshot([]), mode: 'use-sync' });
+  // B renames Drive, so B's own items carry a register for it.
+  const onB = await b.view();
+  onB.profiles[0].config.groups[0].links[1].name = 'Docs';
+  await b.push(onB);
+  const stale = Object.fromEntries(Object.entries(await sync.get(null)).filter(([key]) => key.includes(b.state.device.id)));
+  await a.pull();
+  const onA = await a.view();
+  onA.profiles[0].config.groups[0].links.splice(1, 1);
+  await a.push(onA);
+  // B hears of the deletion and sends again: its items no longer hold the name.
+  await b.pull();
+  const own = JSON.stringify(Object.entries(await sync.get(null)).filter(([key]) => key.includes(b.state.device.id)));
+  assert.ok(!own.includes('Docs'), 'the deleted bookmark left B\'s items');
+  clock += 31 * 86400000;
+  await a.push(onA);
+  assert.ok(!a.state.model.records['l/l2'], 'A dropped the old deletion');
+  await sync.set(stale);
+  const view = await a.pull();
+  assert.deepStrictEqual(names(view || await a.view()), ['Gmail']);
 });

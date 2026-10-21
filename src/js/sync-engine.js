@@ -170,7 +170,7 @@
         } catch (error) {
           this.state.model = M().create(this.state.device.id);
           M().update(this.state.model, this.prepare(snapshot));
-          this.fail("error", error);
+          this.fail("error", error, "damaged");
           await this.save();
           return this.compose().view;
         }
@@ -183,7 +183,7 @@
     disable() {
       return this.run(async () => {
         this.state.enabled = false;
-        this.state.status = { ...this.state.status, state: "off", error: null };
+        this.state.status = { ...this.state.status, state: "off", error: null, reason: null };
         await this.save();
       });
     }
@@ -208,14 +208,16 @@
           changed = M().merge(draft, await this.sync.get(null));
           if (changed) this.state.model = draft;
         } catch (error) {
-          this.fail("error", error);
+          this.fail("error", error, "damaged");
           await this.save();
           return null;
         }
         if (!changed) return null;
         const { view } = this.compose();
-        this.state.status = { ...this.state.status, state: "ready", error: null, lastSync: this.now() };
-        await this.save();
+        this.state.status = { ...this.state.status, state: "ready", error: null, reason: null, lastSync: this.now() };
+        /* What came in can make this device's own items smaller (a deletion
+           from elsewhere): they are sent again, so the space is freed. */
+        await this.send();
         // A device saying hello is not a new board.
         return JSON.stringify(view) === before ? null : view;
       });
@@ -257,11 +259,14 @@
       });
     }
 
-    fail(state, error) {
-      this.state.status = { ...this.state.status, state, error: String(error?.message || error) };
+    /* The reason is what the page says, in the person's language; the
+       error text is kept for a bug report. */
+    fail(state, error, reason = "other") {
+      this.state.status = { ...this.state.status, state, reason, error: String(error?.message || error) };
     }
 
     async send() {
+      M().compact(this.state.model, this.now());
       this.stampDevice();
       this.state.status = { ...this.state.status, state: "syncing" };
       await this.save();
@@ -271,7 +276,7 @@
         const chunks = M().exportChunks(this.state.model);
         const writes = {};
         for (const [key, value] of Object.entries(chunks)) {
-          if (itemBytes(key, value) > M().ITEM_LIMIT) throw new Error("A sync item came out larger than 8 KB. Your changes are saved here.");
+          if (itemBytes(key, value) > M().ITEM_LIMIT) { this.fail("error", new Error("A sync item came out larger than 8 KB."), "large"); await this.save(); return; }
           if (JSON.stringify(remote[key]) !== JSON.stringify(value)) writes[key] = value;
         }
         const removals = Object.keys(remote).filter((key) => key.startsWith(ownPrefix) && !chunks[key]);
@@ -280,13 +285,13 @@
         const used = Object.entries(after).reduce((sum, [key, value]) => sum + itemBytes(key, value), 0);
         this.state.status.bytes = used;
         if (used > TOTAL_LIMIT || Object.keys(after).length > ITEMS_LIMIT) {
-          this.fail("full", new Error("Chrome sync is full (100 KB). Delete a profile you don't use, or use smaller icons. Your changes are saved here."));
+          this.fail("full", new Error(`Sync is full: ${used} of ${TOTAL_LIMIT} bytes.`), "full");
           await this.save();
           return;
         }
         if (Object.keys(writes).length) await this.sync.set(writes);
         if (removals.length) await this.sync.remove(removals);
-        this.state.status = { ...this.state.status, state: "ready", error: null, lastSync: this.now() };
+        this.state.status = { ...this.state.status, state: "ready", error: null, reason: null, lastSync: this.now() };
       } catch (error) {
         this.fail("error", error);
       }

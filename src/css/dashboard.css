@@ -498,34 +498,8 @@ body.dash-carrying, body.dash-carrying * { cursor: grabbing !important; user-sel
 /* The dashboard alone, the folders set aside until it is off again. */
 html[data-dashboard][data-dash-folders="off"] :is(#board, #hiddenDock) { display: none !important; }
 
-/* ── Ask ────────────────────────────────────────────────────── */
-.dash-ai-log { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: var(--nl-space-3); padding-right: 2px; scrollbar-width: thin; }
-.dash-ai-empty { margin: auto 0; display: flex; flex-direction: column; gap: var(--nl-space-3); color: var(--nl-text-secondary); font-size: var(--nl-text-md); }
-.dash-ai-empty p { margin: 0; }
-.dash-ai-msg { display: flex; flex-direction: column; gap: 4px; max-width: 92%; }
-.dash-ai-msg.is-user { align-self: flex-end; }
-.dash-ai-msg.is-user .dash-ai-text { padding: 7px 12px; border-radius: 16px 16px 4px 16px; background: color-mix(in srgb, var(--accent) 22%, transparent); }
-.dash-ai-msg.is-assistant { align-self: flex-start; }
-.dash-ai-text { margin: 0; font-size: var(--nl-text-md); line-height: 1.55; overflow-wrap: anywhere; }
-.dash-ai-text p { margin: 0 0 6px; }
-.dash-ai-text p:last-child { margin-bottom: 0; }
-.dash-ai-text ul, .dash-ai-text ol { margin: 0 0 6px; padding-left: 20px; }
-.dash-ai-text code { font-family: ui-monospace, "Cascadia Code", Menlo, monospace; font-size: 0.9em; padding: 1px 5px; border-radius: 5px; background: color-mix(in srgb, var(--nl-text-primary) 9%, transparent); }
-.dash-ai-text pre { margin: 0 0 6px; padding: 8px 10px; border-radius: var(--nl-radius-sm); background: color-mix(in srgb, var(--nl-text-primary) 7%, transparent); overflow-x: auto; }
-.dash-ai-text pre code { padding: 0; background: none; }
-.dash-ai-msg.is-error .dash-ai-text { color: var(--nl-danger, #ff7a7a); }
-.dash-ai-actions { display: flex; gap: var(--nl-space-3); opacity: 0; transition: opacity var(--nl-transition-fast); }
-.dash-ai-msg:hover .dash-ai-actions, .dash-ai-msg:focus-within .dash-ai-actions { opacity: 1; }
-.dash-ai-actions .dash-link { font-size: var(--nl-text-xs); }
-.dash-ai-typing { display: inline-flex; gap: 4px; padding: 4px 0; }
-.dash-ai-typing i { width: 5px; height: 5px; border-radius: 50%; background: var(--nl-text-tertiary); animation: pulse 1.2s ease-in-out infinite; }
-.dash-ai-typing i:nth-child(2) { animation-delay: .15s; }
-.dash-ai-typing i:nth-child(3) { animation-delay: .3s; }
-.dash-ai-row { display: flex; align-items: flex-end; gap: var(--nl-space-2); }
-.dash-ai-input { resize: none; min-height: 38px; max-height: 120px; line-height: 1.4; font: inherit; font-size: var(--nl-text-md); }
-.dash-ai-send { flex: none; }
-.dash-ai-send svg { fill: none !important; stroke: currentColor; stroke-width: 2; }
-.dash-ai-status { margin: 0; }
+.dash-app-empty { margin: auto 0; display: flex; flex-direction: column; gap: var(--nl-space-3); color: var(--nl-text-secondary); font-size: var(--nl-text-md); }
+.dash-app-empty p { margin: 0; }
 .dash-form-error { margin: 0; min-height: 1em; font-size: var(--nl-text-sm); color: var(--nl-danger, #ff7a7a); }
 .dash-textarea { resize: vertical; min-height: 96px; line-height: 1.5; font: inherit; font-size: var(--nl-text-md); }
 

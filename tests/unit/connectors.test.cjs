@@ -10,10 +10,10 @@ test('every connector says what it needs, where to get it, and where it will rea
     assert.ok(c.name && c.color && c.kind, `${id} names itself`);
     assert.ok(Array.isArray(c.fields), `${id} lists its fields`);
     for (const f of c.fields) assert.ok(f.key && f.label, `${id}.${f.key}`);
-    const origins = C.originsOf(id, { host: 'https://gitlab.example.com', site: 'team.atlassian.net', url: 'https://calendar.google.com/calendar/ical/x/basic.ics' });
+    const origins = C.originsOf(id, { url: 'https://calendar.google.com/calendar/ical/x/basic.ics' });
     assert.ok(origins.length >= 1, `${id} names the address it needs`);
     for (const o of origins) assert.match(o, /^https?:\/\/[^/*]+\/\*$/, `${id}: ${o}`);
-    assert.ok(typeof c.read === 'function' && (c.requests || c.steps), `${id} can read`);
+    assert.ok(typeof c.read === 'function' && c.requests, `${id} can read`);
   }
 });
 
@@ -35,36 +35,9 @@ test('GitHub: assigned issues and review requests, once each, with the repositor
   assert.deepStrictEqual(items.map(i => [i.title, i.context]), [['Fix sync', 'a/b'], ['Review: Add port', 'a/b']]);
 });
 
-test('Trello drops cards already done; Asana drops finished tasks', () => {
-  const cards = K.trello.read([[{ id: 'c1', name: 'Plan', due: '2026-10-02T12:00:00.000Z', shortUrl: 'https://trello.com/c/1', board: { name: 'Home' } }, { id: 'c2', name: 'Old', dueComplete: true }]]);
-  assert.deepStrictEqual(cards.map(c => [c.title, c.context]), [['Plan', 'Home']]);
-  const tasks = K.asana.read([{ data: [{ gid: '9', name: 'Write', due_on: '2026-10-03', permalink_url: 'https://app.asana.com/0/1/9', completed: false, projects: [{ name: 'Launch' }] }, { gid: '10', name: 'Done', completed: true }] }]);
-  assert.deepStrictEqual(tasks.map(t => [t.title, t.due, t.context]), [['Write', '2026-10-03', 'Launch']]);
-});
-
-test('ClickUp, Linear, Jira, GitLab and Notion answers read the same way', () => {
-  assert.strictEqual(K.clickup.read([[{ tasks: [{ id: 'x', name: 'Ship', url: 'https://app.clickup.com/t/x', due_date: String(at('2026-10-04T10:00:00')), priority: { priority: 'urgent' } }] }]])[0].priority, true);
-  const lin = K.linear.read([{ data: { viewer: { assignedIssues: { nodes: [{ id: 'l', identifier: 'NOR-12', title: 'Firefox port', url: 'https://linear.app/x/issue/NOR-12', dueDate: '2026-10-05', priority: 1, team: { key: 'NOR' } }] } } } }]);
-  assert.deepStrictEqual([lin[0].title, lin[0].due, lin[0].priority], ['NOR-12 Firefox port', '2026-10-05', true]);
-  const jira = K.jira.read([{ issues: [{ id: '1', key: 'WEB-3', fields: { summary: 'Landing', duedate: '2026-10-06', priority: { name: 'High' }, project: { name: 'Web' } } }] }], { site: 'team.atlassian.net' });
-  assert.deepStrictEqual([jira[0].title, jira[0].url, jira[0].priority], ['WEB-3 Landing', 'https://team.atlassian.net/browse/WEB-3', true]);
-  const gl = K.gitlab.read([[{ id: 5, title: 'Bug', web_url: 'https://gitlab.com/a/b/-/issues/5', due_date: '2026-10-07', references: { full: 'a/b#5' } }], [{ id: 6, title: 'MR', web_url: 'https://gitlab.com/a/b/-/merge_requests/6', references: { full: 'a/b!6' } }]]);
-  assert.deepStrictEqual(gl.map(i => [i.title, i.context]), [['Bug', 'a/b'], ['Merge: MR', 'a/b']]);
-  const notion = K.notion.read([{ results: [
-    { id: 'p1', url: 'https://www.notion.so/p1', properties: { Name: { type: 'title', title: [{ plain_text: 'Write post' }] }, When: { type: 'date', date: { start: '2026-10-08' } }, Done: { type: 'checkbox', checkbox: false } } },
-    { id: 'p2', url: 'https://www.notion.so/p2', properties: { Name: { type: 'title', title: [{ plain_text: 'Old' }] }, Status: { type: 'status', status: { name: 'Done' } } } }
-  ] }]);
-  assert.deepStrictEqual(notion.map(n => [n.title, n.due]), [['Write post', '2026-10-08']]);
-});
-
 test('an address that is not a web address is never kept as a link', () => {
   const [bad] = K.github.read([[{ id: 3, title: 'x', html_url: 'javascript:alert(1)' }], { items: [] }]);
   assert.strictEqual(bad.url, null);
-});
-
-test('Notion takes a database link or its bare id', () => {
-  const [a] = K.notion.requests({ token: 't', database: 'https://www.notion.so/team/Tasks-1a2b3c4d5e6f708192a3b4c5d6e7f809?v=1' });
-  assert.match(a.url, /databases\/1a2b3c4d5e6f708192a3b4c5d6e7f809\/query$/);
 });
 
 const ICS = `BEGIN:VCALENDAR
@@ -119,9 +92,66 @@ test('a calendar file becomes the next two weeks of events, repeats unrolled', (
 test('a service counts as connected only when its fields are filled', () => {
   assert.strictEqual(C.ready('todoist', {}), false);
   assert.strictEqual(C.ready('todoist', { token: 'x' }), true);
-  assert.strictEqual(C.ready('jira', { site: 's', email: 'e' }), false);
-  assert.strictEqual(C.ready('asana', { token: 'x' }), true, 'the workspace is optional');
-  assert.strictEqual(C.ready('gitlab', { token: 'x' }), true, 'the server defaults to gitlab.com');
-  assert.strictEqual(C.ready('googletasks', {}), false);
-  assert.strictEqual(C.ready('googletasks', { accessToken: 'a' }), true);
+  assert.strictEqual(C.ready('ics', { url: ' ' }), false);
+  assert.strictEqual(C.ready('gitlab', { token: 'x' }), false, 'an app no longer read from is never connected');
+});
+
+test('only apps with a token or a link are left: no sign-in window, nothing to register', () => {
+  assert.deepStrictEqual(Object.keys(K), ['todoist', 'github', 'ics']);
+  assert.strictEqual(C.signIn, undefined);
+});
+
+/* Calendars as real ones send them: a zone of their own, repeats by month
+   and year, a meeting called off and one moved. */
+const zoned = body => `BEGIN:VCALENDAR\nVERSION:2.0\n${body}\nEND:VCALENDAR`;
+const ev = lines => `BEGIN:VEVENT\n${lines.join('\n')}\nEND:VEVENT`;
+
+test('a time with a TZID is read in that zone, not in the viewer\'s', () => {
+  const list = C.events(zoned(ev(['UID:ny', 'DTSTART;TZID=America/New_York:20261005T090000', 'DTEND;TZID=America/New_York:20261005T100000', 'SUMMARY:Call'])), at('2026-10-04T00:00:00Z'));
+  assert.strictEqual(list[0].start, '2026-10-05T13:00:00.000Z');
+  assert.strictEqual(list[0].end, '2026-10-05T14:00:00.000Z');
+});
+
+test('a weekly meeting keeps its hour across the change to winter time', () => {
+  const list = C.events(zoned(ev(['UID:w', 'DTSTART;TZID=Europe/Berlin:20261019T090000', 'RRULE:FREQ=WEEKLY', 'SUMMARY:Standup'])), at('2026-10-18T00:00:00Z'));
+  assert.deepStrictEqual(list.map(e => e.start), ['2026-10-19T07:00:00.000Z', '2026-10-26T08:00:00.000Z']);
+});
+
+test('BYDAY gives every day it names, and EXDATE takes one away', () => {
+  const list = C.events(zoned(ev(['UID:mwf', 'DTSTART:20261005T080000Z', 'RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR', 'EXDATE:20261007T080000Z', 'SUMMARY:Run'])), at('2026-10-04T00:00:00Z'));
+  assert.deepStrictEqual(list.map(e => e.start.slice(0, 10)), ['2026-10-05', '2026-10-09', '2026-10-12', '2026-10-14', '2026-10-16']);
+});
+
+test('monthly and yearly repeats are unrolled, by day of month and by "the last Friday"', () => {
+  const ics = zoned([
+    ev(['UID:rent', 'DTSTART;VALUE=DATE:20260115', 'RRULE:FREQ=MONTHLY', 'SUMMARY:Rent']),
+    ev(['UID:review', 'DTSTART:20260130T100000Z', 'RRULE:FREQ=MONTHLY;BYDAY=-1FR', 'SUMMARY:Review']),
+    ev(['UID:bday', 'DTSTART;VALUE=DATE:19900620', 'RRULE:FREQ=YEARLY', 'SUMMARY:Birthday']),
+    ev(['UID:thanks', 'DTSTART;VALUE=DATE:20201126', 'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=4TH', 'SUMMARY:Thanksgiving'])
+  ].join('\n'));
+  assert.deepStrictEqual(C.events(ics, at('2026-10-14T00:00:00Z'), 31).map(e => [e.title, e.start.slice(0, 10)]), [['Rent', '2026-10-15'], ['Review', '2026-10-30']]);
+  assert.deepStrictEqual(C.events(ics, at('2026-06-15T00:00:00Z')).map(e => e.title), ['Rent', 'Birthday', 'Review']);
+  assert.deepStrictEqual(C.events(ics, at('2026-11-20T00:00:00Z')).map(e => [e.title, e.start.slice(0, 10)]), [['Thanksgiving', '2026-11-26'], ['Review', '2026-11-27']]);
+});
+
+test('a meeting moved with RECURRENCE-ID shows once, at its new time', () => {
+  const ics = zoned([
+    ev(['UID:sync', 'DTSTART:20261005T150000Z', 'DTEND:20261005T153000Z', 'RRULE:FREQ=WEEKLY;COUNT=4', 'SUMMARY:Sync']),
+    ev(['UID:sync', 'RECURRENCE-ID:20261012T150000Z', 'DTSTART:20261013T160000Z', 'DTEND:20261013T163000Z', 'SUMMARY:Sync (moved)'])
+  ].join('\n'));
+  assert.deepStrictEqual(C.events(ics, at('2026-10-04T00:00:00Z')).map(e => [e.title, e.start]), [
+    ['Sync', '2026-10-05T15:00:00.000Z'], ['Sync (moved)', '2026-10-13T16:00:00.000Z']
+  ]);
+});
+
+test('COUNT counts from the first time, even years back, and a daily repeat from long ago is quick', () => {
+  const ics = zoned([
+    ev(['UID:old', 'DTSTART:20200101T090000Z', 'RRULE:FREQ=DAILY;COUNT=10', 'SUMMARY:Gone']),
+    ev(['UID:pill', 'DTSTART:20100101T080000Z', 'RRULE:FREQ=DAILY', 'SUMMARY:Pill'])
+  ].join('\n'));
+  const t = Date.now();
+  const list = C.events(ics, at('2026-10-04T00:00:00Z'));
+  assert.ok(Date.now() - t < 500, 'sixteen years of a daily repeat');
+  assert.strictEqual(list.filter(e => e.title === 'Gone').length, 0);
+  assert.strictEqual(list.filter(e => e.title === 'Pill').length, 14);
 });

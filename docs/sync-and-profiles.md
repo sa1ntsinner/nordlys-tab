@@ -61,8 +61,24 @@ The existing record model, extended with profiles:
   whether links open in a new tab) stay in the shared `c` record.
 
 Moving a folder to another profile is one field change. Deleting a profile
-marks it and its folders `_alive: false`; it can be restored for 30 days,
-after which its tombstones are compacted.
+marks it `_alive: false`; it can be restored for 30 days.
+
+Deletions are kept small (`compact` in `sync-model.js`):
+
+- a deleted folder or bookmark travels as its `_alive: false` register alone,
+  never with its old name, address or icon;
+- 30 days after a device first saw a folder or bookmark deleted, and once a
+  deleted profile is past its 30 days (with its look, folders and bookmarks),
+  the device drops the record and keeps a grave in `chrome.storage.local`:
+  the highest counter the record reached. Any older register for it, from an
+  item another device has not rewritten yet, is ignored, so it cannot come
+  back. A newer write (the same bookmark put back) clears the grave;
+- after a pull that changed the model, the device sends again, so its own
+  items lose what was deleted elsewhere.
+
+A device that was offline for more than 30 days and still shows a bookmark
+deleted elsewhere keeps showing it there, and sends it again with its next
+edit. That is the price of freeing the space.
 
 The first time sync starts on an existing board, the board becomes the first
 profile (named after the greeting name, or "Main").

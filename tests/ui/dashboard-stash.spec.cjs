@@ -57,3 +57,34 @@ test('without the permission nothing is closed and the card says why', async ({ 
   await expect(page.locator('#toast-dock')).toContainText('needs to see your tabs');
   expect(await page.evaluate(() => window.__tabs.removed || [])).toEqual([]);
 });
+
+test('a window past the stash limit keeps the tabs that were not saved open', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => {
+    window.__tabs.list = Array.from({ length: 130 }, (v, i) => ({ id: 100 + i, url: `https://example.com/${i}`, title: `Page ${i}` }));
+  });
+  await stash(page).getByRole('button', { name: 'Stash the tabs of this window' }).click();
+  await expect(stash(page).locator('.dash-stash-count')).toHaveText('100 tabs');
+  await expect(page.locator('#toast-dock')).toContainText('30 more stay open');
+  const removed = await page.evaluate(() => window.__tabs.removed);
+  expect(removed).toHaveLength(100);
+  expect(Math.max(...removed)).toBe(199);
+});
+
+test('when the stash cannot be saved, no tab is closed', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => {
+    const local = window.chrome.storage.local;
+    const set = local.set.bind(local);
+    local.set = (values, callback) => {
+      if (!Object.entries(values).some(([key, value]) => key.startsWith('nordlys_dash.') && Array.isArray(value?.groups))) { set(values, callback); return; }
+      window.chrome.runtime.lastError = { message: 'QUOTA_BYTES quota exceeded' };
+      callback?.();
+      delete window.chrome.runtime.lastError;
+    };
+  });
+  await stash(page).getByRole('button', { name: 'Stash the tabs of this window' }).click();
+  await expect(page.locator('#toast-dock')).toContainText('could not be saved');
+  expect(await page.evaluate(() => window.__tabs.removed || [])).toEqual([]);
+  await expect(stash(page).locator('.dash-stash-group')).toHaveCount(0);
+});

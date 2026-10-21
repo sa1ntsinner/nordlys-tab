@@ -17,11 +17,7 @@
   ],
   "optional_permissions": [
     "bookmarks",
-    "tabs",
-    "identity"
-  ],
-  "host_permissions": [
-    "https://images.weserv.nl/*"
+    "tabs"
   ],
   "icons": {
     "16": "icons/icon16.png",
@@ -29,22 +25,9 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "action": {
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "32": "icons/icon32.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
-    },
-    "default_title": "Nordlys"
-  },
   "optional_host_permissions": [
-    "https://api.openai.com/*",
-    "https://api.anthropic.com/*",
-    "https://generativelanguage.googleapis.com/*",
-    "https://openrouter.ai/*",
-    "http://localhost/*",
-    "http://127.0.0.1/*",
+    "https://api.todoist.com/*",
+    "https://api.github.com/*",
     "https://*/*"
   ]
 }

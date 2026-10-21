@@ -6,6 +6,20 @@ Chrome Web Store's rule that they only ever go up.
 
 ## [Unreleased]
 
+### Removed
+
+- The Ask card, and `? question` in the search box. Nordlys no longer talks to OpenAI, Anthropic, Gemini, OpenRouter or Ollama, and the model key it kept on this device is deleted. A question typed after `?` is now an ordinary search.
+- Connected apps are Todoist, GitHub and any calendar by its link. GitLab, Trello, Asana, ClickUp, Linear, Jira and Notion are gone, and their tokens are deleted from this device. Google Tasks, Google Calendar and Microsoft To Do, which only ever said "Soon", are gone too, with the `identity` permission they would have needed.
+- Nordlys asks for no site at install. It used to ask for `images.weserv.nl`, which is still used for a pasted icon address that a site won't hand over, and needs no permission. Optional site access is now Todoist, GitHub and a calendar link's own address, instead of the AI providers, `localhost` and any `https` site.
+- The toolbar button, which did nothing when clicked.
+
+### Fixed
+
+- Stashing the tabs of a window with more than 100 tabs closed all of them but kept only 100; the rest were lost. Now only the tabs the stash kept are closed, the card says how many stay open, and nothing is closed until the stash is saved.
+- Sync filled up and stopped as bookmarks were deleted, because every deleted bookmark kept its name and address in sync for ever. A deletion now takes a few bytes and is dropped 30 days later. When sync is full, Settings says so in your language and says what frees space; it used to tell you, in English, to delete a profile, which freed nothing.
+- Calendar links: events with their own time zone show at the right hour, repeats by month and year show (the 15th, the last Friday, a birthday), "Monday, Wednesday and Friday" gives three days a week, a meeting called off or moved shows as it is, and a weekly 9:00 stays at 9:00 across the change of clocks.
+- Sync is named for what it is in every browser, the browser's own sync, not "your Google account" or "Chrome sync".
+
 ### Changed
 
 - Pillars, Nacre and Baikal are replaced by three backgrounds that show the sky over you as it is now, worked out from your clock and time zone, not your location. Star map shows the bright stars and their constellations. Meteors is a calm night sky with a shooting star now and then, and more on the nights of the big meteor showers; Settings says when one is on. Midnight sun shows the sun where it stands, over a calm sea, and the sky's colour follows it through the day.

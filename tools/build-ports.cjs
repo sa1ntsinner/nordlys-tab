@@ -38,10 +38,7 @@ const PORTS = {
     ...manifest,
     description: neutral,
     // Firefox has no /_favicon/ service; icons come from the site instead.
-    // It will not ask for identity later, only at install, where it shows
-    // no prompt (it opens nothing without a click on Connect).
-    permissions: [...without(manifest.permissions, 'favicon'), 'identity'],
-    optional_permissions: without(manifest.optional_permissions, 'identity'),
+    permissions: without(manifest.permissions, 'favicon'),
     browser_specific_settings: {
       gecko: {
         id: GECKO_ID,
@@ -54,11 +51,11 @@ const PORTS = {
   safari: manifest => ({
     ...manifest,
     description: neutral,
-    // Safari has neither the favicon service, the search API nor identity;
-    // the search box asks for an engine instead (platform.js).
+    // Safari has neither the favicon service nor the search API; the
+    // search box asks for an engine instead (platform.js).
     permissions: without(manifest.permissions, 'favicon', 'search'),
     // Nor bookmarks: Safari extensions cannot read them (bookmark-sync.js).
-    optional_permissions: without(manifest.optional_permissions, 'identity', 'bookmarks'),
+    optional_permissions: without(manifest.optional_permissions, 'bookmarks'),
     browser_specific_settings: { safari: { strict_min_version: '17.0' } }
   })
 };

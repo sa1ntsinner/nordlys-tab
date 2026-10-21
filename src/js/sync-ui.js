@@ -363,7 +363,7 @@
 
     syncBlock(status) {
       if (!status.available) {
-        return el("div", { class: "sync-block" }, el("p", { class: "backup-note", text: say("sync.unavailable", "Chrome sync isn't available here. Profiles still work on this device.") }));
+        return el("div", { class: "sync-block" }, el("p", { class: "backup-note", text: say("sync.unavailable", "Sync isn't available in this browser. Profiles still work on this device.") }));
       }
       const input = el("input", { type: "checkbox", id: "cfg-sync-on", checked: status.enabled ? true : null, "aria-labelledby": "cfg-sync-on-label" });
       input.addEventListener("change", () => this.toggleSync(input));
@@ -371,24 +371,33 @@
         off: say("sync.stateOff", "Off"),
         syncing: say("sync.stateSyncing", "Syncing…"),
         ready: status.lastSync ? say("sync.stateReady", `Synced ${ago(status.lastSync)}`, { when: ago(status.lastSync) }) : say("sync.stateReadyNow", "Synced"),
-        full: say("sync.stateFull", "Chrome sync is full"),
+        full: say("sync.stateFull", "Sync is full"),
         error: say("sync.stateError", "Couldn't sync")
       }[status.state] || "";
       const used = Math.min(100, Math.round((status.bytes || 0) / 1024));
       return el("div", { class: "sync-block" }, [
         el("div", { class: "row setting-row" }, [
-          el("span", { id: "cfg-sync-on-label" }, [el("span", { text: say("sync.toggle", "Sync with my Google account") }), el("small", { class: "row-hint", text: say("sync.toggleHint", "Through Chrome's own sync, on every Chrome you're signed in to. Off by default.") })]),
+          el("span", { id: "cfg-sync-on-label" }, [el("span", { text: say("sync.toggle", "Sync between my devices") }), el("small", { class: "row-hint", text: say("sync.toggleHint", "Through your browser's own sync, on every device where you're signed in to it. Off by default.") })]),
           el("label", { class: "tg" }, [input, el("i")])
         ]),
         status.enabled ? el("div", { class: "sync-status", role: "status" }, [
           el("span", { class: `sync-state is-${status.state}`, text: state }),
-          status.error ? el("span", { class: "sync-error", text: status.error }) : null,
-          el("div", { class: "sync-meter", role: "meter", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(used), "aria-label": say("sync.meterLabel", "Space used in Chrome sync") }, el("i", { style: `width:${used}%` })),
+          status.error ? el("span", { class: "sync-error", title: status.error, text: this.reason(status) }) : null,
+          el("div", { class: "sync-meter", role: "meter", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(used), "aria-label": say("sync.meterLabel", "Space used in sync") }, el("i", { style: `width:${used}%` })),
           el("small", { text: say("sync.meter", `${used} of 100 KB`, { used }) }),
           this.button(say("sync.now", "Sync now"), () => this.client.syncNow(), { key: "sync-now", small: true })
         ]) : null,
-        el("p", { class: "backup-note", text: say("sync.stays", "What stays on each device: uploaded icon images, wallpapers and videos, custom CSS, folders that follow Chrome bookmarks, and recent searches.") })
+        el("p", { class: "backup-note", text: say("sync.stays", "What stays on each device: uploaded icon images, wallpapers and videos, custom CSS, folders that follow your browser's bookmarks, recent searches, and what dashboard cards hold (tasks, notes, habits, stashed tabs).") })
       ]);
+    }
+
+    // Why sync stopped, in the person's language; the raw text is its title.
+    reason(status) {
+      return {
+        full: say("sync.whyFull", "Sync is full. Deleted bookmarks free their space 30 days after they go. Until then, keep a big folder only on this device, use smaller icons, or forget a device you no longer use. Your changes are saved here."),
+        damaged: say("sync.whyDamaged", "What another device sent could not be read, so it was not used. Your board here was kept."),
+        large: say("sync.whyLarge", "One folder is too big to sync. Keep it only on this device, or split it. Your changes are saved here.")
+      }[status.reason] || say("sync.whyOther", "Sync didn't answer. Nordlys tries again with your next change, and your changes are saved here.");
     }
 
     async toggleSync(input) {
@@ -449,7 +458,7 @@
           me ? null : this.button(say("sync.forget", "Forget"), () => this.client.forget(device.id), { key: `forget-${device.id}`, small: true })
         ]);
       });
-      return el("div", { class: "sync-block" }, [el("ul", { class: "sync-devices" }, rows), el("p", { class: "backup-note", text: say("sync.forgetHint", "Forgetting an old device frees its space in Chrome sync. Its changes stay.") })]);
+      return el("div", { class: "sync-block" }, [el("ul", { class: "sync-devices" }, rows), el("p", { class: "backup-note", text: say("sync.forgetHint", "Forgetting an old device frees its space in sync. Its changes stay.") })]);
     }
 
     /* A device set to always open on one profile does, once per new tab. */

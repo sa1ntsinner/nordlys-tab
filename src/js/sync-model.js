@@ -19,8 +19,15 @@
    offline rename cannot bring a deleted bookmark back.
 
    Each device writes only its own sync items, packed into chunks that stay
-   under Chrome's 8 KB item limit, so two devices writing at once never
-   overwrite each other. */
+   under the browser's 8 KB item limit, so two devices writing at once never
+   overwrite each other.
+
+   A deleted folder or bookmark travels as its deletion alone, never with its
+   old name and address. Thirty days after a device first saw it deleted
+   (or after its profile went for good), the device drops it and keeps only a
+   grave: the counter it ended on. Older writes about it that still sit in
+   another device's items are then ignored, so it cannot come back, and the
+   space it took in sync is free again. */
 (function (root) {
   "use strict";
 
@@ -30,6 +37,8 @@
   const CHUNK_BUDGET = 7600;
   const VALUE_LIMIT = 4000;
   const DELETED_PROFILE_DAYS = 30;
+  const DEAD_DAYS = 30;
+  const DAY = 86400000;
   // About the person, not the board, so every profile shares them.
   const PERSON = new Set(["language", "timeFormat", "userName", "openNewTab", "showSeconds"]);
   // Kept on the device that has them: too big, or meaningless anywhere else.
@@ -77,7 +86,7 @@
 
   function create(device) {
     if (!validId(device)) throw new Error("A device needs a valid id.");
-    return { version: VERSION, device, clock: 0, records: {} };
+    return { version: VERSION, device, clock: 0, records: {}, dead: {}, graves: {} };
   }
 
   function flatten(snapshot) {
@@ -129,6 +138,8 @@
     const n = ++state.clock;
     for (const [entity, field, ...value] of changes) {
       if (!validEntity(entity) || !safeName(field)) throw new Error("Invalid board change.");
+      // Written here after it was dropped: it is back, newer than its grave.
+      if (state.graves && own(state.graves, entity)) delete state.graves[entity];
       const register = { n, a: state.device };
       if (value.length) register.v = clone(value[0]);
       (state.records[entity] ||= {})[field] = register;
@@ -258,7 +269,9 @@
         if (local.a === state.device) pairs.push([entity, "_alive", [Math.max(local.n, records[entity]._alive?.n || 0), false]]);
         continue;
       }
+      const gone = /^(g|l)\//.test(entity) && records[entity]._alive?.v === false;
       for (const [field, register] of Object.entries(records[entity])) {
+        if (gone && field !== "_alive") continue;
         if (register.a !== state.device || !portable(entity, field, register.v)) continue;
         pairs.push([entity, field, own(register, "v") ? [register.n, register.v] : [register.n]]);
       }
@@ -327,6 +340,11 @@
       for (const [entity, fields] of Object.entries(chunk.e)) {
         for (const [field, register] of Object.entries(fields)) {
           if (!portable(entity, field, register[1])) continue;
+          // What was written before this device dropped it stays dropped.
+          if (state.graves && own(state.graves, entity)) {
+            if (register[0] <= state.graves[entity]) continue;
+            delete state.graves[entity];
+          }
           const next = { n: register[0], a: chunk.a };
           if (register.length === 2) next.v = clone(register[1]);
           state.clock = Math.max(state.clock, next.n);
@@ -340,10 +358,51 @@
     return changed;
   }
 
+  /* Drops what has been deleted long enough, as told in the header. Answers
+     whether anything changed, so the caller knows to save and send. */
+  function compact(state, now = Date.now()) {
+    state.dead ||= {};
+    state.graves ||= {};
+    const records = state.records;
+    const drop = new Set();
+    let changed = false;
+    // Profiles past their thirty days, with their look, folders and bookmarks.
+    for (const [entity, fields] of Object.entries(records)) {
+      if (!entity.startsWith("p/") || fields._alive?.v !== false) continue;
+      const at = fields._deletedAt?.v;
+      if (!at || now - at < DELETED_PROFILE_DAYS * DAY) continue;
+      const id = entity.slice(2);
+      drop.add(entity);
+      drop.add(`c/${id}`);
+      for (const [g, gf] of Object.entries(records)) {
+        if (!g.startsWith("g/") || gf._profile?.v !== id) continue;
+        drop.add(g);
+        for (const [l, lf] of Object.entries(records)) if (l.startsWith("l/") && lf._parent?.v === g.slice(2)) drop.add(l);
+      }
+    }
+    for (const [entity, fields] of Object.entries(records)) {
+      if (!/^(g|l)\//.test(entity)) continue;
+      if (fields._alive?.v !== false) {
+        if (own(state.dead, entity)) { delete state.dead[entity]; changed = true; }
+        continue;
+      }
+      if (!own(state.dead, entity)) { state.dead[entity] = now; changed = true; }
+      if (now - state.dead[entity] >= DEAD_DAYS * DAY) drop.add(entity);
+    }
+    for (const entity of drop) {
+      if (!records[entity]) continue;
+      state.graves[entity] = Math.max(state.graves[entity] || 0, ...Object.values(records[entity]).map((register) => register.n));
+      delete records[entity];
+      delete state.dead[entity];
+      changed = true;
+    }
+    return changed;
+  }
+
   const api = {
-    PREFIX, VERSION, ITEM_LIMIT, PERSON,
+    PREFIX, VERSION, ITEM_LIMIT, PERSON, DEAD_DAYS,
     clone, normalize, normalizeSnapshot, create, update, apply, materialize,
-    deletedProfiles, restoreProfile, devices, values, portable, exportChunks, validateChunks, merge
+    deletedProfiles, restoreProfile, devices, values, portable, exportChunks, validateChunks, merge, compact
   };
   root.NordlysSyncModel = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

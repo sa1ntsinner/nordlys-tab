@@ -821,14 +821,6 @@ class SearchWidget {
       } else if (this.input.value.trim().startsWith(">")) {
         // A command with nothing highlighted runs the best reading of it.
         items.find((item) => item.classList.contains("sugg-command"))?.dispatchEvent(new MouseEvent("mousedown"));
-      } else if (this.input.value.trim().startsWith("?") && this.app.dashboard) {
-        // "? question" goes to the Ask card, not to a search engine.
-        const question = this.input.value.trim().slice(1).trim();
-        this.input.value = "";
-        this.input.blur();
-        document.body.classList.remove("searching");
-        this.closeSuggestions();
-        if (question) this.app.dashboard.ask(question);
       } else {
         this.executeSearch(this.input.value.trim());
       }

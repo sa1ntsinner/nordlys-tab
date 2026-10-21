@@ -13,9 +13,10 @@
    where due is "YYYY-MM-DD" or null. The request builders and the
    normalisers are pure and tested; list() does the fetching.
 
-   Connectors that need a registered OAuth app (Google, Microsoft) read
-   their client id from NordlysOAuthClients (oauth-clients.js), and say they
-   are not ready while it is empty.                                     */
+   Three are kept: Todoist, GitHub and any calendar by its ICS link. Each
+   is one token or one address, with nothing to register and no sign-in
+   window. Others were cut in 2.6.0: each one is a service that can change
+   under Nordlys, for few people.                                       */
 (function (root) {
   "use strict";
 
@@ -65,180 +66,177 @@
         return out;
       }
     },
-    gitlab: {
-      name: "GitLab", color: "#fc6d26", kind: "tasks",
-      fields: [{ key: "token", label: "Personal access token", secret: true, help: "https://gitlab.com/-/user_settings/personal_access_tokens" }, { key: "host", label: "Server", placeholder: "https://gitlab.com" }],
-      origins: (c) => [`${(c.host || "https://gitlab.com").replace(/\/+$/, "")}/*`],
-      requests: (c) => {
-        const base = (c.host || "https://gitlab.com").replace(/\/+$/, "");
-        const headers = { "PRIVATE-TOKEN": c.token };
-        return [{ url: `${base}/api/v4/issues?scope=assigned_to_me&state=opened&per_page=50`, headers }, { url: `${base}/api/v4/merge_requests?scope=assigned_to_me&state=opened&per_page=30`, headers }];
-      },
-      read: ([issues, merges]) => [
-        ...(issues || []).map((i) => item("gitlab", { id: `i${i.id}`, title: i.title, url: i.web_url, due: i.due_date, context: i.references?.full?.split("#")[0] || "" })),
-        ...(merges || []).map((m) => item("gitlab", { id: `m${m.id}`, title: `Merge: ${m.title}`, url: m.web_url, context: m.references?.full?.split("!")[0] || "" }))
-      ]
-    },
-    trello: {
-      name: "Trello", color: "#0c66e4", kind: "tasks",
-      fields: [{ key: "key", label: "API key", help: "https://trello.com/power-ups/admin" }, { key: "token", label: "Token", secret: true, help: "https://trello.com/power-ups/admin" }],
-      origins: ["https://api.trello.com/*"],
-      requests: (c) => [{ url: `https://api.trello.com/1/members/me/cards?filter=open&fields=name,due,dueComplete,shortUrl,idBoard&board=true&board_fields=name&key=${encodeURIComponent(c.key)}&token=${encodeURIComponent(c.token)}` }],
-      read: ([cards]) => (cards || []).filter((card) => !card.dueComplete).map((card) => item("trello", { id: card.id, title: card.name, url: card.shortUrl, due: card.due, context: card.board?.name || "" })),
-      complete: (c, it) => ({ url: `https://api.trello.com/1/cards/${encodeURIComponent(it.native)}?dueComplete=true&key=${encodeURIComponent(c.key)}&token=${encodeURIComponent(c.token)}`, method: "PUT" })
-    },
-    asana: {
-      name: "Asana", color: "#f06a6a", kind: "tasks",
-      fields: [{ key: "token", label: "Personal access token", secret: true, help: "https://app.asana.com/0/my-apps" }, { key: "workspace", label: "Workspace ID (optional)" }],
-      origins: ["https://app.asana.com/*"],
-      /* Asana needs a workspace for "my tasks"; without one the first of the
-         person's workspaces is used, found on the first step. */
-      steps: async (c, get) => {
-        let workspace = c.workspace;
-        if (!workspace) workspace = (await get({ url: "https://app.asana.com/api/1.0/users/me?opt_fields=workspaces.gid", headers: { Authorization: `Bearer ${c.token}` } }))?.data?.workspaces?.[0]?.gid;
-        if (!workspace) return [[]];
-        return [await get({ url: `https://app.asana.com/api/1.0/tasks?assignee=me&workspace=${encodeURIComponent(workspace)}&completed_since=now&limit=100&opt_fields=name,due_on,permalink_url,completed,projects.name`, headers: { Authorization: `Bearer ${c.token}` } })];
-      },
-      read: ([answer]) => (answer?.data || []).filter((t) => !t.completed).map((t) => item("asana", { id: t.gid, title: t.name, url: t.permalink_url, due: t.due_on, context: t.projects?.[0]?.name || "" })),
-      complete: (c, it) => ({ url: `https://app.asana.com/api/1.0/tasks/${encodeURIComponent(it.native)}`, method: "PUT", headers: { Authorization: `Bearer ${c.token}`, "content-type": "application/json" }, body: JSON.stringify({ data: { completed: true } }) })
-    },
-    clickup: {
-      name: "ClickUp", color: "#7b68ee", kind: "tasks",
-      fields: [{ key: "token", label: "Personal API token", secret: true, help: "https://app.clickup.com/settings/apps" }],
-      origins: ["https://api.clickup.com/*"],
-      steps: async (c, get) => {
-        const headers = { Authorization: c.token };
-        const [user, teams] = await Promise.all([get({ url: "https://api.clickup.com/api/v2/user", headers }), get({ url: "https://api.clickup.com/api/v2/team", headers })]);
-        const me = user?.user?.id;
-        const lists = await Promise.all((teams?.teams || []).slice(0, 3).map((team) => get({ url: `https://api.clickup.com/api/v2/team/${team.id}/task?include_closed=false&subtasks=true${me ? `&assignees[]=${me}` : ""}`, headers })));
-        return [lists];
-      },
-      read: ([lists]) => (lists || []).flatMap((answer) => answer?.tasks || []).map((t) => item("clickup", { id: t.id, title: t.name, url: t.url, due: t.due_date ? Number(t.due_date) : null, priority: t.priority?.priority === "urgent", context: t.list?.name || "" })),
-      complete: null
-    },
-    linear: {
-      name: "Linear", color: "#5e6ad2", kind: "tasks",
-      fields: [{ key: "token", label: "Personal API key", secret: true, help: "https://linear.app/settings/account/security" }],
-      origins: ["https://api.linear.app/*"],
-      requests: (c) => [{
-        url: "https://api.linear.app/graphql", method: "POST", headers: { Authorization: c.token, "content-type": "application/json" },
-        body: JSON.stringify({ query: "{ viewer { assignedIssues(first: 60, filter: { state: { type: { nin: [\"completed\", \"canceled\"] } } }) { nodes { id identifier title url dueDate priority team { key } } } } }" })
-      }],
-      read: ([answer]) => (answer?.data?.viewer?.assignedIssues?.nodes || []).map((n) => item("linear", { id: n.id, title: `${n.identifier} ${n.title}`, url: n.url, due: n.dueDate, priority: n.priority === 1, context: n.team?.key || "" }))
-    },
-    jira: {
-      name: "Jira", color: "#0052cc", kind: "tasks",
-      fields: [{ key: "site", label: "Site", placeholder: "your-team.atlassian.net" }, { key: "email", label: "Email" }, { key: "token", label: "API token", secret: true, help: "https://id.atlassian.com/manage-profile/security/api-tokens" }],
-      origins: (c) => [`https://${String(c.site || "").replace(/^https?:\/\//, "").replace(/\/.*$/, "")}/*`],
-      requests: (c) => {
-        const site = String(c.site || "").replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-        const auth = btoa(`${c.email}:${c.token}`);
-        return [{ url: `https://${site}/rest/api/3/search/jql?jql=${encodeURIComponent("assignee = currentUser() AND statusCategory != Done ORDER BY duedate ASC")}&fields=summary,duedate,priority,project&maxResults=60`, headers: { Authorization: `Basic ${auth}`, Accept: "application/json" }, site }];
-      },
-      read: ([answer], c) => {
-        const site = String(c?.site || "").replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-        return (answer?.issues || []).map((i) => item("jira", { id: i.id, title: `${i.key} ${i.fields?.summary || ""}`, url: `https://${site}/browse/${i.key}`, due: i.fields?.duedate, priority: /highest|high/i.test(i.fields?.priority?.name || ""), context: i.fields?.project?.name || "" }));
-      }
-    },
-    notion: {
-      name: "Notion", color: "#191919", kind: "tasks",
-      fields: [{ key: "token", label: "Integration secret", secret: true, help: "https://www.notion.so/profile/integrations" }, { key: "database", label: "Task database link or ID" }],
-      origins: ["https://api.notion.com/*"],
-      requests: (c) => {
-        const id = (String(c.database || "").match(/[0-9a-f]{32}/i) || [String(c.database || "").replace(/-/g, "")])[0];
-        return [{ url: `https://api.notion.com/v1/databases/${id}/query`, method: "POST", headers: { Authorization: `Bearer ${c.token}`, "Notion-Version": "2022-06-28", "content-type": "application/json" }, body: JSON.stringify({ page_size: 60 }) }];
-      },
-      /* A Notion database has no fixed shape: the title is the title
-         property, the date is the first date property, and a checkbox or a
-         status called done marks it finished. */
-      read: ([answer]) => (answer?.results || []).map((page) => {
-        const props = Object.values(page.properties || {});
-        const title = props.find((p) => p.type === "title")?.title?.map((t) => t.plain_text).join("") || "";
-        const date = props.find((p) => p.type === "date")?.date?.start || null;
-        const doneBox = props.find((p) => p.type === "checkbox");
-        const status = props.find((p) => p.type === "status")?.status?.name || "";
-        const done = (doneBox && doneBox.checkbox) || /^(done|complete|completed|готово)$/i.test(status);
-        return item("notion", { id: page.id, title, url: page.url, due: date, done });
-      }).filter((t) => !t.done)
-    },
     ics: {
       name: "Calendar (ICS link)", color: "#34a853", kind: "events",
       fields: [{ key: "url", label: "Calendar address (iCal/ICS)", secret: true, help: "https://support.google.com/calendar/answer/37648" }],
       origins: (c) => { try { const u = new URL(String(c.url || "").replace(/^webcal:/i, "https:")); return [`${u.protocol}//${u.hostname}/*`]; } catch (error) { return []; } },
       requests: (c) => [{ url: String(c.url || "").replace(/^webcal:/i, "https:"), text: true }],
       read: ([text], c, now = Date.now()) => events(String(text || ""), now).map((e) => ({ ...item("ics", { id: e.uid || `${e.start}${e.title}`, title: e.title, url: e.url, due: day(e.start) }), start: e.start, end: e.end, allDay: e.allDay, where: clip(e.location || "", 80) }))
-    },
-    googletasks: {
-      name: "Google Tasks", color: "#1a73e8", kind: "tasks", oauth: "google",
-      scopes: ["https://www.googleapis.com/auth/tasks"],
-      fields: [], origins: ["https://tasks.googleapis.com/*"],
-      steps: async (c, get) => {
-        const headers = { Authorization: `Bearer ${c.accessToken}` };
-        const lists = await get({ url: "https://tasks.googleapis.com/tasks/v1/users/@me/lists?maxResults=20", headers });
-        return [await Promise.all((lists?.items || []).slice(0, 8).map(async (list) => ({ list, tasks: await get({ url: `https://tasks.googleapis.com/tasks/v1/lists/${list.id}/tasks?showCompleted=false&maxResults=100`, headers }) })))];
-      },
-      read: ([groups]) => (groups || []).flatMap(({ list, tasks }) => (tasks?.items || []).map((t) => item("googletasks", { id: `${list.id}/${t.id}`, title: t.title, url: t.webViewLink || "https://tasks.google.com/", due: t.due, context: list.title }))),
-      complete: (c, it) => { const [list, task] = it.native.split("/"); return { url: `https://tasks.googleapis.com/tasks/v1/lists/${list}/tasks/${task}`, method: "PATCH", headers: { Authorization: `Bearer ${c.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ status: "completed" }) }; }
-    },
-    googlecalendar: {
-      name: "Google Calendar", color: "#4285f4", kind: "events", oauth: "google",
-      scopes: ["https://www.googleapis.com/auth/calendar.events.readonly"],
-      fields: [], origins: ["https://www.googleapis.com/*"],
-      requests: (c, now = Date.now()) => [{ url: `https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime&maxResults=30&timeMin=${encodeURIComponent(new Date(now - 3600e3).toISOString())}&timeMax=${encodeURIComponent(new Date(now + 14 * 86400e3).toISOString())}`, headers: { Authorization: `Bearer ${c.accessToken}` } }],
-      read: ([answer]) => (answer?.items || []).map((e) => ({ ...item("googlecalendar", { id: e.id, title: e.summary, url: e.htmlLink, due: e.start?.date || e.start?.dateTime }), start: e.start?.dateTime || e.start?.date, end: e.end?.dateTime || e.end?.date, allDay: Boolean(e.start?.date), where: clip(e.location || "", 80) }))
-    },
-    mstodo: {
-      name: "Microsoft To Do", color: "#2564cf", kind: "tasks", oauth: "microsoft",
-      scopes: ["Tasks.ReadWrite", "offline_access"],
-      fields: [], origins: ["https://graph.microsoft.com/*"],
-      steps: async (c, get) => {
-        const headers = { Authorization: `Bearer ${c.accessToken}` };
-        const lists = await get({ url: "https://graph.microsoft.com/v1.0/me/todo/lists", headers });
-        return [await Promise.all((lists?.value || []).slice(0, 8).map(async (list) => ({ list, tasks: await get({ url: `https://graph.microsoft.com/v1.0/me/todo/lists/${list.id}/tasks?$filter=status ne 'completed'&$top=100`, headers }) })))];
-      },
-      read: ([groups]) => (groups || []).flatMap(({ list, tasks }) => (tasks?.value || []).map((t) => item("mstodo", { id: `${list.id}/${t.id}`, title: t.title, url: "https://to-do.office.com/tasks/", due: t.dueDateTime?.dateTime, priority: t.importance === "high", context: list.displayName }))),
-      complete: (c, it) => { const [list, task] = it.native.split("/"); return { url: `https://graph.microsoft.com/v1.0/me/todo/lists/${list}/tasks/${task}`, method: "PATCH", headers: { Authorization: `Bearer ${c.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ status: "completed" }) }; }
     }
   };
 
   // ── Calendar files ─────────────────────────────────────────────
-  /* The events of an iCalendar file that fall in the next two weeks, with
-     weekly and daily repeats unrolled. Enough for "what is next", not a
-     full RFC 5545 engine. */
+  /* The events of an iCalendar file that fall in the next two weeks. Times
+     are read in their own zone (TZID), repeats are unrolled on the wall
+     clock of that zone, so a weekly 9:00 stays at 9:00 across a change to
+     summer time, and the parts of RFC 5545 that calendars really send are
+     followed: DAILY, WEEKLY, MONTHLY and YEARLY with INTERVAL, COUNT,
+     UNTIL, BYDAY (also "2MO", "-1FR"), BYMONTHDAY and BYMONTH; EXDATE for
+     a meeting called off; RECURRENCE-ID for one that was moved. */
+  const DAY_MS = 86400e3;
+  const WEEKDAYS = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
   function unfold(text) { return text.replace(/\r?\n[ \t]/g, ""); }
-  function icsDate(value, params = "") {
-    if (!value) return null;
-    const m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z)?)?$/.exec(value.trim());
+  const unescape = (value) => value.replace(/\\n/gi, " ").replace(/\\([,;\\])/g, "$1");
+  // How far a zone is ahead of UTC at a moment, in ms; null for a zone this browser does not know.
+  const zoneOffsets = new Map();
+  function zoneOffset(zone, time) {
+    let format = zoneOffsets.get(zone);
+    if (format === undefined) {
+      try { format = new Intl.DateTimeFormat("en-US", { timeZone: zone, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }); } catch (error) { format = null; }
+      zoneOffsets.set(zone, format);
+    }
+    if (!format) return null;
+    const p = Object.fromEntries(format.formatToParts(new Date(time)).map((part) => [part.type, part.value]));
+    return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second) - time;
+  }
+  // A wall-clock time in a zone ("UTC", "floating" for the viewer's own, or a TZID) as a moment.
+  function moment(parts, zone) {
+    const wall = Date.UTC(parts.y, parts.m - 1, parts.d, parts.h, parts.mi, parts.s);
+    if (zone === "UTC") return wall;
+    if (zone !== "floating") {
+      const first = zoneOffset(zone, wall);
+      if (first !== null) {
+        const guess = wall - first;
+        const second = zoneOffset(zone, guess);
+        return wall - (second === first ? first : second);
+      }
+    }
+    return new Date(parts.y, parts.m - 1, parts.d, parts.h, parts.mi, parts.s).getTime();
+  }
+  function readDate(value, params = "") {
+    const m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z)?)?$/.exec(String(value || "").trim());
     if (!m) return null;
-    if (!m[4]) return { iso: `${m[1]}-${m[2]}-${m[3]}`, allDay: true, time: Date.UTC(+m[1], +m[2] - 1, +m[3]) };
-    const utc = m[7] === "Z";
-    const t = utc ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]) : new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime();
-    return { iso: new Date(t).toISOString(), allDay: false, time: t, tzid: /TZID=/i.test(params) };
+    const parts = { y: +m[1], m: +m[2], d: +m[3], h: +(m[4] || 0), mi: +(m[5] || 0), s: +(m[6] || 0) };
+    const tzid = /TZID=("?)([^;:"]+)\1/i.exec(params)?.[2];
+    const zone = !m[4] ? "UTC" : m[7] ? "UTC" : tzid || "floating";
+    return { parts, zone, allDay: !m[4] };
+  }
+  function icsDate(value, params = "") {
+    const read = readDate(value, params);
+    if (!read) return null;
+    const time = moment(read.parts, read.zone);
+    if (read.allDay) return { iso: `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`, allDay: true, time };
+    return { iso: new Date(time).toISOString(), allDay: false, time, tzid: read.zone !== "UTC" && read.zone !== "floating" };
+  }
+  const dayNumber = (y, m, d) => Math.round(Date.UTC(y, m - 1, d) / DAY_MS);
+  const fromDayNumber = (n) => { const date = new Date(n * DAY_MS); return { y: date.getUTCFullYear(), m: date.getUTCMonth() + 1, d: date.getUTCDate() }; };
+  const monthLength = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();
+  function duration(text) {
+    const m = /^([+-])?P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/i.exec(String(text || "").trim());
+    if (!m) return 0;
+    return (m[1] === "-" ? -1 : 1) * ((+(m[2] || 0) * 7 + +(m[3] || 0)) * DAY_MS + (+(m[4] || 0) * 3600 + +(m[5] || 0) * 60 + +(m[6] || 0)) * 1000);
+  }
+  // The days of one month a rule picks, as day numbers in order.
+  function daysInMonth(y, m, rule, startDay) {
+    const last = monthLength(y, m);
+    const out = new Set();
+    for (const value of rule.BYMONTHDAY || []) { const d = value < 0 ? last + 1 + value : value; if (d >= 1 && d <= last) out.add(d); }
+    for (const by of rule.BYDAY || []) {
+      const weekday = WEEKDAYS.indexOf(by.day);
+      const matches = [];
+      for (let d = 1; d <= last; d++) if (new Date(Date.UTC(y, m - 1, d)).getUTCDay() === weekday) matches.push(d);
+      if (!by.nth) matches.forEach((d) => out.add(d));
+      else { const d = by.nth > 0 ? matches[by.nth - 1] : matches[matches.length + by.nth]; if (d) out.add(d); }
+    }
+    if (!rule.BYMONTHDAY && !rule.BYDAY && startDay <= last) out.add(startDay);
+    return [...out].sort((a, b) => a - b).map((d) => dayNumber(y, m, d));
+  }
+  function parseRule(text) {
+    const rule = {};
+    for (const pair of String(text || "").split(";")) {
+      const [key, value] = pair.split("=");
+      if (!key || value === undefined) continue;
+      rule[key.toUpperCase()] = value.toUpperCase();
+    }
+    if (!/^(DAILY|WEEKLY|MONTHLY|YEARLY)$/.test(rule.FREQ || "")) return null;
+    return {
+      FREQ: rule.FREQ, INTERVAL: Math.max(1, +rule.INTERVAL || 1), COUNT: +rule.COUNT || 0, UNTIL: rule.UNTIL || null,
+      BYDAY: rule.BYDAY ? rule.BYDAY.split(",").map((v) => /^([+-]?\d{1,2})?(SU|MO|TU|WE|TH|FR|SA)$/.exec(v)).filter(Boolean).map((m) => ({ nth: +(m[1] || 0), day: m[2] })) : null,
+      BYMONTHDAY: rule.BYMONTHDAY ? rule.BYMONTHDAY.split(",").map(Number).filter((n) => n && Math.abs(n) <= 31) : null,
+      BYMONTH: rule.BYMONTH ? rule.BYMONTH.split(",").map(Number).filter((n) => n >= 1 && n <= 12) : null
+    };
+  }
+  /* The start days of a repeating event, one period at a time, in order,
+     from its first day; it stops when told to (the caller's window). */
+  function* repeatDays(start, rule) {
+    const first = dayNumber(start.y, start.m, start.d);
+    const weekStart = first - ((new Date(first * DAY_MS).getUTCDay() + 6) % 7);
+    for (let k = 0; k < 20000; k++) {
+      let days;
+      if (rule.FREQ === "DAILY") days = [first + k * rule.INTERVAL];
+      else if (rule.FREQ === "WEEKLY") {
+        const week = weekStart + k * 7 * rule.INTERVAL;
+        days = rule.BYDAY ? rule.BYDAY.map((by) => week + ((WEEKDAYS.indexOf(by.day) + 6) % 7)).sort((a, b) => a - b) : [first + k * 7 * rule.INTERVAL];
+      } else if (rule.FREQ === "MONTHLY") {
+        const index = (start.m - 1) + k * rule.INTERVAL;
+        days = daysInMonth(start.y + Math.floor(index / 12), (index % 12) + 1, rule, start.d);
+      } else {
+        const y = start.y + k * rule.INTERVAL;
+        days = (rule.BYMONTH || [start.m]).flatMap((m) => daysInMonth(y, m, rule, start.d));
+      }
+      yield days.filter((day) => day >= first);
+    }
   }
   function events(text, now = Date.now(), days = 14) {
     const out = [];
-    const until = now + days * 86400e3;
-    for (const block of unfold(text).split("BEGIN:VEVENT").slice(1)) {
+    const from = now - 3600e3;
+    const until = now + days * DAY_MS;
+    const blocks = unfold(text).split("BEGIN:VEVENT").slice(1).map((block) => {
       const body = block.split("END:VEVENT")[0];
-      const field = (name) => { const m = new RegExp(`^${name}((?:;[^:\\n]*)?):(.*)$`, "mi").exec(body); return m ? { params: m[1], value: m[2].trim() } : null; };
-      const start = field("DTSTART");
-      const s = start && icsDate(start.value, start.params);
-      if (!s) continue;
-      const endField = field("DTEND");
-      const e = endField && icsDate(endField.value, endField.params);
-      const length = e ? e.time - s.time : 0;
-      const title = (field("SUMMARY")?.value || "").replace(/\\,/g, ",").replace(/\\;/g, ";").replace(/\\n/gi, " ");
-      const base = { uid: field("UID")?.value || "", title, location: (field("LOCATION")?.value || "").replace(/\\,/g, ","), url: field("URL")?.value || null, allDay: s.allDay };
-      if (/STATUS:CANCELLED/i.test(body)) continue;
-      const rule = field("RRULE")?.value || "";
-      const push = (time) => { if (time + length >= now - 3600e3 && time <= until) out.push({ ...base, uid: `${base.uid}@${time}`, start: s.allDay ? new Date(time).toISOString().slice(0, 10) : new Date(time).toISOString(), end: length ? new Date(time + length).toISOString() : null }); };
-      const freq = /FREQ=(DAILY|WEEKLY)/i.exec(rule)?.[1]?.toUpperCase();
-      if (!freq) { push(s.time); continue; }
-      const step = (freq === "DAILY" ? 1 : 7) * 86400e3 * Number(/INTERVAL=(\d+)/i.exec(rule)?.[1] || 1);
-      const count = Number(/COUNT=(\d+)/i.exec(rule)?.[1] || 0);
-      const endRule = /UNTIL=(\d{8}(?:T\d{6}Z?)?)/i.exec(rule)?.[1];
-      const last = endRule ? icsDate(endRule).time : Infinity;
-      for (let i = 0, t = s.time; t <= until && t <= last && (!count || i < count); i++, t += step) push(t);
+      const all = (name) => [...body.matchAll(new RegExp(`^${name}((?:;[^:\\n]*)?):(.*)$`, "gmi"))].map((m) => ({ params: m[1], value: m[2].trim() }));
+      return { body, field: (name) => all(name)[0] || null, all };
+    });
+    // A moved or called-off single meeting replaces its place in the series.
+    const moved = new Map();
+    for (const b of blocks) {
+      const id = b.field("RECURRENCE-ID");
+      if (!id) continue;
+      const uid = b.field("UID")?.value || "";
+      const at = icsDate(id.value, id.params);
+      if (at) (moved.get(uid) || moved.set(uid, new Set()).get(uid)).add(at.time);
+    }
+    for (const b of blocks) {
+      if (/^STATUS:CANCELLED/mi.test(b.body)) continue;
+      const startField = b.field("DTSTART");
+      const start = startField && readDate(startField.value, startField.params);
+      if (!start) continue;
+      const startTime = moment(start.parts, start.zone);
+      const endField = b.field("DTEND");
+      const end = endField && icsDate(endField.value, endField.params);
+      const length = end ? end.time - startTime : duration(b.field("DURATION")?.value);
+      const uid = b.field("UID")?.value || "";
+      const base = { uid, title: unescape(b.field("SUMMARY")?.value || ""), location: unescape(b.field("LOCATION")?.value || ""), url: b.field("URL")?.value || null, allDay: start.allDay };
+      const push = (time) => {
+        if (time + length < from || time > until) return;
+        out.push({ ...base, uid: `${uid}@${time}`, start: start.allDay ? new Date(time).toISOString().slice(0, 10) : new Date(time).toISOString(), end: length ? new Date(time + length).toISOString() : null });
+      };
+      const rule = !b.field("RECURRENCE-ID") && parseRule(b.field("RRULE")?.value);
+      if (!rule) { push(startTime); continue; }
+      const skip = new Set(moved.get(uid) || []);
+      for (const ex of b.all("EXDATE")) for (const value of ex.value.split(",")) { const at = icsDate(value, ex.params || startField.params); if (at) skip.add(at.time); }
+      const last = rule.UNTIL ? icsDate(rule.UNTIL)?.time ?? Infinity : Infinity;
+      let count = 0;
+      outer: for (const period of repeatDays(start.parts, rule)) {
+        for (const day of period) {
+          // Days long past are only counted: no zone sum for years of repeats.
+          if ((day + 2) * DAY_MS + Math.max(0, length) < from) { count++; if (rule.COUNT && count >= rule.COUNT) break outer; continue; }
+          const { y, m, d } = fromDayNumber(day);
+          const time = moment({ ...start.parts, y, m, d }, start.zone);
+          if (time > last || time > until || (rule.COUNT && count >= rule.COUNT)) break outer;
+          count++;
+          if (!skip.has(time)) push(time);
+        }
+      }
     }
     return out.sort((a, b) => a.start.localeCompare(b.start)).slice(0, 60);
   }
@@ -260,7 +258,7 @@
   async function list(id, creds, now = Date.now()) {
     const c = CONNECTORS[id];
     if (!c) throw new ConnectorError(`No connector called ${id}.`);
-    const answers = c.steps ? await c.steps(creds, fetchOne) : await Promise.all(c.requests(creds, now).map(fetchOne));
+    const answers = await Promise.all(c.requests(creds, now).map(fetchOne));
     return c.read(answers, creds, now);
   }
   async function complete(id, creds, it) {
@@ -273,52 +271,10 @@
   const ready = (id, creds) => {
     const c = CONNECTORS[id];
     if (!c) return false;
-    if (c.oauth) return Boolean(creds?.accessToken);
-    return c.fields.every((f) => f.placeholder === "https://gitlab.com" || f.label.includes("optional") || String(creds?.[f.key] || "").trim());
+    return c.fields.every((f) => String(creds?.[f.key] || "").trim());
   };
 
-  // ── OAuth for the services that need a registered app ──────────
-  /* Google and Microsoft: an authorization-code flow with PKCE through
-     chrome.identity, so no secret is kept in the extension. The client id
-     comes from oauth-clients.js; until it is filled in these say so. */
-  const b64url = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  async function signIn(id) {
-    const c = CONNECTORS[id];
-    const clients = root.NordlysOAuthClients || {};
-    const client = clients[c?.oauth];
-    if (!client?.clientId) throw new ConnectorError(`${c?.name || id} is not set up in this build yet.`);
-    const identity = root.chrome?.identity;
-    if (!identity?.launchWebAuthFlow) throw new ConnectorError("This browser can't open a sign-in window for extensions.");
-    const redirect = identity.getRedirectURL("oauth");
-    const verifier = b64url(crypto.getRandomValues(new Uint8Array(32)));
-    const challenge = b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
-    const state = b64url(crypto.getRandomValues(new Uint8Array(12)));
-    const endpoints = c.oauth === "google"
-      ? { auth: "https://accounts.google.com/o/oauth2/v2/auth", token: "https://oauth2.googleapis.com/token" }
-      : { auth: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize", token: "https://login.microsoftonline.com/common/oauth2/v2.0/token" };
-    const url = new URL(endpoints.auth);
-    for (const [k, v] of Object.entries({ client_id: client.clientId, response_type: "code", redirect_uri: redirect, scope: c.scopes.join(" "), code_challenge: challenge, code_challenge_method: "S256", state, access_type: "offline", prompt: "consent" })) url.searchParams.set(k, v);
-    const back = await new Promise((resolve, reject) => identity.launchWebAuthFlow({ url: url.href, interactive: true }, (result) => (root.chrome.runtime.lastError || !result ? reject(new ConnectorError("Sign-in was closed.")) : resolve(result))));
-    const params = new URL(back).searchParams;
-    if (params.get("state") !== state || !params.get("code")) throw new ConnectorError("Sign-in didn't finish.");
-    const body = new URLSearchParams({ client_id: client.clientId, grant_type: "authorization_code", code: params.get("code"), redirect_uri: redirect, code_verifier: verifier });
-    if (client.clientSecret) body.set("client_secret", client.clientSecret);
-    const token = await fetchOne({ url: endpoints.token, method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: body.toString() });
-    return { accessToken: token.access_token, refreshToken: token.refresh_token || null, expires: Date.now() + (Number(token.expires_in) || 3600) * 1000 };
-  }
-  async function refresh(id, creds) {
-    const c = CONNECTORS[id];
-    const client = (root.NordlysOAuthClients || {})[c?.oauth];
-    if (!creds?.refreshToken || !client?.clientId) return creds;
-    if (creds.expires && creds.expires - Date.now() > 120e3) return creds;
-    const endpoint = c.oauth === "google" ? "https://oauth2.googleapis.com/token" : "https://login.microsoftonline.com/common/oauth2/v2.0/token";
-    const body = new URLSearchParams({ client_id: client.clientId, grant_type: "refresh_token", refresh_token: creds.refreshToken });
-    if (client.clientSecret) body.set("client_secret", client.clientSecret);
-    const token = await fetchOne({ url: endpoint, method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: body.toString() });
-    return { ...creds, accessToken: token.access_token, refreshToken: token.refresh_token || creds.refreshToken, expires: Date.now() + (Number(token.expires_in) || 3600) * 1000 };
-  }
-
-  const api = { CONNECTORS, list, complete, originsOf, ready, events, icsDate, signIn, refresh, ConnectorError, day };
+  const api = { CONNECTORS, list, complete, originsOf, ready, events, icsDate, ConnectorError, day };
   root.NordlysConnectors = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
