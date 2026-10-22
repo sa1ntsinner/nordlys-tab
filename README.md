@@ -10,6 +10,7 @@
 
 <p align="center">
   <a href="https://chromewebstore.google.com/detail/nordlys/fepiibfbbjhaoldgcfpfcikbonnjbfdc">Chrome Web Store</a> ·
+  <a href="https://sa1ntsinner.github.io/nordlys-tab/">Website</a> ·
   <a href="PRIVACY.md">Privacy</a> ·
   <a href="CHANGELOG.md">Changelog</a> ·
   <a href="CONTRIBUTING.md">Contributing</a>

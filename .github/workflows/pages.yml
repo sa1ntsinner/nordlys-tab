@@ -1,0 +1,49 @@
+# Publishes the website to GitHub Pages. The site's own files live in a
+# private repository (sa1ntsinner/nordlys-site) and are laid over this one;
+# tools/site-build.cjs then copies the extension's sky scripts, icon and live
+# demo in beside them.
+#
+# Secret: SITE_DEPLOY_KEY, the private half of a read-only deploy key of
+# sa1ntsinner/nordlys-site.
+name: Site
+
+on:
+  push:
+    branches: [main]
+    # The live demo is the extension itself, so any change to it redeploys.
+    paths: ["src/**", "newtab.html", "icons/**", "manifest.json", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: sa1ntsinner/nordlys-site
+          ssh-key: ${{ secrets.SITE_DEPLOY_KEY }}
+          path: .site-src
+      - run: cp -r .site-src/site .site-src/tools .site-src/docs .
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node tools/site-build.cjs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .site-dist
+      - id: deployment
+        uses: actions/deploy-pages@v4
