@@ -82,6 +82,17 @@ class NordlysBackgroundEngine {
     this.daylight = false;
     this.sky = null;
     this.place = null;
+    /* What the composed skies read from the rest of the page (setWorld): the
+       person's own layers, the working day, how full today's calendar is, and
+       whether a focus session is on; and what they keep between frames. */
+    this.skyLayers = null;
+    this.workday = null;
+    this.dayLoad = 0;
+    this.focusing = false;
+    this.composer = null;
+    /* Set by a sky whose frame has nothing moving in it, a clear day over the
+       hills: the frame is held as if at rest, and the minute keeps time. */
+    this.held = false;
     this.lastFrame = 0;
     this.running = false;
     this.lastInput = performance.now();
@@ -404,7 +415,7 @@ class NordlysBackgroundEngine {
     let still = NORDLYS_STILLS.get(canvas);
     if (!still || still.mode !== scene || still.seed !== this.seed || still.w !== width * zoom || still.h !== height * zoom) {
       still = Object.assign(Object.create(NordlysBackgroundEngine.prototype), {
-        canvas, ctx: canvas.getContext("2d"), w: width * zoom, h: height * zoom, mode: scene,
+        canvas, ctx: canvas.getContext("2d"), w: width * zoom, h: height * zoom, mode: scene, still: true,
         t: NORDLYS_REST_PHASE[scene], ink: 1, motion: 0, intensity: 1, customPalettes: {}, seed: this.seed, rng: null,
         stars: [], meteors: [], nebulae: [], silk: [], polaris: [], chart: null, field: [], coast: [], terrain: [], quietZones: [],
         // A still is at rest by definition: nothing in it is mid-fall.
@@ -422,6 +433,10 @@ class NordlysBackgroundEngine {
     still.sky = this.sky;
     still.place = this.place;
     still.now = this.now;
+    still.skyLayers = this.skyLayers;
+    still.workday = this.workday;
+    still.dayLoad = this.dayLoad;
+    still.focusing = this.focusing;
     still.nebulae.forEach((nebula, index) => { nebula.color = this.paletteRgb[index % 3].join(", "); });
     still.render(0);
     return true;
@@ -474,6 +489,8 @@ class NordlysBackgroundEngine {
       this.gl = undefined;
       this.chartLayer = null;
       this.fieldLayer = null;
+      // A composed sky's backdrops go with it.
+      this.composer = null;
     }
     if (changed && NORDLYS_REST_PHASE[mode] !== undefined) this.t = NORDLYS_REST_PHASE[mode];
     if (NORDLYS_GENERATIVE_SCENES.has(mode)) {
@@ -544,7 +561,7 @@ class NordlysBackgroundEngine {
       /* Nothing in the scene advances at rest, so a second frame would paint
          the same pixels. Holding the last one costs nothing to keep and lets
          every backdrop-filter above it sample a layer that never invalidates. */
-      if (this.atRest()) return;
+      if (this.atRest() || this.held) return;
       // Late wakes are remembered for a while, then forgotten, timer or none.
       this.timerSlack *= 0.97;
       this.scheduleFrame(now, true);
@@ -644,7 +661,10 @@ class NordlysBackgroundEngine {
   /* A parked scene has no next frame coming, so anything that changes what the
      frame should look like has to ask for one. */
   repaint() {
-    if (this.running && this.ctx && this.animId === null) this.render(0);
+    if (!this.running || !this.ctx || this.animId !== null) return;
+    this.render(0);
+    // A sky that held itself still may have something moving in it again.
+    if (!this.held) this.resumeIfMoving();
   }
 
   resumeIfMoving() {
@@ -684,6 +704,30 @@ class NordlysBackgroundEngine {
       this.refreshPalette();
     }
     this.resumeIfMoving();
+    this.repaint();
+  }
+
+  /* What the composed skies read from the rest of the page, any of: the
+     person's layers, the working day { start, end } in hours, how full today's
+     calendar is from 0 to 1, whether a focus session is on, and the place the
+     sky is for. The land is worked out again only for a new place. */
+  setWorld(world = {}) {
+    if ("layers" in world) this.skyLayers = world.layers || null;
+    if ("workday" in world) this.workday = world.workday || null;
+    if ("dayLoad" in world) this.dayLoad = Number(world.dayLoad) || 0;
+    if ("focusing" in world) this.focusing = Boolean(world.focusing);
+    const moved = world.place && Number.isFinite(world.place.lat) && Number.isFinite(world.place.lon)
+      && (world.place.lat !== this.place?.lat || world.place.lon !== this.place?.lon);
+    if (moved) {
+      this.place = { lat: world.place.lat, lon: world.place.lon };
+      if (this.daylight) this.followSun();
+    }
+    if (this.composer) {
+      this.composer.key = null;
+      this.composer.readAt = 0;
+      if (moved) this.composer.shapeKey = null;
+    }
+    this.quietSolvedAt = -Infinity;
     this.repaint();
   }
 
@@ -737,15 +781,17 @@ class NordlysBackgroundEngine {
        scene that sets globalAlpha per stroke overwrites it — so the scenes
        multiply by `ink` instead, and the canvas default covers the rest. */
     this.ink = this.intensity ?? 1;
+    const entry = NordlysSkies.get(this.mode);
     // By day the sky steps back, and the night skies most of all: aurora, the stars, meteors.
-    if (this.sky) this.ink *= 1 - this.sky.day * (NORDLYS_NIGHT_SCENES.has(this.mode) ? 0.45 : 0.18);
+    if (this.sky && !entry?.ownLight) this.ink *= 1 - this.sky.day * (NORDLYS_NIGHT_SCENES.has(this.mode) ? 0.45 : 0.18);
     this.ctx.globalAlpha = this.ink;
+    this.held = false;
 
     // Each sky paints from its own file (src/js/skies), by the name it gave.
     const painter = NordlysSkies.painter(this.mode);
     if (painter) this[painter](dt);
     // A sky that draws its own sun draws the light of it too.
-    if (this.sky && !NordlysSkies.get(this.mode)?.ownSun) this.renderSunlight();
+    if (this.sky && !entry?.ownSun) this.renderSunlight();
     if (this.quietZones.length && !this.solvingQuiet) this.quieten();
     this.ctx.globalAlpha = 1;
   }

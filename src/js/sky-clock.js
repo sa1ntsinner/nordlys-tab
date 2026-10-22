@@ -144,18 +144,23 @@
      so the sky never switches, it turns. */
   function daylight(date, place) {
     const sun = sunPosition(date, place.lat, place.lon);
-    const e = sun.elevation;
+    return { ...sun, ...lightAt(sun.elevation, sun.rising) };
+  }
+
+  /* The same weights for a sun at any height, real or not: the composed skies
+     hold an hour still, or let the working day stand in for the day. */
+  function lightAt(e, rising) {
     // Each ramp spans several degrees: near the equator the sun crosses one
     // in four minutes, and five minutes should never look like a switch.
     const day = smooth(-1, 15, e);
     const golden = smooth(-8, 1, e) * (1 - smooth(4, 16, e));
     const blue = smooth(-15, -7, e) * (1 - smooth(-5, 1, e));
     const night = 1 - smooth(-17, -9, e);
-    const phase = e >= 6 ? (sun.rising ? "morning" : "afternoon")
-      : e >= -4 ? (sun.rising ? "sunrise" : "sunset")
-      : e >= -12 ? (sun.rising ? "dawn" : "dusk")
+    const phase = e >= 6 ? (rising ? "morning" : "afternoon")
+      : e >= -4 ? (rising ? "sunrise" : "sunset")
+      : e >= -12 ? (rising ? "dawn" : "dusk")
       : "night";
-    return { ...sun, day, golden, blue, night, phase };
+    return { day, golden, blue, night, phase };
   }
 
   /* The three colours of a mood as that light falls on them. The mood stays
@@ -193,5 +198,5 @@
     });
   }
 
-  window.NordlysSky = { moonPhase, phaseName, SYNODIC_DAYS, sunPosition, moonPosition, siderealAngle, horizontal, meteorShowers, zonePlace, daylight, lightMood };
+  window.NordlysSky = { moonPhase, phaseName, SYNODIC_DAYS, sunPosition, moonPosition, siderealAngle, horizontal, meteorShowers, zonePlace, daylight, lightAt, lightMood };
 })();

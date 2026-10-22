@@ -81,6 +81,7 @@ function surveyor() {
     createLinearGradient: gradient, createRadialGradient: gradient, createConicGradient: gradient,
     createPattern: () => ({}),
     getImageData: (x, y, w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+    createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4), width: w, height: h }),
     putImageData() {}
   };
   const ctx = new Proxy(own, {
@@ -127,13 +128,13 @@ function engineOn(size = [1600, 900], dpr = 1.5) {
   // those that hand their long lines to the layer, which say so in its place.
   /* The real sky's scenes read the star catalogue and the sun, the moon and
      the showers from the clock, as the page loads them before the engine. */
-  for (const file of ['sky-zones.js', 'sky-clock.js', 'sky-stars.js']) vm.runInContext(readFileSync(`src/js/${file}`, 'utf8'), context);
+  for (const file of ['sky-zones.js', 'sky-clock.js', 'sky-stars.js', 'sky-planets.js', 'sky-data.js']) vm.runInContext(readFileSync(`src/js/${file}`, 'utf8'), context);
   vm.runInContext(`${readFileSync('src/js/sky-gl.js', 'utf8')}\n${skySource()}
     this.Engine = NordlysBackgroundEngine; this.SCENES = [...NORDLYS_GENERATIVE_SCENES]; this.SkyGL = NordlysSkyGL;`, context);
   return { context, log };
 }
 
-function frameOf(scene, { gl = true } = {}) {
+function frameOf(scene, { gl = true, before } = {}) {
   const { context, log } = engineOn();
   // A layer that draws nothing: the frame's 2D calls are what is measured.
   if (gl) context.SkyGL.create = () => ({ lost: false, begin() {}, stream: (data, count) => ({ count }), layer: (key, version, build) => ({ count: build().count }), strips() {}, paint() {}, release() {} });
@@ -145,16 +146,33 @@ function frameOf(scene, { gl = true } = {}) {
   engine.render(1);
   log.strokes.length = 0;
   log.draws = 0;
+  before?.(engine);
   engine.render(1);
   return log;
 }
 
+const NORDLYS = ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'contour', 'fjord'];
+const COMPOSED = ['outside', 'yourday', 'clouds', 'rain', 'snow', 'fog', 'storm', 'northern',
+  'yours-horizon', 'mountains', 'sea', 'city', 'forest', 'steppe', 'desert', 'lighthouse'];
+
 test('the scenes on offer are the ones the gallery shows', () => {
   const { context } = engineOn();
-  assert.deepEqual(Array.from(context.SCENES), ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'contour', 'fjord']);
+  assert.deepEqual(Array.from(context.SCENES), [...NORDLYS, ...COMPOSED]);
 });
 
-for (const scene of ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'contour', 'fjord']) {
+// The thunder's flash comes at random; this frame is the one with a bolt in it.
+test('a bolt of lightning strokes no thick line across the window', () => {
+  const log = frameOf('storm', { before: (engine) => {
+    const land = engine.composeLandShape(engine.composer, { horizon: 'steppe' });
+    engine.composer.flash = 1;
+    engine.composer.bolt = engine.composeBolt(land, () => 0.5);
+  } });
+  const heavy = log.strokes.filter(s => s.width > THICK && s.area > MAX_BOX && !s.circle);
+  assert.ok(log.strokes.some(s => s.width > THICK), 'the bolt is drawn');
+  assert.equal(heavy.length, 0, `${heavy.length} strokes, e.g. ${JSON.stringify(heavy[0])}`);
+});
+
+for (const scene of [...NORDLYS, ...COMPOSED]) {
   test(`${scene} strokes no thick line across the window on the screen canvas`, () => {
     const log = frameOf(scene);
     const heavy = log.strokes.filter(s => s.width > THICK && s.area > MAX_BOX && !s.circle);

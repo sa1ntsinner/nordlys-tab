@@ -59,11 +59,11 @@ const seed = args.includes('--seed') ? Number(option('seed', '')) : null;
 if (seed !== null && !(Number.isInteger(seed) && seed >= 0 && seed <= 0xffffffff)) throw Error('--seed takes a whole number from 0 to 4294967295');
 if (!Number.isFinite(seconds) || seconds < 2 || !Number.isFinite(warmupMs) || warmupMs < 0 || !Number.isFinite(width) || !Number.isFinite(height) || !Number.isFinite(deviceScaleFactor)) throw Error('Invalid duration or viewport');
 
-/* The atmospheres the canvas draws, as NORDLYS_GENERATIVE_SCENES in background.js names them.
+/* The skies the canvas draws, from the catalogue the engine reads them from (src/js/sky-catalog.js).
    Unset (the default): no bgMode is seeded, so the app's own default (aurora) applies exactly as
    before. Set: bgMode is seeded into the saved board before the page loads, and the run fails
    unless the engine is in that scene after load and at the end of the scene's sample. */
-const SCENES = ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'contour', 'fjord'];
+const SCENES = require('../../src/js/sky-catalog.js').canvasSkies();
 const scene = args.includes('--scene') ? String(option('scene', '')) : '';
 if (args.includes('--scene') && !SCENES.includes(scene)) throw Error(`--scene takes ${SCENES.join(', ')}`);
 // Halo draws tonight's moon from the date (bgRealSky, on by default); `off` holds it full.
