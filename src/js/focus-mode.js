@@ -84,24 +84,30 @@
     get open() { return Boolean(this.root && !this.root.hidden); }
     get sounds() { return this.dash.sounds; }
 
-    /* It opens at once, keys and all; the timer it reads may still be on
-       its way from storage, and is drawn the moment it is there. */
+    /* It opens at once and takes focus, as any dialog does: a Tab pressed
+       straight after Enter used to land on the board behind it. The timer
+       is still on its way from storage then, so what is typed is kept in its
+       field and a start is remembered, and both are given to the timer the
+       moment it is here: a key that came first used to write nothing under
+       the key, and the timer the read brought back took no notice of it. */
     async show() {
       if (!this.dash || this.open || this.opening) return;
       this.opener = document.activeElement;
-      /* The timer is read from storage before anything can be typed or
-         pressed: a key that came first used to write nothing under the key,
-         and the timer the read brought back then took no notice of it. */
-      this.opening = true;
-      try { this.timer = await this.dash.shared(KEY, () => this.timer || K.timer.create({ focus: 25, rest: 5 })); } finally { this.opening = false; }
       if (!this.root) this.build();
       this.root.hidden = false;
       document.body.classList.add("focus-mode-open");
       requestAnimationFrame(() => this.root.classList.add("is-open"));
       document.addEventListener("keydown", this.onKey, true);
+      this.go.focus({ preventScroll: true });
+      this.opening = true;
+      this.typed = false;
+      this.startWhenReady = false;
+      try { this.timer = await this.dash.shared(KEY, () => this.timer || K.timer.create({ focus: 25, rest: 5 })); } finally { this.opening = false; }
+      if (!this.open) return;
+      if (this.typed) { this.timer.intent = this.intent.value; this.dash.saveShared(KEY, { soon: true }); }
       this.draw();
       this.tick();
-      this.go.focus({ preventScroll: true });
+      if (this.startWhenReady && !this.timer.running) this.toggle();
       window.NordlysUI?.announce?.(say("focus.opened", "Focus mode. Escape closes it."));
     }
 
@@ -155,18 +161,22 @@
         this.ring.append(circle);
       }
       this.intent = el("input", { type: "text", class: "fm-intent", maxlength: "140", placeholder: say("focus.intent", "I will focus on…"), "aria-label": say("focus.intent", "I will focus on…") });
-      this.intent.addEventListener("input", () => { this.timer.intent = this.intent.value; this.dash.saveShared(KEY, { soon: true }); });
-      this.intent.addEventListener("keydown", (event) => { if (event.key === "Enter") { this.intent.blur(); if (!this.timer.running) this.toggle(); } });
+      this.intent.addEventListener("input", () => {
+        if (this.opening) { this.typed = true; return; }
+        this.timer.intent = this.intent.value;
+        this.dash.saveShared(KEY, { soon: true });
+      });
+      this.intent.addEventListener("keydown", (event) => { if (event.key === "Enter") { this.intent.blur(); if (this.opening || !this.timer.running) this.toggle(); } });
       this.modes = el("div", { class: "fm-modes", role: "radiogroup", "aria-label": say("focus.modeLabel", "Timer") },
         [["pomodoro", say("focus.pomodoro", "Pomodoro")], ["countup", say("focus.countup", "Count up")]].map(([mode, label]) => el("button", {
           type: "button", role: "radio", class: "fm-mode", dataset: { mode }, text: label,
-          onclick: () => { if ((this.timer.mode || "pomodoro") === mode) return; this.stopSound(); K.timer.setMode(this.timer, mode); this.save(); this.draw(); }
+          onclick: () => { if (this.opening || (this.timer.mode || "pomodoro") === mode) return; this.stopSound(); K.timer.setMode(this.timer, mode); this.save(); this.draw(); }
         })));
       this.statsLine = el("p", { class: "fm-stats" });
       this.mantra = el("p", { class: "fm-mantra" });
       this.soundRow = el("div", { class: "fm-sounds", role: "radiogroup", "aria-label": say("focus.sounds", "Sound") });
       this.volume = el("input", { type: "range", class: "fm-volume", min: "0", max: "100", "aria-label": say("focus.volume", "Volume") });
-      this.volume.addEventListener("input", () => { this.timer.volume = Number(this.volume.value) / 100; this.sounds.setVolume?.(this.timer.volume); this.save({ soon: true }); });
+      this.volume.addEventListener("input", () => { if (this.opening) return; this.timer.volume = Number(this.volume.value) / 100; this.sounds.setVolume?.(this.timer.volume); this.save({ soon: true }); });
       this.taskList = el("ul", { class: "fm-tasks" });
       this.pipButton = button("fm-icon", ICON.pip, say("focus.pip", "Keep the timer in a small window"), () => this.openPip());
       if (!window.documentPictureInPicture) this.pipButton.hidden = true;
@@ -186,10 +196,10 @@
           el("div", { class: "fm-ring" }, [this.ring, el("div", { class: "fm-read" }, [this.phaseText, this.face])]),
           this.intent,
           el("div", { class: "fm-controls" }, [
-            button("fm-round", ICON.reset, say("dash.timerReset", "Reset"), () => { this.stopSound(); if (this.timer.mode === "countup") K.timer.stop(this.timer, Date.now()); else K.timer.reset(this.timer); this.save(); this.draw(); }),
+            button("fm-round", ICON.reset, say("dash.timerReset", "Reset"), () => { if (this.opening) return; this.stopSound(); if (this.timer.mode === "countup") K.timer.stop(this.timer, Date.now()); else K.timer.reset(this.timer); this.save(); this.draw(); }),
             this.go,
-            this.moreButton = el("button", { type: "button", class: "fm-round fm-more", "aria-label": say("focus.more", "Five more minutes"), title: say("focus.more", "Five more minutes"), onclick: () => { K.timer.more(this.timer, 5, Date.now()); this.save(); this.draw(); } }, [el("span", { text: "+5" })]),
-            this.skipButton = button("fm-round", ICON.skip, say("focus.skip", "Skip to the next part"), () => { K.timer.skip(this.timer, Date.now()); this.syncSound(); this.save(); this.draw(); })
+            this.moreButton = el("button", { type: "button", class: "fm-round fm-more", "aria-label": say("focus.more", "Five more minutes"), title: say("focus.more", "Five more minutes"), onclick: () => { if (this.opening) return; K.timer.more(this.timer, 5, Date.now()); this.save(); this.draw(); } }, [el("span", { text: "+5" })]),
+            this.skipButton = button("fm-round", ICON.skip, say("focus.skip", "Skip to the next part"), () => { if (this.opening) return; K.timer.skip(this.timer, Date.now()); this.syncSound(); this.save(); this.draw(); })
           ])
         ]),
         el("aside", { class: "fm-panel fm-left", "aria-label": say("focus.sounds", "Sound") }, [
@@ -206,6 +216,8 @@
     save(options) { this.dash.saveShared(KEY, options); }
 
     toggle() {
+      // Before the timer is here a start is only remembered (show).
+      if (this.opening) { this.startWhenReady = !this.startWhenReady; return; }
       const t = this.timer;
       const now = Date.now();
       if (t.running) { K.timer.pause(t, now); this.stopSound(); }
