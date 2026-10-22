@@ -204,3 +204,29 @@ test('settings and bookmark fields of the wrong kind are put right, not crashed 
   assert.equal(config.groups[0].links[0].url, 'https://github.com');
   assert.equal(repairConfig(config, defaults), false, 'a repaired config needs nothing more');
 });
+
+test('the sky\'s own settings are kept when sound and put right when not', () => {
+  const sound = {
+    groups: [], skyRotate: 'hour', skyPool: 'looks', nightMode: 'auto', pictureColours: true,
+    skyLayers: { horizon: 'sea', stars: false }, skyLocks: ['horizon'],
+    skyPlace: { lat: 59.91, lon: 10.75, name: 'Oslo' }, workday: { start: 8.5, end: 17 },
+    looks: [{ id: 'k1', name: 'Calm', look: { theme: 'nordic-snow' } }]
+  };
+  const before = JSON.stringify(sound);
+  assert.equal(repairConfig(sound), false);
+  assert.equal(JSON.stringify(sound), before);
+
+  const broken = {
+    groups: [], skyRotate: 'often', skyPool: 7, nightMode: 'red',
+    skyLayers: { horizon: { evil: true } }, skyLocks: ['horizon', 3],
+    skyPlace: { lat: '59', lon: 10 }, workday: { start: 18, end: 9 },
+    looks: [{ id: 'k1', name: 'Calm', look: { theme: 'nordic-snow' } }, { id: 'k2', name: 'Bad', look: 'code' }]
+  };
+  assert.equal(repairConfig(broken), true);
+  assert.equal(broken.skyRotate, 'off');
+  assert.equal(broken.skyPool, undefined, 'a value of the wrong kind goes, and the default stands');
+  assert.equal(broken.nightMode, 'off');
+  for (const field of ['skyLayers', 'skyPlace', 'workday']) assert.equal(broken[field], undefined, field);
+  assert.deepEqual(broken.skyLocks, ['horizon']);
+  assert.deepEqual(broken.looks.map((look) => look.id), ['k1']);
+});

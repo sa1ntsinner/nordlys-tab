@@ -95,3 +95,21 @@ test('the sky is placed where the person said, else at the weather card, else in
   const zone = D.placeOf({});
   assert.ok(Number.isFinite(zone.lat) && Number.isFinite(zone.lon));
 });
+
+test('a day full of meetings is a full sky: today\'s working hours taken, an overlap once', () => {
+  const { NordlysSkyData: Data } = world();
+  const now = new Date(2026, 9, 23, 12, 0);
+  const at = (h, m = 0) => new Date(2026, 9, 23, h, m).toISOString();
+  const workday = { start: 9, end: 17 };
+  assert.equal(Data.dayLoad([], workday, now), 0);
+  const events = [
+    { start: at(9), end: at(11) },
+    { start: at(10), end: at(12) },              // overlaps the first: one more hour
+    { start: at(7), end: at(9, 30) },            // half an hour of it inside the day
+    { start: at(13), end: at(14), allDay: false },
+    { start: '2026-10-23', end: '2026-10-24', allDay: true }, // a day-long event is not a meeting
+    { start: at(18), end: at(19) }                // after hours
+  ];
+  assert.equal(Data.dayLoad(events, workday, now), 4 / 8);
+  assert.equal(Data.dayLoad([{ start: at(8), end: at(18) }], workday, now), 1);
+});

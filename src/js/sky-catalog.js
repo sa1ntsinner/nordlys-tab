@@ -75,8 +75,8 @@
     composed("desert", "horizon", "Desert", { horizon: "desert" }),
     composed("lighthouse", "horizon", "Lighthouse", { horizon: "lighthouse" }),
     { id: "picture-wikimedia", category: "world", name: "Wikimedia Commons", key: "scene.pictureWikimedia", kind: "picture", source: "wikimedia" },
+    { id: "picture-paintings", category: "world", name: "Masterpieces", key: "scene.picturePaintings", kind: "picture", source: "paintings" },
     { id: "picture-met", category: "world", name: "The Met", key: "scene.pictureMet", kind: "picture", source: "met" },
-    { id: "picture-cleveland", category: "world", name: "Cleveland Museum of Art", key: "scene.pictureCleveland", kind: "picture", source: "cleveland" },
     { id: "picture-earth", category: "world", name: "The Earth today", key: "scene.pictureEarth", kind: "picture", source: "epic" },
     { id: "custom-image", category: "yours", name: "Wallpaper", key: "scene.wallpaper", kind: "media" },
     { id: "custom-video", category: "yours", name: "Video", key: "scene.video", kind: "media" },
@@ -85,6 +85,16 @@
 
   const byId = new Map(SKIES.map((sky) => [sky.id, sky]));
   const painters = {};
+
+  /* What a shuffle may choose for each layer: the looks that need nothing of
+     the person. The light stays as it is, and so do the bodies. */
+  const SHUFFLE = {
+    weather: ["clear", "clouds", "rain", "snow", "fog", "storm"],
+    horizon: ["mountains", "sea", "city", "forest", "steppe", "desert", "lighthouse"],
+    style: ["lit", "poster", "engraving", "pixel"],
+    aurora: ["off", "off", "live", "on"]
+  };
+  const one = (list, random) => list[Math.floor(random() * list.length) % list.length];
 
   const api = {
     CATEGORIES,
@@ -109,7 +119,28 @@
     },
     painter: (id) => byId.get(id)?.painter || painters[id] || null,
     // The layers a composed sky draws: the catalogue's, under the person's.
-    layersOf: (id, own) => ({ ...COMPOSE.defaults, ...(byId.get(id)?.layers || {}), ...(own || {}) })
+    layersOf: (id, own) => ({ ...COMPOSE.defaults, ...(byId.get(id)?.layers || {}), ...(own || {}) }),
+    // The person's layers with every one not locked chosen again; `random` answers 0 to 1.
+    shuffle(own, locks = [], random = Math.random) {
+      const layers = { ...(own || {}) };
+      for (const [layer, options] of Object.entries(SHUFFLE)) if (!locks.includes(layer)) layers[layer] = one(options, random);
+      return layers;
+    },
+    /* A sky for a rotation, from the pool the person chose: this sky with its
+       unlocked layers shuffled, another of its group, any sky, or the sky of
+       one of their saved looks. Never their own wallpaper or video. */
+    pick({ bgMode, skyLayers, skyLocks, looks } = {}, pool = "layers", random = Math.random) {
+      const current = byId.get(bgMode);
+      const saved = (Array.isArray(looks) ? looks : []).map((entry) => entry?.look).filter((look) => byId.get(look?.bgMode)?.kind !== "media" && byId.has(look?.bgMode));
+      if (pool === "looks" && saved.length) {
+        const look = one(saved, random);
+        return { bgMode: look.bgMode, skyLayers: look.skyLayers || null };
+      }
+      if (pool === "layers" && current?.layers) return { bgMode, skyLayers: api.shuffle(skyLayers, skyLocks || [], random) };
+      const group = current && current.kind !== "media" && current.kind !== "solid" ? current.category : "nordlys";
+      const choices = SKIES.filter((sky) => ["canvas", "picture"].includes(sky.kind) && (pool === "all" || sky.category === group));
+      return { bgMode: one(choices, random).id, skyLayers: null };
+    }
   };
 
   root.NordlysSkies = api;

@@ -157,6 +157,9 @@
   --nl-z-modal: 300;
   --nl-z-menu: 400;
   --nl-z-toast: 500;
+  /* Night mode's warm wash lies over everything, toasts and dialogs too, and
+     takes no clicks. */
+  --nl-z-night: 900;
   --nl-target-min: 40px;
 }
 

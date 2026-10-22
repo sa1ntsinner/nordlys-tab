@@ -9,8 +9,11 @@
 (function () {
   const PREFIX = 'nordlys-look:v1:';
   const HEX = /^#[0-9a-f]{6}$/i;
-  // The skies a look may carry: every one the canvas paints (sky-catalog.js), and a plain colour.
-  const SCENES = [...(window.NordlysSkies?.canvasSkies() || ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'contour', 'fjord']), 'solid'];
+  /* The skies a look may carry: every one in the catalogue (sky-catalog.js)
+     but the person's own wallpaper and video, which stay on their device. */
+  const scenes = () => window.NordlysSkies
+    ? window.NordlysSkies.SKIES.filter(sky => sky.kind !== 'media').map(sky => sky.id)
+    : ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'contour', 'fjord', 'solid'];
   /* Skies retired or renamed since a look could be shared, each to the one a
      stored config of it becomes (app.js), so a look sent before still brings a sky. */
   const RETIRED = { frost: 'starmap', pillars: 'meteors', nacre: 'midnightsun', baikal: 'starmap', drift: 'contour', horizon: 'fjord' };
@@ -21,7 +24,7 @@
   const oneOf = options => value => (options.includes(value) ? value : undefined);
   const FIELDS = {
     theme: value => (typeof value === 'string' && /^[a-z0-9-]{1,40}$/.test(value) ? value : undefined),
-    bgMode: value => oneOf(SCENES)(Object.prototype.hasOwnProperty.call(RETIRED, value) ? RETIRED[value] : value),
+    bgMode: value => oneOf(scenes())(Object.prototype.hasOwnProperty.call(RETIRED, value) ? RETIRED[value] : value),
     bgPalette: value => (typeof value === 'string' && /^[\w-]{1,48}$/.test(value) ? value : undefined),
     bgMotion: number(0, 1.5),
     bgIntensity: number(0.15, 1.5),
@@ -61,6 +64,16 @@
     return out;
   }
 
+  // A composed sky's layers: each one of the catalogue's choices, a body on or off.
+  function cleanLayers(raw) {
+    const compose = window.NordlysSkies?.COMPOSE;
+    if (!compose || !raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+    const out = {};
+    for (const [layer, options] of Object.entries(compose.choices)) if (options.includes(raw[layer])) out[layer] = raw[layer];
+    for (const body of compose.bodies) if (typeof raw[body] === 'boolean') out[body] = raw[body];
+    return Object.keys(out).length ? out : undefined;
+  }
+
   function cleanMood(mood) {
     if (!mood || typeof mood !== 'object' || Array.isArray(mood)) return undefined;
     const colors = Array.isArray(mood.colors) && mood.colors.length === 3 && mood.colors.every(color => HEX.test(color || '')) ? mood.colors.map(color => color.toLowerCase()) : null;
@@ -85,6 +98,8 @@
     }
     const mood = cleanMood(raw.mood);
     if (mood) look.mood = mood;
+    const layers = cleanLayers(raw.skyLayers);
+    if (layers) look.skyLayers = layers;
     return Object.keys(look).length ? look : null;
   }
 
@@ -95,7 +110,7 @@
     const mood = (config.bgPalettes || []).find(entry => entry && entry.id === config.bgPalette);
     if (mood) look.mood = cleanMood(mood);
     // A wallpaper or a video stays on the device it was chosen on.
-    if (!SCENES.includes(config.bgMode)) delete look.bgMode;
+    if (!scenes().includes(config.bgMode)) delete look.bgMode;
     return look;
   }
 

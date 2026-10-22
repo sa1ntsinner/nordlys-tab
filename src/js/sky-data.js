@@ -204,6 +204,30 @@
     }, fresh, options);
   }
 
+  /* How full today's working hours are with meetings, from 0 to 1: the time
+     taken by today's timed events inside the working day, an overlap counted
+     once. The Your day sky draws it as cloud. */
+  function dayLoad(events, workday, now = new Date()) {
+    const start = Number.isFinite(workday?.start) ? workday.start : 9;
+    const end = Number.isFinite(workday?.end) && workday.end > start ? workday.end : start + 9;
+    const midnight = new Date(now).setHours(0, 0, 0, 0);
+    const from = midnight + start * 3600000;
+    const to = midnight + end * 3600000;
+    const spans = (Array.isArray(events) ? events : [])
+      .filter((event) => event && !event.allDay)
+      .map((event) => [Math.max(from, Date.parse(event.start)), Math.min(to, Date.parse(event.end || event.start))])
+      .filter(([a, b]) => b > a)
+      .sort((x, y) => x[0] - y[0]);
+    let busy = 0;
+    let reached = from;
+    for (const [a, b] of spans) {
+      if (b <= reached) continue;
+      busy += b - Math.max(a, reached);
+      reached = b;
+    }
+    return Math.min(1, busy / (to - from));
+  }
+
   /* Where the sky is: the place the person gave the sky, else the weather
      card's, else the principal city of the time zone. */
   function placeOf(config) {
@@ -219,7 +243,7 @@
     return found ? { ...found, name: zone.split("/").pop().replace(/_/g, " ") } : { lat: 52.5, lon: 13.4, name: "" };
   }
 
-  const api = { weatherFrom, kpFrom, auroraAt, destination, horizonPoints, horizonFrom, weather, kp, horizon, placeOf, BEARINGS, DISTANCES, KEY };
+  const api = { weatherFrom, kpFrom, auroraAt, destination, horizonPoints, horizonFrom, weather, kp, horizon, placeOf, dayLoad, BEARINGS, DISTANCES, KEY };
   root.NordlysSkyData = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

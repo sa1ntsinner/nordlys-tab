@@ -15,7 +15,8 @@
   const PULL_DELAY = 800;
   // The look and layout, for "keep this look on this device only".
   const LOOK = ["theme", "colorMode", "lastLightTheme", "lastDarkTheme", "customTheme", "bgMode", "bgPalette", "bgSeed", "bgMotion",
-    "bgIntensity", "bgDaylight", "bgRealSky", "glassLevel", "headerStyle", "typography", "hoverEffect", "iconShape", "cardRadius", "cardGlow", "bgBlur", "bgDim"];
+    "bgIntensity", "bgDaylight", "bgRealSky", "glassLevel", "headerStyle", "typography", "hoverEffect", "iconShape", "cardRadius", "cardGlow", "bgBlur", "bgDim",
+    "skyLayers", "skyLocks", "skyRotate", "skyPool", "pictureColours"];
 
   const say = (key, fallback, params) => {
     const value = window.I18N?.t(key, params || {});

@@ -405,8 +405,9 @@ class NordlysApp {
   sendQuietZones() {
     const engine = this.bgEngine;
     if (!engine?.setQuietZones) return;
-    // A wallpaper hides the canvas; it is measured instead of quietened.
-    if (this.config.bgMode === "custom-image" || this.config.bgMode === "custom-video") {
+    // A wallpaper or the day's picture hides the canvas; it is measured instead of quietened.
+    const { bgMode } = this.shownSky();
+    if (["media", "picture"].includes(window.NordlysSkies?.get(bgMode)?.kind)) {
       this.measureWallpaper();
       return;
     }
@@ -415,7 +416,7 @@ class NordlysApp {
        glass alone did not keep every name at its ratio on every machine. Its
        folders are quiet zones too, so the engine takes back as much of that
        light as their names need, and no more. */
-    const zones = this.textZones({ cards: this.config.bgMode === "midnightsun" });
+    const zones = this.textZones({ cards: bgMode === "midnightsun" });
     const signature = JSON.stringify(zones.map((zone) => [Math.round(zone.x), Math.round(zone.y), Math.round(zone.w), Math.round(zone.h), zone.inks, zone.cover, zone.ground]));
     if (signature === this.quietSignature) return;
     this.quietSignature = signature;
@@ -533,7 +534,13 @@ class NordlysApp {
     } catch {
       return;
     }
-    const { data } = well.getImageData(0, 0, sw, sh);
+    let data;
+    try {
+      ({ data } = well.getImageData(0, 0, sw, sh));
+    } catch {
+      this.shadeUnread(layer);
+      return;
+    }
     // The picture as it is on screen, after the dim the person chose.
     const chosen = Math.max(0, Math.min(0.8, (this.config.bgDim || 0) / 100));
     const paint = (value) => {
@@ -561,9 +568,7 @@ class NordlysApp {
     const alone = zones.filter((zone) => zone.id === "search");
     if (hero.length) {
       const need = Math.max(...hero.map((zone) => NordlysBackgroundEngine.quietAlpha(pixelsIn(zone), shade, { ...zone, most: 0.85 })));
-      const left = Math.min(...hero.map((zone) => zone.x)), top = Math.min(...hero.map((zone) => zone.y));
-      const right = Math.max(...hero.map((zone) => zone.x + zone.w)), bottom = Math.max(...hero.map((zone) => zone.y + zone.h));
-      if (need > 0.01) scrims.push({ zone: { x: left, y: top, w: right - left, h: bottom - top }, need });
+      if (need > 0.01) scrims.push({ zone: this.boxAround(hero), need });
     }
     this.paintScrims(layer, scrims, shade);
     /* A folder's glass, made as solid as its patch of the picture needs. Its
@@ -586,6 +591,49 @@ class NordlysApp {
       const need = NordlysBackgroundEngine.quietAlpha(pixelsIn(zone), deep, { inks, most: 0.97 });
       if (need > 0.01) search?.style.setProperty("--search-solid", need.toFixed(3));
       else search?.style.removeProperty("--search-solid");
+    }
+  }
+
+  boxAround(zones) {
+    const left = Math.min(...zones.map((zone) => zone.x)), top = Math.min(...zones.map((zone) => zone.y));
+    const right = Math.max(...zones.map((zone) => zone.x + zone.w)), bottom = Math.max(...zones.map((zone) => zone.y + zone.h));
+    return { x: left, y: top, w: right - left, h: bottom - top };
+  }
+
+  /* A picture whose pixels cannot be read gets what a bright, busy one would:
+     a shade behind the clock and the date, and glass made solid. */
+  shadeUnread(layer) {
+    const zones = this.textZones({ cards: true });
+    const hero = zones.filter((zone) => ["clock", "date", "greet"].includes(zone.id));
+    this.paintScrims(layer, hero.length ? [{ zone: this.boxAround(hero), need: 0.5 }] : [], [2, 4, 10]);
+    for (const zone of zones.filter((entry) => entry.card)) zone.card.style.setProperty("--card-solid", "0.6");
+    document.getElementById("search")?.style.setProperty("--search-solid", "0.5");
+  }
+
+  /* The day's picture: the one kept for today, or the newest kept while
+     today's is asked for, and again when today's arrives. Only a picture whose
+     server allows it is loaded so its pixels can be read (measureWallpaper);
+     the others get a fixed shade behind the words. */
+  showPicture(picture) {
+    const media = document.getElementById("bg-media");
+    if (!picture || !media) return;
+    const frame = document.getElementById("bg-frame");
+    if (picture.cors) media.crossOrigin = "anonymous";
+    else media.removeAttribute("crossorigin");
+    media.classList.toggle("is-framed", picture.fit === "frame");
+    media.classList.toggle("is-dark", picture.fit === "dark");
+    media.addEventListener("load", () => this.queueQuietZones?.(), { once: true });
+    media.src = picture.url;
+    media.classList.add("active");
+    if (frame) {
+      if (picture.fit === "frame") { frame.src = picture.url; frame.classList.add("active"); }
+      else { frame.classList.remove("active"); frame.removeAttribute("src"); }
+    }
+    const credit = document.getElementById("bg-credit");
+    if (credit) {
+      credit.textContent = [picture.title, picture.by].filter(Boolean).join(" — ");
+      credit.href = picture.link;
+      credit.hidden = !credit.textContent;
     }
   }
 
@@ -1041,6 +1089,8 @@ class NordlysApp {
       console.error("Nordlys: the sky could not start", error);
     }
     this.watchSkyLoad();
+    this.rotateSky();
+    this.applyNightMode({ redraw: false });
     this.updateBackgroundMode();
 
     // 3. Initialize widgets
@@ -1058,6 +1108,18 @@ class NordlysApp {
        failure here must never cost the page its board. */
     try { this.dashboard = window.NordlysDashboard ? new window.NordlysDashboard(this) : null; } catch (error) { this.dashboard = null; }
     try { this.focusMode = this.dashboard && window.NordlysFocusMode ? new window.NordlysFocusMode(this) : null; } catch (error) { this.focusMode = null; }
+    // The sky hears when today's calendar fills or a focus session starts (tellSkyTheWorld).
+    document.addEventListener("nordlys:dashdata", (event) => {
+      const engine = this.bgEngine;
+      if (!engine) return;
+      if (event.detail?.key === "focus-timer") {
+        const focusing = this.focusingNow();
+        if (focusing !== engine.focusing) engine.setWorld({ focusing });
+        return;
+      }
+      const dayLoad = this.dayLoadNow();
+      if (Math.abs(dayLoad - engine.dayLoad) > 0.01) engine.setWorld({ dayLoad });
+    });
 
     // 4. Render Grid
     this.grid.render();
@@ -1070,6 +1132,81 @@ class NordlysApp {
     this.initColorModeListener();
     this.watchOtherTabs();
     this.restoreFromChromeStorage();
+  }
+
+  /* Night mode: the whole page under a warm red and the sky held still, kind
+     to eyes used to the dark. Auto is from the sun six degrees under the
+     horizon until it is back, where the sky is; it looks again every five
+     minutes while it is on. */
+  applyNightMode({ redraw = true, now = new Date() } = {}) {
+    const mode = this.config.nightMode;
+    const place = window.NordlysSkyData?.placeOf(this.config);
+    const night = mode === "on" || (mode === "auto" && Boolean(place) && window.NordlysSky?.sunPosition(now, place.lat, place.lon).elevation < -6);
+    clearTimeout(this.nightTimer);
+    if (mode === "auto") this.nightTimer = setTimeout(() => this.applyNightMode(), 5 * 60000);
+    document.documentElement.classList.toggle("night-mode", night);
+    if (night === Boolean(this.night)) return;
+    this.night = night;
+    if (redraw) this.updateBackgroundMode();
+  }
+
+  /* The sky on screen: the person's, or the one a rotation chose for this
+     tab, hour or day. A rotation writes nothing, and steps aside the moment
+     the person chooses a sky or changes its layers in this tab. */
+  shownSky() {
+    const config = this.config;
+    const mine = { bgMode: config.bgMode || "aurora", skyLayers: config.skyLayers || null };
+    return this.rotation && this.rotation.from === JSON.stringify(mine) ? this.rotation : mine;
+  }
+
+  /* Chooses the rotation's sky; answers whether there is a rotation. An hour
+     or a day is the same sky in every tab: the turn of the clock is the seed. */
+  rotateSky(now = new Date()) {
+    const config = this.config;
+    const every = config.skyRotate;
+    if (!["tab", "hour", "day"].includes(every) || !window.NordlysSkies) { this.rotation = null; return false; }
+    this.rotationSeed ??= Math.floor(Math.random() * 0x7fffffff);
+    const turn = every === "tab" ? this.rotationSeed
+      : every === "hour" ? Math.floor(now.getTime() / 3600000) : Math.floor((now.getTime() - now.getTimezoneOffset() * 60000) / 86400000);
+    const random = NordlysBackgroundEngine.stream(Math.imul(turn | 0, 2654435761 | 0) >>> 0);
+    const mine = { bgMode: config.bgMode || "aurora", skyLayers: config.skyLayers || null };
+    this.rotation = { ...window.NordlysSkies.pick({ ...mine, skyLocks: config.skyLocks, looks: config.looks }, config.skyPool || "layers", random), from: JSON.stringify(mine) };
+    return true;
+  }
+
+  /* What the composed skies read from the rest of the page: the person's
+     layers, the place, the working day, how full today's calendar is and
+     whether a focus session is on (background.js setWorld). */
+  tellSkyTheWorld() {
+    this.bgEngine?.setWorld({
+      layers: this.shownSky().skyLayers,
+      place: window.NordlysSkyData?.placeOf(this.config) || null,
+      workday: this.config.workday || null,
+      dayLoad: this.dayLoadNow(),
+      focusing: this.focusingNow()
+    });
+  }
+
+  /* Only the Your day sky draws it, from what the calendar cards keep. A card
+     not drawn yet has not read its events, so they are read once here. */
+  dayLoadNow() {
+    const dash = this.dashboard;
+    const shown = this.shownSky();
+    const layers = window.NordlysSkies?.layersOf(shown.bgMode, shown.skyLayers);
+    if (!dash || layers?.weather !== "day" || !window.NordlysSkyData) return 0;
+    const keys = dash.widgets().filter((widget) => widget.type === "agenda").map((widget) => dash.dataKey(widget));
+    this.calendarsRead ||= new Set();
+    const unread = keys.filter((key) => !dash.data.has(key) && !this.calendarsRead.has(key));
+    if (unread.length) {
+      unread.forEach((key) => this.calendarsRead.add(key));
+      dash.load(unread).then(() => this.bgEngine?.setWorld({ dayLoad: this.dayLoadNow() }));
+    }
+    return window.NordlysSkyData.dayLoad(keys.flatMap((key) => dash.data.get(key)?.items || []), this.config.workday);
+  }
+
+  focusingNow() {
+    const timer = this.dashboard?.data?.get("focus-timer");
+    return Boolean(timer?.running && timer.phase === "focus");
   }
 
   /* What this device has learned about each sky's cost, kept here and never
@@ -1642,6 +1779,12 @@ class NordlysApp {
         if (video && video.classList.contains("active")) {
           video.play().catch(() => {});
         }
+        // Back after the hour or the day turned: its sky, unless one was chosen here meanwhile.
+        if (this.rotation && this.shownSky() === this.rotation && this.config.skyRotate !== "tab") {
+          const before = JSON.stringify(this.rotation);
+          this.rotateSky();
+          if (JSON.stringify(this.rotation) !== before) this.updateBackgroundMode();
+        }
       }
     });
   }
@@ -1663,7 +1806,7 @@ class NordlysApp {
        tab or device, a profile, a restore. It is drawn as its successor and
        kept as one, never left on a scene the engine cannot paint. */
     if (migratedSky(this.config.bgMode)) this.config.bgMode = migratedSky(this.config.bgMode);
-    const bgMode = this.config.bgMode || "aurora";
+    const { bgMode } = this.shownSky();
     /* A wallpaper is read from the vault, which answers later; another sky
        chosen meanwhile is the one shown, and the late answer is let go. */
     const generation = (this.backgroundGeneration = (this.backgroundGeneration || 0) + 1);
@@ -1680,9 +1823,15 @@ class NordlysApp {
       for (const card of document.querySelectorAll("#board .card")) card.style.removeProperty("--card-solid");
       document.getElementById("search")?.style.removeProperty("--search-solid");
       if (media) {
-        media.classList.remove("active");
+        media.classList.remove("active", "is-framed", "is-dark");
         media.removeAttribute("src");
+        media.removeAttribute("crossorigin");
       }
+      const frame = document.getElementById("bg-frame");
+      frame?.classList.remove("active");
+      frame?.removeAttribute("src");
+      const credit = document.getElementById("bg-credit");
+      if (credit) credit.hidden = true;
       if (video) {
         video.classList.remove("active");
         video.pause();
@@ -1712,13 +1861,20 @@ class NordlysApp {
       engine.moonCache = null;
       if (engine.daylight !== Boolean(this.config.bgDaylight)) engine.setDaylight(this.config.bgDaylight);
       engine.setAtmosphere({
-        motion: this.config.bgMotion ?? 1,
+        // Night mode holds the sky still.
+        motion: this.night ? 0 : this.config.bgMotion ?? 1,
         // High legibility keeps the sky at a whisper, whatever the slider says.
         intensity: this.highLegibility ? Math.min(0.6, this.config.bgIntensity ?? 1) : (this.config.bgIntensity ?? 1),
         palette: this.config.bgPalette || "theme"
       });
       this.judgeSkyLoad(bgMode);
       engine.setMode(bgMode);
+      this.tellSkyTheWorld();
+    } else if (window.NordlysSkies?.get(bgMode)?.kind === "picture") {
+      engine?.setMode(bgMode);
+      clearMedia();
+      const show = (picture) => { if (generation === this.backgroundGeneration) this.showPicture(picture); };
+      show(window.NordlysWorldPicture?.today(window.NordlysSkies.get(bgMode).source, show, { lang: window.I18N?.currentLang || "en" }));
     } else if (bgMode === "custom-image" || bgMode === "custom-video") {
       engine?.setMode(bgMode);
       clearMedia();

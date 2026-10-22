@@ -120,6 +120,59 @@ html[data-bg="solid"] body {
   opacity: 1;
 }
 
+/* The day's picture (world-picture.js): a wide photograph fills the window,
+   a painting is shown whole in a blur of itself, the Earth on black. */
+#bg-frame {
+  position: absolute;
+  inset: -8%;
+  width: 116%;
+  height: 116%;
+  object-fit: cover;
+  opacity: 0;
+  filter: blur(48px) saturate(1.15) brightness(0.62);
+  transition: opacity var(--nl-transition-panel);
+}
+#bg-frame.active { opacity: 1; }
+#bg-media.is-framed, #bg-media.is-dark {
+  object-fit: contain;
+  padding: clamp(28px, 7vh, 88px) clamp(28px, 6vw, 120px);
+  box-sizing: border-box;
+  transform: none;
+}
+#bg-media.is-framed { filter: blur(var(--bg-blur)) drop-shadow(0 24px 48px rgba(0, 0, 0, 0.45)); }
+#bg-container:has(#bg-media.is-dark.active) { background: #000; }
+
+/* Night mode (app.js applyNightMode): every colour on the page multiplied
+   by a deep orange, which takes the blue out and leaves the words. Above
+   everything, dialogs included, and never in the way of a click. */
+html.night-mode::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: var(--nl-z-night);
+  pointer-events: none;
+  background: #ff5a1f;
+  mix-blend-mode: multiply;
+  opacity: 0.34;
+}
+
+.bg-credit {
+  position: fixed;
+  left: 18px;
+  bottom: 16px;
+  z-index: var(--nl-z-chrome);
+  max-width: min(46vw, 520px);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--nl-text-xs);
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
+}
+.bg-credit:hover, .bg-credit:focus-visible { color: #fff; text-decoration: underline; }
+.bg-credit[hidden] { display: none; }
+
 /* Soft shades behind the words that sit on a wallpaper, placed by
    measureWallpaper in app.js. Above the picture and the chosen dim. */
 /* Last in #bg-container, so above the picture and the dim by order alone. */

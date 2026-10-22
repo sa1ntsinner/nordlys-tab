@@ -433,7 +433,8 @@ class NordlysBackgroundEngine {
     still.sky = this.sky;
     still.place = this.place;
     still.now = this.now;
-    still.skyLayers = this.skyLayers;
+    // The person's layers belong to the sky they were set on; every other sky is shown as it comes.
+    still.skyLayers = scene === this.mode ? this.skyLayers : null;
     still.workday = this.workday;
     still.dayLoad = this.dayLoad;
     still.focusing = this.focusing;

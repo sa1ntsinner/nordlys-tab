@@ -101,3 +101,17 @@ test('a look shared with a retired sky arrives with its successor', () => {
   // A name that only looks like a key of the table is still refused.
   assert.equal(decode(encode({ bgMode: 'constructor', iconShape: 'circle' })).look.bgMode, undefined);
 });
+
+// With the catalogue loaded, as on the page: composed skies and the day's picture travel, with checked layers.
+test('a look carries a composed sky and its layers, and only the layers the catalogue knows', () => {
+  const window = { NordlysSkies: require('../../src/js/sky-catalog.js') };
+  vm.runInContext(readFileSync('src/js/look-share.js', 'utf8'), vm.createContext({ window, TextEncoder, TextDecoder, btoa, atob }));
+  const { capture, encode, decode } = window.NordlysLook;
+  const { look } = decode(encode(capture({ bgMode: 'mountains', skyLayers: { horizon: 'sea', style: 'poster', stars: false } })));
+  assert.equal(look.bgMode, 'mountains');
+  assert.deepEqual(plain(look.skyLayers), { horizon: 'sea', style: 'poster', stars: false });
+  assert.equal(decode(encode(capture({ bgMode: 'picture-met' }))).look.bgMode, 'picture-met');
+  const hostile = decode(encode({ bgMode: 'sea', skyLayers: { horizon: 'url(https://x.test/)', style: 'poster', moon: 'yes', extra: 1 } })).look;
+  assert.deepEqual(plain(hostile.skyLayers), { style: 'poster' });
+  assert.equal(decode(encode({ bgMode: 'custom-image' })).error, 'empty', 'a wallpaper stays on its device');
+});

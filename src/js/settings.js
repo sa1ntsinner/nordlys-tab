@@ -935,6 +935,11 @@ class SettingsController {
       if (key in look) config[key] = look[key];
     }
     if (look.fonts) config.fonts = { ...(config.fonts || {}), ...look.fonts };
+    // A look brings its sky whole: the layers it was made with, or the sky as it comes.
+    if ("bgMode" in look) {
+      if (look.skyLayers) config.skyLayers = look.skyLayers;
+      else delete config.skyLayers;
+    }
     if (look.theme === "custom" && look.customTheme) {
       config.theme = "custom";
       config.customTheme = look.customTheme;
@@ -960,7 +965,7 @@ class SettingsController {
      look was being tried — or saved by another tab — went back with it. */
   lookSnapshot() {
     const config = this.app.config;
-    const keys = [...LOOK_SETTINGS, "fonts", "theme", "customTheme", "bgPalette", "bgPalettes"];
+    const keys = [...LOOK_SETTINGS, "fonts", "theme", "customTheme", "bgPalette", "bgPalettes", "skyLayers"];
     return JSON.stringify(Object.fromEntries(keys.map((key) => [key, config[key] === undefined ? null : config[key]])));
   }
 
