@@ -36,7 +36,15 @@
     /* Every tab has its own engine over the same stored state, so each call
        starts from what is stored, never from what this tab remembers. */
     run(task) {
-      const next = this.queue.then(async () => { await this.fresh(); return task(); });
+      const step = async () => {
+        this.busy = true;
+        try { await this.fresh(); return await task(); } finally { this.busy = false; }
+      };
+      /* The queue orders this tab's calls; the lock orders every tab's. Two
+         tabs each read the stored state, changed their own copy and wrote it
+         whole, and the second write took the first one's change away. */
+      const locked = () => (root.navigator?.locks?.request ? root.navigator.locks.request("nordlys-sync", step) : step());
+      const next = this.queue.then(locked);
       this.queue = next.catch(() => {});
       return next;
     }

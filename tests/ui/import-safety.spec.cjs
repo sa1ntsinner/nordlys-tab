@@ -337,6 +337,22 @@ test('an import that cannot keep what it replaces does not replace it', async ({
   await expectNothingMoved(nordlysPage, before);
 });
 
+/* What the cards held went to browser storage without being waited for: an
+   import refused at the config still left the file's notes over the person's. */
+test('an import refused at the config puts back what the cards held', async ({ nordlysPage }) => {
+  const { page, storageState } = nordlysPage;
+  const before = await seedSetupWorthKeeping(page);
+  await page.evaluate(() => new Promise(resolve => chrome.storage.local.set({ 'nordlys_dash.n1': { text: 'mine' } }, resolve)));
+  await openBackupTab(page);
+  await denyWritesTo(page, 'nordlys_config');
+  const file = JSON.parse(INCOMING);
+  file.nordlysBackup.dashboardData = { n1: { text: 'from the file' }, n2: { text: 'new' } };
+  await dropFile(page, 'cards.json', JSON.stringify(file));
+  await expectNothingMoved(nordlysPage, before);
+  expect(storageState['nordlys_dash.n1']).toEqual({ text: 'mine' });
+  expect('nordlys_dash.n2' in storageState).toBe(false);
+});
+
 /* The guard is one-way: a file that fits still lands whole, all four keys. */
 test('an import that fits writes the config, the themes, the width and the way back together', async ({ nordlysPage }) => {
   const { page } = nordlysPage;

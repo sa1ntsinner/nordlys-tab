@@ -1,5 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
+globalThis.NordlysSyncModel = require('../../src/js/sync-model.js');
 const NordlysProfiles = require('../../src/js/profiles.js');
 
 /* The two stores the page has: localStorage for the small list read at first
@@ -117,4 +118,39 @@ test('a snapshot of every profile, and adopting one from another device', async 
   assert.strictEqual(profiles.active().id, homeId);
   assert.strictEqual(live.theme, 'nord-frost');
   assert.strictEqual(live.language, 'de');
+});
+
+/* Sync counts the search settings as the person's; profiles did not, so a
+   snapshot left them on the board, where sync skips person fields, and they
+   travelled nowhere. One list now, and a round trip keeps them. */
+test('the person fields are the sync model\'s, and the search settings travel with the person', async () => {
+  const Model = require('../../src/js/sync-model.js');
+  assert.deepStrictEqual(new Set(NordlysProfiles.PERSON), new Set(Model.PERSON));
+  const profiles = new NordlysProfiles(stores());
+  profiles.init('Main');
+  const live = config('aurora-void', ['Daily'], { showSearch: false, rememberSearches: false, shortcutHints: false });
+  const { person, profiles: boards } = await profiles.snapshot(live);
+  assert.deepStrictEqual([person.showSearch, person.rememberSearches, person.shortcutHints], [false, false, false]);
+  assert.strictEqual(boards[0].config.showSearch, undefined, 'not left on the board, where sync would skip it');
+});
+
+/* Two quick switches overlapped: the one waiting on a slow read finished
+   second and put the board in use into the slot of whichever profile the
+   other had opened by then. The board put away is the one in use when the
+   switch began. */
+test('an overlapping switch never puts a board into another profile\'s slot', async () => {
+  const s = stores();
+  const profiles = new NordlysProfiles(s);
+  profiles.init('A');
+  const a = profiles.active().id;
+  const boardA = config('aurora-void', ['A-board']);
+  const b = await profiles.create({ name: 'B', from: 'empty', live: boardA, defaults: { groups: [] } });
+  const c = await profiles.create({ name: 'C', from: 'empty', live: boardA, defaults: { groups: [] } });
+  const get = s.local.get;
+  s.local.get = async (key) => { if (key.endsWith(c)) await new Promise((done) => setTimeout(done, 20)); return get(key); };
+  const toC = profiles.switchTo(c, boardA);
+  await profiles.switchTo(b, boardA);
+  await toC;
+  assert.deepStrictEqual(JSON.parse(s.raw.get(`nordlys_profile.${b}`)).groups, [], 'B keeps its own board');
+  assert.strictEqual(JSON.parse(s.raw.get(`nordlys_profile.${a}`)).groups[0].label, 'A-board');
 });

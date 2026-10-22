@@ -1255,31 +1255,45 @@ const MediaVault = {
       await write({ id, blob, type, timestamp });
     } catch (error) {
       await write({ id, bytes: await blob.arrayBuffer(), blobType: blob.type || type || "", type, timestamp });
+    } finally {
+      // Each call opens its own connection; one left open would block the next upgrade of the store.
+      db.close();
     }
   },
 
   async getMedia(id) {
     const db = await this.open();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(this.STORE, "readonly");
-      const req = tx.objectStore(this.STORE).get(id);
-      req.onsuccess = () => {
-        const record = req.result;
-        if (!record) resolve(null);
-        else if (record.blob) resolve(record.blob);
-        else resolve(record.bytes ? new Blob([record.bytes], { type: record.blobType || "" }) : null);
-      };
-      req.onerror = () => reject(req.error);
-    });
+    try {
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(this.STORE, "readonly");
+        const req = tx.objectStore(this.STORE).get(id);
+        req.onsuccess = () => {
+          const record = req.result;
+          if (!record) resolve(null);
+          else if (record.blob) resolve(record.blob);
+          else resolve(record.bytes ? new Blob([record.bytes], { type: record.blobType || "" }) : null);
+        };
+        req.onerror = () => reject(req.error);
+        tx.onabort = () => reject(tx.error);
+      });
+    } finally {
+      // Closing waits for the transaction to finish; it only lets go of the connection.
+      db.close();
+    }
   },
 
   async deleteMedia(id) {
     const db = await this.open();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(this.STORE, "readwrite");
-      tx.objectStore(this.STORE).delete(id);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
+    try {
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(this.STORE, "readwrite");
+        tx.objectStore(this.STORE).delete(id);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+      });
+    } finally {
+      db.close();
+    }
   }
 };

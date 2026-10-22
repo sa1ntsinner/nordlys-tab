@@ -17,7 +17,10 @@
 
   const META_KEY = "nordlys_profiles";
   const SLOT = "nordlys_profile.";
-  const PERSON = ["language", "timeFormat", "userName", "openNewTab", "showSeconds"];
+  /* What is about the person rather than a board, the sync model's list
+     (sync-model.js loads first): two lists that disagreed lost the search
+     settings, which sync counted as the person's and profiles did not. */
+  const PERSON = [...root.NordlysSyncModel.PERSON];
   const COLORS = ["teal", "amber", "violet", "rose", "sky", "lime"];
   const KEEP_DELETED_MS = 30 * 86400000;
   const NAME_LIMIT = 40;
@@ -121,9 +124,11 @@
     /* Puts the live board away and hands back the one to show. */
     async switchTo(id, live) {
       if (!this.has(id)) throw new Error("That profile does not exist any more.");
-      if (id === this.state.active) return clone(live);
+      // The board being put away is the one in use now, not whichever is in use after the read below.
+      const from = this.state.active;
+      if (id === from) return clone(live);
       const target = await this.stored(id);
-      await this.local.set({ [SLOT + this.state.active]: withoutPerson(live) });
+      await this.local.set({ [SLOT + from]: withoutPerson(live) });
       this.state.active = id;
       this.write();
       return withPerson(target || { groups: [] }, live);

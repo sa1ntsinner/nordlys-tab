@@ -3,7 +3,8 @@
   class NordlysBookmarkSettings {
     constructor({ app, root, openIconPicker }) {
       this.app = app; this.root = root; this.openIconPicker = openIconPicker;
-      this.expanded = new Set(); this.renaming = new Set();
+      // Weak, so a board that was replaced (a profile, a restore) is not kept alive by them.
+      this.expanded = new WeakSet(); this.renaming = new WeakSet();
     }
     text(key, fallback, params) { const value = window.I18N?.t(key, params || {}); return value && value !== key ? value : fallback; }
 

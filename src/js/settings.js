@@ -1548,7 +1548,8 @@ class SettingsController {
   loadCustomThemes() {
     try {
       const raw = localStorage.getItem("nordlys_custom_themes");
-      return raw ? JSON.parse(raw) : [];
+      const list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list.filter((theme) => window.NordlysConfigSchema?.isStudioTheme(theme) !== false) : [];
     } catch {
       return [];
     }
@@ -1560,14 +1561,19 @@ class SettingsController {
 
   initCustomThemeBuilder() {
     /* Read the whole studio form into a theme object */
+    // A half-typed hex in a text field gives way to its colour well, which always holds a colour.
+    const studioColour = (name, fallback) => {
+      const typed = document.getElementById(`thm-${name}-hex`)?.value || "";
+      return /^#[0-9a-f]{6}$/i.test(typed) ? typed : document.getElementById(`thm-${name}-color`)?.value || fallback;
+    };
     const readStudioTheme = () => ({
-      bg: document.getElementById("thm-bg-hex")?.value || "#0a0f1d",
-      card: document.getElementById("thm-card-hex")?.value || "#111c35",
-      border: document.getElementById("thm-border-hex")?.value || "#2a3f6d",
-      accent: document.getElementById("thm-accent-hex")?.value || "#35d6c0",
-      glow: document.getElementById("thm-glow-hex")?.value || "#5b6cff",
-      text: document.getElementById("thm-text-hex")?.value || "#f1f5f9",
-      dim: document.getElementById("thm-dim-hex")?.value || "#8ca0c4"
+      bg: studioColour("bg", "#0a0f1d"),
+      card: studioColour("card", "#111c35"),
+      border: studioColour("border", "#2a3f6d"),
+      accent: studioColour("accent", "#35d6c0"),
+      glow: studioColour("glow", "#5b6cff"),
+      text: studioColour("text", "#f1f5f9"),
+      dim: studioColour("dim", "#8ca0c4")
     });
 
     /* Live preview: every edit re-derives the full token set (real tokens,
@@ -3604,10 +3610,23 @@ class SettingsController {
     const injectBtn = document.getElementById("cfg-inject-css");
     const clearBtn = document.getElementById("cfg-clear-css");
 
-    if (editor) editor.value = this.app.config.customCss || "";
+    /* CSS that came with an imported file waits here, shown and not used,
+       until it is saved: a style sheet can load addresses, and pick them by
+       the bookmarks it finds on the board. */
+    let waiting = null;
+    try { waiting = localStorage.getItem(CSS_WAITING_KEY); } catch (error) { /* nothing waits */ }
+    const notice = document.getElementById("css-waiting");
+    if (notice) notice.hidden = waiting === null;
+    const settle = () => {
+      try { localStorage.removeItem(CSS_WAITING_KEY); } catch (error) { /* it is shown once more */ }
+      waiting = null;
+      if (notice) notice.hidden = true;
+    };
+    if (editor) editor.value = waiting ?? (this.app.config.customCss || "");
 
     injectBtn?.addEventListener("click", () => {
       const css = editor?.value || "";
+      settle();
       this.app.config.customCss = css;
       this.app.injectCustomCSS(css);
       this.app.saveConfig();
@@ -3618,6 +3637,7 @@ class SettingsController {
 
     clearBtn?.addEventListener("click", () => {
       if (editor) editor.value = "";
+      settle();
       this.app.config.customCss = "";
       this.app.injectCustomCSS("");
       this.app.saveConfig();
@@ -3627,7 +3647,7 @@ class SettingsController {
     });
 
     editor?.addEventListener("input", (e) => {
-      this.app.injectCustomCSS(e.target.value);
+      if (waiting === null) this.app.injectCustomCSS(e.target.value);
     });
 
     // Preset Snippets
@@ -3640,6 +3660,7 @@ class SettingsController {
         const key = btn.dataset.preset;
         if (CSS_PRESETS[key] && editor) {
           editor.value = (editor.value.trim() ? editor.value + "\n\n" : "") + CSS_PRESETS[key];
+          if (waiting !== null) return;
           this.app.injectCustomCSS(editor.value);
           this.app.config.customCss = editor.value;
           this.app.saveConfig();
@@ -3813,7 +3834,7 @@ class SettingsController {
       confirmText: this.text("backup.updateCopyUse", "Put it back"),
       cancelText: this.text("confirm.cancel", "Cancel")
     });
-    if (ok) this.applyBackupObject(copy.file);
+    if (ok) await this.applyBackupObject(copy.file, { own: true });
   }
 
   download(text, name, type) {
@@ -3866,6 +3887,7 @@ class SettingsController {
     if (!point) return;
     if (!this.app.applyRecoveryBundle(point)) { this.sayNoRoom("toast.saveFailed"); return; }
     if (point.cause === "reset" && point.media) await this.restoreWallpaperAside();
+    if (point.cause === "reset") await this.putBackBrowserStore(point);
     this.app.clearSnapshot(UNDO_POINT_KEY);
     this.renderRecoveryRows();
     const done = this.text(point.cause === "restore" ? "toast.restoreUndone" : "toast.resetUndone", "Put back");
@@ -3875,6 +3897,32 @@ class SettingsController {
     // back if there is one, and to the tab heading if there is not.
     const other = document.getElementById("cfg-restore-point");
     (other?.offsetParent ? other : document.getElementById("settings-tab-backup"))?.focus({ preventScroll: true });
+  }
+
+  /* The half of a reset's way back that lives in browser storage: the other
+     profiles, what the cards held, sync's own state. Not the keys to other
+     services: a reset is also how those are taken off a device. Answers null
+     when the browser will not say what it holds. */
+  async keepBrowserStore(savedAt) {
+    try {
+      const skip = [STORAGE_KEY, SAVED_AT_KEY, UPDATE_COPIES_KEY, RESET_COPY_KEY, "nordlys_connections"];
+      const items = Object.fromEntries(Object.entries(await this.localArea("get", null)).filter(([key]) => !skip.includes(key)));
+      return { savedAt, items };
+    } catch (error) { return null; }
+  }
+
+  async putBackBrowserStore(point) {
+    for (const [field, key] of RESET_LISTS) {
+      try { if (typeof point[field] === "string") localStorage.setItem(key, point[field]); } catch (error) { /* the next tab starts from one profile */ }
+    }
+    try {
+      const copy = (await this.localArea("get", RESET_COPY_KEY))[RESET_COPY_KEY];
+      if (copy?.savedAt !== point.savedAt) return;
+      await this.localArea("set", copy.items);
+      await this.localArea("remove", RESET_COPY_KEY);
+    } catch (error) { /* the settings came back; the rest is best effort */ }
+    this.app.sync?.profiles?.reload();
+    this.app.sync?.emit();
   }
 
   /* Writes the way back before the thing that needs one, and answers whether it
@@ -3966,8 +4014,9 @@ class SettingsController {
   }
 
   /* A backup file put in place of the whole setup: from an imported file,
-     or from a copy kept before an update. Reloads once it has landed. */
-  applyBackupObject(parsed) {
+     or from a copy kept before an update (own: made here, from this setup).
+     Reloads once it has landed. */
+  async applyBackupObject(parsed, { own = false } = {}) {
     const file = window.NordlysConfigSchema.readBackupFile(parsed);
     const imported = window.NordlysConfigSchema.normalizeImportConfig(file.config);
     window.NordlysConfigSchema.migrateRaw(imported);
@@ -4002,20 +4051,64 @@ class SettingsController {
        localStorage only and can be put back to the byte. The config
        goes last because it is the one write that also reaches the
        browser-storage mirror, and a mirror holding a refused import is
-       a copy of a setup that never existed. */
+       a copy of a setup that never existed.
+
+       What the cards held goes before all of it, to browser storage, which
+       answers later and can refuse; the keys it replaces are kept to put back.
+       CSS from a file waits in the editor to be read (initCustomCSSEditor). */
+    const css = own ? "" : incoming.customCss || "";
+    if (!own) incoming.customCss = "";
     const previous = this.app.config;
-    const putBack = this.holdLocalKeys([RESTORE_POINT_KEY, STORAGE_KEY, "nordlys_custom_themes", "nordlys_drawer_width"]);
+    const putBack = this.holdLocalKeys([RESTORE_POINT_KEY, STORAGE_KEY, "nordlys_custom_themes", "nordlys_drawer_width", CSS_WAITING_KEY]);
+    const cardsBack = await this.adoptImportedCards(file.extras?.dashboardData);
     this.app.config = incoming;
-    if (!this.app.snapshotBeforeMigration(previous, "import")
-      || !this.adoptImportedExtras(file.extras)
+    if (!cardsBack
+      || !this.app.snapshotBeforeMigration(previous, "import")
+      || !this.adoptImportedExtras(file.extras, css)
       || !this.app.saveConfig({ strict: true })) {
       this.app.config = previous;
       putBack();
+      await cardsBack?.();
       this.sayNoRoom("toast.saveFailed");
       return false;
     }
     location.reload();
     return true;
+  }
+
+  // chrome.storage.local as a promise, which fails when the browser refuses.
+  localArea(method, argument) {
+    const area = typeof chrome !== "undefined" ? chrome.storage?.local : null;
+    if (!area) return Promise.resolve({});
+    return new Promise((resolve, reject) => {
+      try {
+        area[method](argument, (value) => {
+          const error = chrome.runtime?.lastError;
+          if (error) reject(new Error(error.message)); else resolve(value || {});
+        });
+      } catch (error) { reject(error); }
+    });
+  }
+
+  /* What an imported file's cards held, written over this setup's. Answers the
+     way back to what those keys held before, or null when the write was refused
+     (and put back already). */
+  async adoptImportedCards(data) {
+    const items = Object.fromEntries(Object.entries(data && typeof data === "object" ? data : {}).map(([id, value]) => [`nordlys_dash.${id}`, value]));
+    const keys = Object.keys(items);
+    if (!keys.length) return () => Promise.resolve();
+    let before;
+    try { before = await this.localArea("get", keys); } catch (error) { return null; }
+    const back = async () => {
+      try {
+        const kept = Object.fromEntries(Object.entries(before).filter(([, value]) => value !== undefined));
+        await this.localArea("set", kept);
+        const added = keys.filter((key) => kept[key] === undefined);
+        if (added.length) await this.localArea("remove", added);
+      } catch (error) { /* the cards keep what the file gave them */ }
+    };
+    try { await this.localArea("set", items); return back; }
+    catch (error) { await back(); return null; }
   }
 
   /* Folders from another extension's backup, added after the ones here. The
@@ -4089,7 +4182,7 @@ class SettingsController {
       const fileName = file.name.toLowerCase();
       const reader = new FileReader();
 
-      reader.onload = (evt) => {
+      reader.onload = async (evt) => {
         const text = evt.target.result;
         try {
           if (fileName.endsWith(".html") || fileName.endsWith(".htm") || text.includes("<!DOCTYPE NETSCAPE-Bookmark-file-1") || text.includes("<DL>")) {
@@ -4156,13 +4249,8 @@ class SettingsController {
               }
             }
 
-            if (newGroups.length > 0) {
-              this.app.config.groups = (this.app.config.groups || []).concat(newGroups);
-              this.app.saveConfig();
-              location.reload();
-            } else if (typeof toast === "function") {
-              toast(window.I18N ? window.I18N.t("toast.importEmpty") : "No bookmarks found in HTML file", "danger");
-            }
+            // Added the way another new tab's folders are: a way back first, and only if the save landed.
+            this.addImportedFolders({ from: file.name, groups: newGroups });
           } else {
             /* JSON. The envelope beside the config is lifted out first, so it
                is never validated as a setting and never stored as one; a file
@@ -4172,7 +4260,7 @@ class SettingsController {
             // Another new tab's backup adds its folders; a Nordlys one replaces the setup.
             const other = window.NordlysImporters?.read(parsed);
             if (other) this.addImportedFolders(other);
-            else this.applyBackupObject(parsed);
+            else await this.applyBackupObject(parsed);
           }
         } catch (err) {
           if (typeof toast === "function") {
@@ -4207,7 +4295,12 @@ class SettingsController {
         let aside;
         try { aside = await this.setWallpaperAside(); }
         catch (error) { this.sayNoRoom("toast.recoveryFailed"); return; }
-        if (!this.keepAWayBack("reset", { media: aside.media })) { await aside.putBack(); return; }
+        const lists = {};
+        for (const [field, key] of RESET_LISTS) {
+          try { const raw = localStorage.getItem(key); if (raw !== null) lists[field] = raw; } catch (error) { /* not kept */ }
+        }
+        if (!this.keepAWayBack("reset", { media: aside.media, ...lists })) { await aside.putBack(); return; }
+        const kept = await this.keepBrowserStore(this.app.undoPoint()?.savedAt);
         for (const key of OWNED_LOCAL_KEYS) {
           try { localStorage.removeItem(key); } catch (error) { /* already gone */ }
         }
@@ -4216,8 +4309,9 @@ class SettingsController {
         if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
           // The copies made before updates outlive a reset, as the restore point does.
           const copies = await this.app.updateCopies();
+          const keep = { ...(copies.length ? { [UPDATE_COPIES_KEY]: copies } : {}), ...(kept ? { [RESET_COPY_KEY]: kept } : {}) };
           chrome.storage.local.clear(() => {
-            if (copies.length) chrome.storage.local.set({ nordlys_update_copies: copies }, () => location.reload());
+            if (Object.keys(keep).length) chrome.storage.local.set(keep, () => location.reload());
             else location.reload();
           });
           setTimeout(() => location.reload(), 400); // fallback if callback never fires
@@ -4252,14 +4346,12 @@ class SettingsController {
   /* The stores an imported file carried beside its config. Answers whether they
      landed: a file whose themes will not fit is a file that has not been
      imported, not one that half has. */
-  adoptImportedExtras(extras = {}) {
+  adoptImportedExtras(extras = {}, css = "") {
     try {
-      if (Array.isArray(extras.customThemes)) localStorage.setItem("nordlys_custom_themes", JSON.stringify(extras.customThemes));
+      if (Array.isArray(extras.customThemes)) localStorage.setItem("nordlys_custom_themes", JSON.stringify(extras.customThemes.filter(window.NordlysConfigSchema.isStudioTheme)));
       if (extras.drawerWidth) localStorage.setItem("nordlys_drawer_width", extras.drawerWidth);
-      // What the dashboard cards held; the config that names them comes next.
-      if (extras.dashboardData && typeof chrome !== "undefined" && chrome.storage?.local) {
-        chrome.storage.local.set(Object.fromEntries(Object.entries(extras.dashboardData).map(([id, data]) => [`nordlys_dash.${id}`, data])));
-      }
+      if (css.trim()) localStorage.setItem(CSS_WAITING_KEY, css);
+      else localStorage.removeItem(CSS_WAITING_KEY);
       return true;
     } catch (error) { return false; }
   }

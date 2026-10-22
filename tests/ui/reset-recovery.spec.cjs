@@ -120,6 +120,32 @@ test('a reset keeps everything it removed, and the board comes back whole', asyn
   await expect(page.locator('#board .card').first()).toBeVisible();
 });
 
+/* A reset clears browser storage too: the other profiles, what the cards held.
+   The undo used to bring back the board in use and nothing else. */
+test('the undo of a reset brings back the other profiles and what the cards held, never a service\'s keys', async ({ nordlysPage }) => {
+  const { page, storageState } = nordlysPage;
+  await page.evaluate(() => new Promise(resolve => {
+    localStorage.setItem('nordlys_profiles', JSON.stringify({ version: 1, active: 'p1', list: [{ id: 'p1', name: 'Home', color: 'teal' }, { id: 'p2', name: 'Work', color: 'amber' }], deleted: [] }));
+    chrome.storage.local.set({ 'nordlys_profile.p2': { groups: [{ label: 'WORK', cols: 2, hidden: false, links: [] }] }, 'nordlys_dash.n1': { text: 'mine' }, nordlys_connections: { todoist: { token: 'secret' } } }, resolve);
+  }));
+  await openBackup(page);
+  const reloaded = page.waitForEvent('load');
+  await page.locator('#cfg-reset').click();
+  await page.locator('#confirm-modal .confirm-ok').click();
+  await reloaded;
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  expect(storageState['nordlys_dash.n1'], 'the reset happened').toBeUndefined();
+  expect(storageState.nordlys_reset_copy.items.nordlys_connections, 'a reset is also how a service is taken off a device').toBeUndefined();
+
+  await openBackup(page);
+  await page.locator('#cfg-undo-point').click();
+  await expect.poll(() => storageState['nordlys_dash.n1']).toEqual({ text: 'mine' });
+  expect(storageState['nordlys_profile.p2'].groups[0].label).toBe('WORK');
+  expect(JSON.parse(await page.evaluate(() => localStorage.getItem('nordlys_profiles'))).list.map(profile => profile.name)).toEqual(['Home', 'Work']);
+  expect(storageState.nordlys_connections).toBeUndefined();
+  await expect.poll(() => 'nordlys_reset_copy' in storageState, 'the copy goes once it is used').toBe(false);
+});
+
 /* A wallpaper is far too large to sit inside a snapshot, so the reset moves it
    to one slot in the media vault instead of deleting it. Without that, the undo
    would bring back a config that points at a wallpaper no longer on disk. */

@@ -146,6 +146,12 @@ const UNDO_POINT_KEY = "nordlys_undo_point";
 const UPDATE_COPIES_KEY = "nordlys_update_copies";
 const SEEN_VERSION_KEY = "nordlys_seen_version";
 const UPDATE_COPIES_KEPT = 3;
+/* What a reset clears from browser storage (the other profiles, what the
+   cards held, sync's own state), kept for its undo beside the update copies,
+   which a reset keeps (settings.js keepBrowserStore). */
+const RESET_COPY_KEY = "nordlys_reset_copy";
+// The profile list and the profile this device opens on: localStorage a reset clears, kept in its way back.
+const RESET_LISTS = [["profiles", "nordlys_profiles"], ["deviceStart", "nordlys_device_start"]];
 // Which skies this device found too heavy, and which the person keeps moving anyway (judgeSkyLoad).
 const SKY_LOAD_KEY = "nordlys_sky_load";
 // When the config was last saved, beside it in each store (saveConfig).
@@ -154,6 +160,8 @@ const SAVED_AT_KEY = "nordlys_config_saved_at";
    this one slot in the media vault instead of deleting it. One slot, overwritten
    by the next reset. */
 const UNDO_MEDIA_ID = "nordlys_undo_bg";
+// CSS that came with an imported file: in the editor, and not used until it is saved there.
+const CSS_WAITING_KEY = "nordlys_css_waiting";
 
 /* Durable state that lives beside the config rather than inside it. A snapshot
    of "everything a reset removes" is only true if it holds these too. */
@@ -173,7 +181,8 @@ const OWNED_LOCAL_KEYS = [
   // What One page fit remembers for the next new tab (page-fit.js); never in a backup.
   "nordlys_fit_hint",
   // The list of profiles and which one this device opens on (profiles.js, sync-ui.js).
-  "nordlys_profiles", "nordlys_device_start"
+  "nordlys_profiles", "nordlys_device_start",
+  CSS_WAITING_KEY
 ];
 const LIGHT_THEMES = [
   "porcelain-light", "warm-ivory", "sage-light", "sakura-daylight",
@@ -793,7 +802,8 @@ class NordlysApp {
     this.grid?.render();
     this.widgets?.updateClock();
     const cssEditor = document.getElementById("css-editor");
-    if (cssEditor) cssEditor.value = this.config.customCss || "";
+    // Never over imported CSS that is waiting there to be read (initCustomCSSEditor).
+    if (cssEditor && document.getElementById("css-waiting")?.hidden !== false) cssEditor.value = this.config.customCss || "";
     this.builtSettings?.syncFormValues?.();
     this.builtSettings?.renderBookmarksManager?.();
   }
@@ -803,8 +813,7 @@ class NordlysApp {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        // What was stored, kept exactly as it was in case anything below changes it.
-        const original = JSON.parse(stored);
+        // What was stored is the string itself; it is parsed again only if anything below changes the board.
         this.storedBeforeLoad = stored;
         const aged = Boolean(window.NordlysConfigSchema?.migrateRaw(parsed));
         const cfg = Object.assign({}, DEFAULT_CONFIG, parsed);
@@ -818,7 +827,7 @@ class NordlysApp {
         const repaired = Boolean(window.NordlysConfigSchema?.repairConfig(cfg, DEFAULT_CONFIG));
         if (this.normalizeStoredConfig(cfg) || repaired || aged) {
           // Keep what the user had, exactly as it was, before writing over it.
-          this.snapshotBeforeMigration(original);
+          this.snapshotBeforeMigration(JSON.parse(stored));
           /* Its own try, and this is the whole reason for it. A board carrying
              embedded icons runs to megabytes; with a snapshot of the same size
              beside it, the rewrite is what meets the quota. When that throw
@@ -826,10 +835,11 @@ class NordlysApp {
              empty board — while the real one sat untouched in storage one line
              away. The migrated shape is held in memory either way; storage
              simply keeps the older shape until there is room for the new one. */
-          try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
-            if (typeof chrome !== "undefined") chrome.storage?.local?.set?.({ [STORAGE_KEY]: cfg });
-          } catch (error) { /* held in memory; storage keeps what it already had */ }
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg)); } catch (error) { /* held in memory; storage keeps what it already had */ }
+          /* The mirror is written once it is known not to hold a newer board
+             (restoreFromChromeStorage): a board too big for the fast copy
+             lives only there, and writing the migrated old one over it lost it. */
+          this.migratedOnLoad = true;
         }
         return cfg;
       }
@@ -983,6 +993,7 @@ class NordlysApp {
            when what came in needed a migration — otherwise the backup keeps a
            shape the code no longer reads and restores it un-migrated next time. */
         if (!this.loadedFromStore) return;
+        migrated ||= Boolean(this.migratedOnLoad);
         if (legacyPresent || migrated) chrome.storage.local.set({ [STORAGE_KEY]: this.config });
         if (legacyPresent) chrome.storage.local.remove(LEGACY_STORAGE_KEYS);
       });
@@ -1024,8 +1035,11 @@ class NordlysApp {
       this.injectCustomCSS(this.config.customCss);
     }
 
-    // 2. Initialize background engine
-    this.bgEngine = new NordlysBackgroundEngine();
+    // 2. The sky. A sky that fails to start costs the page its sky, never its board.
+    try { this.bgEngine = new NordlysBackgroundEngine(); } catch (error) {
+      this.bgEngine = null;
+      console.error("Nordlys: the sky could not start", error);
+    }
     this.watchSkyLoad();
     this.updateBackgroundMode();
 
@@ -1130,32 +1144,40 @@ class NordlysApp {
       /* Another tab changing its clock or its sky leaves this board as it
          is, and whatever is open over it stays open. Only a different board
          lets go of the old one. */
-      const sameBoard = JSON.stringify(next.groups) === JSON.stringify(this.config.groups);
-      this.letGoOfTheOldBoard({ entirely: !sameBoard });
       // The data is taken at once — that is what keeps it from being written
       // over. Drawing it waits: one redraw a frame, however fast the other tab
       // saves (a slider drag saves on every step), and none while hidden.
-      /* Folders and bookmarks this tab already holds are updated in place
-         rather than replaced, so everything still pointing at them — a list
-         row mid-rename, an open editor — writes into the live config instead
-         of an orphan that the next save would leave behind. */
-      next.groups = keepIdentity(this.config.groups, next.groups);
-      this.config = next;
-      this.loadedFromStore = true;
-      this.retargetEditors();
-      // Arrange, still open over the same board, starts its steps back from
-      // this one: the ones it had hold the folders just replaced.
-      const arrange = this.grid?.arrange;
-      if (sameBoard && arrange?.active) {
-        arrange.history = [];
-        arrange.entry = arrange.snapshot();
-        arrange.refresh();
-      }
+      this.adoptConfig(next);
       this.redrawAdopted();
     });
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden && this.adoptedPending) this.redrawAdopted();
     });
+  }
+
+  /* A board from elsewhere put in place of this one: another tab's save, a
+     sync from another device, a profile switched to. Another tab changing its
+     clock or its sky leaves this board as it is, and whatever is open over it
+     stays open; only a different board lets go of the old one. */
+  adoptConfig(next) {
+    const sameBoard = JSON.stringify(next.groups) === JSON.stringify(this.config.groups);
+    this.letGoOfTheOldBoard({ entirely: !sameBoard });
+    /* Folders and bookmarks this tab already holds are updated in place
+       rather than replaced, so everything still pointing at them — a list
+       row mid-rename, an open editor — writes into the live config instead
+       of an orphan that the next save would leave behind. */
+    next.groups = keepIdentity(this.config.groups, next.groups);
+    this.config = next;
+    this.loadedFromStore = true;
+    this.retargetEditors();
+    // Arrange, still open over the same board, starts its steps back from
+    // this one: the ones it had hold the folders just replaced.
+    const arrange = this.grid?.arrange;
+    if (sameBoard && arrange?.active) {
+      arrange.history = [];
+      arrange.entry = arrange.snapshot();
+      arrange.refresh();
+    }
   }
 
   redrawAdopted() {
@@ -1491,7 +1513,8 @@ class NordlysApp {
     // Dynamic Hover Class on document.body
     const body = document.body;
     body.classList.remove("hover-lift", "hover-glow", "hover-scale", "hover-none");
-    body.classList.add(`hover-${cfg.hoverEffect || "lift"}`);
+    // A class is a word: "lift scale" from a hand-edited file threw here, before the board was drawn.
+    body.classList.add(`hover-${["lift", "glow", "scale", "none"].includes(cfg.hoverEffect) ? cfg.hoverEffect : "lift"}`);
 
     document.body.classList.toggle("seconds", !!cfg.showSeconds);
     this.applyWallpaperEffects();
@@ -1641,6 +1664,10 @@ class NordlysApp {
        kept as one, never left on a scene the engine cannot paint. */
     if (migratedSky(this.config.bgMode)) this.config.bgMode = migratedSky(this.config.bgMode);
     const bgMode = this.config.bgMode || "aurora";
+    /* A wallpaper is read from the vault, which answers later; another sky
+       chosen meanwhile is the one shown, and the late answer is let go. */
+    const generation = (this.backgroundGeneration = (this.backgroundGeneration || 0) + 1);
+    const engine = this.bgEngine;
     // Whether the folders are quiet zones depends on the sky (sendQuietZones).
     this.queueQuietZones?.();
     const canvas = document.getElementById("bg-canvas");
@@ -1676,28 +1703,29 @@ class NordlysApp {
     if (NORDLYS_GENERATIVE_SCENES.has(bgMode)) {
       if (canvas) canvas.style.display = "block";
       clearMedia();
+      if (!engine) return;
       // Before the mood, or a mood the user mixed themselves is a name the
       // engine has never heard of and quietly declines.
-      this.bgEngine.setPalettes(this.config.bgPalettes);
-      this.bgEngine.setSeed(this.config.bgSeed ?? 0);
-      this.bgEngine.realSky = this.config.bgRealSky !== false;
-      this.bgEngine.moonCache = null;
-      if (this.bgEngine.daylight !== Boolean(this.config.bgDaylight)) this.bgEngine.setDaylight(this.config.bgDaylight);
-      this.bgEngine.setAtmosphere({
+      engine.setPalettes(this.config.bgPalettes);
+      engine.setSeed(this.config.bgSeed ?? 0);
+      engine.realSky = this.config.bgRealSky !== false;
+      engine.moonCache = null;
+      if (engine.daylight !== Boolean(this.config.bgDaylight)) engine.setDaylight(this.config.bgDaylight);
+      engine.setAtmosphere({
         motion: this.config.bgMotion ?? 1,
         // High legibility keeps the sky at a whisper, whatever the slider says.
         intensity: this.highLegibility ? Math.min(0.6, this.config.bgIntensity ?? 1) : (this.config.bgIntensity ?? 1),
         palette: this.config.bgPalette || "theme"
       });
       this.judgeSkyLoad(bgMode);
-      this.bgEngine.setMode(bgMode);
+      engine.setMode(bgMode);
     } else if (bgMode === "custom-image" || bgMode === "custom-video") {
-      this.bgEngine.setMode(bgMode);
+      engine?.setMode(bgMode);
       clearMedia();
 
       try {
         const blob = await MediaVault.getMedia("custom_bg");
-        if (!blob) return;
+        if (!blob || generation !== this.backgroundGeneration) return;
         const url = URL.createObjectURL(blob);
         this.mediaObjectUrl = url;
 
@@ -1721,7 +1749,7 @@ class NordlysApp {
       }
     } else {
       clearMedia();
-      this.bgEngine.setMode("solid");
+      engine?.setMode("solid");
     }
   }
 }

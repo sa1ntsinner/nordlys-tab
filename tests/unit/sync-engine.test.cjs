@@ -203,3 +203,14 @@ test('a bookmark dropped after 30 days does not come back from an old item of an
   const view = await a.pull();
   assert.deepStrictEqual(names(view || await a.view()), ['Gmail']);
 });
+
+test('two tabs changing this device at once both keep their change', async () => {
+  const sync = area({ limits: true });
+  const local = area();
+  const tab = async () => { const e = new NordlysSyncEngine({ local, sync, deviceName: 'Laptop' }); await e.load(); return e; };
+  const a = await tab();
+  await a.enable({ snapshot: snapshot([folder('g1', 'Daily', [['l1', 'Mail'], ['l2', 'Bank']])]), mode: 'merge' });
+  const b = await tab();
+  await Promise.all([a.override('l/l1', { name: 'Work mail' }), b.override('l/l2', { name: 'My bank' })]);
+  assert.deepStrictEqual(Object.keys(await (await tab()).overrides()).sort(), ['l/l1', 'l/l2']);
+});

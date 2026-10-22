@@ -59,3 +59,22 @@ test('a large photo is kept at the size the screen can show', async ({ nordlysPa
   expect(Math.max(kept.width, kept.height)).toBeLessThanOrEqual(3840);
   expect(kept.width / kept.height).toBeCloseTo(1.5, 2);
 });
+
+/* The wallpaper is read from the vault, which answers later. A sky chosen
+   while it was being read used to have the wallpaper laid back over it. */
+test('a wallpaper read late does not come back over the sky chosen after it', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const shown = await page.evaluate(async () => {
+    let release;
+    MediaVault.getMedia = () => new Promise(resolve => { release = () => resolve(new Blob(['x'], { type: 'image/png' })); });
+    const app = window.Nordlys;
+    app.config.bgMode = 'custom-image';
+    const late = app.updateBackgroundMode();
+    app.config.bgMode = 'aurora';
+    await app.updateBackgroundMode();
+    release();
+    await late;
+    return { active: document.getElementById('bg-media').classList.contains('active'), url: app.mediaObjectUrl || null };
+  });
+  expect(shown).toEqual({ active: false, url: null });
+});

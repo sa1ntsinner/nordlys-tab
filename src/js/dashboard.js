@@ -651,7 +651,10 @@
             return;
           }
           const now = card.now();
-          const events = (card.data.items || []).filter((e) => sources().includes(e.source) && new Date(e.end || e.start).getTime() >= now - 60e3).sort((a, b) => String(a.start).localeCompare(String(b.start))).slice(0, 25);
+          const today = K.dayOf(now);
+          // A day-long event is on until its last day is over here, not until a midnight in UTC.
+          const current = (e) => e.allDay ? String(e.end || K.tasks.shift(`${String(e.start).slice(0, 10)}T12:00`, 1)) > today : new Date(e.end || e.start).getTime() >= now - 60e3;
+          const events = (card.data.items || []).filter((e) => sources().includes(e.source) && current(e)).sort((a, b) => String(a.start).localeCompare(String(b.start))).slice(0, 25);
           const byDay = new Map();
           for (const e of events) { const d = e.allDay ? String(e.start).slice(0, 10) : K.dayOf(new Date(e.start)); if (!byDay.has(d)) byDay.set(d, []); byDay.get(d).push(e); }
           const next = events.find((e) => !e.allDay && new Date(e.start).getTime() > now);
@@ -941,6 +944,15 @@
       this.menu = null;
       if (typeof chrome !== "undefined") chrome.storage?.onChanged?.addListener?.((changes, area) => {
         if (area !== "local") return;
+        /* An app connected or disconnected in another tab: this one takes the
+           change, so it stops asking with a token that was taken back, and
+           its next save of the list cannot bring the token back. */
+        const connections = changes.nordlys_connections && (changes.nordlys_connections.newValue || {});
+        // The tab that made the change has it already.
+        if (connections && JSON.stringify(connections) !== JSON.stringify(this.connections)) {
+          this.connections = connections;
+          this.afterConnections();
+        }
         for (const [key, change] of Object.entries(changes)) {
           if (!key.startsWith(DATA)) continue;
           const id = key.slice(DATA.length);

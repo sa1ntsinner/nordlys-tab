@@ -98,6 +98,24 @@ test('repair drops what cannot be a folder or a bookmark, and keeps the rest', (
   assert.deepEqual(config.groups[1].links, []);
 });
 
+// A hover style becomes a class name; "lift scale" threw in classList.add before the board was drawn.
+test('repair puts an unknown hover style back to lift', () => {
+  const config = { groups: [], hoverEffect: 'lift scale' };
+  assert.equal(repairConfig(config), true);
+  assert.equal(config.hoverEffect, 'lift');
+});
+
+// A theme colour becomes a style, and "red), url(https://…)" in a style loads an address.
+test('repair drops a theme of one\'s own whose colours are not colours', () => {
+  const config = { groups: [], theme: 'custom', customTheme: { id: 't1', name: 'Mine', bg: '#101820', accent: 'red), url(https://example.com/x)' } };
+  assert.equal(repairConfig(config, { theme: 'aurora-void' }), true);
+  assert.equal(config.customTheme, undefined);
+  assert.equal(config.theme, 'aurora-void');
+  const kept = { groups: [], theme: 'custom', customTheme: { id: 't2', name: 'Mine', bg: '#101820', card: '#abc', accent: '#35D6C0' } };
+  assert.equal(repairConfig(kept), false);
+  assert.equal(schema.isStudioTheme({ bg: '#000000', text: 'white' }), false);
+});
+
 test('repair leaves a sound config untouched and says nothing changed', () => {
   const config = good();
   const before = JSON.stringify(config);

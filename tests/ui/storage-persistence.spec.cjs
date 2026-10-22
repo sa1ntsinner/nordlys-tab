@@ -28,7 +28,22 @@ test('stored 50-55px tile sizes migrate once to the supported 56px floor', async
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--tw').trim())).toContain('56px');
 });
 
-test('JSON export and import preserve groups and custom CSS across reload', async ({ nordlysPage }) => {
+/* A board grown past localStorage lives only in the mirror, with a newer
+   saved-at than the fast copy. A fast copy that needed a migration used to be
+   written straight into the mirror on load, over that newer board. */
+test('a migration on load never writes an older board over a newer one in the mirror', async ({ nordlysPage }) => {
+  const { page, storageState } = nordlysPage;
+  await page.evaluate(() => new Promise((done) => {
+    localStorage.setItem('nordlys_config', JSON.stringify({ ...window.Nordlys.defaultConfig, bgMode: 'drift', groups: [{ id: 'old', label: 'OLDER', links: [] }] }));
+    localStorage.setItem('nordlys_config_saved_at', '1000');
+    chrome.storage.local.set({ nordlys_config: { ...window.Nordlys.defaultConfig, groups: [{ id: 'new', label: 'NEWER', links: [] }] }, nordlys_config_saved_at: 2000 }, done);
+  }));
+  await page.reload(); await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0]?.label)).toBe('NEWER');
+  expect(storageState.nordlys_config.groups[0].label).toBe('NEWER');
+});
+
+test('JSON export and import preserve groups, and custom CSS once it is read and saved', async ({ nordlysPage }) => {
   const { page, storageState } = nordlysPage;
   await page.evaluate(() => { window.Nordlys.config.customCss = '.card { border-width: 3px; }'; window.Nordlys.config.groups[0].label = 'EXPORTED'; window.Nordlys.saveConfig(); });
   await page.locator('#gear').click(); await page.getByRole('tab', { name: 'Backup' }).click();
@@ -42,7 +57,15 @@ test('JSON export and import preserve groups and custom CSS across reload', asyn
   await page.locator('#cfg-import-universal').setInputFiles({ name: 'nordlys-backup.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(imported)) });
   await navigation; await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   expect(storageState.nordlys_config.groups[0].label).toBe('IMPORTED');
+  // A style sheet from a file can load addresses: it is shown, not used, until it is saved.
+  expect(await page.evaluate(() => document.getElementById('user-custom-css')?.textContent || '')).not.toContain('opacity: .88');
+  await page.locator('#gear').click(); await page.getByRole('tab', { name: 'Custom CSS' }).click();
+  await expect(page.locator('#css-waiting')).toBeVisible();
+  await expect(page.locator('#css-editor')).toHaveValue(/opacity: \.88/);
+  await page.locator('#cfg-inject-css').click();
+  await expect(page.locator('#css-waiting')).toBeHidden();
   await expect.poll(() => page.locator('#user-custom-css').evaluate(element => element.textContent)).toContain('opacity: .88');
+  expect(storageState.nordlys_config.customCss).toContain('opacity: .88');
 });
 
 test('reset clears current, legacy, and auxiliary persisted settings before reload', async ({ nordlysPage }) => {
@@ -51,8 +74,10 @@ test('reset clears current, legacy, and auxiliary persisted settings before relo
   await page.locator('#gear').click(); await page.getByRole('tab', { name: 'Backup' }).click(); await page.locator('#cfg-reset').click();
   const resetDialog = page.getByRole('alertdialog', { name: /Reset everything/i }); await expect(resetDialog).toBeVisible();
   const navigation = page.waitForEvent('load'); await resetDialog.getByRole('button', { name: 'Reset' }).click(); await navigation; await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
-  // The copies made before updates are the one thing a reset keeps (update-copies.spec.cjs).
+  // A reset keeps the copies made before updates (update-copies.spec.cjs), and what its undo puts back (reset-recovery.spec.cjs).
   delete storageState.nordlys_update_copies;
+  expect(Object.keys(storageState.nordlys_reset_copy.items).sort()).toEqual(['aurora_tab_config', 'nordlys_legacy_config']);
+  delete storageState.nordlys_reset_copy;
   expect(storageState).toEqual({}); expect(await page.evaluate(() => localStorage.getItem('nordlys_custom_themes'))).toBeNull();
 });
 

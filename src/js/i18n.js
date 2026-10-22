@@ -39,7 +39,11 @@ window.I18N = {
   },
 
   setLanguage(lang) {
-    if (this.LANGUAGES.includes(lang) && !this.translations[lang]) return this.load(lang).then((ok) => this.setLanguage(ok ? lang : 'en'));
+    // The last language asked for is the one shown, whichever file arrives first.
+    this.wanted = lang;
+    if (this.LANGUAGES.includes(lang) && !this.translations[lang]) {
+      return this.load(lang).then((ok) => { if (this.wanted === lang) this.setLanguage(ok ? lang : 'en'); });
+    }
     this.currentLang = this.translations[lang] ? lang : 'en';
     try {
       localStorage.setItem('nordlys_language', this.currentLang);

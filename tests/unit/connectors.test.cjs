@@ -155,3 +155,26 @@ test('COUNT counts from the first time, even years back, and a daily repeat from
   assert.strictEqual(list.filter(e => e.title === 'Gone').length, 0);
   assert.strictEqual(list.filter(e => e.title === 'Pill').length, 14);
 });
+
+/* A small file can ask for a great deal: the 31st of February, every twelve
+   months, never happens, and each empty year was still walked through to the
+   twenty-thousandth. Fifty such events in a few kilobytes held the page for
+   a fifth of a second. The walk now stops at the end of the window. */
+test('a repeat that never happens is not walked to the end of time', () => {
+  const vevent = (n) => `BEGIN:VEVENT\r\nUID:never-${n}\r\nSUMMARY:Never\r\nDTSTART:20200201T090000Z\r\nDTEND:20200201T100000Z\r\nRRULE:FREQ=MONTHLY;INTERVAL=12;BYMONTHDAY=31\r\nEND:VEVENT\r\n`;
+  const text = `BEGIN:VCALENDAR\r\n${Array.from({ length: 50 }, (_, n) => vevent(n)).join('')}END:VCALENDAR\r\n`;
+  const began = performance.now();
+  assert.deepStrictEqual(C.events(text, at('2026-10-23T12:00:00Z')), []);
+  assert.ok(performance.now() - began < 40, `${Math.round(performance.now() - began)} ms`);
+});
+
+/* An all-day event is a day on the viewer's calendar: one without an end
+   lasts that day (RFC 5545), and it is still on at noon of it, wherever the
+   viewer is. Read as an instant at UTC midnight with no length, it was gone
+   an hour after midnight UTC. */
+test('an all-day event without an end lasts its whole day, in the viewer\'s own time', () => {
+  const noon = new Date(2026, 9, 23, 12).getTime();
+  const list = C.events(zoned(ev(['UID:day', 'DTSTART;VALUE=DATE:20261023', 'SUMMARY:Holiday'])), noon);
+  assert.strictEqual(list.length, 1);
+  assert.deepStrictEqual([list[0].allDay, list[0].start, list[0].end], [true, '2026-10-23', '2026-10-24']);
+});

@@ -118,7 +118,10 @@
     if (!m) return null;
     const parts = { y: +m[1], m: +m[2], d: +m[3], h: +(m[4] || 0), mi: +(m[5] || 0), s: +(m[6] || 0) };
     const tzid = /TZID=("?)([^;:"]+)\1/i.exec(params)?.[2];
-    const zone = !m[4] ? "UTC" : m[7] ? "UTC" : tzid || "floating";
+    /* A date with no time is a day on the viewer's calendar, wherever they
+       are: read as a UTC midnight, an all-day event on the 23rd ended at
+       seven in the evening of the 23rd in New York. */
+    const zone = !m[4] ? "floating" : m[7] ? "UTC" : tzid || "floating";
     return { parts, zone, allDay: !m[4] };
   }
   function icsDate(value, params = "") {
@@ -129,6 +132,8 @@
     return { iso: new Date(time).toISOString(), allDay: false, time, tzid: read.zone !== "UTC" && read.zone !== "floating" };
   }
   const dayNumber = (y, m, d) => Math.round(Date.UTC(y, m - 1, d) / DAY_MS);
+  // The day an instant falls on where the viewer is, as YYYY-MM-DD; two hours on, so a change of clocks cannot pull a midnight back a day.
+  const localDay = (time) => { const d = new Date(time + 2 * 3600e3); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
   const fromDayNumber = (n) => { const date = new Date(n * DAY_MS); return { y: date.getUTCFullYear(), m: date.getUTCMonth() + 1, d: date.getUTCDate() }; };
   const monthLength = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();
   function duration(text) {
@@ -168,23 +173,30 @@
   }
   /* The start days of a repeating event, one period at a time, in order,
      from its first day; it stops when told to (the caller's window). */
+  /* Each period also says the day it begins on, so the caller can stop at
+     the end of its window even when a period has no days at all: the 31st
+     of a February, every twelve months, used to be asked about twenty
+     thousand times. */
   function* repeatDays(start, rule) {
     const first = dayNumber(start.y, start.m, start.d);
     const weekStart = first - ((new Date(first * DAY_MS).getUTCDay() + 6) % 7);
     for (let k = 0; k < 20000; k++) {
-      let days;
-      if (rule.FREQ === "DAILY") days = [first + k * rule.INTERVAL];
+      let days, begins;
+      if (rule.FREQ === "DAILY") days = [begins = first + k * rule.INTERVAL];
       else if (rule.FREQ === "WEEKLY") {
-        const week = weekStart + k * 7 * rule.INTERVAL;
+        const week = begins = weekStart + k * 7 * rule.INTERVAL;
         days = rule.BYDAY ? rule.BYDAY.map((by) => week + ((WEEKDAYS.indexOf(by.day) + 6) % 7)).sort((a, b) => a - b) : [first + k * 7 * rule.INTERVAL];
       } else if (rule.FREQ === "MONTHLY") {
         const index = (start.m - 1) + k * rule.INTERVAL;
-        days = daysInMonth(start.y + Math.floor(index / 12), (index % 12) + 1, rule, start.d);
+        const y = start.y + Math.floor(index / 12), m = (index % 12) + 1;
+        begins = dayNumber(y, m, 1);
+        days = daysInMonth(y, m, rule, start.d);
       } else {
         const y = start.y + k * rule.INTERVAL;
+        begins = dayNumber(y, 1, 1);
         days = (rule.BYMONTH || [start.m]).flatMap((m) => daysInMonth(y, m, rule, start.d));
       }
-      yield days.filter((day) => day >= first);
+      yield { begins, days: days.filter((day) => day >= first) };
     }
   }
   function events(text, now = Date.now(), days = 14) {
@@ -213,12 +225,14 @@
       const startTime = moment(start.parts, start.zone);
       const endField = b.field("DTEND");
       const end = endField && icsDate(endField.value, endField.params);
-      const length = end ? end.time - startTime : duration(b.field("DURATION")?.value);
+      // A day-long event with neither end nor length lasts the day (RFC 5545, 3.6.1).
+      const length = end ? end.time - startTime : duration(b.field("DURATION")?.value) || (start.allDay ? DAY_MS : 0);
       const uid = b.field("UID")?.value || "";
       const base = { uid, title: unescape(b.field("SUMMARY")?.value || ""), location: unescape(b.field("LOCATION")?.value || ""), url: b.field("URL")?.value || null, allDay: start.allDay };
       const push = (time) => {
         if (time + length < from || time > until) return;
-        out.push({ ...base, uid: `${uid}@${time}`, start: start.allDay ? new Date(time).toISOString().slice(0, 10) : new Date(time).toISOString(), end: length ? new Date(time + length).toISOString() : null });
+        // A day-long event is given as days: its first, and the day after its last.
+        out.push({ ...base, uid: `${uid}@${time}`, start: start.allDay ? localDay(time) : new Date(time).toISOString(), end: start.allDay ? localDay(time + length) : length ? new Date(time + length).toISOString() : null });
       };
       const rule = !b.field("RECURRENCE-ID") && parseRule(b.field("RRULE")?.value);
       if (!rule) { push(startTime); continue; }
@@ -227,7 +241,8 @@
       const last = rule.UNTIL ? icsDate(rule.UNTIL)?.time ?? Infinity : Infinity;
       let count = 0;
       outer: for (const period of repeatDays(start.parts, rule)) {
-        for (const day of period) {
+        if (period.begins * DAY_MS > until + DAY_MS) break;
+        for (const day of period.days) {
           // Days long past are only counted: no zone sum for years of repeats.
           if ((day + 2) * DAY_MS + Math.max(0, length) < from) { count++; if (rule.COUNT && count >= rule.COUNT) break outer; continue; }
           const { y, m, d } = fromDayNumber(day);
@@ -243,15 +258,30 @@
 
   // ── Fetching ───────────────────────────────────────────────────
   class ConnectorError extends Error { constructor(message, status) { super(message); this.status = status; } }
+  // A calendar link is anybody's file: it may not hang the card, nor be the size of a film.
+  const FETCH_MS = 20000;
+  const TEXT_LIMIT = 5 * 1024 * 1024;
   async function fetchOne(spec) {
-    const response = await fetch(spec.url, { method: spec.method || "GET", headers: spec.headers || {}, body: spec.body });
+    const control = typeof AbortController === "function" ? new AbortController() : null;
+    const timer = control ? setTimeout(() => control.abort(), FETCH_MS) : null;
+    try { return await answerOf(spec, control); }
+    catch (error) { throw error?.name === "AbortError" ? new ConnectorError("The service took too long to answer.") : error; }
+    finally { clearTimeout(timer); }
+  }
+  async function answerOf(spec, control) {
+    const response = await fetch(spec.url, { method: spec.method || "GET", headers: spec.headers || {}, body: spec.body, signal: control?.signal });
     if (!response.ok) {
       const text = await response.text().catch(() => "");
       let said;
       try { const j = JSON.parse(text); said = j.message || j.error?.message || j.errors?.[0]?.message || j.error || ""; } catch (error) { said = text.slice(0, 120); }
       throw new ConnectorError(response.status === 401 || response.status === 403 ? `The token was refused (${response.status}).` : `The service answered ${response.status}${said ? `: ${said}` : ""}.`, response.status);
     }
-    if (spec.text) return response.text();
+    if (spec.text) {
+      if (Number(response.headers?.get?.("content-length")) > TEXT_LIMIT) throw new ConnectorError("The calendar file is too large to read.");
+      const text = await response.text();
+      if (text.length > TEXT_LIMIT) throw new ConnectorError("The calendar file is too large to read.");
+      return text;
+    }
     return response.status === 204 ? null : response.json();
   }
   // Everything one connector has for this person, in the shared shape.

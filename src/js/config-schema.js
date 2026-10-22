@@ -22,6 +22,10 @@
   const kindOf = (value) => Array.isArray(value) ? "list" : value === null ? "null" : typeof value;
   // The sky's seed is an unsigned 32-bit whole number, the width of its stream.
   const isSeed = (value) => Number.isInteger(value) && value >= 0 && value <= 0xffffffff;
+  /* A theme of one's own is colours and nothing else. Each becomes a style,
+     and a style that is not a colour can load an address. */
+  const STUDIO = ["bg", "card", "border", "accent", "glow", "text", "dim"];
+  const isStudioTheme = (theme) => isObject(theme) && STUDIO.every((key) => theme[key] === undefined || (typeof theme[key] === "string" && /^#[0-9a-f]{3,8}$/i.test(theme[key])));
 
   /* Top-level fields and the type each must have when present. Unknown fields
      are allowed through: a newer build may have added one, and refusing it
@@ -178,7 +182,13 @@
     if (config.bgSeed !== undefined && !isSeed(config.bgSeed)) { config.bgSeed = 0; repaired = true; }
     if (config.boardLayout !== undefined && !["natural", "fitted"].includes(config.boardLayout)) { config.boardLayout = "natural"; repaired = true; }
     if (config.boardWidth !== undefined && !["narrow", "standard", "wide"].includes(config.boardWidth)) { config.boardWidth = "standard"; repaired = true; }
+    if (config.hoverEffect !== undefined && !["lift", "glow", "scale", "none"].includes(config.hoverEffect)) { config.hoverEffect = "lift"; repaired = true; }
     if (config.boardGap !== undefined && !(Number.isFinite(config.boardGap) && config.boardGap >= 6 && config.boardGap <= 48)) { delete config.boardGap; repaired = true; }
+    if (config.customTheme !== undefined && !isStudioTheme(config.customTheme)) {
+      delete config.customTheme;
+      if (config.theme === "custom") config.theme = defaults.theme || "aurora-void";
+      repaired = true;
+    }
     if (!Array.isArray(config.groups)) { config.groups = []; repaired = true; }
     const groups = config.groups.filter(isObject);
     if (groups.length !== config.groups.length) { config.groups = groups; repaired = true; }
@@ -291,7 +301,7 @@
   }
 
   const NordlysConfigSchema = {
-    validateConfig, normalizeImportConfig, repairConfig, migrateRaw, isForbiddenUrl, COLUMNS,
+    validateConfig, normalizeImportConfig, repairConfig, migrateRaw, isForbiddenUrl, isStudioTheme, COLUMNS,
     buildBackupFile, readBackupFile, BACKUP_EXTRAS_KEY, BACKUP_FORMAT_VERSION
   };
   if (typeof window !== "undefined") window.NordlysConfigSchema = NordlysConfigSchema;

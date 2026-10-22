@@ -14,6 +14,7 @@ const pageGlobals = {
   Nordlys: "writable", NordlysApp: "readonly", DEFAULT_CONFIG: "readonly",
   STORAGE_KEY: "readonly", LEGACY_STORAGE_KEYS: "readonly", LEGACY_LOCAL_KEYS: "readonly",
   RESTORE_POINT_KEY: "readonly", UNDO_POINT_KEY: "readonly", UNDO_MEDIA_ID: "readonly",
+  SAVED_AT_KEY: "readonly", UPDATE_COPIES_KEY: "readonly", RESET_COPY_KEY: "readonly", RESET_LISTS: "readonly", CSS_WAITING_KEY: "readonly",
   SIDE_STORAGE: "readonly", OWNED_LOCAL_KEYS: "readonly",
   LIGHT_THEMES: "readonly", THEME_MIGRATIONS: "readonly",
   BACKGROUND_MIGRATIONS: "readonly", STILL_MIGRATIONS: "readonly", THEME_INLINE_TOKENS: "readonly",

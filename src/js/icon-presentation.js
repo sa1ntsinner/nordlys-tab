@@ -133,6 +133,8 @@
      can fall back rather than guess wrong. */
   function sampleImage(src) {
     if (sampledLuminance.has(src)) return Promise.resolve(sampledLuminance.get(src));
+    // Keyed by the source, which can be a whole data: URL: bounded like the caches beside it.
+    if (sampledLuminance.size > 300) sampledLuminance.clear();
     const pending = new Promise(resolve => {
       const probe = new Image();
       probe.crossOrigin = 'anonymous';

@@ -107,6 +107,7 @@
 
     async pushNow() {
       clearTimeout(this.pushTimer);
+      this.pushTimer = null;
       if (!this.syncing()) return;
       // Folders and bookmarks need ids of their own before they can travel.
       if (window.NordlysSyncModel.normalize(this.app.config)) this.saveQuietly();
@@ -124,6 +125,10 @@
 
     async pullNow() {
       if (!this.syncing()) return;
+      /* A change made here and still waiting to be sent goes into the model
+         first: pulled before it, the board that came back did not have it,
+         and the push that followed sent the board without it. */
+      if (this.pushTimer) await this.pushNow();
       try {
         const view = await this.engine.pull();
         if (view) await this.adoptView(view);
@@ -135,7 +140,8 @@
       window.chrome?.storage?.onChanged?.addListener?.((changes, area) => {
         if (area === "sync" && Object.keys(changes).some((key) => key.startsWith(window.NordlysSyncModel.PREFIX))) this.schedulePull();
         if (area === "local" && changes.nordlys_sync && this.engine?.state) {
-          if (changes.nordlys_sync.newValue) this.engine.state = changes.nordlys_sync.newValue;
+          // Never under a call in progress: it reads the stored state again when it starts, and writes its own.
+          if (changes.nordlys_sync.newValue && !this.engine.busy) this.engine.state = changes.nordlys_sync.newValue;
           this.refreshOverrides().then(() => this.emit());
         }
       });
@@ -153,7 +159,8 @@
       window.NordlysConfigSchema?.repairConfig(next, this.app.defaultConfig);
       // A profile saved by an older build, here or on another device, may name a retired sky or theme.
       this.app.normalizeStoredConfig?.(next);
-      this.app.config = next;
+      // Through the same door as another tab's board: drags let go, editors follow, identities kept.
+      if (this.app.adoptConfig) this.app.adoptConfig(next); else this.app.config = next;
       this.applying = true;
       try { this.saveQuietly(); } finally { this.applying = false; }
       if (next.language && window.I18N && window.I18N.currentLang !== next.language) window.I18N.setLanguage(next.language);
@@ -169,7 +176,16 @@
     }
 
     // ── Profiles ──────────────────────────────────────────────────
-    async switchTo(id, { undo = true } = {}) {
+    /* One switch at a time, each from where the last one left the page: two
+       quick picks used to overlap, and the second put the first's board into
+       a slot that was not its own. */
+    switchTo(id, options) {
+      const run = (this.switching || Promise.resolve()).then(() => this.switchNow(id, options));
+      this.switching = run.catch(() => false);
+      return run;
+    }
+
+    async switchNow(id, { undo = true } = {}) {
       const before = this.active();
       if (!before || before.id === id || !this.profiles.has(id)) return false;
       const board = document.getElementById("board");
