@@ -63,7 +63,7 @@ if (!Number.isFinite(seconds) || seconds < 2 || !Number.isFinite(warmupMs) || wa
    Unset (the default): no bgMode is seeded, so the app's own default (aurora) applies exactly as
    before. Set: bgMode is seeded into the saved board before the page loads, and the run fails
    unless the engine is in that scene after load and at the end of the scene's sample. */
-const SCENES = ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'drift', 'horizon'];
+const SCENES = ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'contour', 'fjord'];
 const scene = args.includes('--scene') ? String(option('scene', '')) : '';
 if (args.includes('--scene') && !SCENES.includes(scene)) throw Error(`--scene takes ${SCENES.join(', ')}`);
 // Halo draws tonight's moon from the date (bgRealSky, on by default); `off` holds it full.

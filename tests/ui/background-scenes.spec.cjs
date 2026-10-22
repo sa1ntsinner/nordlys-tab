@@ -70,7 +70,7 @@ test('the atmosphere gallery offers nine distinct compositions and personal medi
   const offered = await page.locator('#cfg-bg-mode option').evaluateAll(
     nodes => nodes.map(node => node.value)
   );
-  expect(offered).toEqual(['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'drift', 'horizon', 'custom-image', 'custom-video', 'solid']);
+  expect(offered).toEqual(['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'contour', 'fjord', 'custom-image', 'custom-video', 'solid']);
   // And nothing anywhere still offers a composition to pick between.
   expect(await page.locator('#bg-gradient-grid').count()).toBe(0);
 });
@@ -141,8 +141,10 @@ test('a stored scene that no longer exists migrates to its closest survivor', as
   }
   /* Pillars, Nacre and Baikal were retired for skies drawn from the real one,
      each for the nearest in kind, and Frost, retired for Baikal before, goes
-     straight on to the Star map. Each keeps its pace, and is painted. */
-  for (const [stored, successor] of [['pillars', 'meteors'], ['nacre', 'midnightsun'], ['baikal', 'starmap'], ['frost', 'starmap']]) {
+     straight on to the Star map. Drift and Horizon were only renamed, to the
+     Contour and the Fjord they were always called on screen. Each keeps its
+     pace, and is painted. */
+  for (const [stored, successor] of [['pillars', 'meteors'], ['nacre', 'midnightsun'], ['baikal', 'starmap'], ['frost', 'starmap'], ['drift', 'contour'], ['horizon', 'fjord']]) {
     await page.evaluate(mode => {
       window.Nordlys.config.bgMode = mode;
       window.Nordlys.config.bgMotion = 0.3;
@@ -284,10 +286,10 @@ test('switching a still atmosphere repaints the new composition immediately', as
   });
   await chooseBackground(page, 'halo');
   const halo = await page.locator('#bg-canvas').screenshot();
-  await chooseBackground(page, 'drift');
-  const drift = await page.locator('#bg-canvas').screenshot();
-  expect(Buffer.compare(halo, drift)).not.toBe(0);
-  expect(await page.evaluate(() => window.Nordlys.bgEngine.mode)).toBe('drift');
+  await chooseBackground(page, 'contour');
+  const contour = await page.locator('#bg-canvas').screenshot();
+  expect(Buffer.compare(halo, contour)).not.toBe(0);
+  expect(await page.evaluate(() => window.Nordlys.bgEngine.mode)).toBe('contour');
 });
 
 /* "Reduce motion" is not "remove the picture". The loop used to refuse to start

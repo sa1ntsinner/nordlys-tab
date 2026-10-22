@@ -77,6 +77,8 @@ for (const locale of ['en', 'ru', 'es', 'de', 'fr', 'ja', 'zh', 'tr']) {
 }
 
 test('every locale contains every visible English message key', async ({ nordlysPage }) => {
+  // The page holds only the language in use; this looks at all of them.
+  await nordlysPage.page.evaluate(() => Promise.all(I18N.LANGUAGES.map(lang => I18N.load(lang))));
   const missing = await nordlysPage.page.evaluate(() => Object.fromEntries(Object.entries(I18N.translations).map(([locale, messages]) => [locale, Object.keys(I18N.translations.en).filter(key => typeof messages[key] !== 'string' || !messages[key].trim())]).filter(([, keys]) => keys.length)));
   expect(missing).toEqual({});
 });

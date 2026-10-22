@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { readFileSync } = require('node:fs');
 const vm = require('node:vm');
+const { skySource } = require('../helpers/sky-source.cjs');
 const { SCENES, planSamples, splitSilk } = require('../../tools/perf/newtab.cjs');
 
 /* The perf probe (tools/perf/newtab.cjs) takes Silk apart by wrapping the
@@ -26,7 +26,7 @@ class RecordingContext {
 
 function silk() {
   const context = vm.createContext({ window: {}, document: { documentElement: { classList: { contains: () => false } } } });
-  vm.runInContext(`${readFileSync('src/js/background.js', 'utf8')}\nthis.Engine = NordlysBackgroundEngine;`, context);
+  vm.runInContext(`${skySource()}\nthis.Engine = NordlysBackgroundEngine;`, context);
   const passes = vm.runInContext('NORDLYS_SILK_PASSES', context);
   const scenes = vm.runInContext('[...NORDLYS_GENERATIVE_SCENES]', context);
   const engine = Object.create(context.Engine.prototype);

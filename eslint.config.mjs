@@ -22,7 +22,7 @@ const pageGlobals = {
   NordlysToast: "readonly", NordlysConfirm: "readonly", toast: "readonly", confirmDialog: "readonly",
   esc: "readonly", hexToRgb: "readonly", relativeLuminance: "readonly",
   // ui-primitives.js, typography.js, i18n.js
-  NordlysUI: "readonly", NordlysType: "readonly", I18N: "readonly", translations: "readonly",
+  NordlysUI: "readonly", NordlysType: "readonly", I18N: "readonly",
   // icons-db.js, icon-presentation.js, icon-picker.js
   ICONS_DB: "readonly", DOMAIN_MAP: "readonly", SECOND_LEVEL_SUFFIXES: "readonly",
   resolveIcon: "readonly", domainMatches: "readonly", getDeterministicHue: "readonly",
@@ -30,7 +30,7 @@ const pageGlobals = {
   // sky-gl.js
   NordlysSkyGL: "readonly", NORDLYS_GL_FLOATS: "readonly",
   // background.js, calc.js, config-schema.js, bookmark-sync.js
-  NordlysBackgroundEngine: "readonly", MediaVault: "readonly",
+  NordlysBackgroundEngine: "readonly", MediaVault: "readonly", NordlysSkies: "readonly", NORDLYS_SOFT: "readonly",
   NORDLYS_GENERATIVE_SCENES: "readonly", NORDLYS_BACKGROUND_PALETTES: "readonly",
   NordlysCalc: "readonly", NordlysConfigSchema: "readonly", NordlysBookmarks: "readonly",
   // widgets.js, grid.js, settings*.js
@@ -52,7 +52,7 @@ export default [
   js.configs.recommended,
   {
     // The page: classic scripts, browser globals, the shared names above.
-    files: ["src/js/**/*.js"],
+    files: ["src/js/**/*.js", "src/locales/**/*.js"],
     languageOptions: {
       ecmaVersion: 2023,
       sourceType: "script",

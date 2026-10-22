@@ -8,15 +8,15 @@
    actually paints the cards said Nordlys / Contour / Fjord, so a missing key or
    a late I18N renamed three scenes on the spot. Same words in both places now. */
 const SCENE_NAMES = {
-  "aurora": "Nordlys",
+  "aurora": "Aurora",
   "halo": "Halo",
   "polaris": "Polaris",
   "starmap": "Star map",
   "meteors": "Meteors",
   "silk": "Silk",
   "midnightsun": "Midnight sun",
-  "drift": "Contour",
-  "horizon": "Fjord",
+  "contour": "Contour",
+  "fjord": "Fjord",
   "custom-image": "Wallpaper",
   "custom-video": "Video",
   "solid": "Solid"
@@ -29,8 +29,8 @@ const SCENE_KEYS = {
   "meteors": "scene.meteors",
   "silk": "scene.silk",
   "midnightsun": "scene.midnightsun",
-  "drift": "scene.drift",
-  "horizon": "scene.horizon",
+  "contour": "scene.contour",
+  "fjord": "scene.fjord",
   "custom-image": "scene.wallpaper",
   "custom-video": "scene.video",
   "solid": "scene.solid"

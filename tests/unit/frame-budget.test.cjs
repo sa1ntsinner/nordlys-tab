@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { readFileSync } = require('node:fs');
 const vm = require('node:vm');
+const { skySource } = require('../helpers/sky-source.cjs');
 
 /* The sky paints at most thirty frames a second, fifteen once nobody has
    touched anything for a minute, and moves at the same pace whatever the rate.
@@ -59,7 +59,7 @@ function harness({ late = () => 0, cost = 0 } = {}) {
     getComputedStyle: () => ({ getPropertyValue: () => '' }),
     CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } }
   });
-  vm.runInContext(`${readFileSync('src/js/background.js', 'utf8')}\nthis.Engine = NordlysBackgroundEngine;`, context);
+  vm.runInContext(`${skySource()}\nthis.Engine = NordlysBackgroundEngine;`, context);
   const engine = new context.Engine();
   let paints = [];
   const render = engine.render.bind(engine);

@@ -206,7 +206,11 @@ const BACKGROUND_MIGRATIONS = {
   "pillars": "meteors",
   "nacre": "midnightsun",
   "baikal": "starmap",
-  "frost": "starmap"
+  "frost": "starmap",
+  /* Not retired, renamed: Drift had long been called Contour and Horizon
+     Fjord on screen, and Horizon is now the name of a group of skies. */
+  "drift": "contour",
+  "horizon": "fjord"
 };
 // The sky a retired one became, if it is one: own keys only, so a stored "constructor" stays a name.
 const migratedSky = (mode) => (Object.prototype.hasOwnProperty.call(BACKGROUND_MIGRATIONS, mode) ? BACKGROUND_MIGRATIONS[mode] : null);
@@ -992,7 +996,7 @@ class NordlysApp {
     }, { capture: true, passive: true });
     // Initialize I18N (config -> saved pick -> browser language)
     const savedLang = localStorage.getItem("nordlys_language");
-    const supported = window.I18N ? Object.keys(window.I18N.translations) : ["en"];
+    const supported = window.I18N?.LANGUAGES || ["en"];
     const navLang = (navigator.language || "en").slice(0, 2).toLowerCase();
     const lang = this.config.language || savedLang || (supported.includes(navLang) ? navLang : "en");
     this.config.language = lang;

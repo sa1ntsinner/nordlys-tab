@@ -112,10 +112,20 @@
       mode = "aurora";
     }
     // The skies retired since, each to its successor (BACKGROUND_MIGRATIONS in app.js).
-    const RETIRED = { pillars: "meteors", nacre: "midnightsun", baikal: "starmap", frost: "starmap" };
+    const RETIRED = { pillars: "meteors", nacre: "midnightsun", baikal: "starmap", frost: "starmap", drift: "contour", horizon: "fjord" };
     if (Object.prototype.hasOwnProperty.call(RETIRED, mode)) mode = RETIRED[mode];
     root.setAttribute("data-bg", mode);
   } catch (error) { /* no config: the defaults below are a fine first frame */ }
+
+  /* The words of the language in use, before anything is drawn. Each
+     language is a file of its own (i18n.js) and English is always on the
+     page, so only another one needs its tag, chosen as app.js chooses: the
+     config, the last pick, the browser's language. Written into the parser
+     here so it runs before the page's scripts, as a tag in the markup would. */
+  try {
+    const lang = (config && config.language) || localStorage.getItem("nordlys_language") || (navigator.language || "en").slice(0, 2).toLowerCase();
+    if (["ru", "es", "de", "fr", "ja", "zh", "tr"].indexOf(lang) !== -1) document.write('<script src="src/locales/' + lang + '.js"></script>');
+  } catch (error) { /* English it is; the page fetches another if it needs it */ }
 
   /* One page fit lays the page out on its own surface (page-fit.js). Saying
      so before the first frame means the surface is already in place when the

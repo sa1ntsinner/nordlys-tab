@@ -106,7 +106,7 @@ test('Contour draws its lines on the GPU, and they look as the 2D strokes do', a
   const { page } = nordlysPage;
   const gl = await page.evaluate(() => typeof OffscreenCanvas === 'function' && Boolean(new OffscreenCanvas(1, 1).getContext('webgl2')));
   test.skip(!gl, 'no WebGL2 in this browser');
-  const dark = await bothWays(page, 'drift');
+  const dark = await bothWays(page, 'contour');
   expect(dark.layer).toBe('gpu');
   expect(dark.lit, 'there are lines to compare').toBeGreaterThan(0.02);
   expect(dark.mean).toBeLessThan(0.5);

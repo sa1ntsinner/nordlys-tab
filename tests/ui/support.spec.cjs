@@ -302,6 +302,7 @@ test('every locale translates the About block and the legend', async ({ nordlysP
   const keys = ['support.intro', 'support.aboutTitle', 'support.changelog', 'support.shortcuts',
     'support.keySearch', 'support.keyCommand', 'support.keySearchAnywhere', 'support.keySettings', 'support.keyBookmark', 'support.keyBoard', 'support.keyMenu', 'support.keyUndo'];
 
+  await page.evaluate(() => Promise.all(window.I18N.LANGUAGES.map(lang => window.I18N.load(lang))));
   const report = await page.evaluate(wanted => {
     const missing = [], untranslated = [];
     for (const [locale, messages] of Object.entries(window.I18N.translations)) {

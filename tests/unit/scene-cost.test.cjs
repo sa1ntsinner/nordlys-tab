@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const vm = require('node:vm');
+const { skySource } = require('../helpers/sky-source.cjs');
 
 /* What each scene asks of the screen canvas in one frame. Chrome's 2D canvas
    rasterises a thick antialiased stroke's whole bounding box on the CPU, in
@@ -127,7 +128,7 @@ function engineOn(size = [1600, 900], dpr = 1.5) {
   /* The real sky's scenes read the star catalogue and the sun, the moon and
      the showers from the clock, as the page loads them before the engine. */
   for (const file of ['sky-zones.js', 'sky-clock.js', 'sky-stars.js']) vm.runInContext(readFileSync(`src/js/${file}`, 'utf8'), context);
-  vm.runInContext(`${readFileSync('src/js/sky-gl.js', 'utf8')}\n${readFileSync('src/js/background.js', 'utf8')}
+  vm.runInContext(`${readFileSync('src/js/sky-gl.js', 'utf8')}\n${skySource()}
     this.Engine = NordlysBackgroundEngine; this.SCENES = [...NORDLYS_GENERATIVE_SCENES]; this.SkyGL = NordlysSkyGL;`, context);
   return { context, log };
 }
@@ -150,10 +151,10 @@ function frameOf(scene, { gl = true } = {}) {
 
 test('the scenes on offer are the ones the gallery shows', () => {
   const { context } = engineOn();
-  assert.deepEqual(Array.from(context.SCENES), ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'drift', 'horizon']);
+  assert.deepEqual(Array.from(context.SCENES), ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'contour', 'fjord']);
 });
 
-for (const scene of ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'drift', 'horizon']) {
+for (const scene of ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'contour', 'fjord']) {
   test(`${scene} strokes no thick line across the window on the screen canvas`, () => {
     const log = frameOf(scene);
     const heavy = log.strokes.filter(s => s.width > THICK && s.area > MAX_BOX && !s.circle);

@@ -1,14 +1,14 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { readFileSync } = require('node:fs');
 const vm = require('node:vm');
+const { skySource } = require('../helpers/sky-source.cjs');
 
 /* The sky is scattered from a seed, so the same seed at the same size must be
    the same world — that is what stops a new tab from rearranging the stars —
    and a different seed must actually be a different one. */
 function sky(seed, w = 1440, h = 900) {
   const context = vm.createContext({ window: {}, document: {} });
-  vm.runInContext(`${readFileSync('src/js/background.js', 'utf8')}\nthis.Engine = NordlysBackgroundEngine;`, context);
+  vm.runInContext(`${skySource()}\nthis.Engine = NordlysBackgroundEngine;`, context);
   const engine = Object.assign(Object.create(context.Engine.prototype), {
     w, h, seed, rng: null, stars: [], nebulae: [], silk: [], polaris: [], chart: null, field: [], coast: []
   });

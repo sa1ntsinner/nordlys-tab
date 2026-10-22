@@ -148,3 +148,21 @@ test('the page is marked with the language in use', async ({ nordlysPage }) => {
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
 });
+
+/* Each language is a file of its own, and a new tab carries English and the
+   language in use and nothing more; the one in use is there before the first
+   paint, so a Russian page never opens in English for a moment. */
+test('a tab loads only English and the language in use, before anything is drawn', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => localStorage.setItem('nordlys_language', 'ru'));
+  await page.evaluate(() => { const config = JSON.parse(localStorage.getItem('nordlys_config')); delete config.language; localStorage.setItem('nordlys_config', JSON.stringify(config)); });
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  expect(await page.evaluate(() => Object.keys(window.I18N.translations).sort())).toEqual(['en', 'ru']);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
+  expect(await page.evaluate(() => document.querySelector('#gear').getAttribute('aria-label'))).toBe(await page.evaluate(() => window.I18N.translations.ru['a11y.openSettings']));
+  // Another language is fetched when it is picked.
+  await page.evaluate(() => window.I18N.setLanguage('de'));
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+  expect(await page.evaluate(() => Object.keys(window.I18N.translations).sort())).toEqual(['de', 'en', 'ru']);
+});

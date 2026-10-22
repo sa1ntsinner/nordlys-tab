@@ -9,10 +9,11 @@
 (function () {
   const PREFIX = 'nordlys-look:v1:';
   const HEX = /^#[0-9a-f]{6}$/i;
-  const SCENES = ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'drift', 'horizon', 'solid'];
-  /* Skies retired since a look could be shared, each to the one a stored
-     config of it becomes (app.js), so a look sent before still brings a sky. */
-  const RETIRED = { frost: 'starmap', pillars: 'meteors', nacre: 'midnightsun', baikal: 'starmap' };
+  // The skies a look may carry: every one the canvas paints (sky-catalog.js), and a plain colour.
+  const SCENES = [...(window.NordlysSkies?.canvasSkies() || ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'contour', 'fjord']), 'solid'];
+  /* Skies retired or renamed since a look could be shared, each to the one a
+     stored config of it becomes (app.js), so a look sent before still brings a sky. */
+  const RETIRED = { frost: 'starmap', pillars: 'meteors', nacre: 'midnightsun', baikal: 'starmap', drift: 'contour', horizon: 'fjord' };
   const FAMILY = /^[\p{L}\p{N} .'&+-]{1,64}$/u;
   const STUDIO = ['bg', 'card', 'border', 'accent', 'glow', 'text', 'dim'];
 

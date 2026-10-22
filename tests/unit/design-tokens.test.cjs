@@ -243,12 +243,11 @@ test('no shadow is tinted with the accent', () => {
    Twenty keys survived the features that used them. */
 test('every message key is referenced somewhere', () => {
   const root = path.join(__dirname, '..', '..');
-  const dictionary = fs.readFileSync(path.join(root, 'src', 'js', 'i18n.js'), 'utf8');
-  const english = dictionary.slice(dictionary.indexOf('"en": {'), dictionary.indexOf('"ru": {'));
+  const english = fs.readFileSync(path.join(root, 'src', 'locales', 'en.js'), 'utf8');
   const keys = [...english.matchAll(/"([\w.]+)":\s*"/g)].map(match => match[1]);
 
   const sources = ['newtab.html']
-    .concat(fs.readdirSync(path.join(root, 'src', 'js')).filter(name => name !== 'i18n.js').map(name => path.join('src', 'js', name)))
+    .concat(fs.readdirSync(path.join(root, 'src', 'js'), { recursive: true }).filter(name => name.endsWith('.js')).map(name => path.join('src', 'js', name)))
     .concat(fs.readdirSync(path.join(root, 'tests', 'ui')).filter(name => name.endsWith('.spec.cjs')).map(name => path.join('tests', 'ui', name)))
     .map(file => fs.readFileSync(path.join(root, file), 'utf8'))
     .join('\n');
@@ -260,9 +259,9 @@ test('every message key is referenced somewhere', () => {
 /* Eight languages that disagree about which keys exist is how one of them ends
    up showing a raw key on screen. */
 test('every locale carries exactly the same keys', () => {
-  const dictionary = fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'js', 'i18n.js'), 'utf8');
-  const blocks = dictionary.split(/\n {2}"(?:en|ru|es|de|fr|ja|zh|tr)": \{/).slice(1);
-  assert.strictEqual(blocks.length, 8, 'expected eight locales');
+  const folder = path.join(__dirname, '..', '..', 'src', 'locales');
+  assert.deepStrictEqual(fs.readdirSync(folder).sort(), ['de.js', 'en.js', 'es.js', 'fr.js', 'ja.js', 'ru.js', 'tr.js', 'zh.js'], 'expected eight locales');
+  const blocks = ['en', 'ru', 'es', 'de', 'fr', 'ja', 'zh', 'tr'].map(lang => fs.readFileSync(path.join(folder, `${lang}.js`), 'utf8'));
   const sets = blocks.map(block => new Set([...block.matchAll(/"([\w.]+)":\s*"/g)].map(match => match[1])));
   const [first, ...rest] = sets;
   rest.forEach((keys, index) => {

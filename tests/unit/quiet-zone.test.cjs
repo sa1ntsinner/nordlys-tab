@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { readFileSync } = require('node:fs');
 const vm = require('node:vm');
+const { skySource } = require('../helpers/sky-source.cjs');
 
 /* The quiet-zone solver decides how much sky the engine takes back from under
    the clock, the date and the search field. It is a pure function of the
@@ -10,7 +10,7 @@ const vm = require('node:vm');
    records every call. */
 function engine(globals = {}) {
   const context = vm.createContext({ window: {}, document: {}, ...globals });
-  vm.runInContext(`${readFileSync('src/js/background.js', 'utf8')}\nthis.Engine = NordlysBackgroundEngine;`, context);
+  vm.runInContext(`${skySource()}\nthis.Engine = NordlysBackgroundEngine;`, context);
   return context.Engine;
 }
 

@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const vm = require('node:vm');
+const { skySource } = require('../helpers/sky-source.cjs');
 
 /* The GPU line layer (sky-gl.js) turns the long lines of the sky into
    triangle strips. The strips are built by a pure function, so their
@@ -120,7 +121,7 @@ function engineWith({ gl = 'fake' } = {}) {
     Path2D: class { moveTo() {} lineTo() {} }
   });
   const sources = gl ? [readFileSync('src/js/sky-gl.js', 'utf8')] : [];
-  vm.runInContext(`${sources.join('\n')}\n${readFileSync('src/js/background.js', 'utf8')}\nthis.Engine = NordlysBackgroundEngine;${gl ? ' this.SkyGL = NordlysSkyGL;' : ''}`, context);
+  vm.runInContext(`${sources.join('\n')}\n${skySource()}\nthis.Engine = NordlysBackgroundEngine;${gl ? ' this.SkyGL = NordlysSkyGL;' : ''}`, context);
   const layers = [];
   if (gl === 'fake') {
     const FLOATS = vm.runInContext('NORDLYS_GL_FLOATS', context);
@@ -286,7 +287,7 @@ test('a new colour mood builds the field again, a new moment does not', () => {
    pieces of one line meet rather than brightened. */
 test('on the screen, Contour draws its lines on the GPU layer, merged where they meet', () => {
   const { engine, screen, layers } = engineWith();
-  engine.setMode('drift');
+  engine.setMode('contour');
   engine.stop();
   screen.calls.length = 0;
   engine.render(1);
@@ -300,7 +301,7 @@ test('on the screen, Contour draws its lines on the GPU layer, merged where they
 
 test('Contour builds its lines again only when the ground has moved', () => {
   const { engine, layers } = engineWith();
-  engine.setMode('drift');
+  engine.setMode('contour');
   engine.stop();
   engine.render(0);
   engine.render(0);
@@ -312,11 +313,11 @@ test('Contour builds its lines again only when the ground has moved', () => {
 
 test('a still of Contour strokes its levels in 2D', () => {
   const { engine, layers } = engineWith();
-  engine.setMode('drift');
+  engine.setMode('contour');
   engine.stop();
   const own = recorder();
   const still = { getContext: () => own, clientWidth: 90, clientHeight: 60, width: 0, height: 0 };
-  engine.paintStill(still, 'drift', { width: 90, height: 60, dpr: 1 });
+  engine.paintStill(still, 'contour', { width: 90, height: 60, dpr: 1 });
   assert.equal(layers.length, 0);
   assert.ok(strokes(own) > 5, `${strokes(own)} levels`);
 });
