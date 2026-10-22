@@ -1778,6 +1778,8 @@ body.arranging .fit-toggle { display: none; }
   backdrop-filter: none;
 }
 .glass-btn.plain.danger:hover { background: color-mix(in srgb, var(--nl-status-danger) 12%, transparent); }
+/* Nothing to do yet (no icon has arrived, say): the button stays where it is, quieter. */
+.glass-btn:disabled, .glass-btn:disabled:hover { opacity: 0.45; cursor: default; filter: none; transform: none; }
 
 /* ── Quick Edit Bookmark Modal ────────────────────────────────── */
 .quick-modal-backdrop {

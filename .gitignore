@@ -3,6 +3,7 @@ test-results/
 playwright-report/
 .playwright-artifacts/
 *.zip
+dist/
 scratch-*.html
 scratch-*.png
 *.sweep.cjs

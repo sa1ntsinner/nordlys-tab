@@ -15,7 +15,7 @@
 
    Three are kept: Todoist, GitHub and any calendar by its ICS link. Each
    is one token or one address, with nothing to register and no sign-in
-   window. Others were cut in 2.6.0: each one is a service that can change
+   window. Others were cut in 2.5.2: each one is a service that can change
    under Nordlys, for few people.                                       */
 (function (root) {
   "use strict";

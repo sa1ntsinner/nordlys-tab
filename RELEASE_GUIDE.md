@@ -4,12 +4,12 @@ Nordlys is on the [Chrome Web Store](https://chromewebstore.google.com/detail/no
 
 1. Update the version in `manifest.json` and `src/js/app.js`. The store requires a higher number. Move the Unreleased notes in `CHANGELOG.md` under the new version.
 2. Run `npm test`.
-3. Run `npm run package`. It checks the version and builds `nordlys-v2.5.1.zip` with the extension files.
+3. Run `npm run package`. It checks the version and builds `nordlys-v2.5.2.zip` with the extension files.
 4. Commit, tag and push.
 
    ```sh
-   git tag -a v2.5.1 -m "Nordlys 2.5.1"
-   git push origin main v2.5.1
+   git tag -a v2.5.2 -m "Nordlys 2.5.2"
+   git push origin main v2.5.2
    ```
 
 5. Open Nordlys in the [developer dashboard](https://chrome.google.com/webstore/devconsole) and upload the zip under Package. If the listing text or screenshots changed, use [docs/store-listing.md](docs/store-listing.md). The privacy answers and permission justifications are there too.

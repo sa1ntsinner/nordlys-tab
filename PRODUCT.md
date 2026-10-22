@@ -26,14 +26,14 @@ Nordlys replaces the browser's new tab page: the person's favourite sites in fol
 
 ## Capabilities and Constraints
 
-What ships in 2.5.1:
+What ships in 2.5.2:
 - Favourite sites in folders; move folders, change tile size and spacing, tidy them in one click, undo.
 - Nine animated skies, 21 colour themes (11 dark, 10 light, including pure black for OLED), or your own picture or looping video.
 - The search box uses the browser's search engine, finds your sites as you type, does math, and takes commands after `>`.
 - Brand icons by name (Iconify's Simple Icons), a site's favicon, an image link or a letter.
 - Profiles such as Work and Home, with optional sync through the browser's own sync.
 - A dashboard when wanted: tasks with dates and steps, a focus timer and a full-page focus mode with sounds, notes, weather, world clocks, a countdown and a tab stash; habits and a line for the day under More cards. Cards can be dragged and stretched.
-- Tasks from Todoist and GitHub, and events from any calendar link, read straight from the browser with a token that stays on the device. (2.6.0 cut the Ask card, seven other connectors and the never-working Google and Microsoft sign-ins.)
+- Tasks from Todoist and GitHub, and events from any calendar link, read straight from the browser with a token that stays on the device. (2.5.2 cut the Ask card, seven other connectors and the never-working Google and Microsoft sign-ins.)
 - A first board from the browser's bookmarks (copies), its most visited sites, a bookmarks file, or the backup of FVD Speed Dial, Speed Dial 2, Infinity, nightTab, Bonjourr or Tabliss.
 - A copy of the whole setup before every update, kept in Settings → Backup.
 - A folder can mirror a browser bookmark folder (read only).

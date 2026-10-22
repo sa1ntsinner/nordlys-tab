@@ -59,3 +59,22 @@ test('a remote provider is contacted only when its chip is pressed', async ({ no
   await page.waitForTimeout(600);
   expect(outbound.some(url => url.includes('duckduckgo.com')), 'DuckDuckGo is not asked unless chosen').toBe(false);
 });
+
+/* "Use this icon" used to stay lit next to "No icon found here", and pressing
+   it saved the address of a picture that had not loaded. */
+test('the website icon can be used only once one has arrived', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+  let found = false;
+  await page.route('**/_favicon/**', route => (found ? route.fulfill({ contentType: 'image/png', body: png }) : route.fulfill({ status: 404, body: '' })));
+  await openPickerForFirstBookmark(page);
+  await page.locator('.icon-tab-btn[data-tab="favicon"]').click();
+  await expect(page.locator('#favicon-status')).toHaveText('No icon found here. Try another source.');
+  await expect(page.locator('#favicon-apply-btn')).toBeDisabled();
+  await expect(page.locator('#favicon-crop-btn')).toBeDisabled();
+  await expect(page.locator('#favicon-preview-img-box img')).toBeHidden();
+  found = true;
+  await page.locator('#favicon-fetch-btn').click();
+  await expect(page.locator('#favicon-apply-btn')).toBeEnabled();
+  await expect(page.locator('#favicon-crop-btn')).toBeEnabled();
+});

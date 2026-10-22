@@ -1,6 +1,6 @@
 # Sync and profiles
 
-Status: built 2026-09-25, shipped in 2.5.1. 2.6.0 adds compaction of deletions (below) and names the browser's own sync rather than Chrome's. A two-browser manual check is still worth doing before each release.
+Status: built 2026-09-25, shipped in 2.5.1. 2.5.2 adds compaction of deletions (below) and names the browser's own sync rather than Chrome's. A two-browser manual check is still worth doing before each release.
 
 ## What it is for
 

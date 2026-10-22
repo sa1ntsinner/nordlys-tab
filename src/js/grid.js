@@ -379,7 +379,7 @@ class GridController {
      anything else that needs a folder should call it rather than push its own
      shape into config.groups. */
   addFolder() {
-    const label = window.I18N ? window.I18N.t("bookmarks.newFolder") : "New Folder";
+    const label = window.I18N ? window.I18N.t("bookmarks.newFolder") : "New folder";
     (this.app.config.groups ||= []).push({ label, cols: 4, hidden: false, links: [] });
     this.app.saveConfig();
     this.render();
@@ -560,10 +560,10 @@ class GridController {
     // Card Header
     const cat = document.createElement("div");
     cat.className = "cat";
-    cat.title = window.I18N ? window.I18N.t('hint.dragReorderFolder') : "Drag to reorder or Right-Click to edit folder";
+    cat.title = window.I18N ? window.I18N.t('hint.dragReorderFolder') : "Drag to move the folder, or right-click to edit it";
     cat.innerHTML = `
       <s></s>
-      <b>${esc(group.label || this.say("bookmarks.newFolder", "New Folder"))}</b>
+      <b>${esc(group.label || this.say("bookmarks.newFolder", "New folder"))}</b>
       <i></i>
       <button type="button" class="groupGrip">⋮⋮</button>
       <button class="foldBtn" title="${esc(window.I18N ? window.I18N.t('hint.foldFolder') : 'Hide this folder')}" aria-label="${esc(window.I18N ? window.I18N.t('hint.foldFolder') : 'Hide this folder')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M6.61 6.61A18.4 18.4 0 0 0 2 12s3 8 10 8a9.1 9.1 0 0 0 5.39-1.61"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="2" y1="2" x2="22" y2="22"/></svg></button>
@@ -806,7 +806,7 @@ class GridController {
       <svg class="dockFolderIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
       </svg>
-      <span class="dockFolderName">${esc(group.label || this.say("bookmarks.newFolder", "New Folder"))}</span>
+      <span class="dockFolderName">${esc(group.label || this.say("bookmarks.newFolder", "New folder"))}</span>
       <span class="dockFolderCount">${count}</span>
     `;
 
@@ -967,7 +967,7 @@ class GridController {
           const newGIdx = this.app.config.groups.length;
           this.app.config.groups.push({
             id: `g_${Date.now()}`,
-            label: this.say("bookmarks.newFolder", "New Folder"),
+            label: this.say("bookmarks.newFolder", "New folder"),
             cols: 4,
             links: []
           });
@@ -1407,7 +1407,7 @@ class GridController {
     const home = groups[this.activeTileTarget?.gIdx];
     const followed = Boolean(home?.source?.folderId);
     folderSelect.innerHTML = groups
-      .map((g, idx) => `<option value="${idx}" ${idx === at ? "selected" : ""}>${esc(g.label || this.say("bookmarks.newFolder", "New Folder"))}</option>`)
+      .map((g, idx) => `<option value="${idx}" ${idx === at ? "selected" : ""}>${esc(g.label || this.say("bookmarks.newFolder", "New folder"))}</option>`)
       .join("");
     folderSelect.value = String(at);
     folderSelect.disabled = followed;
@@ -1499,8 +1499,8 @@ class GridController {
       pillEl = document.createElement("div");
       pillEl.className = "card-resize-pill";
       pillEl.textContent = currentCols === 1
-        ? (window.I18N ? window.I18N.t('hint.columnSingle') : `1 Column (List)`)
-        : (window.I18N ? window.I18N.t('hint.columnsCount', { count: currentCols }) : `${currentCols} Columns`);
+        ? (window.I18N ? window.I18N.t('hint.columnSingle') : `1 column (list)`)
+        : (window.I18N ? window.I18N.t('hint.columnsCount', { count: currentCols }) : `${currentCols} columns`);
       cardEl.appendChild(pillEl);
     };
 
@@ -1524,8 +1524,8 @@ class GridController {
         handleEl.setAttribute("aria-valuenow", String(currentCols));
         if (pillEl) {
           pillEl.textContent = currentCols === 1
-            ? (window.I18N ? window.I18N.t('hint.columnSingle') : `1 Column (List)`)
-            : (window.I18N ? window.I18N.t('hint.columnsCount', { count: currentCols }) : `${currentCols} Columns`);
+            ? (window.I18N ? window.I18N.t('hint.columnSingle') : `1 column (list)`)
+            : (window.I18N ? window.I18N.t('hint.columnsCount', { count: currentCols }) : `${currentCols} columns`);
         }
       }
     };

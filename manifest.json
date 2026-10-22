@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Nordlys",
-  "version": "2.5.1",
+  "version": "2.5.2",
   "description": "Your favourite sites in folders on every new tab, over a sky that moves. Free, with no account and no tracking.",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"

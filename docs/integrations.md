@@ -42,7 +42,7 @@ It follows the parts of RFC 5545 that calendars send:
 A `TZID` the browser doesn't know (some Outlook exports use Windows zone names)
 is read as your own time.
 
-## What was cut in 2.6.0, and why
+## What was cut in 2.5.2, and why
 
 GitLab, Trello, Asana, ClickUp, Linear, Jira and Notion were connectors in
 2.5.1; Google Tasks, Google Calendar and Microsoft To Do were listed as "Soon"
@@ -50,4 +50,4 @@ and never worked (they needed a registered OAuth app, and asked for the
 `identity` permission meanwhile). Each was one more third-party API to keep up
 with, for few people, and together they made the extension's purpose and its
 permissions hard to explain to a store reviewer. Tokens stored for them are
-deleted on the first new tab of 2.6.0.
+deleted on the first new tab of 2.5.2.

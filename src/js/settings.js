@@ -1512,7 +1512,7 @@ class SettingsController {
       addCard.id = "btn-create-custom-theme";
       addCard.className = "theme-card add-custom-theme";
       addCard.title = window.I18N ? window.I18N.t('appearance.newTheme') : "Create your own custom theme preset";
-      const newThemeText = window.I18N ? window.I18N.t('appearance.newTheme') : 'New Theme';
+      const newThemeText = window.I18N ? window.I18N.t('appearance.newTheme') : 'New theme';
       addCard.innerHTML = `
         <div class="theme-preview add-custom-preview">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -1833,7 +1833,7 @@ class SettingsController {
       if (lblBlur) lblBlur.textContent = `${cfg.bgBlur || 0}px`;
       if (lblDim) lblDim.textContent = `${cfg.bgDim || 0}%`;
       /* Picking the Wallpaper scene is not the same as having a wallpaper.
-         Keying off the mode alone offered "Remove Wallpaper" with nothing to
+         Keying off the mode alone offered "Remove wallpaper" with nothing to
          remove, on a fresh profile that had never uploaded anything. */
       this.syncScenePicker?.();
       if (removeBtn) {
@@ -2090,7 +2090,7 @@ class SettingsController {
     document.getElementById("cfg-add-group")?.addEventListener("click", () => {
       this.app.config.groups.push({
         id: `g_${Date.now()}`,
-        label: window.I18N?.t("bookmarks.newFolder") || "New Folder",
+        label: window.I18N?.t("bookmarks.newFolder") || "New folder",
         cols: 4,
         links: []
       });
@@ -2116,7 +2116,7 @@ class SettingsController {
       const gBox = document.createElement("div");
       gBox.className = `group-editor-card ${group.hidden ? 'is-hidden-folder' : ''}`;
       const folderPlaceholder = window.I18N ? window.I18N.t('modal.folderName') : 'Folder Name';
-      const addBkmText = window.I18N ? window.I18N.t('bookmarks.addBookmark') : '+ Add Bookmark';
+      const addBkmText = window.I18N ? window.I18N.t('bookmarks.addBookmark') : 'Add bookmark';
       gBox.innerHTML = `
         <div class="group-editor-head">
           <input type="text" class="group-label-input" value="${esc(group.label || '')}" placeholder="${esc(folderPlaceholder)}">
@@ -2424,6 +2424,9 @@ class SettingsController {
     const favStatus = document.getElementById("favicon-status");
     const favApplyBtn = document.getElementById("favicon-apply-btn");
     const favCropBtn = document.getElementById("favicon-crop-btn");
+    // Using or cropping an icon makes sense only once one has arrived.
+    const setFavReady = (ready) => { for (const button of [favApplyBtn, favCropBtn]) if (button) button.disabled = !ready; };
+    this.setFaviconReady = setFavReady;
     const favSourceChips = document.querySelectorAll("[data-fav-source]");
     /* The browser's own favicon cache is the default source. It is local, it
        already holds every site the person has visited — which is every site
@@ -2478,6 +2481,7 @@ class SettingsController {
 
       const say = (key, fallback) => (window.I18N ? window.I18N.t(key) : fallback);
       if (favStatus) favStatus.textContent = provider === "chrome" ? say("picker.faviconLocal", "From your browser's own cache") : say("picker.faviconFetching", "Fetching…");
+      setFavReady(false);
       const resolvedFavUrl = buildFaviconUrl(rawUrl, provider);
       const badge = document.getElementById("favicon-res-badge");
       if (badge) badge.hidden = true;
@@ -2499,9 +2503,12 @@ class SettingsController {
         img.addEventListener("error", () => {
           if (favStatus) favStatus.textContent = say("picker.faviconMissing", "No icon found here. Try another source.");
           this.currentFetchedFaviconUrl = null;
+          // No broken-picture glyph: the box stays empty.
+          img.hidden = true;
         }, { once: true });
         img.addEventListener("load", () => {
           if (favStatus && provider !== "chrome") favStatus.textContent = say("picker.faviconReady", "Icon ready");
+          setFavReady(true);
           // The size that actually arrived, not the size asked for.
           if (badge) { badge.textContent = `${img.naturalWidth}×${img.naturalHeight}`; badge.hidden = false; }
         }, { once: true });
@@ -3507,6 +3514,7 @@ class SettingsController {
     const favImgBox = document.getElementById("favicon-preview-img-box");
     const favStatus = document.getElementById("favicon-status");
     this.resetFaviconSource?.();
+    this.setFaviconReady?.(false);
     if (favUrlInput) {
       favUrlInput.value = link.url || "";
       let host = "";
@@ -3624,11 +3632,7 @@ class SettingsController {
 
     // Preset Snippets
     const CSS_PRESETS = {
-      "compact-6col": `/* === Preset: Compact 6-Column Grid === */\n.grid { grid-template-columns: repeat(6, 1fr) !important; gap: 8px !important; }\n.tile { width: 68px !important; height: 68px !important; border-radius: 14px !important; }`,
-      "tahoe-glass": `/* === Preset: Ultra-blur Tahoe Liquid Glass === */\n:root {\n  --glass-blur: 36px !important;\n  --glass-saturate: 210% !important;\n  --glass-opacity: 0.85 !important;\n}\n.card, .glass-btn {\n  box-shadow: 0 16px 40px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.4) !important;\n}`,
-      "monochrome": `/* === Preset: Monochrome Minimalist Tiles === */\n.tile {\n  filter: grayscale(100%) brightness(0.9);\n  transition: filter 0.25s ease, transform 0.25s ease !important;\n}\n.tile:hover {\n  filter: grayscale(0%) brightness(1.1) !important;\n  transform: scale(1.06) !important;\n}`,
-      "square-tiles": `/* === Preset: Square Sharp Tiles === */\n:root {\n  --card-radius: 4px !important;\n}\n.tile, .card {\n  border-radius: 4px !important;\n}`,
-      "hide-clock": `/* === Preset: Hide Hero Clock === */\n#hero { display: none !important; }\n#searchwrap { margin-top: 60px !important; }`
+      "monochrome": `/* === Preset: Monochrome Minimalist Tiles === */\n.tile {\n  filter: grayscale(100%) brightness(0.9);\n  transition: filter 0.25s ease, transform 0.25s ease !important;\n}\n.tile:hover {\n  filter: grayscale(0%) brightness(1.1) !important;\n  transform: scale(1.06) !important;\n}`
     };
 
     document.querySelectorAll(".css-preset-btn").forEach((btn) => {

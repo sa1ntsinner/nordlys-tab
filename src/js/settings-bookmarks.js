@@ -189,7 +189,7 @@
         const summary = document.createElement('summary'); summary.className = 'bookmark-folder-summary';
         summary.setAttribute('role', 'button'); summary.tabIndex = 0; summary.setAttribute('aria-expanded', String(open));
         const chevron = document.createElement('span'); chevron.className = 'bookmark-folder-chevron'; chevron.setAttribute('aria-hidden', 'true');
-        const name = document.createElement('strong'); name.textContent = group.label || this.text('bookmarks.newFolder', 'New Folder');
+        const name = document.createElement('strong'); name.textContent = group.label || this.text('bookmarks.newFolder', 'New folder');
         const count = document.createElement('span'); count.className = 'bookmark-folder-count'; count.textContent = String((group.links || []).length); count.setAttribute('aria-label', this.text('a11y.bookmarkCount', `${count.textContent} bookmarks`, { count: count.textContent }));
         /* The browser owns these, so the row says whose they are. Built here,
            attached with the rest of the summary below: an element that is not
@@ -217,7 +217,7 @@
 
         const renameInput = document.createElement('input'); renameInput.className = 'bookmark-folder-name-input'; renameInput.setAttribute('aria-label', this.text('a11y.folderNameFor', `Folder name for ${group.label}`, { name: group.label })); renameInput.value = group.label || '';
         renameInput.hidden = !this.renaming.has(group);
-        const commitRename = () => { group.label = renameInput.value.trim() || this.text('bookmarks.newFolder', 'New Folder'); this.renaming.delete(group); this.save(this.text('announce.renamed', `${group.label} renamed`, { name: group.label })); this.render(); };
+        const commitRename = () => { group.label = renameInput.value.trim() || this.text('bookmarks.newFolder', 'New folder'); this.renaming.delete(group); this.save(this.text('announce.renamed', `${group.label} renamed`, { name: group.label })); this.render(); };
         renameInput.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); commitRename(); } });
         renameInput.addEventListener('change', commitRename);
         renameInput.addEventListener('click', event => event.stopPropagation());
@@ -317,7 +317,7 @@
               disabled: followed || groups.filter(candidate => candidate !== group && !candidate.source?.folderId).length === 0,
               submenu: () => groups
                 .filter(candidate => candidate !== group && !candidate.source?.folderId)
-                .map(candidate => ({ label: candidate.label || this.text('bookmarks.newFolder', 'New Folder'), run: () => this.transferBookmark(group, link, candidate) })) },
+                .map(candidate => ({ label: candidate.label || this.text('bookmarks.newFolder', 'New folder'), run: () => this.transferBookmark(group, link, candidate) })) },
             { label: this.text('ctx.deleteBookmark', 'Delete'), danger: true, disabled: followed, run: () => this.removeWithUndo({ group, link }) }
           ]), { className: 'bookmark-compact-action bookmark-overflow' });
 

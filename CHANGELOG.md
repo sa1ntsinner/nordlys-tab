@@ -6,6 +6,8 @@ Chrome Web Store's rule that they only ever go up.
 
 ## [Unreleased]
 
+## [2.5.2] — 2026-10-21
+
 ### Added
 
 - A promise, in Settings → Support and the README: Nordlys is free and what is free stays free. There is no paid plan and there won't be one.
@@ -41,6 +43,10 @@ Chrome Web Store's rule that they only ever go up.
 ### Changed
 
 - The menus of a bookmark, a folder and the board say what they do in plain words (Edit, Change icon, Copy address, Delete), show their keys beside the items that have one, and mark the item under the pointer with a quiet grey instead of the accent. The theme switch left the board menu, and Show hidden folders appears only when a folder is hidden.
+- Settings speak in ordinary sentences: "Your name", "Time format", "Show seconds", "Save a backup file" instead of capitals on every word, in all eight languages. The title is Settings.
+- Slider values are grey numbers beside their names instead of coloured ones in brackets, and the bookmark counts in Settings → Bookmarks are plain numbers instead of badges.
+- In the icon picker, Use this icon and Crop & adjust wait until a website icon has arrived; a missing one leaves the box empty instead of a broken picture. The preview no longer sits on a grey band, and the explanations are a line each.
+- Custom CSS keeps one example, Monochrome. The other four did what Settings already does (the header, the corner radius, the glass and the columns).
 - The bookmark and folder dialogs end the same way: Delete on the left, Cancel and Save on the right. Enter in a field saves.
 - A new tab draws its board sooner. Settings are made ready just after the first frame instead of before it, and each icon's contrast with its tile is checked after the board is on screen, from colours read once per theme instead of once per tile. On a board of nine folders the work before the first frame fell by about a fifth.
 - The store listing is a quarter of its old length, with privacy and the price first, and says nothing about features that are gone. Its first picture is the board as installed; the dashboard, off by default, is second. The summary names no count of skies or themes.
