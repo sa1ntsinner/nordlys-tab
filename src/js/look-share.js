@@ -32,6 +32,7 @@
     bgRealSky: value => (typeof value === 'boolean' ? value : undefined),
     bgDaylight: value => (typeof value === 'boolean' ? value : undefined),
     boardLayout: oneOf(['natural', 'fitted']),
+    pageLayout: oneOf(['board', 'columns', 'dock', 'today', 'prompt', 'poster']),
     glassLevel: oneOf(['full', 'subtle', 'off']),
     cardRadius: number(6, 48),
     cornerShape: oneOf(['round', 'smooth']),

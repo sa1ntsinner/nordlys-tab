@@ -3,7 +3,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 /* The settings a shared look may change (look-share.js). */
-const LOOK_SETTINGS = ["bgMode", "bgMotion", "bgIntensity", "bgSeed", "bgRealSky", "bgDaylight", "boardLayout", "glassLevel", "cardRadius", "tileSize", "cardGap", "boardGap", "boardWidth", "tileLabels", "cardGlow", "iconShape", "hoverEffect", "cornerShape"];
+const LOOK_SETTINGS = ["bgMode", "bgMotion", "bgIntensity", "bgSeed", "bgRealSky", "bgDaylight", "boardLayout", "pageLayout", "glassLevel", "cardRadius", "tileSize", "cardGap", "boardGap", "boardWidth", "tileLabels", "cardGlow", "iconShape", "hoverEffect", "cornerShape"];
 
 class SettingsController {
   constructor(app) {
@@ -979,6 +979,7 @@ class SettingsController {
     const daylightSwitch = document.getElementById("cfg-bg-daylight");
     if (daylightSwitch) daylightSwitch.checked = cfg.bgDaylight === true;
     this.syncBoardLayout();
+    this.syncPageLayout();
     
     // Color Mode
     this.syncColorModeSwitcher();
@@ -1098,6 +1099,8 @@ class SettingsController {
         this.app.setColorMode(btn.dataset.mode || "dark");
       });
     });
+    this.roveRadios([...document.querySelectorAll(".page-layout-option")], (option) => this.setPageLayout(option.dataset.pageLayout));
+    this.syncPageLayout();
 
     // Close Custom Theme Studio button (also reverts any unsaved live preview)
     const closeEditorBtn = document.getElementById("close-custom-theme-editor");
@@ -1746,21 +1749,10 @@ class SettingsController {
   /* The board's layout and rows, mirrored here from the arrangement that owns
      them, and the door into it. */
   initBoardLayout() {
-    const options = [...document.querySelectorAll(".board-layout-option")];
-    for (const option of options) {
-      option.addEventListener("click", () => {
-        this.app.grid?.arrange?.setLayout(option.dataset.layout);
-        this.syncBoardLayout();
-      });
-      option.addEventListener("keydown", (event) => {
-        const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
-        if (!step) return;
-        event.preventDefault();
-        const next = options[(options.indexOf(option) + step + options.length) % options.length];
-        next.focus();
-        next.click();
-      });
-    }
+    this.roveRadios([...document.querySelectorAll(".board-layout-option:not(.page-layout-option)")], (option) => {
+      this.app.grid?.arrange?.setLayout(option.dataset.layout);
+      this.syncBoardLayout();
+    });
     document.getElementById("cfg-arrange")?.addEventListener("click", () => {
       this.close();
       this.app.grid?.arrange?.enter();
@@ -1887,10 +1879,47 @@ class SettingsController {
     }
   }
 
+  /* A group of radios: the arrow keys move along it, and moving chooses. */
+  roveRadios(options, choose) {
+    for (const option of options) {
+      option.addEventListener("click", () => choose(option));
+      option.addEventListener("keydown", (event) => {
+        const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+        if (!step) return;
+        event.preventDefault();
+        const next = options[(options.indexOf(option) + step + options.length) % options.length];
+        next.focus();
+        next.click();
+      });
+    }
+  }
+
+  /* Appearance → Page: what the page is (layouts.css). Today is the
+     dashboard's own layout, so choosing it turns the dashboard on. */
+  setPageLayout(layout) {
+    const config = this.app.config;
+    if ((config.pageLayout || "board") === layout) return;
+    config.pageLayout = layout;
+    if (layout === "today" && this.app.dashboard && !this.app.dashboard.on) this.app.dashboard.setOn(true);
+    this.app.saveConfig();
+    this.app.applyPageLayout();
+    this.app.pageFit?.request();
+    this.syncPageLayout();
+  }
+
+  syncPageLayout() {
+    const current = this.app.config.pageLayout || "board";
+    for (const option of document.querySelectorAll(".page-layout-option")) {
+      const on = option.dataset.pageLayout === current;
+      option.setAttribute("aria-checked", String(on));
+      option.tabIndex = on ? 0 : -1;
+    }
+  }
+
   syncBoardLayout() {
     const config = this.app.config;
     const current = config.boardLayout === "fitted" ? "fitted" : "natural";
-    for (const option of document.querySelectorAll(".board-layout-option")) {
+    for (const option of document.querySelectorAll(".board-layout-option:not(.page-layout-option)")) {
       const on = option.dataset.layout === current;
       option.setAttribute("aria-checked", String(on));
       option.tabIndex = on ? 0 : -1;

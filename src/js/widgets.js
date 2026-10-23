@@ -154,6 +154,7 @@ const COMMAND_KEYS = {
   mood: ["command.verb.mood", "command.help.mood"],
   shuffle: ["command.verb.shuffle", "command.help.shuffle"],
   arrange: ["command.verb.arrange", "command.help.arrange"],
+  page: ["command.verb.page", "command.help.page"],
   size: ["command.verb.size", "command.help.size"],
   newFolder: ["command.verb.newFolder", "command.help.newFolder"],
   rename: ["command.verb.rename", "command.help.rename"],
@@ -486,6 +487,7 @@ class SearchWidget {
       // Every sky but the person's own picture and video, which a word cannot conjure.
       scenes: (window.NordlysSkies?.SKIES || []).filter((sky) => sky.kind !== "media").map((sky) => ({ key: sky.id, name: this.say(sky.key, sky.name) })),
       moods: [...document.querySelectorAll("#bg-palette-grid [data-palette]")].map((chip) => ({ key: chip.dataset.palette, name: text(chip.querySelector("span")) || chip.dataset.palette })),
+      pages: [...document.querySelectorAll(".page-layout-option[data-page-layout]")].map((option) => ({ key: option.dataset.pageLayout, name: text(option.querySelector(".board-layout-name")) || option.dataset.pageLayout })),
       folders: groups.map((group, index) => ({ key: index, name: group.label || "", hidden: Boolean(group.hidden) })),
       bookmarks: groups.flatMap((group, g) => (group.links || []).map((link, l) => ({ key: `${g}:${l}`, name: link.name || link.url || "", folder: g }))),
       tabs: [...document.querySelectorAll(".ctabs .ctab[data-tab]")].map((tab) => ({ key: tab.dataset.tab, name: text(tab) })),
@@ -517,6 +519,7 @@ class SearchWidget {
       case "mood": return this.say("command.doMood", `Colour mood: ${name}`, { name });
       case "shuffle": return this.say("command.doShuffle", "Shuffle this sky");
       case "arrange": return this.say("command.doArrange", "Arrange folders");
+      case "page": return this.say("command.doPage", `Page: ${name}`, { name });
       case "size": return this.say("command.doSize", "Size & spacing");
       case "newFolder": return this.say("command.doNewFolder", `New folder: ${candidate.name}`, { name: candidate.name });
       case "rename": return candidate.name ? this.say("command.doRename", `Rename ${name} to ${candidate.name}`, { name, to: candidate.name }) : this.say("command.renameHow", `Rename ${name} to …`, { name });
@@ -537,7 +540,7 @@ class SearchWidget {
   commandHelp() {
     return [
       ["theme", "theme nord"], ["sky", "sky polaris"], ["mood", "mood ember"], ["shuffle", "shuffle"],
-      ["arrange", "arrange"], ["size", "size"], ["newFolder", "new folder Reading"], ["rename", "rename Daily to Morning"], ["hide", "hide Shopping"],
+      ["page", "page columns"], ["arrange", "arrange"], ["size", "size"], ["newFolder", "new folder Reading"], ["rename", "rename Daily to Morning"], ["hide", "hide Shopping"],
       ["show", "show Shopping"], ["move", "move YouTube to Daily"], ["settings", "settings background"],
       ["dashboard", "dashboard"], ["task", "task Call the dentist"], ["timer", "timer"], ["focusMode", "focus"],
       // Only worth offering once there is a second profile to go to.
@@ -624,6 +627,7 @@ class SearchWidget {
 
   refreshLook() {
     this.app.applyThemeTokens();
+    this.app.applyPageLayout();
     this.app.updateBackgroundMode();
     this.app.settings?.renderThemeCards?.();
   }
@@ -647,6 +651,7 @@ class SearchWidget {
       case "theme": look((config) => { config.theme = candidate.target.key; delete config.customTheme; }); break;
       case "sky": look((config) => { config.bgMode = candidate.target.key; delete config.skyLayers; }); break;
       case "mood": look((config) => { config.bgPalette = candidate.target.key; }); break;
+      case "page": look((config) => { config.pageLayout = candidate.target.key; }); break;
       case "hide": case "rename": lift(`.card[data-group-idx="${candidate.target.key}"]`); break;
       case "move": {
         const [g, l] = candidate.target.key.split(":");
@@ -670,6 +675,11 @@ class SearchWidget {
       case "theme": config.theme = candidate.target.key; delete config.customTheme; break;
       case "sky": config.bgMode = candidate.target.key; delete config.skyLayers; break;
       case "mood": config.bgPalette = candidate.target.key; break;
+      case "page":
+        config.pageLayout = candidate.target.key;
+        // Today is the dashboard's layout; Undo puts the dashboard back as it was.
+        if (candidate.target.key === "today" && this.app.dashboard && !this.app.dashboard.on) this.app.dashboard.setOn(true);
+        break;
       case "shuffle": config.bgSeed = crypto.getRandomValues(new Uint32Array(1))[0] || 1; break;
       case "newFolder": groups.push({ label: candidate.name, cols: 4, hidden: false, links: [] }); break;
       case "rename": if (candidate.name) groups[candidate.target.key].label = candidate.name; else done = false; break;

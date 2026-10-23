@@ -132,6 +132,8 @@
      fit measures it, rather than the page changing shape as the fit starts.
      Only exactly true turns it on; anything else is the ordinary page. */
   if (config && config.onePageFit === true) root.setAttribute("data-page-fit", "on");
+  // What the page is (layouts.css), for the same reason. The board has no mark.
+  if (config && typeof config.pageLayout === "string" && config.pageLayout !== "board") root.setAttribute("data-page", config.pageLayout);
 
   root.setAttribute("data-theme", theme);
   if (LIGHT.indexOf(theme) !== -1) root.classList.add("light-ui");

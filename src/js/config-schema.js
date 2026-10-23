@@ -31,7 +31,7 @@
      are allowed through: a newer build may have added one, and refusing it
      would make every upgrade path a validation failure. */
   const FIELDS = {
-    version: "string", theme: "string", colorMode: "string", bgMode: "string", bgPalette: "string", boardLayout: "string", boardWidth: "string",
+    version: "string", theme: "string", colorMode: "string", bgMode: "string", bgPalette: "string", boardLayout: "string", boardWidth: "string", pageLayout: "string",
     glassLevel: "string", headerStyle: "string", timeFormat: "string",
     userName: "string", customCss: "string", iconShape: "string", cornerShape: "string", searchEngine: "string",
     hoverEffect: "string", language: "string", skyRotate: "string", skyPool: "string", nightMode: "string",
@@ -44,7 +44,8 @@
   // Settings that are one of a few words; anything else goes back to the first.
   const CHOICES = {
     boardLayout: ["natural", "fitted"], boardWidth: ["standard", "narrow", "wide"], hoverEffect: ["lift", "glow", "scale", "none"],
-    skyRotate: ["off", "tab", "hour", "day"], skyPool: ["layers", "category", "all", "looks"], nightMode: ["off", "auto", "on"]
+    skyRotate: ["off", "tab", "hour", "day"], skyPool: ["layers", "category", "all", "looks"], nightMode: ["off", "auto", "on"],
+    pageLayout: ["board", "columns", "dock", "today", "prompt", "poster"]
   };
   const NUMERIC_FIELDS = Object.entries(FIELDS)
     .filter(([, type]) => type === "number")

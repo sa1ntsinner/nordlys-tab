@@ -2318,6 +2318,8 @@ input[type="range"].ipt:focus-visible {
    way onto the board to arrange it. */
 .board-layout-block { display: grid; gap: 10px; margin-bottom: 18px; }
 .board-layout-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+/* Appearance → Page: the six layouts of the page, drawn as the same choice. */
+.page-layout-options { margin-bottom: 22px; }
 .board-layout-option {
   display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 10px; row-gap: 3px;
   padding: 11px 12px; border-radius: var(--nl-radius-md);

@@ -46,6 +46,11 @@ const DEFAULT_CONFIG = {
      runs every row edge to edge with folders of one height. Which folders
      share a row is each folder's own `row`, absent until somebody arranges. */
   boardLayout: "natural",
+  /* What the page is: the board under the clock ("board"), folders as
+     columns of names, a dock of icons along the bottom, the dashboard with
+     the folders beside it ("today"), one line to type in ("prompt"), or the
+     time alone over the sky ("poster"). Drawn by layouts.css. */
+  pageLayout: "board",
   /* How wide the board may run ("narrow", "standard", "wide") and whether
      the bookmarks carry their names. The space between folders follows the
      space between bookmarks until somebody sets it (boardGap, absent). */
@@ -1696,8 +1701,23 @@ class NordlysApp {
 
     document.body.classList.toggle("seconds", !!cfg.showSeconds);
     this.applyWallpaperEffects();
+    this.applyPageLayout();
     // Every size above is one the fit starts from.
     this.pageFit?.request();
+  }
+
+  /* What the page is (layouts.css). The board has no mark: it is the page as
+     the other sheets draw it, and the one arranging is done on, so the mark
+     comes off while the board is being arranged. Another layout gives the
+     folders other widths, so their lines are broken again. */
+  applyPageLayout() {
+    const root = document.documentElement;
+    const layout = this.config.pageLayout;
+    const page = layout && layout !== "board" && !document.body.classList.contains("arranging") ? String(layout) : "";
+    if ((root.dataset.page || "") === page) return;
+    if (page) root.dataset.page = page;
+    else delete root.dataset.page;
+    this.grid?.flowRows();
   }
 
   applyWallpaperEffects() {

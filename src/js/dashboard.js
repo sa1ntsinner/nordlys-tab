@@ -1215,9 +1215,11 @@
       });
       this.write({ ...this.state, widgets });
     }
+    /* Twelve columns from a width where a quarter is still a card: below a
+       thousand pixels a three-column task list cut off its own tabs. */
     get cols() {
       const width = this.root?.clientWidth || 1200;
-      return width >= 900 ? DL.COLS : width >= 560 ? 6 : 1;
+      return width >= 1000 ? DL.COLS : width >= 560 ? 6 : 1;
     }
     metrics() {
       const style = getComputedStyle(this.grid);

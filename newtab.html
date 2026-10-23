@@ -29,6 +29,7 @@
   <link rel="stylesheet" href="src/css/sync.css">
   <link rel="stylesheet" href="src/css/dashboard.css">
   <link rel="stylesheet" href="src/css/focus-mode.css">
+  <link rel="stylesheet" href="src/css/layouts.css">
   <link rel="stylesheet" href="src/css/page-fit.css">
 </head>
 <body>
@@ -262,6 +263,42 @@
               <line x1="12" y1="17" x2="12" y2="21"></line>
             </svg>
             <span data-i18n="appearance.modeAuto">Auto</span>
+          </button>
+        </div>
+
+        <!-- What the page is (layouts.css): the same clock, search, dashboard
+             and folders, drawn six ways. -->
+        <h3 id="page-layout-title" data-i18n="page.title">Page</h3>
+        <div class="board-layout-options page-layout-options" role="radiogroup" aria-labelledby="page-layout-title">
+          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="board" aria-checked="true">
+            <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="9" y="1" width="6" height="2" rx="1"/><rect x="5" y="4.5" width="14" height="2" rx="1"/><rect x="2" y="9" width="6" height="6" rx="1.2"/><rect x="9" y="9" width="6" height="6" rx="1.2"/><rect x="16" y="9" width="6" height="6" rx="1.2"/></svg>
+            <span class="board-layout-name" data-i18n="page.board">Board</span>
+            <span class="board-layout-note" data-i18n="page.boardNote">The clock and the search, with your folders of icons under them.</span>
+          </button>
+          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="columns" aria-checked="false">
+            <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="9" y="1" width="6" height="2" rx="1"/><rect x="5" y="4.5" width="14" height="2" rx="1"/><rect x="2" y="9" width="5.5" height="1.5" rx=".75"/><rect x="2" y="11.5" width="5.5" height="1.5" rx=".75"/><rect x="2" y="14" width="5.5" height="1.5" rx=".75"/><rect x="9.25" y="9" width="5.5" height="1.5" rx=".75"/><rect x="9.25" y="11.5" width="5.5" height="1.5" rx=".75"/><rect x="9.25" y="14" width="5.5" height="1.5" rx=".75"/><rect x="16.5" y="9" width="5.5" height="1.5" rx=".75"/><rect x="16.5" y="11.5" width="5.5" height="1.5" rx=".75"/><rect x="16.5" y="14" width="5.5" height="1.5" rx=".75"/></svg>
+            <span class="board-layout-name" data-i18n="page.columns">Columns</span>
+            <span class="board-layout-note" data-i18n="page.columnsNote">Folders as columns of names, so more fits on one screen.</span>
+          </button>
+          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="dock" aria-checked="false">
+            <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="9" y="3" width="6" height="2" rx="1"/><rect x="5" y="6.5" width="14" height="2" rx="1"/><rect x="3" y="12" width="18" height="3.5" rx="1.75"/></svg>
+            <span class="board-layout-name" data-i18n="page.dock">Dock</span>
+            <span class="board-layout-note" data-i18n="page.dockNote">The clock and the search in the middle, and every bookmark on a shelf along the bottom.</span>
+          </button>
+          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="today" aria-checked="false">
+            <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="9" y="1" width="6" height="2" rx="1"/><rect x="5" y="4.5" width="14" height="2" rx="1"/><rect x="2" y="9" width="13" height="6.5" rx="1.2"/><rect x="17" y="9" width="5" height="1.5" rx=".75"/><rect x="17" y="11.5" width="5" height="1.5" rx=".75"/><rect x="17" y="14" width="5" height="1.5" rx=".75"/></svg>
+            <span class="board-layout-name" data-i18n="page.today">Today</span>
+            <span class="board-layout-note" data-i18n="page.todayNote">The dashboard first, with your folders as lists beside it. Turns the dashboard on.</span>
+          </button>
+          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="prompt" aria-checked="false">
+            <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="10" y="3" width="4" height="1.6" rx=".8"/><rect x="2" y="6.5" width="20" height="4.5" rx="2.25"/></svg>
+            <span class="board-layout-name" data-i18n="page.prompt">Prompt</span>
+            <span class="board-layout-note" data-i18n="page.promptNote">One line to type in: bookmarks, sums and commands come up as you type.</span>
+          </button>
+          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="poster" aria-checked="false">
+            <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="5" y="2.5" width="14" height="7" rx="1.6"/><rect x="8" y="11.5" width="8" height="1.5" rx=".75"/></svg>
+            <span class="board-layout-name" data-i18n="page.poster">Poster</span>
+            <span class="board-layout-note" data-i18n="page.posterNote">The time, large, over the sky. Press / to search.</span>
           </button>
         </div>
 

@@ -824,6 +824,7 @@
          the ordinary one until Done. */
       this.app.pageFit?.suspend("arrange", true);
       document.body.classList.add("arranging");
+      this.app.applyPageLayout?.();
       this.bar.hidden = false;
       this.refresh();
       if (focusGroup) this.focusGrip(focusGroup);
@@ -837,6 +838,7 @@
       this.showSize(false);
       this.active = false;
       document.body.classList.remove("arranging");
+      this.app.applyPageLayout?.();
       this.bar.hidden = true;
       this.app.pageFit?.suspend("arrange", false);
       this.stopWatchingOutside();

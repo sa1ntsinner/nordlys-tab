@@ -14,6 +14,7 @@
     mood: ['mood', 'colours', 'colors', 'colour', 'color'],
     shuffle: ['shuffle'],
     arrange: ['arrange', 'layout'],
+    page: ['page', 'view'],
     size: ['size', 'spacing', 'size and spacing'],
     newFolder: ['new folder', 'folder', 'add folder'],
     rename: ['rename'],
@@ -89,7 +90,7 @@
   }
 
   /* What there is to act on arrives in `world`:
-     { themes, scenes, moods, folders, bookmarks, tabs, profiles } — each a list of
+     { themes, scenes, moods, pages, folders, bookmarks, tabs, profiles } — each a list of
      { key, name } — plus the locale's { verbs, joiners }. Returns the ranked
      candidates, or { help: true } for a bare ">". */
   function parse(input, world, locale = {}) {
@@ -110,6 +111,7 @@
       case 'theme': return one('theme', world.themes || []);
       case 'sky': return one('sky', world.scenes || []);
       case 'mood': return one('mood', world.moods || []);
+      case 'page': return one('page', world.pages || []);
       case 'profile': return one('profile', world.profiles || []);
       case 'hide': return one('hide', (world.folders || []).filter(folder => !folder.hidden));
       case 'show': return one('show', (world.folders || []).filter(folder => folder.hidden));

@@ -1,0 +1,219 @@
+/* ═══════════════════════════════════════════════════════════════════
+   NORDLYS - PAGE LAYOUTS
+   ═══════════════════════════════════════════════════════════════════
+
+   Settings → Appearance → Page. The same page drawn six ways. Every rule
+   here waits for html[data-page], which app.js sets from config.pageLayout
+   and boot.js sets before the first frame. The board is the default and has
+   no mark, so with it chosen this sheet draws nothing.
+
+   No layout moves an element in the DOM: the clock, the search, the
+   dashboard and the folders stay in the order a keyboard and a screen
+   reader meet them, and only how they are drawn changes. While the board is
+   being arranged the mark comes off (app.js applyPageLayout), because
+   arranging is done on the board. */
+
+:root:is([data-page="dock"], [data-page="prompt"], [data-page="poster"]) #page { justify-content: center; }
+/* With One page fit on, the surface is the column; it has to fill the
+   window for anything in it to sit in the middle or at the foot. */
+:root:is([data-page="dock"], [data-page="prompt"], [data-page="poster"])[data-page-fit="on"] .fit-surface { flex: 1 0 auto; }
+
+/* ── Columns: every folder a column of names ───────────────────── */
+/* For a board that is read by name more than it is recognised by icon:
+   each folder is a column of rows, a small icon and the whole name, so far
+   more fits on a screen. A folder's column count means nothing here and its
+   handle goes; which folders share a row is the board's own. Today draws
+   its folders the same way, beside the dashboard. */
+:root:is([data-page="columns"], [data-page="today"]) :is(#board, .drag-lift) {
+  --tw: 24px;
+  --col-w: 14rem;
+}
+:root:is([data-page="columns"], [data-page="today"]) :is(#board, .drag-lift) .card {
+  gap: 8px;
+  padding: 12px 10px 10px;
+}
+:root:is([data-page="columns"], [data-page="today"]) #board .board-line > .card { flex: none; width: var(--col-w); }
+/* Fitted shares out the line evenly, column for column. */
+:root:is([data-page="columns"], [data-page="today"]) #board[data-layout="fitted"]:not(.is-measuring) .board-line > .card { flex: 1 1 var(--col-w); }
+:root:is([data-page="columns"], [data-page="today"]) :is(#board, .drag-lift) .grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+:root:is([data-page="columns"], [data-page="today"]) :is(#board, .drag-lift) .tile {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 32px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: var(--nl-radius-sm);
+  background: transparent;
+  transform: none;
+  transition: background-color var(--nl-motion-control);
+}
+:root:is([data-page="columns"], [data-page="today"]) :is(#board, .drag-lift) .tile:is(:hover, :focus-visible) {
+  background: color-mix(in srgb, var(--nl-text-primary) 8%, transparent);
+  transform: none;
+}
+/* A row is lit as a whole, so the icon stays put and keeps its plate. */
+:root:is([data-page="columns"], [data-page="today"]) :is(#board, .drag-lift) .tile .box {
+  flex: none;
+  width: var(--tw);
+  height: var(--tw);
+  border-radius: 6px;
+  box-shadow: none;
+  transform: none;
+}
+:root:is([data-page="columns"], [data-page="today"]) :is(#board, .drag-lift) .tile .box .nl-icon { width: 76%; height: 76%; }
+:root:is([data-page="columns"], [data-page="today"]) :is(#board, .drag-lift) .tile .mono { font-size: var(--nl-text-2xs); }
+:root:is([data-page="columns"], [data-page="today"]) :is(#board, .drag-lift) .tile .lbl {
+  flex: 1;
+  min-width: 0;
+  max-width: none;
+  font-size: var(--nl-text-sm);
+  text-align: start;
+}
+/* The names are what this layout is for, so turning them off under the
+   icons does not take them off the rows. */
+:root:is([data-page="columns"], [data-page="today"]) body.tile-names-hidden #board .tile .lbl {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  clip: auto;
+}
+:root:is([data-page="columns"], [data-page="today"]) #board .card-resize-handle { display: none; }
+/* Alt held: the digit sits at the end of its row rather than over the name. */
+:root:is([data-page="columns"], [data-page="today"]) body.alt-held #board .tile[data-shortcut]::after {
+  top: 50%;
+  left: auto;
+  right: 6px;
+  translate: 0 -50%;
+}
+@media (max-width: 480px) {
+  :root:is([data-page="columns"], [data-page="today"]) #board .board-line > .card { flex: 1 1 100%; width: 100%; }
+}
+
+/* ── Today: the dashboard first, the folders beside it ─────────── */
+/* Two columns under the clock and the search: the day's cards, and beside
+   them the folders as lists, poured into two columns of their own where
+   there is room, so the side is half as long. Only with the dashboard on
+   and its folders shown, and only on a wide window; else it is Columns.
+   The grid is drawn on #page, or on the surface One page fit lays the page
+   out on. Rows mean nothing in the side columns, so they are not drawn. */
+@media (min-width: 1000px) {
+  :root[data-page="today"][data-dashboard]:not([data-dash-folders="off"]):not([data-page-fit="on"]) #page,
+  :root[data-page="today"][data-dashboard]:not([data-dash-folders="off"])[data-page-fit="on"] .fit-surface {
+    display: grid;
+    grid-template-columns: minmax(0, 1120px) min(30rem, 34vw);
+    grid-template-areas: "hero hero" "search search" "dash board" "dash dock";
+    grid-template-rows: auto auto auto 1fr;
+    justify-content: center;
+    justify-items: center;
+    align-content: start;
+    align-items: start;
+    column-gap: 28px;
+  }
+  :root[data-page="today"][data-dashboard]:not([data-dash-folders="off"]) #hero { grid-area: hero; }
+  :root[data-page="today"][data-dashboard]:not([data-dash-folders="off"]) #searchwrap { grid-area: search; }
+  :root[data-page="today"][data-dashboard]:not([data-dash-folders="off"]) #dash { grid-area: dash; width: 100%; margin: 0; }
+  /* Through #page, so it outweighs the width One page fit holds a board at. */
+  :root[data-page="today"][data-dashboard]:not([data-dash-folders="off"]) #page #board {
+    grid-area: board;
+    display: block;
+    width: 100%;
+    columns: 2 13rem;
+    column-gap: var(--board-gap);
+  }
+  :root[data-page="today"][data-dashboard]:not([data-dash-folders="off"]) #board :is(.board-row, .board-line) { display: contents; }
+  :root[data-page="today"][data-dashboard]:not([data-dash-folders="off"]) #board .card {
+    width: 100%;
+    margin-bottom: var(--board-gap);
+    break-inside: avoid;
+  }
+  :root[data-page="today"][data-dashboard]:not([data-dash-folders="off"]) #hiddenDock { grid-area: dock; }
+}
+
+/* ── Dock: the bookmarks on one shelf along the bottom ─────────── */
+/* The clock and the search in the middle of the sky, and every bookmark on
+   a shelf at the foot of the page: icons only, a wider gap between one
+   folder and the next. A name comes up over its icon at the pointer or the
+   focus, and a screen reader hears it as always. */
+:root[data-page="dock"] #page { padding-bottom: 24px; }
+:root[data-page="dock"] #hero { margin-top: auto; }
+:root[data-page="dock"] #board:has(.card) {
+  --tw: 42px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px 22px;
+  width: auto;
+  max-width: min(calc(100vw - 140px), 1180px);
+  margin-top: auto;
+  padding: 9px 12px;
+  border: 1px solid var(--nl-polish-hairline);
+  border-radius: calc(var(--nl-radius-lg) + 6px);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 64%, transparent);
+  box-shadow: var(--nl-shadow-2);
+  backdrop-filter: blur(var(--glass-blur)) saturate(122%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(122%);
+}
+:root[data-page="dock"] #board :is(.board-row, .board-line, .card) { display: contents; }
+:root[data-page="dock"] #board :is(.cat, .card-resize-handle) { display: none; }
+:root[data-page="dock"] :is(#board, .drag-lift) .grid { display: flex; flex: none; gap: 8px; }
+:root[data-page="dock"] :is(#board, .drag-lift) .tile { gap: 0; }
+/* The shelf is the folders' glass, so a plate in the folder's tone would
+   vanish on it; a plate a step lighter keeps each mark on a tile of its own. */
+:root[data-page="dock"] :is(#board, .drag-lift) .tile .box { background: color-mix(in srgb, var(--nl-text-primary) 7%, transparent); }
+:root[data-page="dock"] :is(#board, .drag-lift) .tile .lbl {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  width: auto;
+  height: auto;
+  max-width: 16rem;
+  margin: 0;
+  padding: 4px 9px;
+  clip: auto;
+  border: 1px solid var(--nl-polish-hairline);
+  border-radius: var(--nl-radius-sm);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 94%, transparent);
+  box-shadow: var(--nl-shadow-2);
+  color: var(--nl-text-primary);
+  opacity: 0;
+  translate: -50% 4px;
+  pointer-events: none;
+  transition: opacity var(--nl-transition-fast), translate var(--nl-transition-fast);
+}
+:root[data-page="dock"] #board .tile:is(:hover, :focus-visible) .lbl { opacity: 1; translate: -50% 0; }
+:root[data-page="dock"] body.alt-held #board .tile[data-shortcut]::after { top: auto; bottom: -8px; }
+
+/* ── Prompt and Poster: no board on the page ───────────────────── */
+/* The folders are still there for the search, the commands and Alt and a
+   digit; they are only not drawn. */
+:root:is([data-page="prompt"], [data-page="poster"]) :is(#board, #hiddenDock, #dash, #fit-toggle, .skip-link) { display: none !important; }
+
+/* Prompt: one line to type in, and the time above it, small. */
+:root[data-page="prompt"] #hero { flex-direction: row; align-items: baseline; gap: 14px; }
+:root[data-page="prompt"] #clock { min-width: 0; font-size: clamp(32px, 4vw, 44px); font-weight: 300; }
+:root[data-page="prompt"] #date { margin-top: 0; }
+:root[data-page="prompt"] #greet { display: none; }
+:root[data-page="prompt"] #searchwrap { width: min(92vw, 760px); margin-top: 6px; }
+:root[data-page="prompt"] #search { height: 68px; padding-inline: 20px; border-radius: calc(var(--nl-radius-lg) + 4px); }
+:root[data-page="prompt"] #q { font-size: var(--nl-text-xl); }
+
+/* Poster: the time, large, over the sky. The search waits under it as a
+   line and becomes the field when it is clicked or / is pressed. */
+:root[data-page="poster"] #clock { font-size: clamp(112px, 19vw, 280px); font-weight: 200; }
+:root[data-page="poster"] #date { margin-top: 14px; font-size: var(--nl-text-lg); }
+:root[data-page="poster"] #searchwrap { width: min(80vw, 440px); margin-top: 36px; }
+:root[data-page="poster"] #search:not(:focus-within) {
+  height: 44px;
+  border-color: var(--nl-polish-hairline);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 30%, transparent);
+  box-shadow: none;
+}
