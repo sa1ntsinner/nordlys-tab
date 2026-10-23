@@ -1,15 +1,17 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-/* "nl" in the address bar (omnibox.js): the keywords and the board answer,
-   the first answer stands for Enter, and anything else goes to the browser's
-   own engine. */
-const done = { opened: [], created: [], searched: [], defaults: [] };
+/* The extension's worker (worker.js): "nl" in the address bar, where the
+   keywords and the board answer, the first answer stands for Enter and
+   anything else goes to the browser's own engine; and "Save to Nordlys" in
+   the right-click menu, which only puts the page in the inbox. */
+const done = { opened: [], created: [], searched: [], defaults: [], menus: [] };
 const on = {};
-let saved = {};
+const store = {};
 globalThis.chrome = {
-  runtime: { getURL: () => 'chrome-extension://abc/' },
-  storage: { local: { get: (key, answer) => answer({ [key]: saved }) } },
+  runtime: { getURL: () => 'chrome-extension://abc/', onInstalled: { addListener: (fn) => { on.installed = fn; } } },
+  storage: { local: { get: (key, answer) => answer({ [key]: store[key] }), set: (items) => Object.assign(store, items) } },
+  contextMenus: { create: (item) => done.menus.push(item), onClicked: { addListener: (fn) => { on.clicked = fn; } } },
   omnibox: {
     onInputChanged: { addListener: (fn) => { on.changed = fn; } },
     onInputEntered: { addListener: (fn) => { on.entered = fn; } },
@@ -20,9 +22,9 @@ globalThis.chrome = {
 };
 globalThis.NordlysCommands = require('../../src/js/commands.js');
 require('../../src/js/search-sources.js');
-require('../../src/js/omnibox.js');
+require('../../src/js/worker.js');
 
-saved = {
+store.nordlys_config = {
   golinks: [{ key: 'gh', url: 'https://github.com/search?q=%s' }],
   groups: [{ label: 'Code & more', links: [{ name: 'GitHub', url: 'https://github.com/' }, { name: 'Gist <3', url: 'https://gist.github.com/' }] }]
 };
@@ -47,4 +49,17 @@ test('Enter opens the chosen answer, the first one, or searches', async () => {
   assert.deepEqual(done.opened, ['https://github.com/search?q=tab', 'https://github.com/']);
   await on.entered('weather tomorrow', 'newForegroundTab');
   assert.deepEqual(done.searched, [{ text: 'weather tomorrow', disposition: 'NEW_TAB' }]);
+});
+
+test('"Save to Nordlys" puts the page or the link in the inbox, and nothing else', () => {
+  on.installed();
+  assert.deepEqual(done.menus.map((item) => [item.id, item.contexts[0]]), [['nordlys-save-page', 'page'], ['nordlys-save-link', 'link']]);
+  on.clicked({ menuItemId: 'nordlys-save-page', pageUrl: 'https://read.example/essay' }, { title: 'An essay' });
+  on.clicked({ menuItemId: 'nordlys-save-link', pageUrl: 'https://read.example/essay', linkUrl: 'https://cited.example/', selectionText: 'a source' });
+  on.clicked({ menuItemId: 'nordlys-save-page', pageUrl: 'chrome://settings/' }, { title: 'Settings' });
+  assert.deepEqual(store.nordlys_inbox.map(({ url, name, folder }) => ({ url, name, folder })), [
+    { url: 'https://read.example/essay', name: 'An essay', folder: null },
+    { url: 'https://cited.example/', name: 'a source', folder: null }
+  ]);
+  assert.equal(store.nordlys_config.groups.length, 1, "the board itself is the page's to write");
 });

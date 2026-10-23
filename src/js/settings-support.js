@@ -355,7 +355,7 @@
         { chords: [['A']], key: 'support.keyArrangeBoard', fallback: 'Arrange the board' },
         { chords: [['S']], key: 'support.keyShuffle', fallback: 'Shuffle this sky' },
         { chords: [['L']], key: 'support.keyMode', fallback: 'Switch between light and dark' },
-        { chords: [['P']], key: 'support.keyProfile', fallback: 'The next profile' }
+        { chords: [['P']], key: 'support.keyProfile', fallback: 'The next space' }
       ];
     }
 

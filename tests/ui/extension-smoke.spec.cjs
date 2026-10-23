@@ -62,7 +62,7 @@ test('favicons still load from the extension page with nothing web-accessible', 
   }
 });
 
-/* "nl" in the address bar is a service worker (omnibox.js). It has to start
+/* "nl" in the address bar is a service worker (worker.js). It has to start
    in the real browser with the two scripts it borrows from the page. */
 test('the address bar keyword starts as a worker with what it reads by', async () => {
   const extensionPath = resolve(__dirname, '../..');
@@ -74,8 +74,16 @@ test('the address bar keyword starts as a worker with what it reads by', async (
       args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`]
     });
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
-    expect(worker.url()).toMatch(/^chrome-extension:\/\/[a-p]{32}\/src\/js\/omnibox\.js$/);
+    expect(worker.url()).toMatch(/^chrome-extension:\/\/[a-p]{32}\/src\/js\/worker\.js$/);
     expect(await worker.evaluate(() => [typeof globalThis.NordlysSearchSources.keyword, typeof globalThis.NordlysCommands.score, typeof chrome.omnibox.onInputEntered])).toEqual(['function', 'function', 'object']);
+    // The toolbar popup, opened as a page of its own: the page in view is itself, which is no web page.
+    const page = context.pages()[0] || await context.newPage();
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+    await page.goto(worker.url().replace('src/js/worker.js', 'popup.html'));
+    await expect(page.locator('#save-said')).toHaveText('Only a web page can go on the board.');
+    expect(errors).toEqual([]);
   } finally {
     await context?.close();
     rmSync(profile, { recursive: true, force: true });

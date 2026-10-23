@@ -29,7 +29,7 @@
   const newId = () => (root.crypto && root.crypto.randomUUID ? root.crypto.randomUUID() : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`).replace(/[^a-zA-Z0-9_-]/g, "");
   const cleanName = (name) => {
     const value = String(name ?? "").trim().replace(/\s+/g, " ").slice(0, NAME_LIMIT);
-    if (!value) throw new Error("A profile needs a name.");
+    if (!value) throw new Error("A space needs a name.");
     return value;
   };
   const withoutPerson = (config) => {
@@ -123,7 +123,7 @@
 
     /* Puts the live board away and hands back the one to show. */
     async switchTo(id, live) {
-      if (!this.has(id)) throw new Error("That profile does not exist any more.");
+      if (!this.has(id)) throw new Error("That space does not exist any more.");
       // The board being put away is the one in use now, not whichever is in use after the read below.
       const from = this.state.active;
       if (id === from) return clone(live);
@@ -136,7 +136,7 @@
 
     rename(id, name) {
       const profile = this.state.list.find((entry) => entry.id === id);
-      if (!profile) throw new Error("That profile does not exist any more.");
+      if (!profile) throw new Error("That space does not exist any more.");
       profile.name = cleanName(name);
       this.write();
     }
@@ -157,8 +157,8 @@
     }
 
     async remove(id, live) {
-      if (this.state.list.length <= 1) throw new Error("The last profile cannot be deleted.");
-      if (id === this.state.active) throw new Error("Switch to another profile before deleting the one in use.");
+      if (this.state.list.length <= 1) throw new Error("The last space cannot be deleted.");
+      if (id === this.state.active) throw new Error("Switch to another space before deleting the one in use.");
       const index = this.state.list.findIndex((entry) => entry.id === id);
       if (index < 0) return;
       const [profile] = this.state.list.splice(index, 1);
@@ -220,8 +220,24 @@
     }
   }
 
+  /* Which space a device opens by itself at a moment: the first in the list
+     whose hours hold it. The hours are the device's own (sync-ui.js keeps
+     them): { days: [0-6, Sunday first], from, to } in minutes after
+     midnight. The answer says when the hours began, so they open their space
+     once each time they come round, and a space picked by hand stays. */
+  function due(hours, list, now = new Date()) {
+    const minute = now.getHours() * 60 + now.getMinutes();
+    for (const { id } of list) {
+      const span = hours?.[id];
+      if (!span || !Array.isArray(span.days) || !span.days.includes(now.getDay()) || !(minute >= span.from && minute < span.to)) continue;
+      return { id, since: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, span.from).getTime() };
+    }
+    return null;
+  }
+
   NordlysProfiles.PERSON = PERSON;
   NordlysProfiles.COLORS = COLORS;
+  NordlysProfiles.due = due;
   root.NordlysProfiles = NordlysProfiles;
   if (typeof module !== "undefined" && module.exports) module.exports = NordlysProfiles;
 })(typeof globalThis !== "undefined" ? globalThis : this);

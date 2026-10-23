@@ -154,3 +154,21 @@ test('an overlapping switch never puts a board into another profile\'s slot', as
   assert.deepStrictEqual(JSON.parse(s.raw.get(`nordlys_profile.${b}`)).groups, [], 'B keeps its own board');
   assert.strictEqual(JSON.parse(s.raw.get(`nordlys_profile.${a}`)).groups[0].label, 'A-board');
 });
+
+test('a space with hours on this device is due inside them, the first in the list winning', () => {
+  const list = [{ id: 'work' }, { id: 'home' }, { id: 'late' }];
+  const hours = {
+    work: { days: [1, 2, 3, 4, 5], from: 9 * 60, to: 17 * 60 },
+    home: { days: [0, 1, 2, 3, 4, 5, 6], from: 8 * 60, to: 22 * 60 },
+    late: { days: [5], from: 22 * 60, to: 24 * 60 }
+  };
+  const at = (day, hour, minute = 0) => new Date(2026, 9, 18 + day, hour, minute); // 18 October 2026 is a Sunday
+  assert.deepStrictEqual(NordlysProfiles.due(hours, list, at(1, 9)), { id: 'work', since: at(1, 9).getTime() });
+  assert.strictEqual(NordlysProfiles.due(hours, list, at(1, 16, 59)).id, 'work');
+  assert.strictEqual(NordlysProfiles.due(hours, list, at(1, 17)).id, 'home', 'until is not inside');
+  assert.strictEqual(NordlysProfiles.due(hours, list, at(6, 10)).id, 'home', 'Saturday is not a weekday');
+  assert.strictEqual(NordlysProfiles.due(hours, list, at(5, 23, 30)).id, 'late');
+  assert.strictEqual(NordlysProfiles.due(hours, list, at(1, 7)), null);
+  assert.strictEqual(NordlysProfiles.due({}, list, at(1, 9)), null);
+  assert.strictEqual(NordlysProfiles.due({ gone: hours.work }, list, at(1, 9)), null, 'only spaces there are');
+});

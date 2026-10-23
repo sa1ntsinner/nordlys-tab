@@ -13,13 +13,24 @@
     "keyword": "nl"
   },
   "background": {
-    "service_worker": "src/js/omnibox.js"
+    "service_worker": "src/js/worker.js"
+  },
+  "action": {
+    "default_title": "Save to Nordlys",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
   },
   "permissions": [
     "storage",
     "favicon",
     "unlimitedStorage",
-    "search"
+    "search",
+    "activeTab",
+    "contextMenus",
+    "tabGroups"
   ],
   "optional_permissions": [
     "bookmarks",

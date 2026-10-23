@@ -1185,6 +1185,64 @@ class NordlysApp {
     this.initColorModeListener();
     this.watchOtherTabs();
     this.restoreFromChromeStorage();
+    this.watchInbox();
+  }
+
+  /* Pages saved from the toolbar button or the right-click menu wait in
+     nordlys_inbox (popup.js, worker.js): only a page writes the board, so a
+     board open in another tab is never written over. A new tab in view takes
+     them, each into the folder it was saved to (by id, else name, else place)
+     or else the first that can hold it, and says so; one already there is
+     not added twice. Its first look comes after restoreFromChromeStorage's,
+     as the browser answers in the order it was asked. */
+  watchInbox() {
+    const area = typeof chrome !== "undefined" ? chrome.storage?.local : null;
+    if (!area) return;
+    const take = () => { if (!document.hidden) this.takeInbox(area); };
+    chrome.storage.onChanged?.addListener((changes, where) => { if (where === "local" && changes.nordlys_inbox?.newValue?.length) take(); });
+    document.addEventListener("visibilitychange", take);
+    take();
+    // worker.js makes the right-click items in English; the page says them in the person's language.
+    const name = () => {
+      for (const [id, key] of [["nordlys-save-page", "save.menuPage"], ["nordlys-save-link", "save.menuLink"]]) {
+        try { chrome.contextMenus?.update(id, { title: window.I18N?.t(key) }, () => void chrome.runtime.lastError); } catch (error) { /* no menu in this browser */ }
+      }
+    };
+    if (window.I18N) { name(); window.addEventListener("nordlys:languagechange", name); }
+  }
+
+  takeInbox(area) {
+    if (this.takingInbox || document.body.classList.contains("arranging")) return;
+    this.takingInbox = true;
+    area.get("nordlys_inbox", (data) => {
+      const items = Array.isArray(data?.nordlys_inbox) ? data.nordlys_inbox : [];
+      if (!items.length) { this.takingInbox = false; return; }
+      area.remove("nordlys_inbox", () => {
+        this.takingInbox = false;
+        const say = (key, fallback, params) => (window.I18N ? window.I18N.t(key, params) : fallback);
+        const groups = this.config.groups;
+        const open = (group) => Boolean(group) && !group.source?.folderId;
+        const into = new Set();
+        for (const item of items) {
+          if (typeof item?.url !== "string" || !/^https?:\/\/\S+$/i.test(item.url)) continue;
+          const wanted = item.folder || {};
+          let group = groups.find((each) => wanted.id && each.id === wanted.id) || groups.find((each) => wanted.label && each.label === wanted.label) || groups[wanted.index];
+          if (!open(group)) group = groups.find(open);
+          if (!group) groups.push(group = { id: `g_${Date.now()}`, label: say("save.savedFolder", "Saved"), cols: 4, links: [] });
+          if (group.links.some((link) => link.url === item.url)) continue;
+          let host = item.url;
+          try { host = new URL(item.url).hostname.replace(/^www\./, ""); } catch (error) { /* the address, then */ }
+          group.links.push({ name: String(item.name || "").trim().slice(0, 120) || host, url: item.url, color: "#38bdf8" });
+          into.add(group.label || "");
+        }
+        if (!into.size) return;
+        this.saveConfig();
+        this.grid?.render();
+        this.builtSettings?.renderBookmarksManager?.();
+        const message = into.size === 1 ? say("save.taken", `Saved pages added to ${[...into][0]}`, { folder: [...into][0] }) : say("save.takenMany", "Saved pages added to the board");
+        if (typeof toast === "function") toast(message, "success", 3500);
+      });
+    });
   }
 
   /* Night mode: the whole page under a warm red and the sky held still, kind

@@ -1,0 +1,46 @@
+/* The toolbar button's popup (popup.html): one small form in the product's
+   own dark glass, or its light one when the system is light. */
+:root { color-scheme: dark; --save-bg: #0b1222; --save-field: rgba(255, 255, 255, .06); }
+@media (prefers-color-scheme: light) {
+  :root { color-scheme: light; --save-bg: #f4f6fb; --save-field: #fff; --ink: #172036; --dim: #4b5874; --glass-border: rgba(23, 32, 54, .16); --accent: #3d5fd6; --nl-on-accent: #fff; --nl-status-success: #0b7a50; }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  width: 320px;
+  background: var(--save-bg);
+  color: var(--nl-text-primary);
+  font: 400 var(--nl-text-md)/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.save { display: grid; gap: var(--nl-space-3); padding: var(--nl-space-4); }
+.save-page { display: flex; align-items: center; gap: var(--nl-space-2); min-width: 0; margin: 0; color: var(--nl-text-secondary); font-size: var(--nl-text-xs); }
+.save-page span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.save-icon { flex: none; border-radius: 4px; }
+.save-form { display: grid; gap: var(--nl-space-2); }
+.save-form label { color: var(--nl-text-secondary); font-size: var(--nl-text-xs); }
+.save-form input, .save-form select {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--nl-border);
+  border-radius: var(--nl-radius-sm);
+  background: var(--save-field);
+  color: inherit;
+  font: inherit;
+}
+.save-form input:focus-visible, .save-form select:focus-visible, .save-form button:focus-visible { outline: 2px solid var(--nl-accent); outline-offset: 2px; }
+.save-form button {
+  margin-top: var(--nl-space-1);
+  min-height: 36px;
+  border: 0;
+  border-radius: var(--nl-radius-sm);
+  background: var(--nl-accent);
+  color: var(--nl-on-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.save-form button:disabled { opacity: .5; cursor: default; }
+.save-said { min-height: 1.4em; margin: 0; color: var(--nl-text-secondary); font-size: var(--nl-text-xs); }
+.save-said.done { color: var(--nl-status-success); }
+.save-form[hidden] { display: none; }

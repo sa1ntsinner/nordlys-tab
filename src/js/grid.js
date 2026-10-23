@@ -61,6 +61,7 @@ class GridController {
     }, true);
 
     this.initContextMenusAndModals();
+    this.initPastedLinks();
     this.showMenuKeys();
     this.drag = window.NordlysBoardDrag ? new window.NordlysBoardDrag(this) : null;
     this.arrange = window.NordlysBoardArranger ? new window.NordlysBoardArranger(this) : null;
@@ -636,6 +637,7 @@ class GridController {
     this.shareColumns(card, grid, group);
 
     grid.addEventListener("dragover", (e) => this.onGridDragOver(e, grid));
+    grid.addEventListener("dragleave", (e) => { if (!grid.contains(e.relatedTarget)) card.classList.remove("dropping"); });
     grid.addEventListener("drop", (e) => this.onGridDrop(e, grid, gIdx));
 
     const gridFragment = document.createDocumentFragment();
@@ -1242,6 +1244,83 @@ class GridController {
     });
   }
 
+  /* ── Links from elsewhere ──────────────────────────────────────────
+     A link dragged in from a page or the address bar, or an address pasted
+     with nothing else in hand, becomes a bookmark. Tiles move by the board's
+     own arranging (board-arrange.js), so only addresses come in this way. */
+  linkFrom(data) {
+    const line = String(data?.getData("text/uri-list") || data?.getData("text/plain") || "").split(/\r?\n/).map((part) => part.trim()).find((part) => part && !part.startsWith("#"));
+    let url;
+    try { url = new URL(line); } catch (error) { return null; }
+    if (!/^https?:$/.test(url.protocol)) return null;
+    // A dragged link carries its words as HTML; they name it when they are its.
+    const anchor = data.getData("text/html") ? new DOMParser().parseFromString(data.getData("text/html"), "text/html").querySelector("a[href]") : null;
+    let named = "";
+    try { if (anchor && new URL(anchor.getAttribute("href"), url).href === url.href) named = anchor.textContent.trim(); } catch (error) { /* no name, then */ }
+    return { url: url.href, name: (named || url.hostname.replace(/^www\./, "")).slice(0, 120) };
+  }
+
+  // Into a folder, before a tile of it or at its end, with a way back.
+  addLinkFrom(gIdx, link, at) {
+    const group = this.app.config.groups[gIdx];
+    if (!group || !link) return false;
+    if (group.source?.folderId) {
+      const message = this.say("bookmarks.linkedNoDrop", "This folder follows the browser. Add the bookmark there instead.");
+      if (typeof toast === "function") toast(message, "danger", 2800); else NordlysUI.announce(message);
+      return false;
+    }
+    const added = { name: link.name, url: link.url, color: "#38bdf8" };
+    const index = Math.max(0, Math.min(at ?? group.links.length, group.links.length));
+    group.links.splice(index, 0, added);
+    const inHand = this.board?.contains(document.activeElement);
+    const redraw = () => { this.app.saveConfig(); this.render(); this.app.settings?.renderBookmarksManager?.(); };
+    redraw();
+    // The keyboard stays where it was working: on the bookmark just added.
+    if (inHand) this.focusTile(gIdx, index);
+    NordlysUI.showUndoToast({
+      message: this.say("bookmarks.addedTo", `${link.name} added to ${group.label || ""}`, { name: link.name, folder: group.label || "" }),
+      onAction: () => {
+        const index = group.links.indexOf(added);
+        if (index < 0) return;
+        group.links.splice(index, 1);
+        redraw();
+      }
+    });
+    return true;
+  }
+
+  onGridDragOver(e, grid) {
+    if (this.isDragging || ![...(e.dataTransfer?.types || [])].some((type) => type === "text/uri-list" || type === "text/plain")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    grid.closest(".card")?.classList.add("dropping");
+  }
+
+  onGridDrop(e, grid, gIdx) {
+    grid.closest(".card")?.classList.remove("dropping");
+    const link = this.linkFrom(e.dataTransfer);
+    if (!link) return;
+    e.preventDefault();
+    const tile = e.target.closest?.(".tile[data-link-idx]");
+    this.addLinkFrom(gIdx, link, tile ? Number(tile.dataset.linkIdx) : undefined);
+  }
+
+  /* Pasted with nothing else in hand: into the folder of the focused tile,
+     or else the first folder that can take it. */
+  initPastedLinks() {
+    document.addEventListener("paste", (e) => {
+      if (e.target.closest?.("input, textarea, select, [contenteditable], dialog, #cfg") || document.body.classList.contains("cfgopen")) return;
+      const link = this.linkFrom(e.clipboardData);
+      if (!link) return;
+      const held = Number(document.activeElement?.closest?.("#board .card")?.dataset.groupIdx);
+      const groups = this.app.config.groups || [];
+      const gIdx = groups[held] && !groups[held].source?.folderId ? held : groups.findIndex((group) => !group.source?.folderId && !group.hidden);
+      if (gIdx < 0) return;
+      e.preventDefault();
+      this.addLinkFrom(gIdx, link);
+    });
+  }
+
   async openEveryBookmark(group) {
     const links = (group.links || []).filter((link) => link && link.url);
     if (!links.length) return;
@@ -1258,10 +1337,9 @@ class GridController {
       });
       if (!ok) return;
     }
-    for (const link of links) {
-      window.open(link.url, "_blank", "noopener");
-    }
     window.NordlysUI?.announce?.(t("toast.openedAll", `Opened ${links.length} tabs`));
+    // As a tab group under the folder's name, where the browser has them (ui-kit.js).
+    await openTabs(links.map((link) => link.url), group.label || "");
   }
 
   confirmFolderDelete(group) {

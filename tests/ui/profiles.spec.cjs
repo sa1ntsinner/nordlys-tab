@@ -8,7 +8,7 @@ const labels = page => page.evaluate(() => window.Nordlys.config.groups.map(grou
 async function newProfile(page, name, from = 'empty') {
   await page.locator('#gear').click();
   await page.locator('#settings-tab-sync').click();
-  await page.locator('#sec-sync').getByRole('button', { name: 'New profile' }).click();
+  await page.locator('#sec-sync').getByRole('button', { name: 'New space' }).click();
   const form = page.locator('#nl-form-modal');
   await expect(form).toBeVisible();
   await form.locator('input[name="name"]').fill(name);
@@ -172,4 +172,42 @@ test('a synced profile that names a retired sky arrives with its successor', asy
     await window.__syncRemote(M.exportChunks(other));
   });
   await expect.poll(() => page.evaluate(() => [window.Nordlys.config.bgMode, window.Nordlys.bgEngine.mode]), { timeout: 8000 }).toEqual(['starmap', 'starmap']);
+});
+
+/* Hours on this device: a new tab inside them opens their space, once each
+   time they come round, so a space picked by hand afterwards stays. */
+test('a space opens by itself in its hours, and one picked by hand stays', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const before = await labels(page);
+  await newProfile(page, 'Work');
+  await closeSettings(page);
+  await page.locator('#profile-chip').click();
+  await page.locator('#profile-menu .ctx-item', { hasText: 'Main' }).click();
+  await expect.poll(() => labels(page)).toEqual(before);
+
+  await page.locator('#gear').click();
+  await page.locator('#settings-tab-sync').click();
+  const row = page.locator('#sec-sync .sync-hours', { hasText: 'Work' });
+  await expect(page.locator('#sec-sync')).toContainText('Opens by itself');
+  await expect(row.locator('input[type="time"]').first()).toBeDisabled();
+  await row.getByRole('combobox', { name: 'Days for Work' }).click();
+  await page.getByRole('option', { name: 'Every day' }).click();
+  await expect(row.locator('input[type="time"]').first()).toBeEnabled();
+  await row.getByLabel('From, for Work').fill('00:00');
+  await row.getByLabel('Until, for Work').fill('00:00');
+  await row.getByLabel('Until, for Work').dispatchEvent('change');
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('nordlys_space_hours')))).toEqual(expect.objectContaining({ [await page.evaluate(() => window.Nordlys.sync.list().find((space) => space.name === 'Work').id)]: { days: [0, 1, 2, 3, 4, 5, 6], from: 0, to: 1440 } }));
+
+  await page.reload();
+  await expect(page.locator('#profile-chip .profile-name')).toHaveText('Work');
+  await expect(page.locator('#toast-dock')).toContainText('Space: Work');
+  // Picked by hand, it stays: the hours opened their space once already.
+  await page.locator('#profile-chip').click();
+  await page.locator('#profile-menu .ctx-item', { hasText: 'Main' }).click();
+  await expect(page.locator('#profile-chip .profile-name')).toHaveText('Main');
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  await page.waitForTimeout(300);
+  await expect(page.locator('#profile-chip .profile-name')).toHaveText('Main');
+  expect(nordlysPage.runtimeErrors).toEqual([]);
 });

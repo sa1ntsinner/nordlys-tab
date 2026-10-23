@@ -34,6 +34,7 @@ Everything is saved on your device. Settings and bookmarks use Chrome's extensio
 | Your own wallpaper | IndexedDB | The picture or video loop you picked as the background | No |
 | Where the sky is, working hours, saved skies | `chrome.storage.local` / `localStorage` | The place you set for the sky, the hours the Your day sky knows, and the skies you saved | Only to your own browser's sync, if you turn sync on |
 | Keywords | `chrome.storage.local` / `localStorage` | The words you set in Settings → General that take the search box, or `nl` in the address bar, to your own addresses | No |
+| Pages you saved | `chrome.storage.local` | A page saved with the toolbar button or the right-click item waits here until the next new tab puts it on your board, then it is deleted | No |
 | Exchange rates | `localStorage` | The day's rates the search box last asked for (item 10 below), so it answers again without asking. Cleared by Reset | No |
 | What the sky learned | `localStorage` | The weather and the K index last asked for, the horizon of the sky's place, and today's picture of the day with its caption, so a new tab draws at once instead of asking again. Cleared by Reset | No |
 
@@ -87,6 +88,9 @@ Nordlys uses these permissions:
 - `storage` saves your bookmarks, themes and folders on your device.
 - `unlimitedStorage` lets you keep your own wallpaper pictures and video loops in IndexedDB without hitting the browser's storage limit.
 - `favicon` shows site icons from Chrome's local favicon cache on your tiles.
+- `activeTab` lets the toolbar button read the address and title of the page in view when you press it, so you can save the page to a folder. It gives no access to any other page and none when the button isn't pressed. Nothing is sent anywhere.
+- `tabGroups` names the group of tabs a folder opens as, when you choose Open all, after the folder. It reads nothing.
+- `contextMenus` adds "Save to Nordlys" to the right-click menu of pages and links. A page saved there stays on your device, like one saved from the toolbar button.
 - `search` hands what you type in the search box to the browser, which sends it to the search engine you chose in the browser. Nordlys doesn't pick the engine or see the results.
 - `bookmarks` is optional and isn't requested at install. Nordlys asks for it only when you link a folder to a Chrome bookmark folder, or turn on Your browser's bookmarks under Settings → General → The search box also finds. It reads that folder to mirror its tiles, or the bookmarks that match what you type in the search box. It never changes or sends your Chrome bookmarks. If you revoke access in `chrome://extensions`, mirroring stops and the tiles already on screen stay.
 - Nordlys asks for no site at install. It can't read, change or send data from pages you visit.

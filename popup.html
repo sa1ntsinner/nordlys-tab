@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nordlys</title>
+  <link rel="stylesheet" href="src/css/foundations.css">
+  <link rel="stylesheet" href="src/css/popup.css">
+  <script src="src/js/i18n.js"></script>
+  <script src="src/locales/en.js"></script>
+</head>
+<body>
+  <!-- The toolbar button (popup.js): the page in view, into a folder. -->
+  <main class="save">
+    <p class="save-page"><img id="save-icon" class="save-icon" alt="" width="16" height="16" hidden><span id="save-host"></span></p>
+    <form id="save-form" class="save-form">
+      <label for="save-name" data-i18n="save.name">Name</label>
+      <input id="save-name" type="text" maxlength="120" autocomplete="off" spellcheck="false" required>
+      <label for="save-folder" data-i18n="save.folder">Folder</label>
+      <select id="save-folder"></select>
+      <button id="save-go" type="submit" data-i18n="save.button">Save to the board</button>
+    </form>
+    <p id="save-said" class="save-said" role="status"></p>
+  </main>
+  <script src="src/js/popup.js"></script>
+</body>
+</html>

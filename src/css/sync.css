@@ -124,6 +124,13 @@ body.arranging :is(.is-here-only, .is-different-here) > .device-mark { opacity: 
 .sync-profile-name small, .sync-device small { color: var(--nl-text-secondary); }
 .sync-profile-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin-left: auto; }
 .sync-deleted > span:nth-child(2) { flex: 1; }
+.sync-hours-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+/* Spaces → Opens by itself: each space's name over its days and hours. */
+.sync-hours { display: grid; grid-template-columns: minmax(0, 1fr) 6.75rem auto 6.75rem; align-items: center; gap: 6px 8px; padding: 8px 10px; border-radius: var(--nl-radius-md, 12px); border: 1px solid var(--nl-polish-hairline, rgba(255, 255, 255, 0.08)); }
+.sync-hours-name { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; min-width: 0; font-size: var(--nl-text-md); font-weight: 600; }
+.sync-hours-name span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sync-hours input[type="time"] { width: 100%; min-width: 0; }
+.sync-hours input:disabled { opacity: .45; }
 .sync-deleted-title { margin: 6px 0 0; }
 .sync-status { display: grid; gap: 6px; justify-items: start; }
 .sync-state { font-size: var(--nl-text-sm, 0.85rem); font-weight: 600; }

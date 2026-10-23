@@ -22,7 +22,7 @@
     show: ['show', 'unhide'],
     move: ['move'],
     settings: ['settings', 'preferences'],
-    profile: ['profile', 'switch to'],
+    profile: ['space', 'profile', 'switch to'],
     dashboard: ['dashboard'],
     task: ['task', 'todo', 'add task'],
     timer: ['timer', 'pomodoro', 'focus timer'],

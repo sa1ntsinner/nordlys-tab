@@ -17,7 +17,7 @@ const zlib = require('node:zlib');
 
 const ROOT = resolve(__dirname, '..');
 const OUT = join(ROOT, 'dist');
-const INCLUDE = ['manifest.json', 'newtab.html', 'PRIVACY.md', 'README.md', 'LICENSE', 'icons', 'src'];
+const INCLUDE = ['manifest.json', 'newtab.html', 'popup.html', 'PRIVACY.md', 'README.md', 'LICENSE', 'icons', 'src'];
 const GECKO_ID = 'nordlys@sa1ntsinner.github.io';
 const ENGINE_LIST = 'src/js/search-engines.js';
 const ENGINE_STUB = '/* This browser searches with its own engine; there is nothing to choose here. */\n';
@@ -40,7 +40,7 @@ const PORTS = {
     // Firefox has no /_favicon/ service; icons come from the site instead.
     permissions: without(manifest.permissions, 'favicon'),
     // Firefox runs the address bar's keyword in an event page, not a worker.
-    background: { scripts: ['src/js/commands.js', 'src/js/search-sources.js', 'src/js/omnibox.js'] },
+    background: { scripts: ['src/js/commands.js', 'src/js/search-sources.js', 'src/js/worker.js'] },
     browser_specific_settings: {
       gecko: {
         id: GECKO_ID,
@@ -52,13 +52,14 @@ const PORTS = {
   }),
   safari: manifest => ({
     ...manifest,
-    // Nor the address bar's keyword: Safari gives extensions no way into it.
+    // Nor the address bar's keyword: Safari gives extensions no way into it,
+    // and without the worker that holds it there is no right-click item either.
     omnibox: undefined,
     background: undefined,
     description: neutral,
     // Safari has neither the favicon service nor the search API; the
     // search box asks for an engine instead (platform.js).
-    permissions: without(manifest.permissions, 'favicon', 'search'),
+    permissions: without(manifest.permissions, 'favicon', 'search', 'contextMenus', 'tabGroups'),
     // Nor bookmarks, top sites or history: Safari extensions cannot read them.
     optional_permissions: without(manifest.optional_permissions, 'bookmarks', 'topSites', 'history'),
     browser_specific_settings: { safari: { strict_min_version: '17.0' } }

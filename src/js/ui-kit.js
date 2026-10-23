@@ -128,6 +128,21 @@ const NordlysToast = {
   }
 };
 
+/* Several addresses as tabs, the first in front. Where the browser has tab
+   groups they open as one group under a name, to fold away or close
+   together. Only an address the browser would not open as a tab falls back
+   to window.open, so no tab is ever opened twice, whatever the grouping does. */
+async function openTabs(urls, title = "") {
+  const api = typeof chrome !== "undefined" ? chrome : null;
+  if (!api?.tabs?.create) { for (const url of urls) window.open(url, "_blank", "noopener"); return; }
+  const made = await Promise.allSettled(urls.map((url, index) => new Promise((resolve) => resolve(api.tabs.create({ url, active: index === 0 })))));
+  made.forEach((result, index) => { if (result.status === "rejected") window.open(urls[index], "_blank", "noopener"); });
+  const ids = made.map((result) => result.value?.id).filter((id) => id != null);
+  if (!api.tabs.group || !ids.length) return;
+  try { await api.tabGroups?.update(await api.tabs.group({ tabIds: ids }), { title }); }
+  catch (error) { /* open, only not grouped */ }
+}
+
 function toast(message, kind = "info", duration) {
   NordlysToast.show(message, kind, duration);
 }

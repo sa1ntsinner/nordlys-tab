@@ -661,7 +661,7 @@ class SearchWidget {
       case "hide": return this.say("command.doHide", `Hide ${name}`, { name });
       case "show": return this.say("command.doShow", `Show ${name}`, { name });
       case "move": return this.say("command.doMove", `Move ${name} to ${candidate.folder.name}`, { name, folder: candidate.folder.name });
-      case "profile": return this.say("command.doProfile", `Profile: ${name}`, { name });
+      case "profile": return this.say("command.doProfile", `Space: ${name}`, { name });
       case "dashboard": return this.app.dashboard?.on ? this.say("command.doDashboardOff", "Turn the dashboard off") : this.say("command.doDashboardOn", "Turn the dashboard on");
       case "task": return this.say("command.doTask", `Add a task: ${candidate.name}`, { name: candidate.name });
       case "timer": return this.say("command.doTimer", "Start or pause the focus timer");

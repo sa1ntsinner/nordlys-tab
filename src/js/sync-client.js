@@ -172,7 +172,7 @@
       const { live, switched } = await this.profiles.adopt(view, this.app.config);
       await this.refreshOverrides();
       this.adoptLive(live);
-      if (switched && typeof toast === "function") toast(say("profiles.removedElsewhere", "That profile was deleted on another device, so this one is open now."), "info", 5000);
+      if (switched && typeof toast === "function") toast(say("profiles.removedElsewhere", "That space was deleted on another device, so this one is open now."), "info", 5000);
       this.emit();
     }
 
@@ -207,10 +207,10 @@
       this.schedulePush();
       this.emit();
       const name = this.active().name;
-      window.NordlysUI?.announce?.(say("profiles.switched", `Profile: ${name}`, { name }));
+      window.NordlysUI?.announce?.(say("profiles.switched", `Space: ${name}`, { name }));
       if (undo) {
         window.NordlysUI?.showUndoToast?.({
-          message: say("profiles.switched", `Profile: ${name}`, { name }),
+          message: say("profiles.switched", `Space: ${name}`, { name }),
           onAction: () => this.switchTo(before.id, { undo: false })
         });
       }

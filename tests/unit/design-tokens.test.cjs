@@ -246,7 +246,7 @@ test('every message key is referenced somewhere', () => {
   const english = fs.readFileSync(path.join(root, 'src', 'locales', 'en.js'), 'utf8');
   const keys = [...english.matchAll(/"([\w.]+)":\s*"/g)].map(match => match[1]);
 
-  const sources = ['newtab.html']
+  const sources = ['newtab.html', 'popup.html']
     .concat(fs.readdirSync(path.join(root, 'src', 'js'), { recursive: true }).filter(name => name.endsWith('.js')).map(name => path.join('src', 'js', name)))
     .concat(fs.readdirSync(path.join(root, 'tests', 'ui')).filter(name => name.endsWith('.spec.cjs')).map(name => path.join('tests', 'ui', name)))
     .map(file => fs.readFileSync(path.join(root, file), 'utf8'))

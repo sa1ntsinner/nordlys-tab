@@ -304,8 +304,9 @@ for (const [width, height] of [[1440, 900], [760, 700], [360, 740]]) {
       await settled(page);
       for (const locale of LOCALES) {
         for (const on of [false, true]) {
-          await page.evaluate(([lang, fit]) => {
-            window.I18N.setLanguage(lang);
+          // A language not read yet arrives a moment later: wait for it, or the words below are the last one's.
+          await page.evaluate(async ([lang, fit]) => {
+            await window.I18N.setLanguage(lang);
             if (window.Nordlys.config.onePageFit !== fit) window.Nordlys.settings.setPageFit(fit);
           }, [locale, on]);
           await settled(page);

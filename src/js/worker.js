@@ -1,13 +1,17 @@
 /* ═══════════════════════════════════════════════════════════════════
-   NORDLYS - "nl" IN THE ADDRESS BAR
+   NORDLYS - THE ADDRESS BAR AND THE RIGHT-CLICK MENU
    ═══════════════════════════════════════════════════════════════════
 
    "nl" and a space in the address bar hands what follows to Nordlys. The
    person's keywords and the bookmarks on the board answer there as they do
    in the search box (search-sources.js), and anything else is searched with
-   the browser's own engine. It reads the saved config when asked and keeps
-   nothing of its own; the browser shows whose answers they are, so they
-   carry no words that would need translating. */
+   the browser's own engine. The browser shows whose answers they are, so
+   they carry no words that would need translating.
+
+   "Save to Nordlys" on a page or a link puts it in nordlys_inbox, where the
+   next new tab in view takes it onto the board (app.js, takeInbox); the
+   page names these menu items in the person's language. This worker reads
+   the saved config when asked and writes nothing but the inbox. */
 /* global NordlysSearchSources, importScripts */
 // A worker in Chrome and Edge; Firefox loads the two scripts beside this one.
 if (typeof importScripts === "function") importScripts("commands.js", "search-sources.js");
@@ -43,6 +47,22 @@ if (typeof importScripts === "function") importScripts("commands.js", "search-so
   }
 
   // The first answer is what Enter does, so it stands where the typed text would.
+  /* ── Save to Nordlys ────────────────────────────────────────── */
+  chrome.runtime.onInstalled?.addListener(() => {
+    chrome.contextMenus?.create({ id: "nordlys-save-page", title: "Save to Nordlys", contexts: ["page"] }, () => void chrome.runtime.lastError);
+    chrome.contextMenus?.create({ id: "nordlys-save-link", title: "Save link to Nordlys", contexts: ["link"] }, () => void chrome.runtime.lastError);
+  });
+  chrome.contextMenus?.onClicked.addListener((info, tab) => {
+    const url = info.menuItemId === "nordlys-save-link" ? info.linkUrl : info.pageUrl;
+    if (!/^https?:\/\//i.test(url || "")) return;
+    const name = info.menuItemId === "nordlys-save-link" ? info.selectionText || "" : tab?.title || "";
+    chrome.storage.local.get("nordlys_inbox", (items) => {
+      const waiting = Array.isArray(items?.nordlys_inbox) ? items.nordlys_inbox : [];
+      chrome.storage.local.set({ nordlys_inbox: [...waiting, { url, name: name.slice(0, 120), folder: null, at: Date.now() }] });
+    });
+  });
+
+  /* ── nl in the address bar ─────────────────────────────────── */
   chrome.omnibox.onInputChanged.addListener(async (text, suggest) => {
     const found = await answers(text);
     chrome.omnibox.setDefaultSuggestion({ description: found[0]?.description || tag("match", text) });

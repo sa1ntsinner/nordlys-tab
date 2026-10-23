@@ -30,6 +30,14 @@
     return node;
   };
   const dot = (color) => el("span", { class: "profile-dot", dataset: { color: color || "teal" }, "aria-hidden": "true" });
+  // The hours in which this device opens a space by itself, and the last time they did.
+  const HOURS_KEY = "nordlys_space_hours";
+  const HOURS_SEEN_KEY = "nordlys_space_hours_seen";
+  const DAYS = { weekdays: [1, 2, 3, 4, 5], weekend: [0, 6], every: [0, 1, 2, 3, 4, 5, 6] };
+  const readHours = () => {
+    try { const hours = JSON.parse(localStorage.getItem(HOURS_KEY) || "{}"); return hours && typeof hours === "object" && !Array.isArray(hours) ? hours : {}; }
+    catch { return {}; }
+  };
 
   function ago(time) {
     if (!time) return "";
@@ -59,7 +67,8 @@
       this.buildLookRow();
       this.client.onChange(() => this.refresh());
       window.addEventListener("nordlys:languagechange", () => this.refresh());
-      this.client.ready.then(() => { this.openOnStartProfile(); this.refresh(); });
+      this.client.ready.then(() => { this.openOnStartProfile(); this.openByHours(); this.refresh(); });
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) this.client.ready.then(() => this.openByHours()); });
       this.refresh();
     }
 
@@ -93,7 +102,7 @@
       this.chip.hidden = list.length < 2;
       this.chip.querySelector(".profile-name").textContent = active?.name || "";
       this.chip.querySelector(".profile-dot").dataset.color = active?.color || "teal";
-      this.chip.setAttribute("aria-label", say("profiles.chipLabel", `Profile: ${active?.name}. Change profile`, { name: active?.name || "" }));
+      this.chip.setAttribute("aria-label", say("profiles.chipLabel", `Space: ${active?.name}. Change space`, { name: active?.name || "" }));
     }
 
     renderMenu() {
@@ -106,11 +115,11 @@
       }));
       rows.forEach((row, index) => { if (this.client.list()[index].id === active.id) row.setAttribute("aria-current", "true"); });
       this.menuRoot.replaceChildren(
-        el("div", { class: "ctx-header" }, el("span", { class: "ctx-target-title", text: say("profiles.title", "Profiles") })),
+        el("div", { class: "ctx-header" }, el("span", { class: "ctx-target-title", text: say("profiles.title", "Spaces") })),
         ...rows,
         el("div", { class: "ctx-divider" }),
-        item(say("profiles.new", "New profile"), () => this.newProfile(), { lead: el("span", { class: "profile-plus", "aria-hidden": "true", text: "+" }) }),
-        item(say("profiles.manage", "Manage profiles"), () => this.app.settings?.open?.("sync"))
+        item(say("profiles.new", "New space"), () => this.newProfile(), { lead: el("span", { class: "profile-plus", "aria-hidden": "true", text: "+" }) }),
+        item(say("profiles.manage", "Manage spaces"), () => this.app.settings?.open?.("sync"))
       );
     }
 
@@ -176,7 +185,7 @@
 
     async newProfile() {
       const values = await this.ask({
-        title: say("profiles.newTitle", "New profile"),
+        title: say("profiles.newTitle", "New space"),
         ok: say("profiles.create", "Create"),
         fields: [
           { name: "name", label: say("profiles.name", "Name"), required: true, max: 40 },
@@ -299,7 +308,8 @@
       const status = await this.client.status();
       if (token !== this.renderToken) return;
       const focusedAction = document.activeElement?.closest?.("#sec-sync") ? document.activeElement.dataset.focusKey : null;
-      const parts = [el("h3", { text: say("sync.profilesTitle", "Profiles") }), this.profilesBlock()];
+      const parts = [el("h3", { text: say("sync.profilesTitle", "Spaces") }), this.profilesBlock()];
+      if (this.client.list().length > 1) parts.push(this.hoursBlock());
       parts.push(el("h3", { text: say("sync.title", "Sync") }), this.syncBlock(status));
       if (status.enabled) {
         parts.push(el("h3", { text: say("sync.deviceTitle", "This device") }), this.deviceBlock(status));
@@ -338,16 +348,16 @@
         this.button(say("profiles.restore", "Restore"), () => this.client.restore(profile.id), { key: `restore-${profile.id}`, small: true })
       ]));
       return el("div", { class: "sync-block" }, [
-        el("p", { class: "backup-note", text: say("profiles.explain", "A profile is a whole setup: folders, bookmarks, look and layout. Language and the name in the greeting are the same in all of them.") }),
+        el("p", { class: "backup-note", text: say("profiles.explain", "A space is a whole setup: folders, bookmarks, look and layout. Language and the name in the greeting are the same in all of them.") }),
         el("ul", { class: "sync-profiles" }, rows),
-        this.button(say("profiles.new", "New profile"), () => this.newProfile(), { key: "new-profile" }),
+        this.button(say("profiles.new", "New space"), () => this.newProfile(), { key: "new-profile" }),
         deleted.length ? el("p", { class: "quick-label sync-deleted-title", text: say("profiles.recentlyDeleted", "Recently deleted") }) : null,
         deleted.length ? el("ul", { class: "sync-profiles" }, deleted) : null
       ]);
     }
 
     async renameProfile(profile) {
-      const values = await this.ask({ title: say("profiles.renameTitle", "Rename profile"), ok: say("profiles.rename", "Rename"), fields: [{ name: "name", label: say("profiles.name", "Name"), value: profile.name, required: true, max: 40 }] });
+      const values = await this.ask({ title: say("profiles.renameTitle", "Rename space"), ok: say("profiles.rename", "Rename"), fields: [{ name: "name", label: say("profiles.name", "Name"), value: profile.name, required: true, max: 40 }] });
       if (!values) return;
       try { this.client.rename(profile.id, values.name); } catch (error) { if (typeof toast === "function") toast(error.message, "error"); }
     }
@@ -363,7 +373,7 @@
 
     syncBlock(status) {
       if (!status.available) {
-        return el("div", { class: "sync-block" }, el("p", { class: "backup-note", text: say("sync.unavailable", "Sync isn't available in this browser. Profiles still work on this device.") }));
+        return el("div", { class: "sync-block" }, el("p", { class: "backup-note", text: say("sync.unavailable", "Sync isn't available in this browser. Spaces still work on this device.") }));
       }
       const input = el("input", { type: "checkbox", id: "cfg-sync-on", checked: status.enabled ? true : null, "aria-labelledby": "cfg-sync-on-label" });
       input.addEventListener("change", () => this.toggleSync(input));
@@ -459,6 +469,54 @@
         ]);
       });
       return el("div", { class: "sync-block" }, [el("ul", { class: "sync-devices" }, rows), el("p", { class: "backup-note", text: say("sync.forgetHint", "Forgetting an old device frees its space in sync. Its changes stay.") })]);
+    }
+
+    /* Spaces → Opens by itself: the hours, on this device, in which a new tab
+       opens a space (NordlysProfiles.due). Kept here and not synced: the
+       work laptop and the home computer keep different hours. */
+    hoursBlock() {
+      const hours = readHours();
+      const rows = this.client.list().map((profile) => {
+        const span = hours[profile.id];
+        const chosen = Object.keys(DAYS).find((name) => DAYS[name].join() === span?.days?.join()) || "off";
+        const named = { off: say("spaces.days.off", "Never"), weekdays: say("spaces.days.weekdays", "Weekdays"), weekend: say("spaces.days.weekend", "Weekends"), every: say("spaces.days.every", "Every day") };
+        const days = el("select", { class: "glass-input", "data-focus-key": `days-${profile.id}`, "aria-label": say("spaces.daysFor", `Days for ${profile.name}`, { name: profile.name }) },
+          Object.entries(named).map(([name, text]) => el("option", { value: name, text, selected: name === chosen ? true : null })));
+        const time = (key, minutes, label) => el("input", { type: "time", class: "glass-input", "data-focus-key": `${key}-${profile.id}`, value: `${String(Math.floor(minutes / 60) % 24).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`, "aria-label": label });
+        const from = time("from", span?.from ?? 540, say("spaces.fromFor", `From, for ${profile.name}`, { name: profile.name }));
+        const to = time("to", span?.to ?? 1020, say("spaces.toFor", `Until, for ${profile.name}`, { name: profile.name }));
+        const minutesOf = (input) => { const [h, m] = input.value.split(":").map(Number); return h * 60 + m; };
+        const save = () => {
+          from.disabled = to.disabled = days.value === "off";
+          const next = readHours();
+          // Until midnight is written 00:00; until is never before from.
+          const end = minutesOf(to) || 1440;
+          if (days.value === "off" || !(end > minutesOf(from))) delete next[profile.id];
+          else next[profile.id] = { days: DAYS[days.value], from: minutesOf(from), to: end };
+          try { localStorage.setItem(HOURS_KEY, JSON.stringify(next)); } catch { /* a preference, not data */ }
+        };
+        for (const control of [days, from, to]) control.addEventListener("change", save);
+        from.disabled = to.disabled = chosen === "off";
+        return el("li", { class: "sync-hours" }, [el("span", { class: "sync-hours-name" }, [dot(profile.color), el("span", { text: profile.name })]), days, from, el("span", { "aria-hidden": "true", text: "–" }), to]);
+      });
+      return el("div", { class: "sync-block" }, [
+        el("p", { class: "quick-label", text: say("spaces.hoursTitle", "Opens by itself") }),
+        el("ul", { class: "sync-hours-list" }, rows),
+        el("p", { class: "backup-note", text: say("spaces.hoursHint", "On this device, a new tab opened in these hours opens that space. One you pick yourself stays until the hours come round again.") })
+      ]);
+    }
+
+    /* Hours that hold now open their space, once each time they come round:
+       at a new tab, and when a tab left open comes back into view. */
+    openByHours() {
+      const found = window.NordlysProfiles?.due(readHours(), this.client.list());
+      if (!found) return;
+      const mark = `${found.id}@${found.since}`;
+      try {
+        if (localStorage.getItem(HOURS_SEEN_KEY) === mark) return;
+        localStorage.setItem(HOURS_SEEN_KEY, mark);
+      } catch { return; }
+      if (this.client.active()?.id !== found.id) this.client.switchTo(found.id);
     }
 
     /* A device set to always open on one profile does, once per new tab. */

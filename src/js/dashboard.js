@@ -498,7 +498,8 @@
                   el("span", { class: "dash-stash-count", text: say("dash.stashCount", "{count} tabs", { count: group.tabs.length }) }),
                   el("small", { text: when(group.at) })
                 ]),
-                el("button", { type: "button", class: "dash-link", text: say("dash.stashOpenAll", "Open all"), onclick: () => { group.tabs.forEach((tab) => openTab(tab.url)); K.stash.remove(card.data, group.id); card.save(); render(); } }),
+                // Back as one tab group named by when they were put away, where the browser has them (ui-kit.js).
+                el("button", { type: "button", class: "dash-link", text: say("dash.stashOpenAll", "Open all"), onclick: () => { openTabs(group.tabs.map((tab) => tab.url), when(group.at)); K.stash.remove(card.data, group.id); card.save(); render(); } }),
                 el("button", { type: "button", class: "dash-icon-btn dash-task-remove", "aria-label": say("dash.stashForget", "Forget these tabs"), title: say("dash.stashForget", "Forget these tabs"), onclick: () => { K.stash.remove(card.data, group.id); card.save(); render(); } }, icon(ICONS.close))
               ])
             ]);
@@ -1000,7 +1001,7 @@
         el("div", { class: "row setting-row" }, [
           el("span", { id: "cfg-dashboard-label" }, [
             el("span", { text: say("dash.modeLabel", "Show the dashboard") }),
-            el("small", { class: "row-hint", text: say("dash.modeHint", "Cards for your day above the folders: focus, tasks, a timer, weather and more. Off, this is the plain new tab again. Each profile has its own.") })
+            el("small", { class: "row-hint", text: say("dash.modeHint", "Cards for your day above the folders: focus, tasks, a timer, weather and more. Off, this is the plain new tab again. Each space has its own.") })
           ]),
           el("label", { class: "tg" }, [toggle, el("i")])
         ])

@@ -151,7 +151,7 @@
   }
 
   const NordlysSearchSources = { SOURCES, PERMISSION, KEYWORD, rank, board, keyword, settings, textOf, tabs, bookmarks, history, granted, forget, hostOf };
-  // globalThis, not window: the address bar's worker (omnibox.js) reads keywords and the board too.
+  // globalThis, not window: the extension's worker (worker.js) reads keywords and the board too.
   globalThis.NordlysSearchSources = NordlysSearchSources;
   if (typeof module === "object" && module.exports) module.exports = NordlysSearchSources;
 })();
