@@ -272,3 +272,28 @@ test('the panel follows a change of language, dropdowns included', async ({ nord
   await expect(page.locator('#cfg-night-mode + .nl-select .nl-select-value')).toHaveText('Aus');
   await expect(page.locator('#bg-layers [data-lock="weather"]')).toHaveAttribute('aria-label', 'Wetter beim Mischen behalten');
 });
+
+/* Words over a sky that paints its own daylight get their quiet as a band
+   from the top, the whole width, never as a dark blot under each line: at
+   the height of the date the sky is taken back as much at the window's edge
+   as under the words. */
+test('over a sky with its own daylight, the words are quietened by a band, not a blot', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await offline(page);
+  await chooseSky(page, 'mountains', { light: 'day' });
+  await page.waitForFunction(() => window.Nordlys.bgEngine.quietZones.length > 0);
+  const read = await page.evaluate(() => {
+    const engine = window.Nordlys.bgEngine;
+    engine.quietSolvedAt = -Infinity;
+    engine.render(0);
+    const canvas = document.getElementById('bg-canvas');
+    const ratio = canvas.width / innerWidth;
+    const date = document.getElementById('date').getBoundingClientRect();
+    const y = Math.round((date.top + date.height / 2) * ratio);
+    const alphaAt = x => canvas.getContext('2d').getImageData(Math.round(x * ratio), y, 1, 1).data[3];
+    return { needed: Math.max(...engine.quietAlphas), edge: alphaAt(12), middle: alphaAt(date.left + date.width / 2) };
+  });
+  expect(read.needed, 'a day sky behind white words needs quiet').toBeGreaterThan(0.05);
+  expect(read.middle, 'the sky under the words is taken back').toBeLessThan(250);
+  expect(Math.abs(read.edge - read.middle), 'as much at the edge as under the words').toBeLessThan(6);
+});

@@ -831,6 +831,27 @@ class NordlysBackgroundEngine {
     ctx.globalCompositeOperation = "destination-out";
     ctx.globalAlpha = 1;
     ctx.fillStyle = "#000";
+    /* A sky that paints its own daylight is a picture of a place, and a blot
+       of night under each line of words reads as a stain on it. It gives the
+       words their quiet as a lock screen does: the whole width, full strength
+       from the top to just past the lowest of them, then gone over a short
+       fall. A sky darker towards the zenith is one anybody has seen. */
+    if (NordlysSkies.get(this.mode)?.ownLight) {
+      const shaded = this.quietZones.filter((zone, index) => (this.quietAlphas[index] || 0) >= 0.01);
+      if (shaded.length) {
+        const alpha = Math.max(...this.quietAlphas).toFixed(3);
+        const solid = Math.max(...shaded.map((zone) => zone.y + zone.h)) + 12;
+        const fall = Math.min(220, this.h * 0.25);
+        const band = ctx.createLinearGradient(0, 0, 0, solid + fall);
+        band.addColorStop(0, `rgba(0, 0, 0, ${alpha})`);
+        band.addColorStop(solid / (solid + fall), `rgba(0, 0, 0, ${alpha})`);
+        band.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.fillStyle = band;
+        ctx.fillRect(0, 0, this.w, solid + fall);
+      }
+      ctx.restore();
+      return;
+    }
     this.quietZones.forEach((zone, index) => {
       const alpha = this.quietAlphas[index] || 0;
       if (alpha < 0.01) return;
