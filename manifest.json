@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Nordlys",
-  "version": "2.5.2",
+  "version": "2.5.3",
   "description": "Your favourite sites in folders on every new tab, over a sky that moves. Free, with no account and no tracking.",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
@@ -29,8 +29,7 @@
     "unlimitedStorage",
     "search",
     "activeTab",
-    "contextMenus",
-    "tabGroups"
+    "contextMenus"
   ],
   "optional_permissions": [
     "bookmarks",

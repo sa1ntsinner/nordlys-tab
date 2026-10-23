@@ -59,7 +59,7 @@ const PORTS = {
     description: neutral,
     // Safari has neither the favicon service nor the search API; the
     // search box asks for an engine instead (platform.js).
-    permissions: without(manifest.permissions, 'favicon', 'search', 'contextMenus', 'tabGroups'),
+    permissions: without(manifest.permissions, 'favicon', 'search', 'contextMenus'),
     // Nor bookmarks, top sites, history or closed tabs: Safari extensions cannot read them.
     optional_permissions: without(manifest.optional_permissions, 'bookmarks', 'topSites', 'history', 'sessions'),
     browser_specific_settings: { safari: { strict_min_version: '17.0' } }

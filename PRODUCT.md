@@ -15,7 +15,7 @@ Nordlys replaces the browser's new tab page: the person's favourite sites in fol
 
 ## Positioning
 
-- The skies are drawn live in the browser (nine animated scenes), not wallpapers or looping video.
+- The skies are drawn live in the browser: nine scenes of its own, and Weather and Horizon skies put together from layers. A picture of the day, or the person's own picture or video, when they want one.
 - Nothing leaves the device: there is no Nordlys account and nothing is tracked. Sync, when turned on, goes through the browser's own sync.
 - It is free and open source, and one extension covers Chrome, Edge, Firefox and Safari.
 
@@ -26,17 +26,19 @@ Nordlys replaces the browser's new tab page: the person's favourite sites in fol
 
 ## Capabilities and Constraints
 
-What ships in 2.5.2:
-- Favourite sites in folders; move folders, change tile size and spacing, tidy them in one click, undo.
-- Nine animated skies, 21 colour themes (11 dark, 10 light, including pure black for OLED), or your own picture or looping video.
-- The search box uses the browser's search engine, finds your sites as you type, does math, and takes commands after `>`.
+What ships in 2.5.3:
+- Favourite sites in folders; move folders, change tile size and spacing, tidy them in one click, undo. Save any page from the toolbar button or the right-click menu, or drop a link onto the board.
+- Page layouts: the board, Columns, Dock, Today (the dashboard beside the folders), Prompt (only the search box) and Poster (a large clock).
+- Skies in kinds: the nine Nordlys skies drawn live, Weather and Horizon skies put together from layers (light, sky, weather, horizon, style), a picture of the day (Wikimedia Commons, the Met, NASA EPIC), or your own picture, looping video or colour. Shuffle with locks, saved skies, a sky that changes by itself, colours from the picture, a night light. 21 colour themes (11 dark, 10 light, including pure black for OLED).
+- The search box uses the browser's search engine, finds your sites, open tabs, the browser's bookmarks and history and places in Settings, answers units, times and money, takes your own keywords (also `nl` in the address bar), adds a task after `+`, takes commands after `>`, and offers what you usually open at this hour.
 - Brand icons by name (Iconify's Simple Icons), a site's favicon, an image link or a letter.
-- Profiles such as Work and Home, with optional sync through the browser's own sync.
-- A dashboard when wanted: tasks with dates and steps, a focus timer and a full-page focus mode with sounds, notes, weather, world clocks, a countdown and a tab stash; habits and a line for the day under More cards. Cards can be dragged and stretched.
-- Tasks from Todoist and GitHub, and events from any calendar link, read straight from the browser with a token that stays on the device. (2.5.2 cut the Ask card, seven other connectors and the never-working Google and Microsoft sign-ins.)
-- A first board from the browser's bookmarks (copies), its most visited sites, a bookmarks file, or the backup of FVD Speed Dial, Speed Dial 2, Infinity, nightTab, Bonjourr or Tabliss.
+- Spaces such as Work and Home, each with its own folders, look and keywords, opening by themselves at set hours if wanted; optional sync through the browser's own sync.
+- A dashboard when wanted: tasks with dates and steps, a focus timer and a full-page focus mode with sounds and sites kept shut while focusing, notes, weather, world clocks, a countdown, a tab stash, feeds, a value from any JSON address, tabs open twice or idle, recently closed tabs; habits and a line for the day under More cards. Cards can be dragged and stretched.
+- Tasks from Todoist and GitHub, and events from any number of calendar links with a Join button for meetings, read straight from the browser with a token that stays on the device.
+- A bookmark can show whether its site is up; Check the bookmarks finds the ones there twice and the pages that are gone.
+- A first board from the browser's bookmarks (copies), its most visited sites, a bookmarks file, or the backup of FVD Speed Dial, Speed Dial 2, Infinity, nightTab, Bonjourr or Tabliss. Settings as text, read from a file, typed in or read from an address.
+- A folder can mirror a browser bookmark folder, or follow a list of links kept at a web address (both read only).
 - A copy of the whole setup before every update, kept in Settings → Backup.
-- A folder can mirror a browser bookmark folder (read only).
 - The extension is in English, Russian, Spanish, German, French, Japanese, Chinese and Turkish.
 
 Copy constraints:

@@ -1440,8 +1440,8 @@ class GridController {
       if (!ok) return;
     }
     window.NordlysUI?.announce?.(t("toast.openedAll", `Opened ${links.length} tabs`));
-    // As a tab group under the folder's name, where the browser has them (ui-kit.js).
-    await openTabs(links.map((link) => link.url), group.label || "");
+    // As one tab group, where the browser has them (ui-kit.js).
+    await openTabs(links.map((link) => link.url));
   }
 
   confirmFolderDelete(group) {

@@ -75,8 +75,8 @@ test('an empty folder does nothing at all', async ({ nordlysPage }) => {
   await expect(page.locator('.confirm-backdrop.open')).toHaveCount(0);
 });
 
-/* Where the browser has tab groups, the folder opens as one, under its name. */
-test('with tab groups, the folder opens as a group named after it', async ({ nordlysPage }) => {
+/* Where the browser has tab groups, the folder opens as one. */
+test('with tab groups, the folder opens as one group', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.evaluate(() => {
     window.Nordlys.config.groups = [{
@@ -92,11 +92,10 @@ test('with tab groups, the folder opens as a group named after it', async ({ nor
     let next = 40;
     window.chrome.tabs.create = (details) => { (window.__created ||= []).push(details); return Promise.resolve({ id: next++, ...details }); };
     window.chrome.tabs.group = ({ tabIds }) => { window.__grouped = tabIds; return Promise.resolve(7); };
-    window.chrome.tabGroups = { update: (id, details) => { window.__named = [id, details.title]; return Promise.resolve(); } };
   });
   await openFolderMenu(page);
   await page.locator('#folder-ctx-menu [data-action="open-all"]').click();
-  await expect.poll(() => page.evaluate(() => window.__named)).toEqual([7, 'READING']);
+  await expect.poll(() => page.evaluate(() => window.__grouped)).toEqual([40, 41]);
   expect(await page.evaluate(() => [window.__created.map((tab) => [tab.url, tab.active]), window.__grouped, window.__opened])).toEqual([
     [['https://one.test/', true], ['https://two.test/', false]], [40, 41], []
   ]);

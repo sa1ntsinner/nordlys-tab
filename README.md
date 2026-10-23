@@ -17,18 +17,19 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/board.webp" alt="Nordlys: a clock, the search box and four bookmark folders over the Nordlys sky.">
+  <img src="docs/screenshots/board.webp" alt="Nordlys: a clock, the search box and four bookmark folders over the Aurora sky.">
 </p>
 
 I wanted a new tab page with my bookmarks and something nice to look at, so I made one.
 
-- Bookmarks in folders. Drag the folders around, set tile size and spacing, undo a change.
-- Nine skies drawn live in the browser and 21 themes, or your own picture or looping video.
-- A search box that uses your browser's engine, finds your sites as you type, does sums and runs commands after `>`.
+- Bookmarks in folders. Drag the folders around, set tile size and spacing, undo a change. Save the page you're on from the toolbar button or the right-click menu.
+- The page as a board, columns, a dock, the dashboard beside your folders, only the search box, or a large clock.
+- Nine skies drawn live in the browser, skies you put together from weather and a horizon, a picture of the day, or your own picture or looping video. 21 colour themes.
+- A search box that uses your browser's engine, finds your sites, open tabs and places in Settings, works out units, times and money, and takes your own keywords and commands after `>`.
 - Brand icons by name, a site's favicon, an image link or a letter.
-- A dashboard if you want one: tasks, a focus timer, notes, weather, world clocks, plus tasks and events from Todoist, GitHub or any calendar link.
-- Profiles for Work and Home. Turn on sync and your browser carries them to your other computers.
-- Start from your browser's bookmarks, or import a backup from FVD Speed Dial, Speed Dial 2, Infinity, nightTab, Bonjourr or Tabliss.
+- A dashboard if you want one: tasks, a focus timer that can keep sites shut, notes, weather, world clocks, feeds, calendars with a Join button, plus tasks from Todoist and GitHub.
+- Spaces for Work and Home, each with its own folders and look. Turn on sync and your browser carries them to your other computers.
+- Start from your browser's bookmarks, or import a backup from FVD Speed Dial, Speed Dial 2, Infinity, nightTab, Bonjourr or Tabliss. A folder can also follow a list of links kept at a web address.
 - English, Russian, Spanish, German, French, Japanese, Chinese and Turkish.
 
 <p align="center">
@@ -47,7 +48,7 @@ To run it from source, clone the repo, open `chrome://extensions`, turn on Devel
 
 ## Privacy
 
-There's no account, no server and no tracking. A new tab without dashboard cards makes no network request at all. Your setup stays in your browser, and leaves it only through the browser's own sync, if you turn that on. Searches, icon lookups, weather and connected apps go online when you use them, each straight to its own service. [PRIVACY.md](PRIVACY.md) lists every request.
+There's no account, no server and no tracking. A new tab without dashboard cards, under a sky drawn on your computer, makes no network request at all. Your setup stays in your browser, and leaves it only through the browser's own sync, if you turn that on. Searches, icon lookups, weather, the picture of the day, feeds and connected apps go online when you use them, each straight to its own service. [PRIVACY.md](PRIVACY.md) lists every request.
 
 ## Development
 
@@ -61,7 +62,7 @@ npm run ports   # packages for Chrome, Edge and Firefox, and a folder for Safari
 
 [CONTRIBUTING.md](CONTRIBUTING.md) explains how the code is laid out and which rules the tests hold you to.
 
-The version reads 2.x because store versions can only go up, but Nordlys is still a beta. Before an update changes how your setup is stored, it keeps a copy you can restore in Settings → Backup.
+Nordlys is still a beta. Before an update changes how your setup is stored, it keeps a copy you can restore in Settings → Backup.
 
 ## License
 

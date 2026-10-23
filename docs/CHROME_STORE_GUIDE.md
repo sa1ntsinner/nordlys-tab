@@ -16,7 +16,7 @@ Chrome reads every file in the folder when it loads the extension. A large `node
 `npm run package` checks the version and makes the zip. To do it by hand, run this in PowerShell from the repo root:
 
 ```powershell
-Compress-Archive -Path manifest.json, newtab.html, PRIVACY.md, README.md, LICENSE, icons, src -DestinationPath nordlys-v2.5.2.zip -Force
+Compress-Archive -Path manifest.json, newtab.html, popup.html, blocked.html, PRIVACY.md, README.md, LICENSE, icons, src -DestinationPath nordlys-v2.5.3.zip -Force
 ```
 
 List the paths shown. A wildcard would also pack `node_modules/`, the tests and the docs, growing the upload from about 600 KB to 40 MB.
@@ -24,7 +24,7 @@ List the paths shown. A wildcard would also pack `node_modules/`, the tests and 
 Check that `manifest.json` is at the root of the zip:
 
 ```powershell
-Expand-Archive nordlys-v2.5.2.zip -DestinationPath .\zip-check -Force; Get-ChildItem .\zip-check
+Expand-Archive nordlys-v2.5.3.zip -DestinationPath .\zip-check -Force; Get-ChildItem .\zip-check
 ```
 
 Follow [RELEASE_GUIDE.md](../RELEASE_GUIDE.md) to upload the zip and finish the release.

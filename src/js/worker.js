@@ -76,14 +76,25 @@ if (typeof importScripts === "function") importScripts("commands.js", "search-so
   };
   const shutSites = (saved) => (saved.dashboard?.widgets || []).filter((widget) => widget?.type === "timer")
     .flatMap((widget) => String(widget.settings?.shut || "").split(/[\s,]+/)).map(siteOf).filter(Boolean);
-  chrome.tabs?.onUpdated?.addListener(async (tabId, change) => {
+  async function shut(tabId, change) {
     if (!/^https?:\/\//i.test(change.url || "")) return;
     const [saved, timer] = await Promise.all([config(), focusTimer()]);
     if (!focusEnds(timer, Date.now())) return;
     const host = new URL(change.url).hostname.replace(/^www\./, "");
     if (!shutSites(saved).some((site) => host === site || host.endsWith(`.${site}`))) return;
     chrome.tabs.update(tabId, { url: chrome.runtime.getURL(`blocked.html?u=${encodeURIComponent(change.url)}`) });
-  });
+  }
+  // Every page any tab loads would wake a worker that always listened, so it
+  // listens only while a focus runs over a list. Added at once, for the tab
+  // that may have woken it; taken off once the saved state says so.
+  async function listen() {
+    const [saved, timer] = await Promise.all([config(), focusTimer()]);
+    if (focusEnds(timer, Date.now()) && shutSites(saved).length) chrome.tabs?.onUpdated?.addListener(shut);
+    else chrome.tabs?.onUpdated?.removeListener(shut);
+  }
+  chrome.tabs?.onUpdated?.addListener(shut);
+  chrome.storage.onChanged?.addListener(() => { listen(); });
+  listen();
 
   /* ── nl in the address bar ─────────────────────────────────── */
   chrome.omnibox.onInputChanged.addListener(async (text, suggest) => {

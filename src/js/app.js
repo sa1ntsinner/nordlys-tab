@@ -5,7 +5,7 @@
 /* The widths the board may run to. Standard is the width it always had. */
 const BOARD_WIDTHS = { narrow: 1080, standard: 1400, wide: 1760 };
 const DEFAULT_CONFIG = {
-  version: "2.5.2",
+  version: "2.5.3",
   theme: "aurora-void",
   colorMode: "dark",
   bgMode: "aurora",

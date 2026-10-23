@@ -3,7 +3,7 @@
 After the one-time setup below, a release is one tag:
 
 ```sh
-git tag -a v2.5.2 -m "Nordlys 2.5.2" && git push origin v2.5.2
+git tag -a v2.5.3 -m "Nordlys 2.5.3" && git push origin v2.5.3
 ```
 
 and GitHub does the rest:

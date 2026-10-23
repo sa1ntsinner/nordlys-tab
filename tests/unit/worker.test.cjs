@@ -10,7 +10,10 @@ const on = {};
 const store = {};
 globalThis.chrome = {
   runtime: { getURL: (path = '') => `chrome-extension://abc/${path}`, onInstalled: { addListener: (fn) => { on.installed = fn; } } },
-  storage: { local: { get: (key, answer) => answer({ [key]: store[key] }), set: (items) => Object.assign(store, items) } },
+  storage: {
+    local: { get: (key, answer) => answer({ [key]: store[key] }), set: (items) => Object.assign(store, items) },
+    onChanged: { addListener: (fn) => { on.stored = fn; } }
+  },
   contextMenus: { create: (item) => done.menus.push(item), onClicked: { addListener: (fn) => { on.clicked = fn; } } },
   omnibox: {
     onInputChanged: { addListener: (fn) => { on.changed = fn; } },
@@ -20,7 +23,7 @@ globalThis.chrome = {
   tabs: {
     update: (tab, details) => (details ? done.sent.push([tab, details.url]) : done.opened.push(tab.url)),
     create: (details) => done.created.push(details),
-    onUpdated: { addListener: (fn) => { on.updated = fn; } }
+    onUpdated: { addListener: (fn) => { on.updated = fn; on.listening = true; }, removeListener: () => { on.listening = false; } }
   },
   search: { query: (details) => { done.searched.push(details); return Promise.resolve(); } }
 };
@@ -69,9 +72,15 @@ test('"Save to Nordlys" puts the page or the link in the inbox, and nothing else
 });
 
 test('while a focus runs, a tab that goes to a site the timer card lists waits on the quiet page', async () => {
+  const settle = () => new Promise((resolve) => setImmediate(resolve));
+  await settle();
+  assert.equal(on.listening, false, 'with no focus over a list, tabs never wake the worker');
   store.nordlys_config = { ...store.nordlys_config, dashboard: { widgets: [{ id: 'w1', type: 'timer', settings: { shut: 'youtube.com\nhttps://www.Reddit.com/r/all, news.test' } }, { id: 'w2', type: 'notes', settings: { shut: 'notes.test' } }] } };
   const visit = async (url) => { done.sent.length = 0; await on.updated(7, { url }); return done.sent.map(([tab, to]) => [tab, decodeURIComponent(to.split('?u=')[1] || '')]); };
   store['nordlys_dash.focus-timer'] = { running: true, phase: 'focus', endsAt: Date.now() + 60000 };
+  on.stored();
+  await settle();
+  assert.equal(on.listening, true);
   assert.deepEqual(await visit('https://m.youtube.com/watch?v=1'), [[7, 'https://m.youtube.com/watch?v=1']]);
   assert.deepEqual(await visit('https://reddit.com/'), [[7, 'https://reddit.com/']]);
   assert.deepEqual(await visit('https://notyoutube.com/'), [], 'only the site and its own subdomains');
@@ -83,4 +92,7 @@ test('while a focus runs, a tab that goes to a site the timer card lists waits o
   assert.deepEqual(await visit('https://youtube.com/'), [], 'nor a focus whose time is up');
   store['nordlys_dash.focus-timer'] = { running: false, phase: 'focus', endsAt: Date.now() + 60000 };
   assert.deepEqual(await visit('https://youtube.com/'), [], 'nor a paused one');
+  on.stored();
+  await settle();
+  assert.equal(on.listening, false);
 });

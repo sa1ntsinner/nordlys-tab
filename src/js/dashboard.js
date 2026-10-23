@@ -509,8 +509,8 @@
                   el("span", { class: "dash-stash-count", text: say("dash.stashCount", "{count} tabs", { count: group.tabs.length }) }),
                   el("small", { text: when(group.at) })
                 ]),
-                // Back as one tab group named by when they were put away, where the browser has them (ui-kit.js).
-                el("button", { type: "button", class: "dash-link", text: say("dash.stashOpenAll", "Open all"), onclick: () => { openTabs(group.tabs.map((tab) => tab.url), when(group.at)); K.stash.remove(card.data, group.id); card.save(); render(); } }),
+                // Back as one tab group, where the browser has them (ui-kit.js).
+                el("button", { type: "button", class: "dash-link", text: say("dash.stashOpenAll", "Open all"), onclick: () => { openTabs(group.tabs.map((tab) => tab.url)); K.stash.remove(card.data, group.id); card.save(); render(); } }),
                 el("button", { type: "button", class: "dash-icon-btn dash-task-remove", "aria-label": say("dash.stashForget", "Forget these tabs"), title: say("dash.stashForget", "Forget these tabs"), onclick: () => { K.stash.remove(card.data, group.id); card.save(); render(); } }, icon(ICONS.close))
               ])
             ]);

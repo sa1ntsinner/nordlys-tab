@@ -6,6 +6,58 @@ Chrome Web Store's rule that they only ever go up.
 
 ## [Unreleased]
 
+## [2.5.3] — 2026-10-23
+
+### Added
+
+- Skies come in kinds: Nordlys (the nine made for it), Weather, Horizon, Picture of the day, and Yours (a picture, a video loop or a colour). Settings → Background shows one kind at a time.
+- Weather and Horizon skies are put together from layers you can change one by one: the light (the sun, the moon, the season, or your working day), the sky (stars, the moon's phase, the planets, the aurora, meteors), the weather (clouds, rain, snow, fog, wind, or as it is outside now), the horizon (mountains, sea, a city, forest, steppe, desert, a lighthouse, or the real land around the sky's place) and a style (lit, poster, engraving, pixel).
+- Picture of the day: the day's picture from Wikimedia Commons, one of its featured paintings, a highlight of the Met's collection, or the whole Earth as NASA's EPIC camera saw it, with its caption.
+- Shuffle changes the layers you haven't locked. A sky you like can be saved (up to 12) and worn again, and the sky can change by itself on every new tab, every hour or every day, from all skies or only your saved ones.
+- The accent colour can come from the picture on screen.
+- Night light: from sunset to sunrise, or between hours you set, the page turns red and quiet.
+- The sky knows your day: clouds gather as today's calendar fills, the lighthouse is lit while a focus runs, and snow lies on the peaks in winter.
+- Page layouts besides the board: Columns (each folder a list), Dock (one shelf of icons), Today (the dashboard beside your folders), Prompt (only the search box) and Poster (a large clock). Settings → Appearance → Page, or `> page dock` in the search box.
+- The search box answers some things itself: units ("5 km in miles"), the time elsewhere ("time in Tokyo") and money ("100 usd to eur", at the day's rates from ExchangeRate-API, asked for only when you type an amount).
+- It can also find your open tabs, the browser's bookmarks, pages you visited and places in Settings. Each is turned on in Settings → General, and the browser asks for leave the first time.
+- Keywords: set "gh" to an address with `%s` in it, and "gh nordlys" goes there with your words in place. `nl` and a space in the address bar does the same from anywhere.
+- "+ call the bank" in the search box adds a task to the dashboard.
+- When the search box is empty it offers the bookmarks you usually open at this hour. Counted on this device only; Settings → General turns it off and forgets it.
+- Settings → Backup → Settings as text: read, change or paste your whole setup as text, or read it from an address. Nothing changes until you apply it.
+- A space (what profiles are called now) can open by itself on a device at hours you set, such as Work on weekday mornings.
+- Open all opens a folder's bookmarks as one tab group.
+- Save the page you are on to a folder with the toolbar button or the right-click menu. It lands on the board at the next new tab. Drop or paste a link onto the board to add it.
+- Calendar: several calendars in one card, each in its own tint, and a Join button on a meeting with a call link (Google Meet, Teams, Zoom and others), lit when it starts within ten minutes.
+- New cards: Feeds (RSS and Atom, and Hacker News, Reddit and YouTube addresses as they are), Value (one number from any JSON address, with a line of its last readings), Tabs (the tabs open twice and the ones not looked at for days, closed with a way back) and Recently closed.
+- A bookmark can show whether its site is up: right-click it and choose Show if it is up. A dot on the tile says whether it answers and how fast.
+- Settings → Bookmarks → Check the bookmarks finds the bookmarks on the board more than once and the pages that are gone, and each can be removed with a way back.
+- Settings → Bookmarks → Follow a list at an address: a list of links your team keeps (a Nordlys backup, a bookmarks file a browser exported, or plain text with an address on each line) comes onto the board as folders that follow it, read again every hour.
+- Sites kept shut while focusing: list them in the Focus timer card's settings. While a focus runs, a tab that goes to one waits on a quiet page and goes on when the focus ends or you pause it.
+
+### Changed
+
+- Profiles are called Spaces, in all eight languages. Each still has its own folders, look, search and keywords.
+- Drift is now called Contour, Horizon is Fjord, and the Nordlys sky is Aurora. What you chose carries over.
+- A new tab reads less before it draws: English and the language in use instead of all eight, each sky's painting only when that sky is shown, and the parts few people use (importing, feeds, the checks, the conversions) only when they are used.
+- A bookmarks file whose links are not in folders comes over as one folder named after the file.
+
+### Fixed
+
+- A change made in one tab while sync was bringing in another device's could be lost; a change is now sent first, and two tabs never sync at once.
+- Sync dropped Show the search box, Remember recent searches and Show shortcuts on hover.
+- A hover effect saved by an old version could stop the board from drawing.
+- Reset also cleared your other spaces and what the dashboard cards hold, and Undo brought back only the space in use. Undo now brings back all of it.
+- Switching spaces quickly could write one space's board into another.
+- An import that failed halfway could leave the dashboard's cards from the file and the board from before.
+- When the browser's quick store was full, a newer board kept in the extension's own storage could be overwritten by an older one.
+- Changing the wallpaper quickly could show the one before, and kept each old picture in memory.
+- An all-day calendar event without an end date could leave the day early, or land on the day before, depending on your time zone.
+- Custom CSS in an imported file waits in the editor until you save it there, and theme colours in a backup have to be colours.
+- Disconnecting an app in one tab left it connected in the others.
+- A calendar with an event that repeats without end could keep a tab busy; a calendar file over 5 MB is now turned down.
+- Choosing languages quickly one after another could end in the wrong one.
+- The Menu key on a bookmark opened its menu twice.
+
 ## [2.5.2] — 2026-10-21
 
 ### Added
