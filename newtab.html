@@ -634,6 +634,32 @@
           <span id="cfg-remember-searches-label"><span data-i18n="general.rememberSearches">Remember recent searches</span><small class="row-hint" data-i18n="general.rememberSearchesHint">Kept on this device only. Turning it off forgets them.</small></span>
           <label class="tg"><input id="cfg-remember-searches" type="checkbox" aria-labelledby="cfg-remember-searches-label" checked><i></i></label>
         </div>
+        <!-- What else the search box looks through (search-sources.js). Each
+             asks the browser for its leave when it is turned on, and finds
+             nothing until it has it. -->
+        <div id="search-from" class="search-from-block">
+          <span class="settings-block-label" data-i18n="general.searchFrom">The search box also finds</span>
+          <div class="row setting-row" data-source-row="tabs">
+            <span id="cfg-search-tabs-label"><span data-i18n="general.searchTabs">Open tabs</span><small class="row-hint" data-i18n="general.searchTabsHint">Go to a tab that is already open instead of opening it twice.</small></span>
+            <label class="tg"><input id="cfg-search-tabs" type="checkbox" data-source="tabs" aria-labelledby="cfg-search-tabs-label"><i></i></label>
+          </div>
+          <div class="row setting-row" data-source-row="bookmarks">
+            <span id="cfg-search-bookmarks-label"><span data-i18n="general.searchBookmarks">Your browser's bookmarks</span><small class="row-hint" data-i18n="general.searchBookmarksHint">The ones that are not on the board.</small></span>
+            <label class="tg"><input id="cfg-search-bookmarks" type="checkbox" data-source="bookmarks" aria-labelledby="cfg-search-bookmarks-label"><i></i></label>
+          </div>
+          <div class="row setting-row" data-source-row="history">
+            <span id="cfg-search-history-label"><span data-i18n="general.searchHistory">Pages you visited</span><small class="row-hint" data-i18n="general.searchHistoryHint">From the browser's history, read on this device and never sent anywhere.</small></span>
+            <label class="tg"><input id="cfg-search-history" type="checkbox" data-source="history" aria-labelledby="cfg-search-history-label"><i></i></label>
+          </div>
+        </div>
+        <!-- Keywords for the search box (search-sources.js); the rows are
+             drawn from config.golinks by settings.js. -->
+        <div id="golinks" class="golinks-block">
+          <span class="settings-block-label" data-i18n="general.keywords">Keywords</span>
+          <small class="row-hint" data-i18n="general.keywordsHint">Type a keyword in the search box to go straight to its address. Where the address has %s, the words after the keyword go there.</small>
+          <ul id="golink-list" class="golink-list"></ul>
+          <button id="golink-add" type="button" class="palette-action" data-i18n="general.keywordAdd">Add a keyword</button>
+        </div>
         <!-- Only in a browser that has no search API of its own (Safari):
              the engine is the person's choice, never ours (widgets.js). -->
         <div class="row" id="cfg-search-engine-row" hidden>
@@ -931,6 +957,24 @@
           </div>
           <p class="backup-note" data-i18n="backup.importOthers">Also reads the backup files of FVD Speed Dial, Speed Dial 2, Infinity, nightTab, Bonjourr and Tabliss. Their folders are added after yours.</p>
         </div>
+
+        <!-- The settings as text: to read, to change, to paste in, or to read
+             from an address (a team's file, a gist). Applied as a backup file
+             is, with the setup it replaces kept to go back to. -->
+        <details id="backup-text" class="advanced-settings">
+          <summary data-i18n="backup.asText">Settings as text</summary>
+          <div class="backup-text">
+            <p class="settings-note" data-i18n="backup.asTextNote">Read them, change them or paste others in, then apply. The setup they replace is kept, to go back to.</p>
+            <textarea id="cfg-text" class="ipt backup-textarea" rows="12" spellcheck="false" autocomplete="off" aria-label="Settings as text" data-i18n-aria="backup.asText"></textarea>
+            <button id="cfg-text-apply" type="button" class="glass-btn" data-i18n="backup.applyText">Apply this text</button>
+            <label for="cfg-url" class="look-paste-label" data-i18n="backup.urlLabel">Or read settings from an address</label>
+            <div class="backup-url-row">
+              <input id="cfg-url" type="url" class="ipt" spellcheck="false" autocomplete="off" placeholder="https://…/nordlys.json">
+              <button id="cfg-url-load" type="button" class="glass-btn" data-i18n="backup.loadUrl">Read it</button>
+            </div>
+            <p class="settings-note" data-i18n="backup.urlNote">The browser is asked for leave to reach that one site; the file is read once and put above. Nothing changes until you apply it.</p>
+          </div>
+        </details>
 
         <h3 style="margin-top: 24px;" data-i18n="backup.dangerZone">Danger zone</h3>
         <div class="row">
@@ -1560,7 +1604,9 @@
   <script src="src/js/skies/compose-weather.js"></script>
   <script src="src/js/skies/compose-land.js"></script>
   <script src="src/js/calc.js"></script>
+  <script src="src/js/convert.js"></script>
   <script src="src/js/commands.js"></script>
+  <script src="src/js/search-sources.js"></script>
   <script src="src/js/widgets.js"></script>
   <script src="src/js/board-layout.js"></script>
   <script src="src/js/board-arrange.js"></script>

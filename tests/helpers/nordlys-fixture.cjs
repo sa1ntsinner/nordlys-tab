@@ -72,6 +72,7 @@ const test = base.extend({
         permissions: {
           contains(request, callback) {
             if (request?.permissions?.includes("tabs")) { callback(Boolean(window.__tabs?.granted)); return; }
+            if (request?.permissions?.includes("history")) { callback(Boolean(window.__history?.granted)); return; }
             callback(Boolean(window.__bookmarks?.granted));
           },
           request(request, callback) {
@@ -83,19 +84,52 @@ const test = base.extend({
               callback(Boolean(window.__tabs?.granted));
               return;
             }
+            if (request?.permissions?.includes("history")) {
+              if (window.__history) window.__history.granted = window.__history.grantOnRequest !== false;
+              callback(Boolean(window.__history?.granted));
+              return;
+            }
             if (window.__bookmarks) window.__bookmarks.granted = window.__bookmarks.grantOnRequest !== false;
             callback(Boolean(window.__bookmarks?.granted));
           }
         },
         /* Open tabs the tests can shape: window.__tabs = { list, granted,
-           grantOnRequest }; created and removed ones are recorded. */
+           grantOnRequest }; created, removed and switched-to ones are recorded. */
         tabs: {
           query(query, callback) { setTimeout(() => callback((window.__tabs?.list || []).map(tab => ({ ...tab }))), 0); },
           remove(ids, callback) { const gone = new Set([].concat(ids)); if (window.__tabs) { window.__tabs.list = (window.__tabs.list || []).filter(tab => !gone.has(tab.id)); (window.__tabs.removed ||= []).push(...gone); } callback?.(); },
-          create(details) { (window.__tabs ||= {}); (window.__tabs.created ||= []).push(details.url); return Promise.resolve({ id: Date.now(), ...details }); }
+          create(details) { (window.__tabs ||= {}); (window.__tabs.created ||= []).push(details.url); return Promise.resolve({ id: Date.now(), ...details }); },
+          update(id, details, callback) { (window.__tabs ||= {}); (window.__tabs.updated ||= []).push({ id, ...details }); callback?.(); },
+          getCurrent(callback) { callback(window.__tabs?.current); }
+        },
+        windows: {
+          update(id, details, callback) { (window.__tabs ||= {}); (window.__tabs.focused ||= []).push(id); callback?.(); }
+        },
+        /* History the tests can shape: window.__history = { list, granted,
+           grantOnRequest }. Searched by title and address as Chrome does. */
+        history: {
+          search(query, callback) {
+            const text = String(query.text || '').toLowerCase();
+            const found = (window.__history?.list || []).filter(page => `${page.title} ${page.url}`.toLowerCase().includes(text));
+            setTimeout(() => callback(found.slice(0, query.maxResults || 100)), 0);
+          }
         },
         bookmarks: {
           getTree(callback) { callback(window.__bookmarks?.tree || []); },
+          search(query, callback) {
+            const text = String(query).toLowerCase();
+            const found = [];
+            const walk = nodes => { for (const node of nodes || []) { if (node.url && `${node.title} ${node.url}`.toLowerCase().includes(text)) found.push({ ...node, children: undefined }); walk(node.children); } };
+            walk(window.__bookmarks?.tree);
+            setTimeout(() => callback(found), 0);
+          },
+          get(ids, callback) {
+            const wanted = new Set([].concat(ids).map(String));
+            const found = [];
+            const walk = nodes => { for (const node of nodes || []) { if (wanted.has(String(node.id))) found.push({ ...node, children: undefined }); walk(node.children); } };
+            walk(window.__bookmarks?.tree);
+            callback(found);
+          },
           getChildren(id, callback) {
             const find = nodes => {
               for (const node of nodes || []) {

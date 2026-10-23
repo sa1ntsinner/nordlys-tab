@@ -141,6 +141,6 @@
   }
 
   const api = { parse, score, fold, ENGLISH };
-  if (typeof window !== 'undefined') window.NordlysCommands = api;
+  globalThis.NordlysCommands = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })();

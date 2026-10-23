@@ -62,6 +62,13 @@ const DEFAULT_CONFIG = {
      asks; what it works out to make room is never saved over the sizes
      above. */
   onePageFit: false,
+  /* What the search box looks through besides the board and Settings:
+     "tabs", "bookmarks" (the browser's), "history". Each also needs the
+     browser's leave, asked for in Settings → General. */
+  searchFrom: [],
+  /* Keywords for the search box, each { key, url }: "gh" goes to its
+     address, "gh words" puts the words where the address has %s. */
+  golinks: [],
   cardGlow: 40,
   hoverEffect: "lift",
   iconShape: "squircle",
@@ -185,6 +192,8 @@ const OWNED_LOCAL_KEYS = [
   "aurora_drawer_width", "aurora_language", "aurora_search_history",
   // What One page fit remembers for the next new tab (page-fit.js); never in a backup.
   "nordlys_fit_hint",
+  // The day's exchange rates the search box last asked for (widgets.js).
+  "nordlys_rates",
   // The list of profiles and which one this device opens on (profiles.js, sync-ui.js).
   "nordlys_profiles", "nordlys_device_start",
   CSS_WAITING_KEY,

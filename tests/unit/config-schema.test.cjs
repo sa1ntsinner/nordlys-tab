@@ -230,3 +230,17 @@ test('the sky\'s own settings are kept when sound and put right when not', () =>
   assert.deepEqual(broken.skyLocks, ['horizon']);
   assert.deepEqual(broken.looks.map((look) => look.id), ['k1']);
 });
+
+test('the search box\'s sources and keywords keep only what they can use', () => {
+  const sound = { groups: [], searchFrom: ['tabs', 'history'], golinks: [{ key: 'gh', url: 'https://github.com/search?q=%s' }, { key: 'вики', url: 'https://ru.wikipedia.org/w/index.php?search=%s' }] };
+  const before = JSON.stringify(sound);
+  assert.equal(repairConfig(sound), false);
+  assert.equal(JSON.stringify(sound), before);
+
+  const broken = { groups: [], searchFrom: ['history', 'cookies', 'tabs'], golinks: [{ key: 'gh', url: 'https://github.com' }, { key: 'two words', url: 'https://x.example' }, { key: 'js', url: 'javascript:alert(1)' }, 'gh'] };
+  assert.equal(repairConfig(broken), true);
+  assert.deepEqual(broken.searchFrom, ['tabs', 'history']);
+  assert.deepEqual(broken.golinks, [{ key: 'gh', url: 'https://github.com' }]);
+
+  assert.deepEqual(validateConfig({ golinks: [{ key: 'js', url: 'javascript:alert(1)' }] }).errors, ['keyword 1 should be one word (key) and a web address (url)']);
+});

@@ -146,6 +146,22 @@ class ClockWidget {
 }
 
 /* ── Omni-Search Bar & Smart Suggestion Controller ─────────────── */
+// The mark beside a row that goes somewhere.
+const ROW_ICONS = {
+  bookmark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>',
+  tab: '<svg class="stroke" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9.5h8V5"/></svg>',
+  page: '<svg class="stroke" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>',
+  setting: '<svg class="stroke" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>',
+  capture: '<svg class="stroke" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
+  golink: '<svg class="stroke" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M13 6l6 6-6 6"/></svg>'
+};
+// The mark beside an answer, by what kind of answer it is.
+const ANSWER_ICONS = {
+  calc: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-6 2h5v2h-5V5zm-7 0h5v2H6V5zm0 4h5v2H6V9zm7 0h5v2h-5V9zm-7 4h5v2H6v-2zm7 0h5v2h-5v-2zm-7 4h5v2H6v-2zm7 0h5v2h-5v-2z"/></svg>',
+  units: '<svg class="stroke" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 15.5 15.5 3.5l5 5-12 12z"/><path d="m7.5 11.5 2 2M10.5 8.5l2 2M13.5 5.5l2 2"/></svg>',
+  time: '<svg class="stroke" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  money: '<svg class="stroke" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>'
+};
 /* Each command's aliases and its line in the help, spelled out so every
    message key can be found by searching for it. */
 const COMMAND_KEYS = {
@@ -325,22 +341,75 @@ class SearchWidget {
     return window.NordlysCalc ? window.NordlysCalc.describe(query) : null;
   }
 
+  // The bookmarks on the board, best first (search-sources.js).
   findMatchingBookmarks(query) {
-    const q = query.toLowerCase();
-    const matches = [];
-    if (!this.app || !this.app.config || !this.app.config.groups) return matches;
+    return window.NordlysSearchSources?.board(this.app?.config?.groups, query) || [];
+  }
 
-    for (const group of this.app.config.groups) {
-      if (!group.links) continue;
-      for (const link of group.links) {
-        if ((link.name && link.name.toLowerCase().includes(q)) || (link.url && link.url.toLowerCase().includes(q))) {
-          matches.push({ ...link, groupLabel: group.label });
-          if (matches.length >= 4) break;
-        }
-      }
-      if (matches.length >= 4) break;
-    }
-    return matches;
+  /* Open tabs, the browser's bookmarks and history, each only when it is
+     turned on in Settings → General and the browser gave its leave. A page
+     already shown higher up is not shown again lower down. */
+  async browserMatches(query) {
+    const sources = window.NordlysSearchSources;
+    const on = Array.isArray(this.app?.config?.searchFrom) ? this.app.config.searchFrom : [];
+    if (!sources || !on.length || query.length < 2) return { tabs: [], bookmarks: [], history: [] };
+    const board = new Set((this.app.config.groups || []).flatMap((group) => (group.links || []).map((link) => link.url)));
+    const [tabs, bookmarks] = await Promise.all([
+      on.includes("tabs") ? sources.tabs(query, { self: location.origin }) : [],
+      on.includes("bookmarks") ? sources.bookmarks(query, { exclude: board }) : []
+    ]);
+    const shown = new Set([...board, ...tabs.map((tab) => tab.url), ...bookmarks.map((mark) => mark.url)]);
+    const history = on.includes("history") ? await sources.history(query, { exclude: shown }) : [];
+    return { tabs, bookmarks, history };
+  }
+
+  // A keyword from Settings → General and where it goes (search-sources.js).
+  keywordOf(query) {
+    return window.NordlysSearchSources?.keyword(this.app?.config?.golinks, query) || null;
+  }
+
+  // "+ call mum tomorrow" is a task for the dashboard, read as the task card reads it.
+  captureOf(query) {
+    const text = /^\+\s*(\S.*)$/.exec(query)?.[1];
+    return text && this.app?.dashboard ? text : null;
+  }
+
+  async capture(text) {
+    this.input.value = "";
+    this.input.blur();
+    document.body.classList.remove("searching");
+    this.closeSuggestions();
+    if (await this.app.dashboard.addTask(text) && typeof toast === "function") toast(this.say("search.captured", "Added to your tasks"), "success", 1800);
+  }
+
+  openUrl(url) {
+    if (this.app?.config?.openNewTab) window.open(url, "_blank", "noopener,noreferrer");
+    else window.location.href = url;
+  }
+
+  /* Over to an open tab, its window to the front; a new tab that was only
+     the way there closes behind it, as the address bar's does. */
+  switchToTab(tab) {
+    const api = typeof chrome !== "undefined" ? chrome : null;
+    if (!api?.tabs?.update) return this.openUrl(tab.url);
+    api.tabs.update(tab.id, { active: true }, () => void api.runtime?.lastError);
+    api.windows?.update?.(tab.windowId, { focused: true }, () => void api.runtime?.lastError);
+    if (window.history.length <= 1) api.tabs.getCurrent?.((current) => { if (current && current.id !== tab.id) api.tabs.remove(current.id, () => void api.runtime?.lastError); });
+  }
+
+  // A place in Settings, open and in view, its control ready for the keyboard.
+  revealSetting(place) {
+    this.input.value = "";
+    this.input.blur();
+    document.body.classList.remove("searching");
+    this.closeSuggestions();
+    this.app?.settings?.open(place.tab);
+    requestAnimationFrame(() => {
+      place.node.scrollIntoView({ block: "center" });
+      place.node.classList.add("setting-found");
+      setTimeout(() => place.node.classList.remove("setting-found"), 2000);
+      place.node.querySelector("input:not([type=hidden]), select:not([hidden]), button, [tabindex='0']")?.focus({ preventScroll: true });
+    });
   }
 
   async processQuery(query) {
@@ -350,9 +419,13 @@ class SearchWidget {
     }
     this.endCommandMode();
     const token = ++this.queryToken;
-    const calcResult = this.tryCalculate(query);
+    const golink = this.keywordOf(query);
+    const calcResult = this.tryCalculate(query) || this.convert(query);
+    const capture = this.captureOf(query);
     const bookmarkMatches = this.findMatchingBookmarks(query);
+    const settingsMatches = window.NordlysSearchSources?.settings(document.getElementById("cfg"), query) || [];
     const historyMatches = this.getSearchHistory(query);
+    const found = await this.browserMatches(query);
 
     if (token !== this.queryToken) return;
     if (!this.input.value.trim()) {
@@ -369,68 +442,130 @@ class SearchWidget {
        the chosen engine as you typed. The page no longer knows the engine, and
        sending every keystroke to a third party was the one thing the privacy
        page had to add a caveat about. */
-    this.renderSuggestions({ query, calcResult, bookmarkMatches, historyMatches });
+    const lists = { query, golink, calcResult, capture, bookmarkMatches, found, settingsMatches, historyMatches };
+    this.renderSuggestions(lists);
+    // An amount of money waits for the day's rates, and the list is drawn again when they come.
+    const money = !calcResult && window.NordlysConvert?.money(query);
+    if (!money) return;
+    const answer = this.exchange(money, await this.rates());
+    if (answer && token === this.queryToken && this.input.value.trim() === query) this.renderSuggestions({ ...lists, calcResult: answer });
   }
 
-  renderSuggestions({ query, calcResult, bookmarkMatches, historyMatches }) {
+  /* A quantity in other units, the time elsewhere, or money at rates already
+     kept today (convert.js). */
+  convert(query) {
+    const convert = window.NordlysConvert;
+    if (!convert) return null;
+    const lang = LOCALE_MAP[window.I18N?.currentLang] || "en-US";
+    const format = this.app?.config?.timeFormat;
+    const units = convert.units(query, lang);
+    if (units) return { ...units, kind: "units" };
+    const time = convert.time(query, { lang, hour12: format === "12h" ? true : format === "24h" ? false : undefined });
+    if (time) return { ...time, kind: "time" };
+    const money = convert.money(query);
+    return money ? this.exchange(money, this.keptRates()) : null;
+  }
+
+  exchange(money, table) {
+    const lang = LOCALE_MAP[window.I18N?.currentLang] || "en-US";
+    const answer = table && window.NordlysConvert.exchange(money, table, lang);
+    if (!answer) return null;
+    const date = new Intl.DateTimeFormat(lang, { day: "numeric", month: "short" }).format(new Date(table.updated));
+    return { ...answer, kind: "money", note: this.say("search.ratesNote", `Rates by ExchangeRate-API, ${date}`, { date }) };
+  }
+
+  /* The day's exchange rates, from open.er-api.com: asked for only once an
+     amount of money has been typed, kept for the day, and the last ones
+     kept still answer while the network does not. */
+  keptRates(day = new Date().toISOString().slice(0, 10)) {
+    try {
+      const kept = JSON.parse(localStorage.getItem("nordlys_rates") || "null");
+      return kept?.rates && (!day || kept.day === day) ? kept : null;
+    } catch (error) { return null; }
+  }
+
+  rates() {
+    const today = new Date().toISOString().slice(0, 10);
+    const kept = this.keptRates(today);
+    if (kept) return Promise.resolve(kept);
+    this.ratesAsked ||= fetch("https://open.er-api.com/v6/latest/USD", { credentials: "omit", referrerPolicy: "no-referrer", signal: AbortSignal.timeout?.(6000) })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body) => {
+        if (body?.result !== "success" || !body.rates) return this.keptRates(null);
+        const fresh = { day: today, updated: (body.time_last_update_unix || Date.now() / 1000) * 1000, rates: body.rates };
+        try { localStorage.setItem("nordlys_rates", JSON.stringify(fresh)); } catch (error) { /* answered, not kept */ }
+        return fresh;
+      })
+      .catch(() => this.keptRates(null))
+      .finally(() => { this.ratesAsked = null; });
+    return this.ratesAsked;
+  }
+
+  renderSuggestions({ golink, calcResult, capture, bookmarkMatches, found, settingsMatches, historyMatches }) {
     if (!this.sugg) return;
     this.sugg.replaceChildren();
     this.selIdx = -1;
     let itemIndex = 0;
+    /* A row with a mark, a name, a quieter line and a badge. Ten rows at
+       most: past that the list is longer than the reason to read it. */
+    const addRow = (kind, icon, name, detail, badge, act) => {
+      if (itemIndex >= 10) return;
+      const row = document.createElement("div");
+      row.className = `sugg-item ${kind}`;
+      row.style.setProperty("--si", itemIndex++);
+      row.innerHTML = `${icon}<span class="bm-info"><strong class="bm-name"></strong><small class="bm-url"></small></span><span class="sugg-badge sugg-folder-badge"></span>`;
+      row.querySelector(".bm-name").textContent = name;
+      row.querySelector(".bm-url").textContent = detail || "";
+      const tag = row.querySelector(".sugg-badge");
+      if (badge) tag.textContent = badge;
+      else tag.remove();
+      row.addEventListener("mousedown", (e) => { e.preventDefault(); act(); });
+      this.sugg.appendChild(row);
+    };
+    const host = (url) => window.NordlysSearchSources?.hostOf(url) || url;
 
-    // 1. Calculator Row
+    // 0. A keyword of the person's own goes first: it is what they set it up for.
+    if (golink) addRow("sugg-golink", ROW_ICONS.golink, golink.words || host(golink.url), golink.url.replace(/^https?:\/\/(www\.)?/, ""), golink.key, () => this.openUrl(golink.url));
+
+    // 1. The answer: a sum, a conversion, the time elsewhere or money.
     if (calcResult) {
+      const result = typeof calcResult === "string" ? { text: calcResult, kind: "calc" } : calcResult;
       const calcRow = document.createElement("div");
-      calcRow.className = "sugg-item sugg-calc";
+      calcRow.className = `sugg-item sugg-calc sugg-${result.kind}`;
       calcRow.style.setProperty("--si", itemIndex++);
       calcRow.innerHTML = `
-        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-6 2h5v2h-5V5zm-7 0h5v2H6V5zm0 4h5v2H6V9zm7 0h5v2h-5V9zm-7 4h5v2H6v-2zm7 0h5v2h-5v-2zm-7 4h5v2H6v-2zm7 0h5v2h-5v-2z"/></svg>
+        ${ANSWER_ICONS[result.kind]}
         <span class="calc-val"></span>
+        <small class="calc-note"></small>
         <span class="sugg-badge sugg-calc-badge">${this.say("search.copyAnswer", "Copy")}</span>
       `;
-      calcRow.querySelector(".calc-val").textContent = calcResult;
+      calcRow.querySelector(".calc-val").textContent = result.text;
+      const note = calcRow.querySelector(".calc-note");
+      if (result.note) note.textContent = result.note;
+      else note.remove();
       calcRow.addEventListener("mousedown", (e) => {
         e.preventDefault();
-        const parts = calcResult.split("=");
-        const answer = parts.length > 1 ? parts[1].trim() : calcResult;
-        navigator.clipboard?.writeText(answer);
+        const parts = result.text.split("=");
+        const answer = result.answer || (parts.length > 1 ? parts[1].trim() : result.text);
         this.input.value = answer;
         this.closeSuggestions();
-        if (typeof toast === "function") {
-          toast(window.I18N ? window.I18N.t("toast.copied") : "Copied to clipboard", "success", 1600);
-        }
+        /* Copied is said only once it is so. A refused clipboard left a
+           rejection nobody caught and a notice that said otherwise; the
+           answer is in the box either way. */
+        navigator.clipboard?.writeText(answer).then(() => {
+          if (typeof toast === "function") toast(window.I18N ? window.I18N.t("toast.copied") : "Copied to clipboard", "success", 1600);
+        }, () => {});
       });
       this.sugg.appendChild(calcRow);
     }
 
-    // 2. Matching Bookmarks
-    if (bookmarkMatches && bookmarkMatches.length > 0) {
-      bookmarkMatches.forEach((bm) => {
-        const bmRow = document.createElement("div");
-        bmRow.className = "sugg-item sugg-bookmark";
-        bmRow.style.setProperty("--si", itemIndex++);
-        bmRow.innerHTML = `
-          <svg viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
-          <span class="bm-info">
-            <strong class="bm-name"></strong>
-            <small class="bm-url"></small>
-          </span>
-          <span class="sugg-badge sugg-folder-badge"></span>
-        `;
-        bmRow.querySelector(".bm-name").textContent = bm.name || "Bookmark";
-        bmRow.querySelector(".bm-url").textContent = bm.url || "";
-        bmRow.querySelector(".sugg-folder-badge").textContent = bm.groupLabel || "Folder";
-        bmRow.addEventListener("mousedown", (e) => {
-          e.preventDefault();
-          if (this.app?.config?.openNewTab) {
-            window.open(bm.url, "_blank", "noopener,noreferrer");
-          } else {
-            window.location.href = bm.url;
-          }
-        });
-        this.sugg.appendChild(bmRow);
-      });
-    }
+    // 2. A task to add, the bookmarks on the board, then what the browser has.
+    if (capture) addRow("sugg-capture", ROW_ICONS.capture, this.say("search.capture", `Add a task: ${capture}`, { text: capture }), "", "", () => this.capture(capture));
+    for (const bm of bookmarkMatches || []) addRow("sugg-bookmark", ROW_ICONS.bookmark, bm.name || "Bookmark", bm.url || "", bm.groupLabel || "Folder", () => this.openUrl(bm.url));
+    for (const tab of found?.tabs || []) addRow("sugg-tab", ROW_ICONS.tab, tab.name, host(tab.url), this.say("search.switchTab", "Switch to tab"), () => this.switchToTab(tab));
+    for (const mark of found?.bookmarks || []) addRow("sugg-browser-bookmark", ROW_ICONS.bookmark, mark.name, host(mark.url), mark.folder || this.say("search.fromBookmarks", "Bookmarks"), () => this.openUrl(mark.url));
+    for (const page of found?.history || []) addRow("sugg-page", ROW_ICONS.page, page.name, host(page.url), this.say("search.fromHistory", "History"), () => this.openUrl(page.url));
+    for (const place of settingsMatches || []) addRow("sugg-setting", ROW_ICONS.setting, place.name, place.tabName, this.say("settings.title", "Settings"), () => this.revealSetting(place));
 
     // 3. Search History Items
     if (historyMatches && historyMatches.length > 0) {
@@ -845,6 +980,12 @@ class SearchWidget {
       } else if (this.input.value.trim().startsWith(">")) {
         // A command with nothing highlighted runs the best reading of it.
         items.find((item) => item.classList.contains("sugg-command"))?.dispatchEvent(new MouseEvent("mousedown"));
+      } else if (this.keywordOf(this.input.value.trim())) {
+        // A keyword goes where it was set to go.
+        this.openUrl(this.keywordOf(this.input.value.trim()).url);
+      } else if (this.captureOf(this.input.value.trim())) {
+        // So does a task, even before its row has come up.
+        this.capture(this.captureOf(this.input.value.trim()));
       } else {
         this.executeSearch(this.input.value.trim());
       }

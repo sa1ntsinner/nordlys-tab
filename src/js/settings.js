@@ -980,7 +980,9 @@ class SettingsController {
     if (daylightSwitch) daylightSwitch.checked = cfg.bgDaylight === true;
     this.syncBoardLayout();
     this.syncPageLayout();
-    
+    this.syncSearchSources();
+    this.syncGolinks();
+
     // Color Mode
     this.syncColorModeSwitcher();
 
@@ -1551,6 +1553,8 @@ class SettingsController {
 
   /* ── 5. General Settings (Full Persistence Across All Events) ── */
   initGeneral() {
+    this.initSearchSources();
+    this.initGolinks();
     const languageSelect = document.getElementById("cfg-language-select");
     const userName = document.getElementById("cfg-user-name");
     const timeFormat = document.getElementById("cfg-time-format");
@@ -1877,6 +1881,108 @@ class SettingsController {
       if (quick.title !== hint) quick.title = hint;
       if (quickState && quickState.textContent !== hint) quickState.textContent = hint;
     }
+  }
+
+  /* General → The search box also finds. Turning a source on asks the
+     browser for its leave there and then, while the click still counts as
+     the person's; refused, the switch goes back off. A browser without the
+     list at all (Safari has no history) does not offer it. */
+  initSearchSources() {
+    const sources = window.NordlysSearchSources;
+    const api = typeof chrome !== "undefined" ? chrome : null;
+    for (const input of document.querySelectorAll("#search-from input[data-source]")) {
+      const source = input.dataset.source;
+      input.closest(".row").hidden = !api?.[source];
+      input.addEventListener("change", async () => {
+        let on = input.checked;
+        if (on) {
+          on = await new Promise((resolve) => {
+            try { api.permissions.request({ permissions: [sources.PERMISSION[source]] }, (granted) => resolve(Boolean(granted))); }
+            catch (error) { resolve(false); }
+          });
+          sources.forget(source);
+        }
+        const chosen = new Set(this.app.config.searchFrom || []);
+        if (on) chosen.add(source);
+        else chosen.delete(source);
+        this.app.config.searchFrom = sources.SOURCES.filter((name) => chosen.has(name));
+        input.checked = on;
+        this.app.saveConfig();
+      });
+    }
+    this.syncSearchSources();
+  }
+
+  async syncSearchSources() {
+    const sources = window.NordlysSearchSources;
+    if (!sources) return;
+    for (const input of document.querySelectorAll("#search-from input[data-source]")) {
+      const source = input.dataset.source;
+      input.checked = (this.app.config.searchFrom || []).includes(source) && await sources.granted(source);
+    }
+  }
+
+  /* General → Keywords: a word and the address it goes to, a row each. A row
+     is kept once both make sense (an address without a scheme is taken as
+     https); until then it is marked and waits, and the others keep working. */
+  initGolinks() {
+    const list = document.getElementById("golink-list");
+    document.getElementById("golink-add")?.addEventListener("click", () => {
+      list.append(this.golinkRow());
+      list.lastElementChild.querySelector(".golink-key").focus();
+    });
+    list?.addEventListener("change", () => this.saveGolinks());
+    list?.addEventListener("click", (event) => {
+      const remove = event.target.closest(".golink-remove");
+      if (!remove) return;
+      remove.closest(".golink-row").remove();
+      this.saveGolinks();
+      document.getElementById("golink-add").focus();
+    });
+    this.syncGolinks();
+  }
+
+  golinkRow({ key = "", url = "" } = {}) {
+    const row = document.createElement("li");
+    row.className = "golink-row";
+    row.innerHTML = `<input class="ipt golink-key" type="text" maxlength="24" spellcheck="false" autocomplete="off" placeholder="gh" aria-label="Keyword" data-i18n-aria="general.keywordWord">`
+      + `<input class="ipt golink-url" type="text" inputmode="url" spellcheck="false" autocomplete="off" placeholder="https://github.com/search?q=%s" aria-label="Address" data-i18n-aria="general.keywordAddress">`
+      + `<button type="button" class="golink-remove" aria-label="Remove this keyword" data-i18n-aria="general.keywordRemove"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
+    row.querySelector(".golink-key").value = key;
+    row.querySelector(".golink-url").value = url;
+    window.I18N?.applyDOM(row);
+    return row;
+  }
+
+  saveGolinks() {
+    const KEYWORD = window.NordlysSearchSources.KEYWORD;
+    const taken = new Set();
+    const kept = [];
+    for (const row of document.querySelectorAll("#golink-list .golink-row")) {
+      const keyInput = row.querySelector(".golink-key"), urlInput = row.querySelector(".golink-url");
+      const key = keyInput.value.trim();
+      const typed = urlInput.value.trim();
+      const url = !typed || /^[a-z][a-z\d+.-]*:/i.test(typed) ? typed : `https://${typed}`;
+      const keyOk = KEYWORD.test(key) && !taken.has(key.toLowerCase());
+      const urlOk = /^https?:\/\/\S+$/i.test(url) && url.length <= 2048;
+      for (const [input, wrong] of [[keyInput, Boolean(key) && !keyOk], [urlInput, Boolean(typed) && !urlOk]]) {
+        if (wrong) input.setAttribute("aria-invalid", "true");
+        else input.removeAttribute("aria-invalid");
+      }
+      if (!keyOk || !urlOk) continue;
+      if (url !== typed) urlInput.value = url;
+      taken.add(key.toLowerCase());
+      kept.push({ key, url });
+    }
+    this.app.config.golinks = kept;
+    this.app.saveConfig();
+  }
+
+  // Drawn again from the config, unless somebody is typing in it.
+  syncGolinks() {
+    const list = document.getElementById("golink-list");
+    if (!list || list.contains(document.activeElement)) return;
+    list.replaceChildren(...(this.app.config.golinks || []).map((link) => this.golinkRow(link)));
   }
 
   /* A group of radios: the arrow keys move along it, and moving chooses. */
@@ -3990,7 +4096,72 @@ class SettingsController {
     return true;
   }
 
+  /* Backup → Settings as text. Opened, it shows the settings as they are,
+     unless what is in it came from elsewhere or was changed and not applied. */
+  initBackupText() {
+    const box = document.getElementById("backup-text");
+    const text = document.getElementById("cfg-text");
+    const address = document.getElementById("cfg-url");
+    if (!box || !text || !address) return;
+    box.addEventListener("toggle", () => {
+      if (box.open && !text.dataset.held) text.value = JSON.stringify(this.app.config, null, 2);
+    });
+    text.addEventListener("input", () => { text.dataset.held = "1"; text.removeAttribute("aria-invalid"); });
+    document.getElementById("cfg-text-apply")?.addEventListener("click", () => this.applyText(text));
+    document.getElementById("cfg-url-load")?.addEventListener("click", () => this.readFromAddress(address, text));
+    address.addEventListener("keydown", (event) => { if (event.key === "Enter") this.readFromAddress(address, text); });
+  }
+
+  // The text applied as a backup file is: another new tab's file adds its folders.
+  async applyText(text) {
+    let parsed;
+    try { parsed = JSON.parse(text.value); }
+    catch (error) {
+      text.setAttribute("aria-invalid", "true");
+      if (typeof toast === "function") toast(`${this.text("toast.importError", "Import failed")}: ${error.message}`, "danger", 5000);
+      return false;
+    }
+    const other = window.NordlysImporters?.read(parsed);
+    if (other) return this.addImportedFolders(other);
+    // CSS that is already this setup's is not new code to be read first.
+    const own = (parsed?.customCss || "") === (this.app.config.customCss || "");
+    return this.applyBackupObject(parsed, { own });
+  }
+
+  /* A settings file at a web address: leave to reach that one site is asked
+     for there and then, while the click still counts as the person's; the file
+     is read once, without cookies, and put in the text to be looked at first. */
+  readFromAddress(address, text) {
+    let url = null;
+    try { url = new URL(address.value.trim()); } catch (error) { /* said below */ }
+    const say = (message) => { if (typeof toast === "function") toast(message, "danger", 5000); };
+    if (url?.protocol !== "https:") {
+      address.setAttribute("aria-invalid", "true");
+      say(this.text("backup.urlHttps", "Give an address that starts with https://"));
+      return;
+    }
+    address.removeAttribute("aria-invalid");
+    const permissions = typeof chrome !== "undefined" ? chrome.permissions : null;
+    const leave = !permissions?.request ? Promise.resolve(true) : new Promise((resolve) => {
+      try { permissions.request({ origins: [`${url.origin}/*`] }, (granted) => resolve(Boolean(granted))); }
+      catch (error) { resolve(false); }
+    });
+    leave.then(async (granted) => {
+      if (!granted) return say(this.text("backup.urlRefused", "Without leave to reach that site, its file cannot be read."));
+      const response = await fetch(url.href, { credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer", signal: AbortSignal.timeout?.(10000) });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const body = await response.text();
+      if (body.length > 8e6) throw new Error(this.text("backup.urlTooLarge", "the file is too large"));
+      text.value = JSON.stringify(JSON.parse(body), null, 2);
+      text.dataset.held = "1";
+      text.removeAttribute("aria-invalid");
+      text.focus();
+      if (typeof toast === "function") toast(this.text("backup.urlRead", "Read. Look it over, then apply it."), "success", 4000);
+    }).catch((error) => say(`${this.text("backup.urlFailed", "That address could not be read")}: ${error.message}`));
+  }
+
   initBackupManager() {
+    this.initBackupText();
     // Export JSON Backup
     document.getElementById("cfg-export")?.addEventListener("click", () => {
       const blob = new Blob([JSON.stringify(this.buildBackupPayload(), null, 2)], { type: "application/json" });

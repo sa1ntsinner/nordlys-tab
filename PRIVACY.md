@@ -33,6 +33,8 @@ Everything is saved on your device. Settings and bookmarks use Chrome's extensio
 | One page fit sizes | `localStorage` | With One page fit on, the sizes it last worked out for up to four window sizes, so a new tab opens already fitted. Never in backups, cleared by Reset | No |
 | Your own wallpaper | IndexedDB | The picture or video loop you picked as the background | No |
 | Where the sky is, working hours, saved skies | `chrome.storage.local` / `localStorage` | The place you set for the sky, the hours the Your day sky knows, and the skies you saved | Only to your own browser's sync, if you turn sync on |
+| Keywords | `chrome.storage.local` / `localStorage` | The words you set in Settings → General that take the search box, or `nl` in the address bar, to your own addresses | No |
+| Exchange rates | `localStorage` | The day's rates the search box last asked for (item 10 below), so it answers again without asking. Cleared by Reset | No |
 | What the sky learned | `localStorage` | The weather and the K index last asked for, the horizon of the sky's place, and today's picture of the day with its caption, so a new tab draws at once instead of asking again. Cleared by Reset | No |
 
 ---
@@ -49,7 +51,7 @@ The place you set for the sky travels with your setup. What was fetched for it (
 
 A new tab with no dashboard cards, under a sky drawn on your computer, makes no network request at all. These can take it online:
 
-1. When you press Enter in the search box, the text goes through Chrome's `chrome.search` API to the search engine set in Chrome, as it does from the address bar. Nordlys doesn't choose the engine or know which one answered. Nothing is sent while you type. Older versions fetched live suggestions; this one doesn't. Safari gives extensions no search API, so there you pick an engine once in Settings → General and the search goes straight to it.
+1. When you press Enter in the search box, the text goes through Chrome's `chrome.search` API to the search engine set in Chrome, as it does from the address bar. Nordlys doesn't choose the engine or know which one answered. Nothing you type is sent while you type. Older versions fetched live suggestions; this one doesn't. The one request typing can start is for exchange rates (item 10). A keyword you set up goes straight to its address instead, with the words after it where the address has `%s`. Safari gives extensions no search API, so there you pick an engine once in Settings → General and the search goes straight to it. Typing `nl` and a space in the address bar does the same as the search box: your keywords and bookmarks answer from your saved settings, on your device, and anything else goes to the browser's engine.
 2. Opening the icon picker and typing sends nothing. When you press Search, only your phrase goes to Iconify's public API (`api.iconify.design`) for the Simple Icons set. The chosen icon is rebuilt as plain image data and saved locally, so new tabs don't load it online. Bookmark addresses, folders, history and settings aren't included.
 3. When you paste an image address for an icon, Nordlys downloads it once and saves it locally. It tries the address directly, or uses `images.weserv.nl` if the site blocks cross-origin loading. The address stays with the bookmark, along with the last few addresses used and a small copy of each icon, so you can switch back. Showing that list makes no request.
 4. Opening the icon picker sends nothing. The Website icon tab uses Chrome's local favicon cache. Firefox and Safari have no such cache, so there the tab loads nothing until you pick a source. Optional provider buttons send only the domain you typed, and only to the provider you click. A failed lookup doesn't try another provider on its own.
@@ -68,11 +70,13 @@ A new tab with no dashboard cards, under a sky drawn on your computer, makes no 
    - The Met: the Metropolitan Museum's open collection (`collectionapi.metmuseum.org`) is asked for one of its highlighted paintings, by a number made from the date, and the picture comes from `images.metmuseum.org`.
    - The Earth today: NASA's EPIC service (`epic.gsfc.nasa.gov`) is asked for its latest day, and the picture comes from the same server.
    The browser loads the picture as it loads any picture on the web, so that server sees an ordinary request for it. A rotation (Settings → Background → Change by itself) can land on one of these skies or on a sky drawn from the world; its requests are then the ones above.
-10. Settings → Support contains plain links to a donation page, the repository, its issue tracker and this policy. Opening the section loads no remote image, script, beacon or counter. Clicking a link opens a new tab without a referrer or identifier, and Nordlys doesn't learn that you clicked it. A wallet address shown there is copied by your browser's clipboard and goes nowhere else.
+10. **Exchange rates.** Typing an amount of money to change, such as "100 usd to eur", asks ExchangeRate-API (`open.er-api.com`) for the day's rates against the US dollar, at most once a day. The request carries nothing you typed: not the amount and not the currencies. The rates are kept for the day, and the answer names where they came from. Units and the time in other places are worked out on your device.
+11. **Settings from an address.** Only when you give an address under Settings → Backup → Settings as text and press Read it. The browser asks for your leave to reach that one site, and the file is read once, without cookies or a referrer. It is shown to you and changes nothing until you apply it.
+12. Settings → Support contains plain links to a donation page, the repository, its issue tracker and this policy. Opening the section loads no remote image, script, beacon or counter. Clicking a link opens a new tab without a referrer or identifier, and Nordlys doesn't learn that you clicked it. A wallet address shown there is copied by your browser's clipboard and goes nowhere else.
 
 The time-of-day light uses the date and your time zone on your device. The night light's "From sunset to sunrise" works out where the sun is from the date and the sky's place, on your device too. Neither asks for your location or sends anything.
 
-Nordlys never sends your bookmark list or browsing activity anywhere. At install it asks for access to no site at all. Access to a site is asked for when you connect it yourself: Todoist, GitHub, or the one address of a calendar link. That is why the list of optional sites includes any `https` address: a calendar link can be on any server. Nordlys asks only for that one address, and never on its own. Iconify, Open-Meteo, NOAA, Wikimedia, the Met, NASA EPIC and `images.weserv.nl` allow browser requests (CORS), so they need no permission.
+Nordlys never sends your bookmark list or browsing activity anywhere. At install it asks for access to no site at all. Access to a site is asked for when you connect it yourself: Todoist, GitHub, the one address of a calendar link, or the one address you read settings from. That is why the list of optional sites includes any `https` address: a calendar link or a settings file can be on any server. Nordlys asks only for that one address, and never on its own. Iconify, Open-Meteo, NOAA, Wikimedia, the Met, NASA EPIC, ExchangeRate-API and `images.weserv.nl` allow browser requests (CORS), so they need no permission.
 
 ---
 
@@ -84,12 +88,12 @@ Nordlys uses these permissions:
 - `unlimitedStorage` lets you keep your own wallpaper pictures and video loops in IndexedDB without hitting the browser's storage limit.
 - `favicon` shows site icons from Chrome's local favicon cache on your tiles.
 - `search` hands what you type in the search box to the browser, which sends it to the search engine you chose in the browser. Nordlys doesn't pick the engine or see the results.
-- `bookmarks` is optional and isn't requested at install. Nordlys asks for it only when you link a folder to a Chrome bookmark folder. It only reads that folder to mirror its tiles. It never changes or sends your Chrome bookmarks. If you revoke access in `chrome://extensions`, mirroring stops and the tiles already on screen stay.
+- `bookmarks` is optional and isn't requested at install. Nordlys asks for it only when you link a folder to a Chrome bookmark folder, or turn on Your browser's bookmarks under Settings → General → The search box also finds. It reads that folder to mirror its tiles, or the bookmarks that match what you type in the search box. It never changes or sends your Chrome bookmarks. If you revoke access in `chrome://extensions`, mirroring stops and the tiles already on screen stay.
 - Nordlys asks for no site at install. It can't read, change or send data from pages you visit.
-- `tabs` is optional and isn't requested at install. Nordlys asks for it only when you press "Stash the tabs of this window" on the Tab stash card. It then reads the addresses and titles of that window's tabs once, saves them on your device and closes those tabs. Nothing is sent anywhere. Without it, Nordlys can't see your open tabs.
+- `tabs` is optional and isn't requested at install. Nordlys asks for it only when you press "Stash the tabs of this window" on the Tab stash card, or turn on Open tabs under Settings → General → The search box also finds. For the stash it reads the addresses and titles of that window's tabs once, saves them on your device and closes those tabs. For the search box it reads the titles and addresses of open tabs while you type, to offer switching to one, and keeps nothing. Nothing is sent anywhere. Without it, Nordlys can't see your open tabs.
 - `topSites` is optional and isn't requested at install. Nordlys asks for it only when you press "Start from my most visited sites" on an empty board. It reads the browser's list of your most visited sites once, makes a folder of them on your device and keeps nothing else. Nothing is sent anywhere.
 - Optional site access (for connected apps and calendar links) is asked for one site at a time, when you connect it. You can take it back in the browser's extension settings.
-- Nordlys has no history access. It doesn't look at your browsing history.
+- `history` is optional and isn't requested at install. Nordlys asks for it only when you turn on Pages you visited under Settings → General → The search box also finds. Then the search box asks the browser's history for pages that match what you type, shows a few, and keeps nothing. Nothing is sent anywhere. Turned off, or with the leave taken back, it doesn't look at your history.
 - Nordlys has no web-accessible resources. Sites you visit can't load an extension file to check whether it's installed.
 
 ---
@@ -102,7 +106,7 @@ Nordlys uses the strict Manifest V3 content security policy. Its scripts, icons 
 
 ## 7. Keeping and deleting your data
 
-- You can export your whole setup from Settings at any time as a `.json` backup or a standard `.html` bookmarks file.
+- You can export your whole setup from Settings at any time as a `.json` backup or a standard `.html` bookmarks file, or read it as text under Settings → Backup → Settings as text.
 - Reset to Defaults in Settings deletes everything, including stored wallpapers and search history. Uninstalling from `chrome://extensions` also deletes it all.
 
 ---

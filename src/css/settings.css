@@ -1811,9 +1811,14 @@ input[type="range"].ipt:focus-visible {
    sky. */
 .scene-block-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .look-share { margin-top: 16px; }
-.look-actions, .look-paste-row, .look-decide-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.look-actions, .look-paste-row, .look-decide-actions, .backup-url-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .look-paste-label { display: block; margin-top: 4px; color: var(--nl-text-secondary); font-size: var(--nl-text-xs); }
-.look-paste-row .ipt { flex: 1 1 220px; min-width: 0; font-family: var(--font-mono); font-size: var(--nl-text-xs); }
+.look-paste-row .ipt, .backup-url-row .ipt { flex: 1 1 220px; min-width: 0; font-family: var(--font-mono); font-size: var(--nl-text-xs); }
+/* Backup → Settings as text: the file itself, to read and change. */
+.backup-text { display: grid; gap: 10px; margin-top: 12px; }
+.backup-text > .glass-btn { justify-self: start; }
+.backup-textarea { width: 100%; min-height: 240px; resize: vertical; font-family: var(--font-mono); font-size: var(--nl-text-xs); line-height: 1.5; white-space: pre; tab-size: 2; }
+.backup-textarea[aria-invalid="true"], .backup-url-row .ipt[aria-invalid="true"] { border-color: var(--nl-status-danger); }
 .look-status { min-height: 1.4em; margin: 0; color: var(--nl-text-secondary); font-size: var(--nl-text-xs); }
 .look-status.refused { color: var(--nl-status-danger); }
 .look-decide { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--nl-accent); border-radius: var(--nl-radius-md); background: color-mix(in srgb, var(--nl-accent) 8%, transparent); color: var(--nl-text-primary); font-size: var(--nl-text-sm); }
@@ -2318,6 +2323,23 @@ input[type="range"].ipt:focus-visible {
    way onto the board to arrange it. */
 .board-layout-block { display: grid; gap: 10px; margin-bottom: 18px; }
 .board-layout-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+/* General → The search box also finds: three switches under their label. */
+.search-from-block { display: grid; gap: 2px; margin-top: 14px; }
+.search-from-block .settings-block-label { margin-bottom: 4px; }
+/* General → Keywords: a word, its address and a way to remove it, a row each. */
+.golinks-block { display: grid; gap: 8px; margin-top: 18px; }
+.golink-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.golink-list:empty { display: none; }
+.golink-row { display: grid; grid-template-columns: 88px minmax(0, 1fr) 32px; gap: 6px; align-items: center; }
+.golink-row .ipt { width: 100%; min-width: 0; }
+.golink-row .ipt[aria-invalid="true"] { border-color: var(--nl-status-danger); }
+.golink-remove { width: 32px; height: 32px; display: grid; place-items: center; padding: 0; border: 0; border-radius: var(--nl-radius-sm); background: transparent; color: var(--dim); cursor: pointer; }
+.golink-remove:hover { background: color-mix(in srgb, var(--nl-status-danger) 14%, transparent); color: var(--nl-status-danger); }
+.golink-remove:focus-visible { outline: 2px solid var(--nl-accent); outline-offset: 2px; }
+.golink-remove svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+#golink-add { justify-self: start; }
+/* A place in Settings the search box led to, marked for a moment. */
+.setting-found { outline: 2px solid var(--nl-accent); outline-offset: 3px; border-radius: var(--nl-radius-sm); }
 /* Appearance → Page: the six layouts of the page, drawn as the same choice. */
 .page-layout-options { margin-bottom: 22px; }
 .board-layout-option {

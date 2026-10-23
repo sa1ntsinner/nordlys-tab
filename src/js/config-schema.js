@@ -38,7 +38,7 @@
     bgBlur: "number", bgDim: "number", cardRadius: "number", tileSize: "number",
     cardGap: "number", boardGap: "number", cardGlow: "number", bgMotion: "number", bgIntensity: "number", bgSeed: "number",
     showSeconds: "boolean", openNewTab: "boolean", showSearch: "boolean", rememberSearches: "boolean", shortcutHints: "boolean", highLegibility: "boolean", bgRealSky: "boolean", bgDaylight: "boolean", tileLabels: "boolean", onePageFit: "boolean", pictureColours: "boolean",
-    groups: "list", bgPalettes: "list", skyLocks: "list", looks: "list",
+    groups: "list", bgPalettes: "list", skyLocks: "list", looks: "list", searchFrom: "list", golinks: "list",
     customTheme: "object", skyLayers: "object", skyPlace: "object", workday: "object"
   };
   // Settings that are one of a few words; anything else goes back to the first.
@@ -51,6 +51,12 @@
     .filter(([, type]) => type === "number")
     .map(([field]) => field);
   const LINK_TEXT_FIELDS = ["name", "url", "icon", "iconSource", "color", "customImg", "monogram", "tone", "iconUrl", "browserId"];
+  // What else the search box may look through (search-sources.js).
+  const SEARCH_SOURCES = ["tabs", "bookmarks", "history"];
+  /* A keyword for the search box (search-sources.js): one word, and a web
+     address that may hold %s for what is typed after it. */
+  const isKeyword = (link) => isObject(link) && typeof link.key === "string" && /^[\p{L}\p{N}._-]{1,24}$/u.test(link.key)
+    && typeof link.url === "string" && /^https?:\/\/\S+$/i.test(link.url) && link.url.length <= 2048;
   // The same bounds the grid enforces on its resize handle.
   const COLUMNS = { min: 1, max: 8 };
   // The same bound board-layout.js keeps rows inside.
@@ -147,6 +153,9 @@
     }
     if (Array.isArray(candidate.groups)) candidate.groups.forEach((group, index) => validateGroup(group, index, errors));
     if (Array.isArray(candidate.bgPalettes)) candidate.bgPalettes.forEach((palette, index) => validatePalette(palette, index, errors));
+    if (Array.isArray(candidate.golinks)) candidate.golinks.forEach((link, index) => {
+      if (!isKeyword(link)) errors.push(`keyword ${index + 1} should be one word (key) and a web address (url)`);
+    });
     if (typeof candidate.bgSeed === "number" && !isSeed(candidate.bgSeed)) errors.push("bgSeed should be a whole number from 0 to 4294967295");
     if (typeof candidate.boardLayout === "string" && !["natural", "fitted"].includes(candidate.boardLayout)) errors.push('boardLayout should be "natural" or "fitted"');
     if (typeof candidate.boardWidth === "string" && !["narrow", "standard", "wide"].includes(candidate.boardWidth)) errors.push('boardWidth should be "narrow", "standard" or "wide"');
@@ -191,6 +200,11 @@
       if (config[field] !== undefined && !options.includes(config[field])) { config[field] = options[0]; repaired = true; }
     }
     if (config.boardGap !== undefined && !(Number.isFinite(config.boardGap) && config.boardGap >= 6 && config.boardGap <= 48)) { delete config.boardGap; repaired = true; }
+    // Where the search box also looks: only the sources there are, each once.
+    if (Array.isArray(config.searchFrom)) {
+      const kept = SEARCH_SOURCES.filter((source) => config.searchFrom.includes(source));
+      if (kept.length !== config.searchFrom.length) { config.searchFrom = kept; repaired = true; }
+    }
     if (config.customTheme !== undefined && !isStudioTheme(config.customTheme)) {
       delete config.customTheme;
       if (config.theme === "custom") config.theme = defaults.theme || "aurora-void";
@@ -204,7 +218,7 @@
     if (place !== undefined && !(Number.isFinite(place.lat) && Number.isFinite(place.lon) && Math.abs(place.lat) <= 90 && Math.abs(place.lon) <= 180 && (place.name === undefined || typeof place.name === "string"))) { delete config.skyPlace; repaired = true; }
     const day = config.workday;
     if (day !== undefined && !(Number.isFinite(day.start) && Number.isFinite(day.end) && day.start >= 0 && day.end <= 24 && day.start < day.end)) { delete config.workday; repaired = true; }
-    for (const [field, fits] of [["skyLocks", (lock) => typeof lock === "string"], ["looks", (look) => isObject(look) && typeof look.id === "string" && typeof look.name === "string" && isObject(look.look)]]) {
+    for (const [field, fits] of [["skyLocks", (lock) => typeof lock === "string"], ["looks", (look) => isObject(look) && typeof look.id === "string" && typeof look.name === "string" && isObject(look.look)], ["golinks", isKeyword]]) {
       if (config[field] === undefined) continue;
       const kept = Array.isArray(config[field]) ? config[field].filter(fits) : [];
       if (!Array.isArray(config[field]) || kept.length !== config[field].length) { config[field] = kept; repaired = true; }

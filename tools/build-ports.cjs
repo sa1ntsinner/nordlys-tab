@@ -39,6 +39,8 @@ const PORTS = {
     description: neutral,
     // Firefox has no /_favicon/ service; icons come from the site instead.
     permissions: without(manifest.permissions, 'favicon'),
+    // Firefox runs the address bar's keyword in an event page, not a worker.
+    background: { scripts: ['src/js/commands.js', 'src/js/search-sources.js', 'src/js/omnibox.js'] },
     browser_specific_settings: {
       gecko: {
         id: GECKO_ID,
@@ -50,12 +52,15 @@ const PORTS = {
   }),
   safari: manifest => ({
     ...manifest,
+    // Nor the address bar's keyword: Safari gives extensions no way into it.
+    omnibox: undefined,
+    background: undefined,
     description: neutral,
     // Safari has neither the favicon service nor the search API; the
     // search box asks for an engine instead (platform.js).
     permissions: without(manifest.permissions, 'favicon', 'search'),
-    // Nor bookmarks or top sites: Safari extensions cannot read them.
-    optional_permissions: without(manifest.optional_permissions, 'bookmarks', 'topSites'),
+    // Nor bookmarks, top sites or history: Safari extensions cannot read them.
+    optional_permissions: without(manifest.optional_permissions, 'bookmarks', 'topSites', 'history'),
     browser_specific_settings: { safari: { strict_min_version: '17.0' } }
   })
 };

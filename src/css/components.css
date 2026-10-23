@@ -215,6 +215,22 @@ body.seconds .sc, body.seconds #ss {
   font-weight: 600;
   color: var(--nl-accent-text);
 }
+/* Where an answer came from, when it came from somewhere: the rates. */
+#sugg .calc-note {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--nl-text-xs);
+  color: var(--nl-text-secondary);
+}
+#sugg svg.stroke {
+  fill: none;
+  stroke: var(--dim);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 #sugg .bm-info {
   display: flex;
   align-items: baseline;

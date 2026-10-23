@@ -61,3 +61,23 @@ test('favicons still load from the extension page with nothing web-accessible', 
     rmSync(profile, { recursive: true, force: true });
   }
 });
+
+/* "nl" in the address bar is a service worker (omnibox.js). It has to start
+   in the real browser with the two scripts it borrows from the page. */
+test('the address bar keyword starts as a worker with what it reads by', async () => {
+  const extensionPath = resolve(__dirname, '../..');
+  const profile = mkdtempSync(join(tmpdir(), 'nordlys-extension-'));
+  let context;
+  try {
+    context = await chromium.launchPersistentContext(profile, {
+      channel: 'chromium', headless: true,
+      args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`]
+    });
+    const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
+    expect(worker.url()).toMatch(/^chrome-extension:\/\/[a-p]{32}\/src\/js\/omnibox\.js$/);
+    expect(await worker.evaluate(() => [typeof globalThis.NordlysSearchSources.keyword, typeof globalThis.NordlysCommands.score, typeof chrome.omnibox.onInputEntered])).toEqual(['function', 'function', 'object']);
+  } finally {
+    await context?.close();
+    rmSync(profile, { recursive: true, force: true });
+  }
+});
