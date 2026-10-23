@@ -108,3 +108,19 @@ test('history gives web pages, the most visited first', async () => {
   });
   assert.deepEqual((await sources.history('git', { exclude: new Set(['https://board.example']) })).map((page) => page.name), ['Git basics', 'Git tips']);
 });
+
+test('what is usually opened around this hour, about three times lately, while it is on the board', () => {
+  const at = (day, hour) => new Date(2026, 9, day, hour, 10).getTime();
+  let rhythm = null;
+  for (const day of [1, 2, 3]) rhythm = sources.noteOpen(rhythm, 'https://acme.atlassian.net', at(day, 9));
+  rhythm = sources.noteOpen(rhythm, 'https://github.com', at(3, 8));
+  rhythm = sources.noteOpen(rhythm, 'https://github.com', at(3, 10));
+  for (const day of [1, 2, 3, 4]) rhythm = sources.noteOpen(rhythm, 'https://docs.example.com', at(day, 21));
+  rhythm = sources.noteOpen(rhythm, 'https://gone.example', at(3, 9));
+  rhythm.urls['https://gone.example'][9] = 9;
+  assert.deepEqual(sources.usual(GROUPS, rhythm, at(5, 9)).map((link) => [link.name, link.groupLabel]), [['Jira', 'Work']], 'an open an hour off counts half');
+  assert.deepEqual(sources.usual(GROUPS, rhythm, at(5, 21)).map((link) => link.name), ['Docs']);
+  assert.deepEqual(sources.usual(GROUPS, rhythm, at(5, 15)), []);
+  const later = sources.noteOpen(structuredClone(rhythm), 'https://github.com', at(5, 12) + 60 * 864e5);
+  assert.deepEqual(Object.keys(later.urls), ['https://github.com'], 'a habit given up two months ago is forgotten');
+});

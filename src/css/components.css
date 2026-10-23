@@ -2068,6 +2068,11 @@ body.arranging .fit-toggle { display: none; }
 .box .nl-icon > svg, .box .nl-icon > img { width: 100%; height: 100%; object-fit: contain; filter: none; transform: none; fill: var(--icon-accent); }
 .lbl { font-size: clamp(12px, .82vw, 13px); color: var(--nl-text-secondary); }
 .lbl { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A watched site's answer (grid.js watchSites): a dot in the corner of its icon. */
+.tile-status { position: absolute; top: 7%; right: 7%; width: 8px; height: 8px; border-radius: 50%; background: var(--nl-text-tertiary); box-shadow: 0 0 0 2px var(--nl-surface-card); }
+.tile-status[data-state="up"] { background: var(--nl-status-success); }
+.tile-status[data-state="slow"] { background: var(--nl-status-warning); }
+.tile-status[data-state="down"] { background: var(--nl-status-danger); }
 .tile:hover .box, .tile:focus-visible .box, body.hover-lift .tile:hover .box, body.hover-scale .tile:hover .box, body.hover-glow .tile:hover .box {
   transform: translateY(-2px) scale(1.02);
   background: color-mix(in srgb, var(--nl-surface-card) 84%, transparent);

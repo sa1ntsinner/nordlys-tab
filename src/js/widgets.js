@@ -153,7 +153,8 @@ const ROW_ICONS = {
   page: '<svg class="stroke" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>',
   setting: '<svg class="stroke" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>',
   capture: '<svg class="stroke" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
-  golink: '<svg class="stroke" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M13 6l6 6-6 6"/></svg>'
+  golink: '<svg class="stroke" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M13 6l6 6-6 6"/></svg>',
+  usual: '<svg class="stroke" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
 };
 // The mark beside an answer, by what kind of answer it is.
 const ANSWER_ICONS = {
@@ -307,9 +308,29 @@ class SearchWidget {
     } catch(e) {}
   }
 
+  /* What is opened from the board, and at what hour, so the empty box can
+     offer what is usually opened now (search-sources.js). Kept on this
+     device only, and not at all when that is turned off. */
+  suggestsUsual() { return this.app?.config?.suggestUsual !== false; }
+
+  noteOpen(url) {
+    if (!this.suggestsUsual() || !/^https?:\/\//i.test(url || "")) return;
+    try {
+      const rhythm = window.NordlysSearchSources?.noteOpen(JSON.parse(localStorage.getItem("nordlys_rhythm") || "null"), url);
+      if (rhythm) localStorage.setItem("nordlys_rhythm", JSON.stringify(rhythm));
+    } catch (error) { /* not kept, then */ }
+  }
+
+  usualNow() {
+    if (!this.suggestsUsual()) return [];
+    try { return window.NordlysSearchSources?.usual(this.app?.config?.groups, JSON.parse(localStorage.getItem("nordlys_rhythm") || "null")) || []; }
+    catch (error) { return []; }
+  }
+
   showRecentHistory() {
     const recent = this.getSearchHistory();
-    if (!recent || recent.length === 0) {
+    const usual = this.usualNow();
+    if (!recent.length && !usual.length) {
       this.closeSuggestions();
       return;
     }
@@ -317,6 +338,7 @@ class SearchWidget {
       query: "",
       calcResult: null,
       bookmarkMatches: [],
+      usual,
       historyMatches: recent
     });
   }
@@ -419,6 +441,9 @@ class SearchWidget {
     }
     this.endCommandMode();
     const token = ++this.queryToken;
+    // Units, times and money (convert.js) are read in at the first question the box is asked.
+    if (!window.NordlysConvert) await loadScript("src/js/convert.js");
+    if (token !== this.queryToken) return;
     const golink = this.keywordOf(query);
     const calcResult = this.tryCalculate(query) || this.convert(query);
     const capture = this.captureOf(query);
@@ -501,7 +526,7 @@ class SearchWidget {
     return this.ratesAsked;
   }
 
-  renderSuggestions({ golink, calcResult, capture, bookmarkMatches, found, settingsMatches, historyMatches }) {
+  renderSuggestions({ golink, calcResult, capture, bookmarkMatches, usual, found, settingsMatches, historyMatches }) {
     if (!this.sugg) return;
     this.sugg.replaceChildren();
     this.selIdx = -1;
@@ -561,6 +586,7 @@ class SearchWidget {
 
     // 2. A task to add, the bookmarks on the board, then what the browser has.
     if (capture) addRow("sugg-capture", ROW_ICONS.capture, this.say("search.capture", `Add a task: ${capture}`, { text: capture }), "", "", () => this.capture(capture));
+    for (const bm of usual || []) addRow("sugg-bookmark sugg-usual", ROW_ICONS.usual, bm.name || host(bm.url), host(bm.url), this.say("search.usualNow", "Usually now"), () => this.openUrl(bm.url));
     for (const bm of bookmarkMatches || []) addRow("sugg-bookmark", ROW_ICONS.bookmark, bm.name || "Bookmark", bm.url || "", bm.groupLabel || "Folder", () => this.openUrl(bm.url));
     for (const tab of found?.tabs || []) addRow("sugg-tab", ROW_ICONS.tab, tab.name, host(tab.url), this.say("search.switchTab", "Switch to tab"), () => this.switchToTab(tab));
     for (const mark of found?.bookmarks || []) addRow("sugg-browser-bookmark", ROW_ICONS.bookmark, mark.name, host(mark.url), mark.folder || this.say("search.fromBookmarks", "Bookmarks"), () => this.openUrl(mark.url));
@@ -823,7 +849,7 @@ class SearchWidget {
       case "move": {
         const [g, l] = candidate.target.key.split(":").map(Number);
         const from = groups[g], to = groups[candidate.folder.key];
-        if (from?.source?.folderId || to?.source?.folderId) { done = false; break; }
+        if (from?.source || to?.source) { done = false; break; }
         const [link] = from.links.splice(l, 1);
         (to.links ||= []).push(link);
         break;

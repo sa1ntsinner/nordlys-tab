@@ -95,7 +95,10 @@ test('in Russian and German the cards speak the language', async ({ nordlysPage 
   const { page } = nordlysPage;
   await on(page);
   for (const [lang, words] of [['ru', ['Фокус дня', 'Задачи', 'Таймер фокуса']], ['de', ['Fokus des Tages', 'Aufgaben', 'Fokus-Timer']]]) {
-    await page.evaluate(value => window.I18N.setLanguage(value), lang);
+    // Not awaited in the page: the cards redraw as the promise settles, and the
+    // collection that redraw sets off can take the promise before Chromium's
+    // inspector reads it ("Resulting promise was garbage collected").
+    await page.evaluate(value => { window.I18N.setLanguage(value); }, lang);
     await expect(page.locator('#dash .dash-head h2')).toHaveText(words);
     const text = await page.locator('#dash').innerText();
     expect(text).not.toMatch(/dash\.[a-z]/);

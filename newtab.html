@@ -634,6 +634,10 @@
           <span id="cfg-remember-searches-label"><span data-i18n="general.rememberSearches">Remember recent searches</span><small class="row-hint" data-i18n="general.rememberSearchesHint">Kept on this device only. Turning it off forgets them.</small></span>
           <label class="tg"><input id="cfg-remember-searches" type="checkbox" aria-labelledby="cfg-remember-searches-label" checked><i></i></label>
         </div>
+        <div class="row setting-row">
+          <span id="cfg-suggest-usual-label"><span data-i18n="general.suggestUsual">Offer what you usually open at this hour</span><small class="row-hint" data-i18n="general.suggestUsualHint">Shown when the search box is empty. Counted on this device only; turning it off forgets it.</small></span>
+          <label class="tg"><input id="cfg-suggest-usual" type="checkbox" aria-labelledby="cfg-suggest-usual-label" checked><i></i></label>
+        </div>
         <!-- What else the search box looks through (search-sources.js). Each
              asks the browser for its leave when it is turned on, and finds
              nothing until it has it. -->
@@ -885,6 +889,22 @@
         <div id="cfg-groups-editor"></div>
         <!-- A slot where the next folder goes, not the loudest thing in the panel. -->
         <button id="cfg-add-group" type="button" class="glass-btn add-slot" data-i18n="bookmarks.addFolder">New folder</button>
+        <!-- Folders that follow a list kept at a web address (settings.js, lists.js). -->
+        <details id="follow-list" class="advanced-settings">
+          <summary data-i18n="follow.title">Follow a list at an address</summary>
+          <p id="follow-hint" class="row-hint" data-i18n="follow.hint">A list of bookmarks kept at a web address, by your team or by you for every computer: a Nordlys backup, a bookmarks file a browser exported, or plain text with an address on each line. Its folders come onto the board and follow the list, read again every hour without cookies. Nordlys asks for leave to reach that one site.</p>
+          <div class="backup-url-row">
+            <input id="follow-url" type="url" class="ipt" spellcheck="false" autocomplete="off" placeholder="https://…/team-links.md" aria-label="Address of the list" data-i18n-aria="follow.address" aria-describedby="follow-hint">
+            <button id="follow-run" type="button" class="glass-btn" data-i18n="follow.run">Follow</button>
+          </div>
+        </details>
+        <!-- The bookmarks there twice and the pages that are gone (settings.js, link-check.js). -->
+        <details id="link-check" class="advanced-settings link-check">
+          <summary data-i18n="check.title">Check the bookmarks</summary>
+          <p class="row-hint" data-i18n="check.hint">Finds the bookmarks that are on the board twice and the pages that are no longer there. Each site is asked once, without cookies. To tell a page that is gone from one that is there, Nordlys asks for leave to read those sites, and gives it back when it is done.</p>
+          <div class="check-run-row"><button id="check-run" type="button" class="glass-btn" data-i18n="check.run">Check now</button><span id="check-state" class="check-state" role="status"></span></div>
+          <div id="check-results" class="check-results"></div>
+        </details>
       </section>
 
       <!-- 6. Custom CSS Section -->
@@ -1353,6 +1373,10 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
       <span data-i18n="ctx.copyLink">Copy Link Address</span>
     </div>
+    <div class="ctx-item" data-action="watch">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>
+      <span data-i18n="ctx.watch">Show if it is up</span>
+    </div>
     <div class="ctx-divider" data-device-only hidden></div>
     <div class="ctx-item" data-action="device-here-only" data-device-only hidden>
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
@@ -1604,7 +1628,6 @@
   <script src="src/js/skies/compose-weather.js"></script>
   <script src="src/js/skies/compose-land.js"></script>
   <script src="src/js/calc.js"></script>
-  <script src="src/js/convert.js"></script>
   <script src="src/js/commands.js"></script>
   <script src="src/js/search-sources.js"></script>
   <script src="src/js/widgets.js"></script>
@@ -1632,7 +1655,6 @@
   <script src="src/js/focus-mode.js"></script>
   <script src="src/js/settings-sky.js"></script>
   <script src="src/js/settings.js"></script>
-  <script src="src/js/importers.js"></script>
   <script src="src/js/shortcut-hints.js"></script>
   <script src="src/js/config-schema.js"></script>
   <script src="src/js/app.js"></script>

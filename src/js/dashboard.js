@@ -69,6 +69,20 @@
     return error?.message || String(error);
   };
   const storage = () => (typeof chrome !== "undefined" && chrome.storage?.local) || null;
+  /* The browser's own icon for a page where it gives one (an extension page
+     with the favicon permission); the page's first letter otherwise. */
+  const pageLetter = (url) => { let host = ""; try { host = new URL(url).hostname.replace(/^www\./, ""); } catch (error) {} return el("span", { class: "dash-stash-icon is-letter", "aria-hidden": "true", dataset: { letter: (host[0] || "?").toUpperCase() } }); };
+  const pageIcon = (url) => {
+    if (location.protocol !== "chrome-extension:") return pageLetter(url);
+    const img = el("img", { class: "dash-stash-icon", alt: "", width: "16", height: "16", loading: "lazy" });
+    img.src = chrome.runtime.getURL(`/_favicon/?pageUrl=${encodeURIComponent(url)}&size=32`);
+    img.addEventListener("error", () => img.replaceWith(pageLetter(url)));
+    return img;
+  };
+  // The second calendar of a connection and on, after the connection's own colour.
+  const CALENDAR_TINTS = ["#5aa9ff", "#f5a524", "#9d7bff", "#f06292", "#35d6c0", "#9ccc4f", "#ff8a65"];
+  // The files that draw the cards few people add (feeds, a value, tabs), in the order they load.
+  const LATER = ["src/js/feeds.js", "src/js/dash-cards.js"];
 
   const ICONS = {
     focus: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-4a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0-4a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z",
@@ -90,6 +104,10 @@
     habits: "M9 11l3 3 8-8M20 12v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11",
     flame: "M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-7 1.5 1 2 2 2 3 1-2 1-4 1-6Z",
     stash: "M4 7h16v12H4zM4 7l2-3h12l2 3M9 12h6",
+    feeds: "M5 19h.01M5 12a7 7 0 0 1 7 7M5 5a14 14 0 0 1 14 14",
+    value: "M4 19h16M5 15l4-4 3 3 7-7M15 7h4v4",
+    tabs: "M3 8h18v12H3zM3 8V5h6l2 3M13 8V5h6v3",
+    closed: "M12 21a9 9 0 1 0-9-9M3 12V6M3 12h6M12 7v5l3 2",
     stopSquare: "M7 7h10v10H7z",
     inbox: "M3 13h5l1.5 3h5L16 13h5M5 5h14l2 8v6H3v-6z",
     agenda: "M4 5h16v15H4zM4 10h16M9 3v4M15 3v4M8 14h3M8 17h6",
@@ -114,6 +132,8 @@
   };
 
   // Names for the sounds and the kinds of sky, as the message keys spell them.
+  // Sites kept shut while focusing need the worker, which a Safari build has none of (build-ports.cjs).
+  const WORKER = (() => { try { return Boolean(chrome.runtime.getManifest().background); } catch (error) { return true; } })();
   const SOUND_NAMES = {
     rain: () => say("dash.sound.rain", "Rain"), ocean: () => say("dash.sound.ocean", "Ocean"), brown: () => say("dash.sound.brown", "Deep noise"),
     wind: () => say("dash.sound.wind", "Wind"), aurora: () => say("dash.sound.aurora", "Aurora pad")
@@ -431,16 +451,7 @@
         const api = () => (typeof chrome !== "undefined" ? chrome : null);
         const self = (() => { try { return api()?.runtime?.getURL?.("") || location.origin; } catch (error) { return location.origin; } })();
         let open = null;
-        /* The browser's own icon for a page where there is one (an extension
-           page with the favicon permission); its first letter otherwise. */
-        const letter = (url) => { let host = ""; try { host = new URL(url).hostname.replace(/^www./, ""); } catch (error) {} return el("span", { class: "dash-stash-icon is-letter", "aria-hidden": "true", dataset: { letter: (host[0] || "?").toUpperCase() } }); };
-        const favicon = (url) => {
-          if (location.protocol !== "chrome-extension:") return letter(url);
-          const img = el("img", { class: "dash-stash-icon", alt: "", width: "16", height: "16", loading: "lazy" });
-          img.src = api().runtime.getURL(`/_favicon/?pageUrl=${encodeURIComponent(url)}&size=32`);
-          img.addEventListener("error", () => img.replaceWith(letter(url)));
-          return img;
-        };
+        const favicon = pageIcon;
         // Asked for when first used, from the click that needs it.
         const allowed = () => new Promise((resolve) => {
           const perms = api()?.permissions;
@@ -660,12 +671,22 @@
           for (const e of events) { const d = e.allDay ? String(e.start).slice(0, 10) : K.dayOf(new Date(e.start)); if (!byDay.has(d)) byDay.set(d, []); byDay.get(d).push(e); }
           const next = events.find((e) => !e.allDay && new Date(e.start).getTime() > now);
           list.replaceChildren(...(events.length ? [...byDay].flatMap(([d, es]) => [el("h3", { class: "dash-inbox-group", text: dayName(d) }), ...es.map((e) => {
-            const live = !e.allDay && new Date(e.start).getTime() <= now && new Date(e.end || e.start).getTime() > now;
-            return el("a", { class: `dash-event${live ? " is-now" : ""}${e === next ? " is-next" : ""}`, href: e.url || "#", target: "_blank", rel: "noopener", onclick: (ev) => { if (!e.url) ev.preventDefault(); } }, [
+            const starts = new Date(e.start).getTime();
+            const live = !e.allDay && starts <= now && new Date(e.end || e.start).getTime() > now;
+            // A second calendar and on each have a colour of their own.
+            const tint = e.calendar ? CALENDAR_TINTS[(e.calendar - 1) % CALENDAR_TINTS.length] : C.CONNECTORS[e.source]?.color || "var(--accent)";
+            const row = el("a", { class: `dash-event${live ? " is-now" : ""}${e === next ? " is-next" : ""}`, href: e.url || "#", target: "_blank", rel: "noopener", onclick: (ev) => { if (!e.url) ev.preventDefault(); } }, [
               el("span", { class: "dash-event-time", text: e.allDay ? say("dash.allDay", "All day") : time(e.start) }),
-              el("span", { class: "dash-event-bar", style: `--brand:${C.CONNECTORS[e.source]?.color || "var(--accent)"}`, "aria-hidden": "true" }),
+              el("span", { class: "dash-event-bar", style: `--brand:${tint}`, "aria-hidden": "true" }),
               el("span", { class: "dash-task-main" }, [el("span", { class: "dash-event-title", text: e.title }), e.where ? el("span", { class: "dash-task-meta", text: e.where }) : null])
             ]);
+            if (!e.join) return row;
+            // An online meeting's own way in, lit from ten minutes before it starts until it ends.
+            const soon = live || (!e.allDay && starts > now && starts - now <= 10 * 60e3);
+            return el("div", { class: "dash-event-row" }, [row, el("a", {
+              class: `dash-join${soon ? " is-soon" : ""}`, href: e.join, target: "_blank", rel: "noopener",
+              "aria-label": say("dash.joinEvent", "Join {event}", { event: e.title }), text: say("dash.join", "Join")
+            })]);
           })]) : [el("p", { class: "dash-tasks-empty", text: card.loading ? say("dash.inboxLoading", "Looking…") : say("dash.agendaFree", "Nothing on the calendar for two weeks.") })]));
           fadeWhenMore(list);
           const errors = Object.entries(card.data.errors || {});
@@ -702,8 +723,13 @@
       settings: [
         { key: "focus", type: "number", min: 1, max: 60, value: 25, label: () => say("dash.timerFocusMin", "Focus, minutes") },
         { key: "rest", type: "number", min: 1, max: 60, value: 5, label: () => say("dash.timerRestMin", "Break, minutes") },
-        { key: "sound", type: "select", value: "", label: () => say("dash.timerSound", "Sound while focusing"), options: () => [["", say("dash.soundNone", "None")], ...(window.NordlysSoundscapes?.KINDS || []).filter((kind) => SOUND_NAMES[kind]).map((kind) => [kind, SOUND_NAMES[kind]()])] }
+        { key: "sound", type: "select", value: "", label: () => say("dash.timerSound", "Sound while focusing"), options: () => [["", say("dash.soundNone", "None")], ...(window.NordlysSoundscapes?.KINDS || []).filter((kind) => SOUND_NAMES[kind]).map((kind) => [kind, SOUND_NAMES[kind]()])] },
+        // Kept shut by the worker while a focus runs (worker.js, blocked.html).
+        ...(WORKER ? [{ key: "shut", type: "textarea", value: "", spellcheck: "false", label: () => say("dash.timerShut", "Sites kept shut while focusing"), placeholder: () => "youtube.com\nreddit.com",
+          hint: () => say("dash.timerShutHint", "One on each line. While a focus runs, a tab that goes to one waits on a quiet page and goes on when the focus ends. For this, Nordlys asks to see your tabs' addresses.") }] : [])
       ],
+      // Seeing a tab's address takes the "tabs" leave, asked from the click that sets the list.
+      permissions: (values) => (String(values.shut || "").trim() ? ["tabs"] : []),
       applySettings(card) {
         const t = card.data;
         t.focus = Math.max(1, Math.min(60, Number(card.settings.focus) || 25));
@@ -883,11 +909,18 @@
         card.update = render;
         render();
       }
-    }
+    },
+
+    /* Drawn by dash-cards.js, which a tab reads only once one of these is
+       on its dashboard: a page without them never pays for them. */
+    feeds: { name: () => say("dash.feeds", "Feeds"), size: 1, files: LATER },
+    value: { name: () => say("dash.value", "A value from the web"), size: 1, files: LATER },
+    tabs: { name: () => say("dash.tabs", "Open tabs"), size: 1, files: LATER },
+    closed: { name: () => say("dash.closed", "Recently closed"), size: 1, files: LATER }
   };
-  const ORDER = ["focus", "tasks", "habits", "timer", "notes", "weather", "clocks", "countdown", "inbox", "agenda", "stash", "quote"];
+  const ORDER = ["focus", "tasks", "habits", "timer", "notes", "weather", "clocks", "countdown", "inbox", "agenda", "feeds", "stash", "closed", "tabs", "value", "quote"];
   // Offered last, under "More": cards few people add.
-  const MORE = new Set(["habits", "quote"]);
+  const MORE = new Set(["habits", "quote", "tabs", "value"]);
   /* How big each kind of card starts, and how small or large it may be
      made, in cells of the twelve-column grid (dash-layout.js). */
   const SIZES = {
@@ -902,7 +935,11 @@
     weather: { w: 6, h: 2, minW: 3, minH: 2, maxH: 3 },
     clocks: { w: 3, h: 2, minW: 2, minH: 2 },
     countdown: { w: 3, h: 2, minW: 2, minH: 2, maxH: 3 },
-    quote: { w: 6, h: 2, minW: 3, minH: 2, maxH: 3 }
+    quote: { w: 6, h: 2, minW: 3, minH: 2, maxH: 3 },
+    feeds: { w: 4, h: 3, minW: 3, minH: 2 },
+    value: { w: 3, h: 2, minW: 2, minH: 2, maxH: 3 },
+    tabs: { w: 4, h: 3, minW: 3, minH: 2 },
+    closed: { w: 3, h: 3, minW: 3, minH: 2 }
   };
   const GEOMETRY = ["x", "y", "w", "h", "size"];
   const DL = window.NordlysDashLayout;
@@ -943,6 +980,7 @@
       this.saveTimers = new Map();
       this.ticker = 0;
       this.menu = null;
+      this.files = new Set();
       if (typeof chrome !== "undefined") chrome.storage?.onChanged?.addListener?.((changes, area) => {
         if (area !== "local") return;
         /* An app connected or disconnected in another tab: this one takes the
@@ -1352,6 +1390,16 @@
       });
     }
 
+    /* The files the cards on the page need beyond this one, read the first
+       time; Settings learns then what those cards can be set to. */
+    async need(widgets) {
+      const files = [...new Set(widgets.flatMap((w) => TYPES[w.type]?.files || []))];
+      const fresh = files.filter((file) => !this.files.has(file));
+      for (const file of files) await loadScript(file);
+      fresh.forEach((file) => this.files.add(file));
+      if (fresh.length) this.renderSection();
+    }
+
     // ── Drawing ──────────────────────────────────────────────────
     /* Drawing waits for what the cards hold, so a caller that needs the cards
        (a command) is handed the drawing already under way rather than none. */
@@ -1380,7 +1428,7 @@
         this.schedule();
         return;
       }
-      await this.load(widgets.map((w) => this.dataKey(w)));
+      await Promise.all([this.load(widgets.map((w) => this.dataKey(w))), this.need(widgets)]);
       if (signature !== this.signature) return;
       const focusedId = document.activeElement?.closest?.(".dash-card")?.dataset.widgetId;
       const focusedMenu = document.activeElement?.classList.contains("dash-menu-btn");
@@ -1562,7 +1610,10 @@
       const errors = {};
       await Promise.all(ids.map(async (id) => {
         try {
-          items.push(...await C.list(id, this.connections[id]));
+          const found = await C.list(id, this.connections[id]);
+          items.push(...found);
+          // One calendar of several that did not answer: the rest are shown, and it is named.
+          if (found.failed) errors[id] = explain(found.failed);
         } catch (error) { errors[id] = explain(error); }
       }));
       return { items, errors };
@@ -1590,11 +1641,21 @@
       ]);
       const inputs = {};
       for (const field of c.fields) {
-        const input = el("input", { id: `dash-conn-${field.key}`, class: "dash-input", type: field.secret ? "password" : "text", autocomplete: "off", spellcheck: "false", placeholder: field.placeholder || "" });
-        input.value = saved[field.key] || "";
-        inputs[field.key] = input;
+        // A field that takes several (calendar links) is a line each, kept one per line.
+        const box = el("div", { class: "dash-field-inputs" });
+        const add = (value = "") => {
+          const n = box.childElementCount;
+          const input = el("input", { id: `dash-conn-${field.key}${n ? `-${n}` : ""}`, class: "dash-input", type: field.secret ? "password" : "text", autocomplete: "off", spellcheck: "false", placeholder: field.placeholder || "", "aria-label": n ? `${field.label} (${n + 1})` : null });
+          input.value = value;
+          box.append(input);
+          return input;
+        };
+        const values = field.multiple ? String(saved[field.key] || "").split(/\s+/).filter(Boolean) : [saved[field.key] || ""];
+        (values.length ? values : [""]).forEach((value) => add(value));
+        inputs[field.key] = box;
+        const more = field.multiple ? el("button", { type: "button", class: "dash-link", text: say("dash.addCalendar", "Add another calendar"), onclick: () => { if (box.childElementCount < 8) add().focus(); } }) : null;
         form.append(el("div", { class: "dash-field" }, [
-          el("label", { for: input.id, text: field.label }), input,
+          el("label", { for: `dash-conn-${field.key}`, text: field.label }), box, more,
           field.help ? el("a", { class: "dash-link dash-help", href: field.help, target: "_blank", rel: "noopener", text: say("dash.whereToFind", "Where to find it ↗") }) : null
         ]));
       }
@@ -1610,7 +1671,7 @@
         event.preventDefault();
         error.textContent = "";
         const creds = { ...saved };
-        for (const [key, input] of Object.entries(inputs)) creds[key] = input.value.trim();
+        for (const [key, box] of Object.entries(inputs)) creds[key] = [...box.querySelectorAll("input")].map((input) => input.value.trim()).filter(Boolean).join("\n");
         if (!C.ready(id, creds)) { error.textContent = say("dash.fillFields", "Fill in the fields above."); return; }
         const origins = C.originsOf(id, creds);
         const perms = typeof chrome !== "undefined" ? chrome.permissions : null;
@@ -1639,7 +1700,22 @@
       dialog.addEventListener("close", () => dialog.remove());
       document.body.append(dialog);
       dialog.showModal();
-      (Object.values(inputs)[0] || submit).focus();
+      (Object.values(inputs)[0]?.querySelector("input") || submit).focus();
+    }
+    /* Leave to read these sites, asked from the click that needs it (a
+       browser asks only then). Only https sites can be asked for. */
+    askLeave(origins) {
+      const perms = typeof chrome !== "undefined" ? chrome.permissions : null;
+      const wanted = [...new Set(origins)].filter((origin) => origin.startsWith("https://"));
+      if (!perms?.request || !wanted.length) return Promise.resolve(false);
+      return new Promise((resolve) => perms.request({ origins: wanted }, (granted) => { void chrome.runtime?.lastError; resolve(Boolean(granted)); }));
+    }
+    // Those of these sites Nordlys has no leave to read yet.
+    async withoutLeave(origins) {
+      const perms = typeof chrome !== "undefined" ? chrome.permissions : null;
+      if (!perms?.contains) return [];
+      const held = await Promise.all(origins.map((origin) => new Promise((resolve) => perms.contains({ origins: [origin] }, (yes) => { void chrome.runtime?.lastError; resolve(Boolean(yes)); }))));
+      return origins.filter((origin, index) => !held[index]);
     }
     afterConnections() {
       this.renderSection();
@@ -1654,7 +1730,7 @@
     }
     async openSettings(widget) {
       const type = TYPES[widget.type];
-      const fields = [...(widget.type === "tasks" || widget.type === "notes" ? [{ key: "title", type: "text", value: "", label: () => say("dash.cardName", "Name of the card") }] : []), ...(type.settings || [])];
+      const fields = [...(widget.type === "tasks" || widget.type === "notes" || type.named ? [{ key: "title", type: "text", value: "", label: () => say("dash.cardName", "Name of the card") }] : []), ...(type.settings || [])];
       const values = structuredClone(widget.settings || {});
       const form = el("form", { class: "dash-form" });
       const dialog = el("dialog", { class: "dash-dialog glass-panel", "aria-labelledby": "dash-dialog-title" }, [
@@ -1679,7 +1755,7 @@
             return el("label", { class: "dash-source" }, [box, this.brandIcon(cid, 14), el("span", { text: C.CONNECTORS[cid].name }), this.connected(cid) ? null : el("button", { type: "button", class: "dash-link", text: say("dash.connect", "Connect"), onclick: () => this.openConnect(cid) })]);
           }));
         } else if (field.type === "textarea") {
-          control = el("textarea", { id, class: "dash-input dash-textarea", rows: "5", maxlength: "4000" });
+          control = el("textarea", { id, class: "dash-input dash-textarea", rows: "5", maxlength: "4000", placeholder: field.placeholder?.(), spellcheck: field.spellcheck });
           control.value = values[field.key] ?? field.value ?? "";
           control.addEventListener("input", () => { values[field.key] = control.value; });
         } else if (field.type === "zones") {
@@ -1687,11 +1763,13 @@
         } else if (field.type === "place") {
           control = this.placeField(id, values);
         } else {
-          control = el("input", { id, class: "dash-input", type: field.type, min: field.min, max: field.max });
+          control = el("input", { id, class: "dash-input", type: field.type, min: field.min, max: field.max, placeholder: field.placeholder?.(), spellcheck: field.spellcheck });
           control.value = values[field.key] ?? field.value ?? "";
           control.addEventListener("input", () => { values[field.key] = field.type === "number" ? Number(control.value) : control.value; });
         }
-        form.append(el("div", { class: "dash-field" }, [label, control]));
+        const hint = field.hint ? el("small", { id: `${id}-hint`, class: "dash-note-small", text: field.hint() }) : null;
+        if (hint) control.setAttribute("aria-describedby", hint.id);
+        form.append(el("div", { class: "dash-field" }, [label, control, hint]));
       }
       const done = el("button", { type: "submit", class: "glass-btn accent", text: say("dash.save", "Save") });
       const cancel = el("button", { type: "button", class: "glass-btn", text: say("dash.cancel", "Cancel"), onclick: () => dialog.close() });
@@ -1701,6 +1779,15 @@
         this.change(widget.id, (w) => ({ ...w, settings: values }));
         const data = this.data.get(widget.id);
         if (widget.type === "weather" && data) { data.at = 0; this.persist(widget.id, data); }
+        // Leave to read the sites the card now names, asked from this click; what it cannot read, it says.
+        const origins = type.origins?.(values) || [];
+        if (origins.length) this.askLeave(origins).then((granted) => { if (granted) this.cards.get(widget.id)?.reload?.(); });
+        const needs = type.permissions?.(values) || [];
+        const perms = typeof chrome !== "undefined" ? chrome.permissions : null;
+        if (needs.length && perms?.request) perms.request({ permissions: needs }, (granted) => {
+          void chrome.runtime?.lastError;
+          if (!granted && typeof toast === "function") toast(say("dash.timerShutRefused", "Without leave to see your tabs, no site can be kept shut."), "danger", 5000);
+        });
         dialog.close();
       });
       dialog.addEventListener("close", () => { dialog.remove(); this.cards.get(widget.id)?.root.querySelector(".dash-menu-btn")?.focus(); });
@@ -1807,5 +1894,7 @@
   }
 
   NordlysDashboard.TYPES = TYPES;
+  // What dash-cards.js draws with, so the cards read later look and speak as these do.
+  NordlysDashboard.kit = { el, icon, say, locale, explain, fadeWhenMore, pageIcon, ICONS };
   window.NordlysDashboard = NordlysDashboard;
 })();

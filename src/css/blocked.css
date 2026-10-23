@@ -1,0 +1,21 @@
+/* The quiet page a site kept shut while a focus runs waits on (blocked.html):
+   the product's night, or its day when the system is light. */
+:root { color-scheme: dark; --shut-bg: #0b1222; }
+@media (prefers-color-scheme: light) {
+  :root { color-scheme: light; --shut-bg: #f4f6fb; --ink: #172036; --dim: #4b5874; }
+}
+* { box-sizing: border-box; }
+body {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  margin: 0;
+  padding: var(--nl-space-4);
+  background: var(--shut-bg);
+  color: var(--nl-text-primary);
+  font: 400 var(--nl-text-md)/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.shut { max-width: 34rem; text-align: center; }
+.shut h1 { margin: 0 0 var(--nl-space-3); font-size: var(--nl-text-2xl); font-weight: 600; }
+.shut-said { margin: 0 0 var(--nl-space-2); font-size: var(--nl-text-lg); }
+.shut-note { margin: 0; color: var(--nl-text-secondary); font-size: var(--nl-text-sm); }

@@ -59,12 +59,76 @@ class GridController {
         return false;
       }
     }, true);
+    // A bookmark opened, and at what hour, for the search box's "usually now" (widgets.js).
+    const opened = (event) => {
+      const tile = event.target.closest?.("#board a.tile");
+      if (!tile || (event.type === "auxclick" && event.button !== 1)) return;
+      this.app.widgets?.search?.noteOpen(this.app.config.groups[tile.dataset.groupIdx]?.links?.[tile.dataset.linkIdx]?.url);
+    };
+    window.addEventListener("click", opened);
+    window.addEventListener("auxclick", opened);
 
     this.initContextMenusAndModals();
     this.initPastedLinks();
     this.showMenuKeys();
     this.drag = window.NordlysBoardDrag ? new window.NordlysBoardDrag(this) : null;
     this.arrange = window.NordlysBoardArranger ? new window.NordlysBoardArranger(this) : null;
+    // Watched sites are asked about only while a tab is shown; what another tab learnt shows here too.
+    document.addEventListener("visibilitychange", () => this.watchSites());
+    window.addEventListener("storage", (event) => { if (event.key === GridController.STATUS_KEY) this.paintAllStatus(); });
+  }
+
+  /* ── Sites that say whether they answer ─────────────────────────
+     A bookmark marked to be watched wears a dot: green when its site
+     answered, amber when that took more than a second and a half, red when
+     it did not answer at all. The question is a HEAD request that needs no
+     permission and reads nothing back (no-cors), asked at most every five
+     minutes for every tab together, and only while one is shown. */
+  static STATUS_KEY = "nordlys_site_status";
+  static WATCH_EVERY = 5 * 60e3;
+  siteStatus() { try { return JSON.parse(localStorage.getItem(GridController.STATUS_KEY) || "{}") || {}; } catch (error) { return {}; } }
+  saveSiteStatus(all, keep) {
+    try { localStorage.setItem(GridController.STATUS_KEY, JSON.stringify(Object.fromEntries(keep.filter((url) => all[url]).map((url) => [url, all[url]])))); }
+    catch (error) { /* full or blocked: shown here, not kept */ }
+  }
+  async probeSite(url) {
+    const control = new AbortController();
+    const timer = setTimeout(() => control.abort(), 8000);
+    const began = performance.now();
+    try {
+      await fetch(url, { method: "HEAD", mode: "no-cors", cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer", signal: control.signal });
+      return { up: true, ms: Math.round(performance.now() - began), at: Date.now() };
+    } catch (error) { return { up: false, ms: 0, at: Date.now() }; }
+    finally { clearTimeout(timer); }
+  }
+  watchSites() {
+    clearTimeout(this.watchTimer);
+    if (document.visibilityState !== "visible") return;
+    const urls = [...new Set((this.app.config.groups || []).flatMap((group) => (group.hidden ? [] : group.links || []).filter((link) => link.watch && /^https?:\/\//i.test(link.url || "")).map((link) => link.url)))];
+    if (!urls.length) return;
+    const seen = this.siteStatus();
+    const due = urls.filter((url) => Date.now() - (seen[url]?.at || 0) >= GridController.WATCH_EVERY);
+    if (due.length) {
+      // Marked as asked before the answers come, so a tab opened meanwhile does not ask again.
+      for (const url of due) seen[url] = { ...seen[url], at: Date.now() };
+      this.saveSiteStatus(seen, urls);
+      Promise.all(due.map((url) => this.probeSite(url))).then((answers) => {
+        const now = this.siteStatus();
+        due.forEach((url, index) => { now[url] = answers[index]; });
+        this.saveSiteStatus(now, urls);
+        this.paintAllStatus(now);
+      });
+    }
+    this.watchTimer = setTimeout(() => this.watchSites(), GridController.WATCH_EVERY);
+  }
+  paintAllStatus(seen = this.siteStatus()) { this.board?.querySelectorAll(".tile.is-watched").forEach((tile) => this.paintStatus(tile, seen)); }
+  paintStatus(tile, seen = this.siteStatus()) {
+    const answer = seen[tile.dataset.watch];
+    const known = answer && "up" in answer;
+    tile.querySelector(".tile-status").dataset.state = !known ? "unknown" : !answer.up ? "down" : answer.ms > 1500 ? "slow" : "up";
+    tile.querySelector(".tile-status-said").textContent = !known ? this.say("watch.checking", "Checking whether it answers")
+      : answer.up ? this.say("watch.up", `Answers in ${answer.ms} ms`, { ms: answer.ms }) : this.say("watch.down", "Not answering");
+    this.titleTile(tile);
   }
 
   render() {
@@ -130,6 +194,7 @@ class GridController {
     this.numberShortcuts();
     this.wireRovingTiles();
     this.arrange?.refresh();
+    this.watchSites();
     // The dashboard follows the board: a new profile, a restore, another tab.
     this.app.dashboard?.render();
     // A new board is fitted before it is ever painted (page-fit.js).
@@ -280,11 +345,14 @@ class GridController {
      tooltip that repeats what is already on screen is noise on every hover. */
   titleCutNames() {
     if (!this.board) return;
-    for (const label of this.board.querySelectorAll(".tile .lbl")) {
-      const tile = label.closest(".tile");
-      if (label.scrollWidth > label.clientWidth + 1) tile.title = label.textContent;
-      else tile.removeAttribute("title");
-    }
+    for (const label of this.board.querySelectorAll(".tile .lbl")) this.titleTile(label.closest(".tile"));
+  }
+  // A tile's tooltip: its name where the label cuts it, and how a watched site answered.
+  titleTile(tile) {
+    const label = tile.querySelector(".lbl");
+    const title = [label && label.scrollWidth > label.clientWidth + 1 ? label.textContent : "", tile.querySelector(".tile-status-said")?.textContent].filter(Boolean).join(" · ");
+    if (title) tile.title = title;
+    else tile.removeAttribute("title");
   }
 
   /* ── The board from the keyboard ─────────────────────────────────
@@ -343,8 +411,8 @@ class GridController {
     };
     if (!group?.links) return;
     // A folder that follows the browser keeps the browser's order.
-    if (group.source?.folderId) {
-      NordlysUI.announce(say("announce.followsBrowserOrder", "This folder keeps the browser's order"));
+    if (group.source) {
+      NordlysUI.announce(this.ownerSays(group, "announce.followsBrowserOrder", "This folder keeps the browser's order"));
       return;
     }
     const target = this.tileToward(tile, key);
@@ -725,12 +793,27 @@ class GridController {
     a.appendChild(box);
     a.appendChild(lbl);
 
+    // A site asked to be watched says whether it answers (watchSites).
+    if (link.watch) {
+      a.classList.add("is-watched");
+      a.dataset.watch = link.url;
+      const dot = document.createElement("span");
+      dot.className = "tile-status";
+      dot.setAttribute("aria-hidden", "true");
+      const said = document.createElement("span");
+      said.className = "nl-visually-hidden tile-status-said";
+      box.appendChild(dot);
+      a.appendChild(said);
+      this.paintStatus(a);
+    }
+
     /* Picked up and carried by board-arrange.js. A folder that follows the
        browser owns its order and its contents, so its tiles stay put. */
     this.drag?.bindTile(a);
 
     // Bookmark Right-Click Context Menu Trigger
     a.addEventListener("contextmenu", (e) => {
+      if (this.menuKeyEcho(e)) return;
       e.preventDefault();
       e.stopPropagation();
       this.openTileContextMenu(e, gIdx, lIdx);
@@ -755,6 +838,7 @@ class GridController {
         e.preventDefault();
         e.stopPropagation();
         const rect = a.getBoundingClientRect();
+        this.menuKeyAt = performance.now();
         setTimeout(() => this.openTileContextMenu({ clientX: rect.left + 12, clientY: rect.bottom - 8, currentTarget: a }, gIdx, lIdx), 0);
       }
     });
@@ -824,6 +908,17 @@ class GridController {
   }
 
   /* ── Context Menus & Quick Edit Modals ──────────────────────── */
+  /* The Menu key opens a bookmark's menu itself (its keydown, above). The
+     browser sends its own contextmenu event for that key too, on Windows at
+     the keyup: the same request a second time, which opened the menu twice
+     and, when the timer ran late, again after it had been used. */
+  menuKeyEcho(event) {
+    if (performance.now() - (this.menuKeyAt ?? -Infinity) > 500) return false;
+    event.preventDefault();
+    event.stopPropagation();
+    return true;
+  }
+
   initContextMenusAndModals() {
     // Window click to close context menus
     window.addEventListener("click", (e) => {
@@ -834,6 +929,7 @@ class GridController {
 
     // Intelligent Context Menu Event Routing (Tile vs Folder vs Board Wallpaper)
     window.addEventListener("contextmenu", (e) => {
+      if (this.menuKeyEcho(e)) return;
       // 1. Ignore if right-clicked inside an active modal, settings drawer, or form inputs
       if (e.target.closest("#cfg, .quick-modal-backdrop, .modal-backdrop, input, textarea, select")) {
         return;
@@ -902,6 +998,12 @@ class GridController {
               toast(window.I18N ? window.I18N.t("toast.linkCopied") : "Link copied to clipboard", "success", 1800);
             }
           }
+        } else if (action === "watch") {
+          // A dot on the tile that says whether the site answers; again to take it off.
+          if (link.watch) delete link.watch;
+          else link.watch = true;
+          this.app.saveConfig();
+          this.render();
         } else if (action === "delete") {
           this.deleteBookmarkWithUndo(gIdx, lIdx);
         }
@@ -1009,7 +1111,7 @@ class GridController {
     document.getElementById("quick-delete-btn")?.addEventListener("click", () => {
       if (!this.activeTileTarget) return;
       const { gIdx, lIdx } = this.activeTileTarget;
-      if (this.app.config.groups[gIdx]?.source?.folderId) return;
+      if (this.app.config.groups[gIdx]?.source) return;
       this.closeQuickEditModal();
       this.deleteBookmarkWithUndo(gIdx, lIdx);
     });
@@ -1042,7 +1144,7 @@ class GridController {
       // 2. If folder was changed in the dropdown, move it immediately
       // Nothing moves out of a folder that follows the browser, or into one.
       const destination = this.app.config.groups[targetFolderIdx];
-      if (!oldGroup.source?.folderId && !isNaN(targetFolderIdx) && targetFolderIdx !== gIdx && destination && !destination.source?.folderId) {
+      if (!oldGroup.source && !isNaN(targetFolderIdx) && targetFolderIdx !== gIdx && destination && !destination.source) {
         oldGroup.links.splice(lIdx, 1);
         this.app.config.groups[targetFolderIdx].links.push(link);
         this.updateGridDOM(gIdx, targetFolderIdx);
@@ -1074,7 +1176,7 @@ class GridController {
       const link = oldGroup?.links[lIdx];
       if (!link) return;
 
-      const followed = Boolean(oldGroup.source?.folderId);
+      const followed = Boolean(oldGroup.source);
       const newTitle = followed ? link.name : document.getElementById("quick-title-input")?.value.trim() || link.name;
       let newUrl = followed ? link.url : document.getElementById("quick-url-input")?.value.trim() || link.url;
       if (newUrl && !/^https?:\/\//i.test(newUrl)) newUrl = `https://${newUrl}`;
@@ -1091,7 +1193,7 @@ class GridController {
 
       // Nothing moves out of a folder that follows the browser, or into one.
       const destination = this.app.config.groups[targetFolderIdx];
-      if (!oldGroup.source?.folderId && !isNaN(targetFolderIdx) && targetFolderIdx !== gIdx && destination && !destination.source?.folderId) {
+      if (!oldGroup.source && !isNaN(targetFolderIdx) && targetFolderIdx !== gIdx && destination && !destination.source) {
         oldGroup.links.splice(lIdx, 1);
         this.app.config.groups[targetFolderIdx].links.push(link);
         this.updateGridDOM(gIdx, targetFolderIdx);
@@ -1164,8 +1266,8 @@ class GridController {
     const folder = this.app.config.groups[gIdx];
     const links = folder?.links;
     if (!Array.isArray(links) || lIdx < 0 || lIdx >= links.length) return;
-    if (folder.source?.folderId) {
-      NordlysUI.announce(this.say("bookmarks.linkedRemoveHint", "Remove it in the browser; this folder follows along"));
+    if (folder.source) {
+      NordlysUI.announce(this.ownerSays(folder, "bookmarks.linkedRemoveHint", "Remove it in the browser; this folder follows along"));
       return;
     }
     const snapshot = JSON.parse(JSON.stringify(links[lIdx]));
@@ -1264,8 +1366,8 @@ class GridController {
   addLinkFrom(gIdx, link, at) {
     const group = this.app.config.groups[gIdx];
     if (!group || !link) return false;
-    if (group.source?.folderId) {
-      const message = this.say("bookmarks.linkedNoDrop", "This folder follows the browser. Add the bookmark there instead.");
+    if (group.source) {
+      const message = this.ownerSays(group, "bookmarks.linkedNoDrop", "This folder follows the browser. Add the bookmark there instead.");
       if (typeof toast === "function") toast(message, "danger", 2800); else NordlysUI.announce(message);
       return false;
     }
@@ -1314,7 +1416,7 @@ class GridController {
       if (!link) return;
       const held = Number(document.activeElement?.closest?.("#board .card")?.dataset.groupIdx);
       const groups = this.app.config.groups || [];
-      const gIdx = groups[held] && !groups[held].source?.folderId ? held : groups.findIndex((group) => !group.source?.folderId && !group.hidden);
+      const gIdx = groups[held] && !groups[held].source ? held : groups.findIndex((group) => !group.source && !group.hidden);
       if (gIdx < 0) return;
       e.preventDefault();
       this.addLinkFrom(gIdx, link);
@@ -1382,11 +1484,13 @@ class GridController {
     if (titleEl) titleEl.textContent = link?.name || (window.I18N ? window.I18N.t('ctx.link') : "Link");
     /* A followed bookmark is removed in the browser: deleted here, the next
        refresh would bring it straight back. */
-    const followed = Boolean(this.app.config.groups[gIdx]?.source?.folderId);
+    const followed = Boolean(this.app.config.groups[gIdx]?.source);
     const remove = this.tileCtxMenu.querySelector('[data-action="delete"]');
     remove?.toggleAttribute("disabled", followed);
     remove?.setAttribute("aria-disabled", String(followed));
-    if (remove) remove.title = followed ? this.say("bookmarks.linkedRemoveHint", "Remove it in the browser; this folder follows along") : "";
+    if (remove) remove.title = followed ? this.ownerSays(this.app.config.groups[gIdx], "bookmarks.linkedRemoveHint", "Remove it in the browser; this folder follows along") : "";
+    const watch = this.tileCtxMenu.querySelector('[data-action="watch"] span');
+    if (watch) watch.textContent = link?.watch ? this.say("ctx.unwatch", "Stop showing if it is up") : this.say("ctx.watch", "Show if it is up");
 
     this.positionMenu(this.tileCtxMenu, e.clientX, e.clientY, e.currentTarget || document.activeElement);
   }
@@ -1445,13 +1549,16 @@ class GridController {
     /* The browser owns a followed bookmark's name, address and folder; what
        it looks like is set here. The fields say so instead of taking an edit
        the next refresh would quietly undo. */
-    const followed = Boolean(this.app.config.groups[gIdx]?.source?.folderId);
+    const followed = Boolean(this.app.config.groups[gIdx]?.source);
     for (const input of [titleInput, urlInput]) if (input) input.readOnly = followed;
     // Removed in the browser, not here (the next refresh would bring it back).
     const deleteButton = document.getElementById("quick-delete-btn");
     if (deleteButton) deleteButton.hidden = followed;
     const linkedNote = document.getElementById("quick-edit-linked-note");
-    if (linkedNote) linkedNote.hidden = !followed;
+    if (linkedNote) {
+      linkedNote.hidden = !followed;
+      if (followed) linkedNote.textContent = this.ownerSays(this.app.config.groups[gIdx], "bookmarks.linkedEditHint", "This folder follows the browser: rename or change the address there. The icon and colour are yours to set here.", "follow.editHint");
+    }
     if (colorInput) colorInput.value = link.color || "#35d6c0";
     const toneSelect = document.getElementById("quick-tone-select");
     if (toneSelect) toneSelect.value = link.tone || "auto";
@@ -1483,7 +1590,7 @@ class GridController {
     const groups = this.app.config.groups || [];
     const at = Math.max(0, groups.indexOf(chosen));
     const home = groups[this.activeTileTarget?.gIdx];
-    const followed = Boolean(home?.source?.folderId);
+    const followed = Boolean(home?.source);
     folderSelect.innerHTML = groups
       .map((g, idx) => `<option value="${idx}" ${idx === at ? "selected" : ""}>${esc(g.label || this.say("bookmarks.newFolder", "New folder"))}</option>`)
       .join("");
@@ -1491,7 +1598,7 @@ class GridController {
     folderSelect.disabled = followed;
     // A folder that follows the browser is not a destination either.
     [...folderSelect.options].forEach((option) => {
-      option.disabled = groups[Number(option.value)] !== home && Boolean(groups[Number(option.value)]?.source?.folderId);
+      option.disabled = groups[Number(option.value)] !== home && Boolean(groups[Number(option.value)]?.source);
     });
     this.quickFolderChoices = [...groups];
     // The options are rebuilt, so the themed control has to be told —
@@ -1678,6 +1785,20 @@ class GridController {
     return value && value !== key ? value : fallback;
   }
 
+  // The site of the list a folder follows (lists.js); empty for any other folder.
+  siteOf(group) {
+    if (group?.source?.type !== "list") return "";
+    try { return new URL(group.source.url).hostname; } catch (error) { return ""; }
+  }
+
+  /* What a followed folder says when it is asked to change: the browser
+     owns it, or the list it follows (lists.js) does, at its site. */
+  ownerSays(group, key, fallback, listKey = "follow.owned") {
+    if (group?.source?.type !== "list") return this.say(key, fallback);
+    const site = this.siteOf(group);
+    return this.say(listKey, `This folder follows a list at ${site}. Change the list there.`, { site });
+  }
+
   /* ── Moving folders and bookmarks ───────────────────────────── */
   /* Every folder move ends here — a drop, an arrow key, Tidy up — so they all
      save the same way, animate the same way and can all be undone: from the
@@ -1728,10 +1849,10 @@ class GridController {
     const groups = this.app.config.groups || [];
     const link = from?.links?.[fromIndex];
     if (!link || !to) { lift?.remove(); return; }
-    if (from.source?.folderId || to.source?.folderId) {
+    if (from.source || to.source) {
       lift?.remove();
       this.updateGridDOM(groups.indexOf(from), groups.indexOf(to));
-      const message = this.say("bookmarks.linkedNoDrop", "This folder follows the browser. Add the bookmark there instead.");
+      const message = this.ownerSays(from.source ? from : to, "bookmarks.linkedNoDrop", "This folder follows the browser. Add the bookmark there instead.");
       if (typeof toast === "function") toast(message, "danger", 2800); else NordlysUI.announce(message);
       return;
     }

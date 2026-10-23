@@ -62,6 +62,29 @@ if (typeof importScripts === "function") importScripts("commands.js", "search-so
     });
   });
 
+  /* ── Sites kept shut while a focus runs ───────────────────────
+     The sites a focus timer card lists (its settings, in the saved config)
+     stay shut while a focus runs: a tab that goes to one is sent to a quiet
+     page (blocked.html) that goes on to the site once no focus runs. A tab's
+     address reaches this worker only with the "tabs" leave, asked for when
+     the list is set; without it, nothing here ever hears one. */
+  const focusTimer = () => new Promise((resolve) => chrome.storage.local.get("nordlys_dash.focus-timer", (items) => resolve(items?.["nordlys_dash.focus-timer"] || null)));
+  // When the focus that runs ends (a count-up one, never), or 0 when none runs; blocked.js reads it the same way.
+  const focusEnds = (timer, now) => (!timer?.running || timer.phase !== "focus" ? 0 : timer.mode === "countup" ? Infinity : timer.endsAt > now ? timer.endsAt : 0);
+  const siteOf = (line) => {
+    try { return new URL(/^[a-z][a-z\d+.-]*:\/\//i.test(line) ? line : `https://${line}`).hostname.replace(/^www\./, ""); } catch (error) { return ""; }
+  };
+  const shutSites = (saved) => (saved.dashboard?.widgets || []).filter((widget) => widget?.type === "timer")
+    .flatMap((widget) => String(widget.settings?.shut || "").split(/[\s,]+/)).map(siteOf).filter(Boolean);
+  chrome.tabs?.onUpdated?.addListener(async (tabId, change) => {
+    if (!/^https?:\/\//i.test(change.url || "")) return;
+    const [saved, timer] = await Promise.all([config(), focusTimer()]);
+    if (!focusEnds(timer, Date.now())) return;
+    const host = new URL(change.url).hostname.replace(/^www\./, "");
+    if (!shutSites(saved).some((site) => host === site || host.endsWith(`.${site}`))) return;
+    chrome.tabs.update(tabId, { url: chrome.runtime.getURL(`blocked.html?u=${encodeURIComponent(change.url)}`) });
+  });
+
   /* ── nl in the address bar ─────────────────────────────────── */
   chrome.omnibox.onInputChanged.addListener(async (text, suggest) => {
     const found = await answers(text);

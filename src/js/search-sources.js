@@ -45,6 +45,43 @@
     return rank(query, links, [[(link) => link.name, 1], [(link) => hostOf(link.url), 0.9], [(link) => link.groupLabel, 0.5]], limit);
   }
 
+  /* ── What is usually opened at this hour ─────────────────────
+     How often each bookmark was opened in each hour of the day: { day,
+     urls: { address: [24 counts] } }, kept on this device (widgets.js). Each
+     day that passes takes a twentieth off every count, so a habit given up
+     fades in a few weeks; past 300 pages the least opened are forgotten. */
+  const DAY = 864e5;
+  function noteOpen(rhythm, url, now = Date.now()) {
+    const kept = rhythm && typeof rhythm.urls === "object" && rhythm.urls ? rhythm : { day: 0, urls: {} };
+    const day = Math.floor(now / DAY);
+    if (kept.day && day > kept.day) {
+      const fade = 0.95 ** (day - kept.day);
+      for (const [address, hours] of Object.entries(kept.urls)) {
+        const left = hours.map((count) => Math.round(count * fade * 100) / 100);
+        if (left.some((count) => count >= 0.5)) kept.urls[address] = left; else delete kept.urls[address];
+      }
+    }
+    kept.day = Math.max(kept.day || 0, day);
+    (kept.urls[url] ||= Array(24).fill(0))[new Date(now).getHours()] += 1;
+    const total = (address) => kept.urls[address].reduce((sum, count) => sum + count, 0);
+    const pages = Object.keys(kept.urls);
+    if (pages.length > 300) pages.sort((a, b) => total(a) - total(b)).slice(0, pages.length - 300).forEach((address) => delete kept.urls[address]);
+    return kept;
+  }
+
+  // The bookmarks on the board opened most around this hour, about three times lately at least, best first.
+  function usual(groups, rhythm, now = Date.now(), limit = 3) {
+    const hour = new Date(now).getHours();
+    const near = (hours) => (hours[hour] || 0) + ((hours[(hour + 23) % 24] || 0) + (hours[(hour + 1) % 24] || 0)) / 2;
+    const seen = new Set();
+    return (groups || []).flatMap((group) => (group.links || []).map((link) => ({ ...link, groupLabel: group.label || "" })))
+      .map((link) => ({ link, score: near(rhythm?.urls?.[link.url] || []) }))
+      .filter(({ link, score }) => score >= 2.5 && !seen.has(link.url) && seen.add(link.url))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map(({ link }) => link);
+  }
+
   /* ── Keywords ──────────────────────────────────────────────── */
   /* A keyword the person set up in Settings → General: "gh" alone opens its
      site, "gh nordlys" puts the rest where its address has %s. An address
@@ -150,7 +187,7 @@
       .map((page) => ({ name: page.title || hostOf(page.url), url: page.url }));
   }
 
-  const NordlysSearchSources = { SOURCES, PERMISSION, KEYWORD, rank, board, keyword, settings, textOf, tabs, bookmarks, history, granted, forget, hostOf };
+  const NordlysSearchSources = { SOURCES, PERMISSION, KEYWORD, rank, board, usual, noteOpen, keyword, settings, textOf, tabs, bookmarks, history, granted, forget, hostOf };
   // globalThis, not window: the extension's worker (worker.js) reads keywords and the board too.
   globalThis.NordlysSearchSources = NordlysSearchSources;
   if (typeof module === "object" && module.exports) module.exports = NordlysSearchSources;

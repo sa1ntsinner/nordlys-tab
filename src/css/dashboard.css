@@ -526,6 +526,38 @@ html[data-dashboard][data-dash-folders="off"] :is(#board, #hiddenDock) { display
 .dash-event-title { font-size: var(--nl-text-md); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dash-event.is-now { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .dash-event.is-now .dash-event-time, .dash-event.is-next .dash-event-time { color: var(--nl-accent-text, var(--accent)); font-weight: 600; }
+.dash-event-row { display: flex; align-items: center; gap: var(--nl-space-2); }
+.dash-event-row .dash-event { flex: 1; min-width: 0; margin-right: 0; }
+/* An online meeting's way in: quiet until ten minutes before, then lit. */
+.dash-join { flex: none; padding: 3px 10px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--nl-text-primary) 20%, transparent); color: var(--nl-text-primary); font-size: var(--nl-text-sm); font-weight: 600; text-decoration: none; transition: border-color var(--nl-transition-fast), background var(--nl-transition-fast); }
+.dash-join:hover, .dash-join:focus-visible { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
+.dash-join.is-soon { background: var(--accent); border-color: transparent; color: var(--nl-on-accent); }
+.dash-field-inputs { display: grid; gap: 6px; }
+
+/* ── Feeds, a value, open tabs, recently closed (dash-cards.js) ── */
+.dash-feed, .dash-tidy, .dash-closed { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; scrollbar-width: thin; }
+.dash-feed-row { display: flex; flex-direction: column; gap: 1px; padding: 5px 6px; margin: 0 -6px; border-radius: var(--nl-radius-sm); color: var(--nl-text-primary); text-decoration: none; }
+.dash-feed-row:hover { background: color-mix(in srgb, var(--nl-text-primary) 5%, transparent); }
+.dash-feed-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; font-size: var(--nl-text-md); line-height: 1.35; }
+/* A headline already opened reads quieter than the new ones. */
+.dash-feed-row:visited .dash-feed-title { color: var(--nl-text-secondary); }
+.dash-leave { font-size: var(--nl-text-xs); }
+.dash-value { display: flex; align-items: baseline; gap: 6px; min-width: 0; margin: auto 0 0; }
+.dash-value-now { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: calc(var(--nl-text-2xl) * 1.4); font-weight: 300; line-height: 1; letter-spacing: var(--nl-track-tight); font-variant-numeric: tabular-nums; }
+.dash-value-unit { color: var(--nl-text-secondary); font-size: var(--nl-text-md); }
+.dash-card .dash-spark { display: block; flex: none; width: 100%; height: 28px; margin: 6px 0 auto; overflow: visible; }
+.dash-spark polyline { fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.dash-tidy-sum { margin: 0 0 2px; color: var(--nl-text-secondary); font-size: var(--nl-text-sm); }
+.dash-tab-list { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.dash-tab-item { display: flex; align-items: center; gap: 2px; }
+.dash-tab-row { appearance: none; flex: 1; min-width: 0; width: 100%; display: flex; align-items: center; gap: var(--nl-space-2); padding: 5px 6px; border: 0; border-radius: 6px; background: none; color: var(--nl-text-primary); font: inherit; font-size: var(--nl-text-sm); text-align: left; cursor: pointer; }
+.dash-tab-row:hover { background: color-mix(in srgb, var(--nl-text-primary) 6%, transparent); }
+.dash-tab-row > span:not(.dash-stash-icon) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-tab-row small { flex: none; color: var(--nl-text-tertiary); font-size: var(--nl-text-2xs); white-space: nowrap; }
+.dash-tidy-act { align-self: flex-start; margin: 2px 0 6px; }
+.dash-closed-window { display: inline-grid; place-items: center; }
+.dash-closed-empty { margin: auto 0; }
+.dash-closed-window svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 /* Settings: the apps to connect */
 .dash-connections-hint { display: block; margin: 0 0 var(--nl-space-3); }

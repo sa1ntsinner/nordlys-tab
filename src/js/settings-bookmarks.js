@@ -88,12 +88,12 @@
     }
     moveBookmark(group, link, delta) {
       // The browser keeps a followed folder's order; a refresh would put it back.
-      if (group.source?.folderId) return;
+      if (group.source) return;
       const links = group.links || [], bookmarkIndex = links.indexOf(link), target = Math.max(0, Math.min(links.length - 1, bookmarkIndex + delta)); if (bookmarkIndex < 0 || target === bookmarkIndex) return;
       links.splice(bookmarkIndex, 1); links.splice(target, 0, link); this.expanded.add(group); this.save(this.text('announce.movedToPosition', `${link.name} moved to position ${target + 1}`, { name: link.name, position: target + 1 })); this.render();
     }
     transferBookmark(group, link, destination) {
-      if (destination?.source?.folderId || group.source?.folderId) return;
+      if (destination?.source || group.source) return;
       const sourceIndex = group.links.indexOf(link); if (sourceIndex < 0 || !destination || destination === group) return;
       group.links.splice(sourceIndex, 1); (destination.links ||= []).push(link); this.expanded.add(destination); this.save(this.text('announce.movedToFolder', `${link.name} moved to ${destination.label}`, { name: link.name, folder: destination.label })); this.render();
     }
@@ -113,6 +113,12 @@
     iconFor(link) {
       const def = resolveIcon(link.url, link.icon), presentation = NordlysIcons.resolvePresentation({ source: link, metadata: def || {}, isLight: this.app.isLightTheme() });
       return NordlysIcons.renderIcon(presentation);
+    }
+    unfollowList(group) {
+      delete group.source;
+      this.save(this.text('follow.stopped', `${group.label} no longer follows the list`, { name: group.label }));
+      this.render();
+      this.app.grid?.render();
     }
     /* Linking hands ownership of a folder's contents to the browser. Unlinking
        keeps whatever was on screen, because taking the bookmarks away would be
@@ -196,14 +202,17 @@
            attached with the rest of the summary below: an element that is not
            in the document yet cannot have a sibling inserted after it. */
         let linkedBadge = null;
-        if (group.source?.folderId) {
+        if (group.source) {
+          const site = this.app.grid?.siteOf(group) || '';
           details.dataset.linked = 'true';
           linkedBadge = document.createElement('span');
           linkedBadge.className = 'bookmark-folder-linked';
           linkedBadge.textContent = group.source.missing
             ? this.text('bookmarks.linkMissing', 'folder missing')
-            : (group.source.title || this.text('bookmarks.linkedShort', 'browser'));
-          linkedBadge.title = this.text('bookmarks.linkedTitle', 'Follows a browser bookmark folder');
+            : (site || group.source.title || this.text('bookmarks.linkedShort', 'browser'));
+          linkedBadge.title = site
+            ? this.text('follow.badgeTitle', `Follows a list at ${site}`, { site })
+            : this.text('bookmarks.linkedTitle', 'Follows a browser bookmark folder');
         }
 
         const button = (label, text, handler, extra = {}) => {
@@ -230,11 +239,12 @@
 
         const folderMenu = button(this.text('a11y.moreActionsFor', `More actions for ${group.label}`, { name: group.label }), '⋯', node => this.openOverflow(node, [
           { label: this.text('bookmarks.rename', 'Rename'), run: () => { this.renaming.add(group); this.render(); this.root.querySelector(`[data-group-index="${this.app.config.groups.indexOf(group)}"] .bookmark-folder-name-input`)?.focus(); } },
-          { label: this.text('bookmarks.addBookmark', 'Add bookmark'), disabled: Boolean(group.source?.folderId), run: addBookmark },
+          { label: this.text('bookmarks.addBookmark', 'Add bookmark'), disabled: Boolean(group.source), run: addBookmark },
           { label: group.hidden ? this.text('bookmarks.showOnBoard', 'Show on the board') : this.text('bookmarks.hideFromBoard', 'Hide from the board'), run: () => { group.hidden = !group.hidden; this.save(group.hidden ? this.text('announce.hidden', `${group.label} hidden`, { name: group.label }) : this.text('announce.shown', `${group.label} shown`, { name: group.label })); this.render(); } },
           { label: this.text('bookmarks.moveUp', 'Move up'), disabled: groupIndex === 0, run: () => this.moveFolder(group, -1) },
           { label: this.text('bookmarks.moveDown', 'Move down'), disabled: groupIndex === groups.length - 1, run: () => this.moveFolder(group, 1) },
-          window.NordlysBookmarks ? { label: group.source?.folderId
+          group.source?.type === 'list' ? { label: this.text('follow.stop', 'Stop following the list'), run: () => this.unfollowList(group) }
+            : window.NordlysBookmarks ? { label: group.source?.folderId
               ? this.text('bookmarks.unlink', 'Stop following the browser')
               : this.text('bookmarks.link', 'Follow a browser folder'),
             run: () => this.toggleBrowserLink(group) } : null,
@@ -264,9 +274,9 @@
            Inside the folder it is the obvious next thing to do. */
         const toolbar = document.createElement('div'); toolbar.className = 'bookmark-folder-toolbar';
         const add = button(this.text('a11y.addBookmarkTo', `Add bookmark to ${group.label}`, { name: group.label }), this.text('bookmarks.addBookmark', 'Add bookmark'), addBookmark, { className: 'glass-btn accent bookmark-add' });
-        if (group.source?.folderId) {
+        if (group.source) {
           add.disabled = true;
-          add.title = this.text('bookmarks.linkedAddHint', 'Add it in the browser; this folder follows along');
+          add.title = this.app.grid?.ownerSays(group, 'bookmarks.linkedAddHint', 'Add it in the browser; this folder follows along') || '';
         }
         const columnsLabel = document.createElement('label'); columnsLabel.className = 'bookmark-columns';
         const columnsText = document.createElement('span'); columnsText.textContent = this.text('bookmarks.columns', 'Columns');
@@ -293,9 +303,9 @@
           const currentGroupIndex = () => this.app.config.groups.indexOf(group), currentBookmarkIndex = () => group.links.indexOf(link);
           /* A followed bookmark's name and address belong to the browser; its
              look is set here. Moving, reordering and deleting it happen there. */
-          const followed = Boolean(group.source?.folderId);
+          const followed = Boolean(group.source);
           if (followed) {
-            const hint = this.text('bookmarks.linkedEditHint', 'This folder follows the browser: rename or change the address there. The icon and colour are yours to set here.');
+            const hint = this.app.grid?.ownerSays(group, 'bookmarks.linkedEditHint', 'This folder follows the browser: rename or change the address there. The icon and colour are yours to set here.', 'follow.editHint') || '';
             for (const input of [titleInput, urlInput]) { input.readOnly = true; input.title = hint; }
           }
           const iconButton = button(this.text('a11y.chooseIconFor', `Choose icon for ${link.name}`, { name: link.name }), this.text('modal.chooseIcon', 'Choose icon'), () => this.openIconPicker(currentGroupIndex(), currentBookmarkIndex(), iconButton));
@@ -315,9 +325,9 @@
             /* A folder that follows the browser is not a destination: anything
                moved into it would vanish on the next refresh. */
             { label: this.text('bookmarks.moveTo', 'Move to folder'),
-              disabled: followed || groups.filter(candidate => candidate !== group && !candidate.source?.folderId).length === 0,
+              disabled: followed || groups.filter(candidate => candidate !== group && !candidate.source).length === 0,
               submenu: () => groups
-                .filter(candidate => candidate !== group && !candidate.source?.folderId)
+                .filter(candidate => candidate !== group && !candidate.source)
                 .map(candidate => ({ label: candidate.label || this.text('bookmarks.newFolder', 'New folder'), run: () => this.transferBookmark(group, link, candidate) })) },
             { label: this.text('ctx.deleteBookmark', 'Delete'), danger: true, disabled: followed, run: () => this.removeWithUndo({ group, link }) }
           ]), { className: 'bookmark-compact-action bookmark-overflow' });

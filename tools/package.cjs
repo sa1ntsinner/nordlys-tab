@@ -10,7 +10,7 @@ const { copyFileSync, existsSync, readFileSync, readdirSync, statSync, rmSync } 
 const { join, resolve, relative } = require('node:path');
 
 const ROOT = resolve(__dirname, '..');
-const INCLUDE = ['manifest.json', 'newtab.html', 'PRIVACY.md', 'README.md', 'LICENSE', 'icons', 'src'];
+const INCLUDE = ['manifest.json', 'newtab.html', 'popup.html', 'blocked.html', 'PRIVACY.md', 'README.md', 'LICENSE', 'icons', 'src'];
 
 function fail(message) { console.error(`package: ${message}`); process.exit(1); }
 

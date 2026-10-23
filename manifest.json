@@ -36,7 +36,8 @@
     "bookmarks",
     "tabs",
     "topSites",
-    "history"
+    "history",
+    "sessions"
   ],
   "icons": {
     "16": "icons/icon16.png",

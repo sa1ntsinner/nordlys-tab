@@ -2454,3 +2454,16 @@ html[data-legibility="high"] .glass-solid-note { display: block; }
 .shortcut-sheet { width: min(92vw, 520px); }
 .shortcut-sheet .support-shortcut-list { padding: 0 0 var(--nl-space-5); }
 .shortcut-sheet .support-shortcut-what { font-size: var(--nl-text-sm); }
+
+/* Settings → Bookmarks → Check the bookmarks (settings.js drawLinkCheck). */
+.link-check { margin-top: 18px; }
+.check-run-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 8px 0; }
+.check-state { color: var(--nl-text-secondary); font-size: var(--nl-text-sm); }
+.check-title { margin: 14px 0 6px; color: var(--nl-text-secondary); font-size: var(--nl-text-sm); font-weight: 600; }
+.check-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.check-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--nl-polish-hairline, rgba(255, 255, 255, 0.08)); border-radius: var(--nl-radius-md, 12px); }
+.check-said { display: grid; flex: 1 1 12rem; min-width: 0; }
+.check-said b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--nl-text-md); font-weight: 600; }
+.check-said small, .check-followed { color: var(--nl-text-secondary); font-size: var(--nl-text-sm); }
+.check-row a.glass-btn { display: inline-flex; align-items: center; text-decoration: none; }
+.check-clear { margin: 10px 0 0; color: var(--nl-text-secondary); }

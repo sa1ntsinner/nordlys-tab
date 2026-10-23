@@ -143,6 +143,21 @@ async function openTabs(urls, title = "") {
   catch (error) { /* open, only not grouped */ }
 }
 
+/* A script for something few people use, read the first time it is asked
+   for rather than by every new tab; every later caller gets the same
+   promise. Resolves whether it loaded. */
+const scriptLoads = new Map();
+function loadScript(src) {
+  if (!scriptLoads.has(src)) scriptLoads.set(src, new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = () => resolve(true);
+    script.onerror = () => { scriptLoads.delete(src); resolve(false); };
+    document.head.append(script);
+  }));
+  return scriptLoads.get(src);
+}
+
 function toast(message, kind = "info", duration) {
   NordlysToast.show(message, kind, duration);
 }

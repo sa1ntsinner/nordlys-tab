@@ -20,7 +20,7 @@ const pageGlobals = {
   BACKGROUND_MIGRATIONS: "readonly", STILL_MIGRATIONS: "readonly", THEME_INLINE_TOKENS: "readonly",
   adoptLegacyLocalStorage: "readonly",
   // ui-kit.js
-  NordlysToast: "readonly", NordlysConfirm: "readonly", toast: "readonly", confirmDialog: "readonly", openTabs: "readonly",
+  NordlysToast: "readonly", NordlysConfirm: "readonly", toast: "readonly", confirmDialog: "readonly", openTabs: "readonly", loadScript: "readonly",
   esc: "readonly", hexToRgb: "readonly", relativeLuminance: "readonly",
   // ui-primitives.js, typography.js, i18n.js
   NordlysUI: "readonly", NordlysType: "readonly", I18N: "readonly",

@@ -37,7 +37,7 @@
     hoverEffect: "string", language: "string", skyRotate: "string", skyPool: "string", nightMode: "string",
     bgBlur: "number", bgDim: "number", cardRadius: "number", tileSize: "number",
     cardGap: "number", boardGap: "number", cardGlow: "number", bgMotion: "number", bgIntensity: "number", bgSeed: "number",
-    showSeconds: "boolean", openNewTab: "boolean", showSearch: "boolean", rememberSearches: "boolean", shortcutHints: "boolean", highLegibility: "boolean", bgRealSky: "boolean", bgDaylight: "boolean", tileLabels: "boolean", onePageFit: "boolean", pictureColours: "boolean",
+    showSeconds: "boolean", openNewTab: "boolean", showSearch: "boolean", rememberSearches: "boolean", suggestUsual: "boolean", shortcutHints: "boolean", highLegibility: "boolean", bgRealSky: "boolean", bgDaylight: "boolean", tileLabels: "boolean", onePageFit: "boolean", pictureColours: "boolean",
     groups: "list", bgPalettes: "list", skyLocks: "list", looks: "list", searchFrom: "list", golinks: "list",
     customTheme: "object", skyLayers: "object", skyPlace: "object", workday: "object"
   };
@@ -119,6 +119,7 @@
         if (link[field] !== undefined && typeof link[field] !== "string") errors.push(`${at}: ${field} should be text`);
       }
       if (link.iconUrls !== undefined && !Array.isArray(link.iconUrls)) errors.push(`${at}: iconUrls should be a list`);
+      if (link.watch !== undefined && typeof link.watch !== "boolean") errors.push(`${at}: watch should be true or false`);
     });
   }
 
@@ -254,6 +255,7 @@
         for (const field of LINK_TEXT_FIELDS) {
           if (field !== "url" && link[field] !== undefined && typeof link[field] !== "string") { delete link[field]; repaired = true; }
         }
+        if (link.watch !== undefined && typeof link.watch !== "boolean") { delete link.watch; repaired = true; }
         if (repairIconAddresses(link)) repaired = true;
       }
     }

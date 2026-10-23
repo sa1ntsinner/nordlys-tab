@@ -17,7 +17,7 @@ const zlib = require('node:zlib');
 
 const ROOT = resolve(__dirname, '..');
 const OUT = join(ROOT, 'dist');
-const INCLUDE = ['manifest.json', 'newtab.html', 'popup.html', 'PRIVACY.md', 'README.md', 'LICENSE', 'icons', 'src'];
+const INCLUDE = ['manifest.json', 'newtab.html', 'popup.html', 'blocked.html', 'PRIVACY.md', 'README.md', 'LICENSE', 'icons', 'src'];
 const GECKO_ID = 'nordlys@sa1ntsinner.github.io';
 const ENGINE_LIST = 'src/js/search-engines.js';
 const ENGINE_STUB = '/* This browser searches with its own engine; there is nothing to choose here. */\n';
@@ -60,8 +60,8 @@ const PORTS = {
     // Safari has neither the favicon service nor the search API; the
     // search box asks for an engine instead (platform.js).
     permissions: without(manifest.permissions, 'favicon', 'search', 'contextMenus', 'tabGroups'),
-    // Nor bookmarks, top sites or history: Safari extensions cannot read them.
-    optional_permissions: without(manifest.optional_permissions, 'bookmarks', 'topSites', 'history'),
+    // Nor bookmarks, top sites, history or closed tabs: Safari extensions cannot read them.
+    optional_permissions: without(manifest.optional_permissions, 'bookmarks', 'topSites', 'history', 'sessions'),
     browser_specific_settings: { safari: { strict_min_version: '17.0' } }
   })
 };

@@ -252,7 +252,7 @@
          while arranging, where the board says that is what a touch does. */
       if (event.pointerType === "touch" && !this.grid.arrange?.active) return;
       // A folder that follows the browser owns its order and its contents.
-      if (kind === "tile" && this.folderOf(element)?.source?.folderId) return;
+      if (kind === "tile" && this.folderOf(element)?.source) return;
       this.pending = { kind, element, pointerId: event.pointerId, x: event.clientX, y: event.clientY };
       window.addEventListener("pointermove", this.onMove, true);
       window.addEventListener("pointerup", this.onUp, true);
@@ -546,7 +546,7 @@
       const gridEl = card.querySelector(".grid");
       const folder = this.groups[Number(gridEl?.dataset.groupIdx)];
       if (!gridEl || !folder) return null;
-      if (folder.source?.folderId) return { refused: card };
+      if (folder.source) return { refused: card };
       const tiles = [...gridEl.querySelectorAll(":scope > .tile")];
       const hole = session.element;
       if (!tiles.length) return { grid: gridEl, before: null };

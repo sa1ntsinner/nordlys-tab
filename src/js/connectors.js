@@ -66,14 +66,26 @@
         return out;
       }
     },
+    /* Several calendars in one connection, a link each: work and home in one
+       list. One that does not answer leaves the others shown. */
     ics: {
-      name: "Calendar (ICS link)", color: "#34a853", kind: "events",
-      fields: [{ key: "url", label: "Calendar address (iCal/ICS)", secret: true, help: "https://support.google.com/calendar/answer/37648" }],
-      origins: (c) => { try { const u = new URL(String(c.url || "").replace(/^webcal:/i, "https:")); return [`${u.protocol}//${u.hostname}/*`]; } catch (error) { return []; } },
-      requests: (c) => [{ url: String(c.url || "").replace(/^webcal:/i, "https:"), text: true }],
-      read: ([text], c, now = Date.now()) => events(String(text || ""), now).map((e) => ({ ...item("ics", { id: e.uid || `${e.start}${e.title}`, title: e.title, url: e.url, due: day(e.start) }), start: e.start, end: e.end, allDay: e.allDay, where: clip(e.location || "", 80) }))
+      name: "Calendar (ICS link)", color: "#34a853", kind: "events", partial: true,
+      fields: [{ key: "url", label: "Calendar address (iCal/ICS)", secret: true, multiple: true, help: "https://support.google.com/calendar/answer/37648" }],
+      origins: (c) => [...new Set(calendars(c).map((url) => `${new URL(url).protocol}//${new URL(url).hostname}/*`))],
+      requests: (c) => calendars(c).map((url) => ({ url, text: true })),
+      read: (texts, c, now = Date.now()) => {
+        const seen = new Set();
+        return texts.flatMap((text, calendar) => (text == null ? [] : events(String(text), now)).map((e) => ({
+          ...item("ics", { id: e.uid || `${e.start}${e.title}`, title: e.title, url: e.url, due: day(e.start) }),
+          start: e.start, end: e.end, allDay: e.allDay, join: e.join, calendar,
+          // A place that is only the meeting's link says nothing the Join button does not.
+          where: e.join && e.location.includes(e.join) ? "" : clip(e.location || "", 80)
+        }))).filter((e) => !seen.has(e.id) && seen.add(e.id));
+      }
     }
   };
+  // The calendar links of a connection, one per line; webcal is the same address over https.
+  const calendars = (c) => String(c?.url || "").split(/\s+/).map((url) => safeUrl(url.replace(/^webcal:/i, "https:"))).filter(Boolean).slice(0, 8);
 
   // ── Calendar files ─────────────────────────────────────────────
   /* The events of an iCalendar file that fall in the next two weeks. Times
@@ -87,6 +99,17 @@
   const WEEKDAYS = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
   function unfold(text) { return text.replace(/\r?\n[ \t]/g, ""); }
   const unescape = (value) => value.replace(/\\n/gi, " ").replace(/\\([,;\\])/g, "$1");
+  /* The address to join an online meeting by: the conference fields the big
+     calendars add, else the first meeting link in its place, its link or its
+     notes. Only the meeting services' own https addresses count. */
+  const MEETING = /https:\/\/(?:meet\.google\.com|(?:[\w-]+\.)*zoom\.(?:us|com)|teams\.microsoft\.com|teams\.live\.com|(?:[\w-]+\.)*webex\.com|whereby\.com|meet\.jit\.si|app\.chime\.aws|meet\.goto\.com|(?:[\w-]+\.)*gotomeeting\.com)\/[^\s<>"'\\,;]+/i;
+  function joinOf(field) {
+    for (const name of ["X-GOOGLE-CONFERENCE", "X-MICROSOFT-ONLINEMEETINGCONFLINK", "X-MICROSOFT-SKYPETEAMSMEETINGURL", "URL", "LOCATION", "DESCRIPTION"]) {
+      const found = MEETING.exec(unescape(field(name)?.value || ""));
+      if (found) return found[0].replace(/[.)\]>]+$/, "");
+    }
+    return null;
+  }
   // How far a zone is ahead of UTC at a moment, in ms; null for a zone this browser does not know.
   const zoneOffsets = new Map();
   function zoneOffset(zone, time) {
@@ -228,7 +251,7 @@
       // A day-long event with neither end nor length lasts the day (RFC 5545, 3.6.1).
       const length = end ? end.time - startTime : duration(b.field("DURATION")?.value) || (start.allDay ? DAY_MS : 0);
       const uid = b.field("UID")?.value || "";
-      const base = { uid, title: unescape(b.field("SUMMARY")?.value || ""), location: unescape(b.field("LOCATION")?.value || ""), url: b.field("URL")?.value || null, allDay: start.allDay };
+      const base = { uid, title: unescape(b.field("SUMMARY")?.value || ""), location: unescape(b.field("LOCATION")?.value || ""), url: b.field("URL")?.value || null, allDay: start.allDay, join: joinOf(b.field) };
       const push = (time) => {
         if (time + length < from || time > until) return;
         // A day-long event is given as days: its first, and the day after its last.
@@ -277,9 +300,9 @@
       throw new ConnectorError(response.status === 401 || response.status === 403 ? `The token was refused (${response.status}).` : `The service answered ${response.status}${said ? `: ${said}` : ""}.`, response.status);
     }
     if (spec.text) {
-      if (Number(response.headers?.get?.("content-length")) > TEXT_LIMIT) throw new ConnectorError("The calendar file is too large to read.");
+      if (Number(response.headers?.get?.("content-length")) > TEXT_LIMIT) throw new ConnectorError("The file is too large to read.");
       const text = await response.text();
-      if (text.length > TEXT_LIMIT) throw new ConnectorError("The calendar file is too large to read.");
+      if (text.length > TEXT_LIMIT) throw new ConnectorError("The file is too large to read.");
       return text;
     }
     return response.status === 204 ? null : response.json();
@@ -288,8 +311,13 @@
   async function list(id, creds, now = Date.now()) {
     const c = CONNECTORS[id];
     if (!c) throw new ConnectorError(`No connector called ${id}.`);
-    const answers = await Promise.all(c.requests(creds, now).map(fetchOne));
-    return c.read(answers, creds, now);
+    const answers = await Promise.allSettled(c.requests(creds, now).map(fetchOne));
+    const failed = answers.find((answer) => answer.status === "rejected");
+    // Where the parts stand alone (calendars), the ones that answered are shown and the failure is told beside them.
+    if (failed && (!c.partial || answers.every((answer) => answer.status === "rejected"))) throw failed.reason;
+    const items = c.read(answers.map((answer) => answer.value ?? null), creds, now);
+    if (failed) items.failed = failed.reason;
+    return items;
   }
   async function complete(id, creds, it) {
     const c = CONNECTORS[id];
@@ -304,7 +332,7 @@
     return c.fields.every((f) => String(creds?.[f.key] || "").trim());
   };
 
-  const api = { CONNECTORS, list, complete, originsOf, ready, events, icsDate, ConnectorError, day };
+  const api = { CONNECTORS, list, complete, originsOf, ready, events, icsDate, ConnectorError, day, fetchOne };
   root.NordlysConnectors = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

@@ -36,7 +36,7 @@
   let config = null;
   try { config = JSON.parse(read("nordlys_config")); } catch (error) { /* the browser's copy, then */ }
   config ||= (await local("get", "nordlys_config")).nordlys_config || {};
-  const folders = (config.groups || []).map((group, index) => ({ group, index })).filter(({ group }) => !group.source?.folderId);
+  const folders = (config.groups || []).map((group, index) => ({ group, index })).filter(({ group }) => !group.source);
   for (const { group, index } of folders) folder.append(new Option(group.label || say("bookmarks.newFolder", "New folder"), String(index)));
   const last = folders.find(({ group }) => group.id && group.id === read("nordlys_save_folder"));
   if (last) folder.value = String(last.index);

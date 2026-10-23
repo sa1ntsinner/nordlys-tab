@@ -5,11 +5,11 @@ const assert = require('node:assert/strict');
    keywords and the board answer, the first answer stands for Enter and
    anything else goes to the browser's own engine; and "Save to Nordlys" in
    the right-click menu, which only puts the page in the inbox. */
-const done = { opened: [], created: [], searched: [], defaults: [], menus: [] };
+const done = { opened: [], created: [], searched: [], defaults: [], menus: [], sent: [] };
 const on = {};
 const store = {};
 globalThis.chrome = {
-  runtime: { getURL: () => 'chrome-extension://abc/', onInstalled: { addListener: (fn) => { on.installed = fn; } } },
+  runtime: { getURL: (path = '') => `chrome-extension://abc/${path}`, onInstalled: { addListener: (fn) => { on.installed = fn; } } },
   storage: { local: { get: (key, answer) => answer({ [key]: store[key] }), set: (items) => Object.assign(store, items) } },
   contextMenus: { create: (item) => done.menus.push(item), onClicked: { addListener: (fn) => { on.clicked = fn; } } },
   omnibox: {
@@ -17,7 +17,11 @@ globalThis.chrome = {
     onInputEntered: { addListener: (fn) => { on.entered = fn; } },
     setDefaultSuggestion: (suggestion) => done.defaults.push(suggestion.description)
   },
-  tabs: { update: (details) => done.opened.push(details.url), create: (details) => done.created.push(details) },
+  tabs: {
+    update: (tab, details) => (details ? done.sent.push([tab, details.url]) : done.opened.push(tab.url)),
+    create: (details) => done.created.push(details),
+    onUpdated: { addListener: (fn) => { on.updated = fn; } }
+  },
   search: { query: (details) => { done.searched.push(details); return Promise.resolve(); } }
 };
 globalThis.NordlysCommands = require('../../src/js/commands.js');
@@ -62,4 +66,21 @@ test('"Save to Nordlys" puts the page or the link in the inbox, and nothing else
     { url: 'https://cited.example/', name: 'a source', folder: null }
   ]);
   assert.equal(store.nordlys_config.groups.length, 1, "the board itself is the page's to write");
+});
+
+test('while a focus runs, a tab that goes to a site the timer card lists waits on the quiet page', async () => {
+  store.nordlys_config = { ...store.nordlys_config, dashboard: { widgets: [{ id: 'w1', type: 'timer', settings: { shut: 'youtube.com\nhttps://www.Reddit.com/r/all, news.test' } }, { id: 'w2', type: 'notes', settings: { shut: 'notes.test' } }] } };
+  const visit = async (url) => { done.sent.length = 0; await on.updated(7, { url }); return done.sent.map(([tab, to]) => [tab, decodeURIComponent(to.split('?u=')[1] || '')]); };
+  store['nordlys_dash.focus-timer'] = { running: true, phase: 'focus', endsAt: Date.now() + 60000 };
+  assert.deepEqual(await visit('https://m.youtube.com/watch?v=1'), [[7, 'https://m.youtube.com/watch?v=1']]);
+  assert.deepEqual(await visit('https://reddit.com/'), [[7, 'https://reddit.com/']]);
+  assert.deepEqual(await visit('https://notyoutube.com/'), [], 'only the site and its own subdomains');
+  assert.deepEqual(await visit('https://notes.test/'), [], 'only what a timer card lists');
+  assert.equal(done.sent.length, 0);
+  store['nordlys_dash.focus-timer'] = { running: true, phase: 'rest', endsAt: Date.now() + 60000 };
+  assert.deepEqual(await visit('https://youtube.com/'), [], 'a break keeps nothing shut');
+  store['nordlys_dash.focus-timer'] = { running: true, phase: 'focus', endsAt: Date.now() - 1 };
+  assert.deepEqual(await visit('https://youtube.com/'), [], 'nor a focus whose time is up');
+  store['nordlys_dash.focus-timer'] = { running: false, phase: 'focus', endsAt: Date.now() + 60000 };
+  assert.deepEqual(await visit('https://youtube.com/'), [], 'nor a paused one');
 });

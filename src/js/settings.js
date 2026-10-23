@@ -1006,6 +1006,8 @@ class SettingsController {
     if (shortcutHints) shortcutHints.checked = cfg.shortcutHints !== false;
     const rememberSearches = document.getElementById("cfg-remember-searches");
     if (rememberSearches) rememberSearches.checked = cfg.rememberSearches !== false;
+    const suggestUsual = document.getElementById("cfg-suggest-usual");
+    if (suggestUsual) suggestUsual.checked = cfg.suggestUsual !== false;
 
     // Aesthetics Sliders & Selects
     const glassLevel = document.getElementById("cfg-glass-level");
@@ -1647,6 +1649,13 @@ class SettingsController {
       this.app.saveConfig();
     });
 
+    document.getElementById("cfg-suggest-usual")?.addEventListener("change", (e) => {
+      this.app.config.suggestUsual = e.target.checked;
+      // Off means forgotten here too: what was opened when.
+      if (!e.target.checked) { try { localStorage.removeItem("nordlys_rhythm"); } catch (error) { /* nothing kept */ } }
+      this.app.saveConfig();
+    });
+
   }
 
   /* ── 6. Multi-Shader Background Engine Settings ───────────────── */
@@ -2050,6 +2059,10 @@ class SettingsController {
 
   initBookmarksManager() {
     this.initBoardLayout();
+    this.initLinkCheck();
+    const list = document.getElementById("follow-url");
+    document.getElementById("follow-run")?.addEventListener("click", () => this.followList(list));
+    list?.addEventListener("keydown", (event) => { if (event.key === "Enter") this.followList(list); });
     document.getElementById("cfg-add-group")?.addEventListener("click", () => {
       this.app.config.groups.push({
         id: `g_${Date.now()}`,
@@ -2061,6 +2074,46 @@ class SettingsController {
       this.app.grid?.render();
       this.renderBookmarksManager();
     });
+  }
+
+  /* ── Check the bookmarks (link-check.js, read in only here) ─────
+     Leave to read the sites is asked from the click, only for the sites
+     not given already, and handed back once the check is done. Which were
+     given already is learnt when the panel opens; until then nothing is
+     handed back, so no other part of Nordlys can lose a site it reads. */
+  initLinkCheck() {
+    const box = document.getElementById("link-check");
+    const run = document.getElementById("check-run");
+    if (!box || !run) return;
+    const perms = () => (typeof chrome !== "undefined" ? chrome.permissions : null);
+    const originOf = (url) => `${new URL(url).origin}/*`;
+    const pages = () => [...new Set((this.app.config.groups || []).flatMap((group) => (group.links || []).map((link) => link.url)).filter((url) => /^https?:\/\//i.test(url || "")))];
+    const secure = (urls) => [...new Set(urls.filter((url) => /^https:\/\//i.test(url)).map(originOf))];
+    let held = null;
+    box.addEventListener("toggle", async () => {
+      if (!box.open || !perms()?.contains) return;
+      const origins = secure(pages());
+      const answers = await Promise.all(origins.map((origin) => new Promise((resolve) => perms().contains({ origins: [origin] }, (yes) => { void chrome.runtime?.lastError; resolve(yes ? origin : null); }))));
+      held = new Set(answers.filter(Boolean));
+    });
+    run.addEventListener("click", () => {
+      const urls = pages();
+      const wanted = secure(urls).filter((origin) => !held?.has(origin));
+      const go = (granted) => {
+        const readable = (url) => /^https:\/\//i.test(url) && (granted || Boolean(held?.has(originOf(url))));
+        this.runLinkCheck(urls, readable).then(() => {
+          if (granted && held && wanted.length) perms()?.remove?.({ origins: wanted }, () => { void chrome.runtime?.lastError; });
+        });
+      };
+      if (!perms()?.request || !wanted.length) { go(false); return; }
+      perms().request({ origins: wanted }, (granted) => { void chrome.runtime?.lastError; go(Boolean(granted)); });
+    });
+  }
+
+  // The check itself and what it found are drawn by link-check.js, read in only now.
+  async runLinkCheck(urls, readable) {
+    await loadScript("src/js/link-check.js");
+    return window.NordlysLinkCheck.run(this, urls, readable);
   }
 
   renderBookmarksManager() {
@@ -4081,7 +4134,8 @@ class SettingsController {
       label: group.label,
       cols: Math.min(4, Math.max(2, Math.ceil(Math.sqrt(group.links.length)))),
       hidden: false,
-      links: group.links.map((link) => ({ color: "#38bdf8", ...link }))
+      links: group.links.map((link) => ({ color: "#38bdf8", ...link })),
+      ...(group.source ? { source: group.source } : {})
     }));
     this.app.config.groups = [...(this.app.config.groups || []), ...added];
     window.NordlysSyncModel?.normalize?.(this.app.config);
@@ -4121,11 +4175,52 @@ class SettingsController {
       if (typeof toast === "function") toast(`${this.text("toast.importError", "Import failed")}: ${error.message}`, "danger", 5000);
       return false;
     }
+    // Read in only when something is imported: every other tab is spared it.
+    await loadScript("src/js/importers.js");
     const other = window.NordlysImporters?.read(parsed);
     if (other) return this.addImportedFolders(other);
     // CSS that is already this setup's is not new code to be read first.
     const own = (parsed?.customCss || "") === (this.app.config.customCss || "");
     return this.applyBackupObject(parsed, { own });
+  }
+
+  /* Leave to reach one site, asked while the click still counts as the
+     person's: called before anything else is awaited. A page that cannot ask
+     (the tests, the site's demo) has it. */
+  leaveToReach(url) {
+    const permissions = typeof chrome !== "undefined" ? chrome.permissions : null;
+    if (!permissions?.request) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      try { permissions.request({ origins: [`${url.origin}/*`] }, (granted) => resolve(Boolean(granted))); }
+      catch (error) { resolve(false); }
+    });
+  }
+
+  /* Bookmarks → Follow a list at an address: its folders come onto the board
+     and follow it (lists.js), the way imported folders come: after the others,
+     with a way back. The list is read once here, then again each hour. */
+  async followList(address) {
+    let url = null;
+    try { url = new URL(address.value.trim()); } catch (error) { /* said below */ }
+    const say = (message) => { if (typeof toast === "function") toast(message, "danger", 5000); };
+    if (url?.protocol !== "https:") {
+      address.setAttribute("aria-invalid", "true");
+      say(this.text("backup.urlHttps", "Give an address that starts with https://"));
+      return;
+    }
+    address.removeAttribute("aria-invalid");
+    const granted = await this.leaveToReach(url);
+    await loadScript("src/js/lists.js");
+    let folders;
+    try { folders = window.NordlysLists.parse(await window.NordlysLists.read(url.href), url.href); }
+    catch (error) {
+      say(granted ? `${this.text("backup.urlFailed", "That address could not be read")}: ${error.message}`
+        : this.text("backup.urlRefused", "Without leave to reach that site, its file cannot be read."));
+      return;
+    }
+    window.NordlysLists.markRead(url.href);
+    const groups = folders.map((folder) => ({ ...folder, source: { type: "list", url: url.href, folder: folder.label } }));
+    if (this.addImportedFolders({ from: url.hostname, groups })) address.value = "";
   }
 
   /* A settings file at a web address: leave to reach that one site is asked
@@ -4141,12 +4236,7 @@ class SettingsController {
       return;
     }
     address.removeAttribute("aria-invalid");
-    const permissions = typeof chrome !== "undefined" ? chrome.permissions : null;
-    const leave = !permissions?.request ? Promise.resolve(true) : new Promise((resolve) => {
-      try { permissions.request({ origins: [`${url.origin}/*`] }, (granted) => resolve(Boolean(granted))); }
-      catch (error) { resolve(false); }
-    });
-    leave.then(async (granted) => {
+    this.leaveToReach(url).then(async (granted) => {
       if (!granted) return say(this.text("backup.urlRefused", "Without leave to reach that site, its file cannot be read."));
       const response = await fetch(url.href, { credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer", signal: AbortSignal.timeout?.(10000) });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -4208,71 +4298,11 @@ class SettingsController {
         const text = evt.target.result;
         try {
           if (fileName.endsWith(".html") || fileName.endsWith(".htm") || text.includes("<!DOCTYPE NETSCAPE-Bookmark-file-1") || text.includes("<DL>")) {
-            // Netscape HTML Parser
-            const dom = new DOMParser().parseFromString(text, "text/html");
-            const newGroups = [];
-            const folderHeaders = dom.querySelectorAll("h3, H3");
-
-            if (folderHeaders.length > 0) {
-              /* A folder inside a folder is a folder of its own, named by its
-                 path ("Work / Docs"), and each link comes over once: into the
-                 folder it sits in, not into every folder above it too. */
-              const folderOf = (h3) => {
-                const dt = h3.parentElement;
-                return [...(dt?.children || [])].find((child) => child.tagName.toLowerCase() === "dl")
-                  || (h3.nextElementSibling?.tagName.toLowerCase() === "dl" ? h3.nextElementSibling : null);
-              };
-              const pathOf = (h3) => {
-                const names = [h3.textContent.trim()];
-                for (let dl = h3.parentElement?.parentElement?.closest("dl"); dl; dl = dl.parentElement?.closest("dl")) {
-                  const above = [...(dl.parentElement?.children || [])].find((child) => child.tagName.toLowerCase() === "h3");
-                  if (above && folderOf(above) === dl) names.unshift(above.textContent.trim());
-                }
-                return names.filter(Boolean).join(" / ");
-              };
-              folderHeaders.forEach((h3) => {
-                const folderTitle = pathOf(h3) || "Imported Folder";
-                const links = [];
-                const next = folderOf(h3);
-                if (next) {
-                  [...next.querySelectorAll("a, A")].filter((a) => a.closest("dl") === next).forEach((a) => {
-                    const url = a.getAttribute("href") || a.href;
-                    if (url && !window.NordlysConfigSchema.isForbiddenUrl(url)) {
-                      const name = a.textContent.trim() || url;
-                      links.push({ name, url, color: "#38bdf8" });
-                    }
-                  });
-                }
-                if (links.length > 0) {
-                  newGroups.push({
-                    label: folderTitle,
-                    cols: Math.min(4, Math.max(2, Math.ceil(Math.sqrt(links.length)))),
-                    hidden: false,
-                    links
-                  });
-                }
-              });
-            } else {
-              // Flat list of anchors
-              const links = [];
-              dom.querySelectorAll("a, A").forEach((a) => {
-                const url = a.getAttribute("href") || a.href;
-                if (url && !window.NordlysConfigSchema.isForbiddenUrl(url)) {
-                  links.push({ name: a.textContent.trim() || url, url, color: "#38bdf8" });
-                }
-              });
-              if (links.length > 0) {
-                newGroups.push({
-                  label: "IMPORTED BOOKMARKS",
-                  cols: 4,
-                  hidden: false,
-                  links
-                });
-              }
-            }
-
+            // A bookmarks file a browser exported: read the way a followed list is (lists.js).
+            await loadScript("src/js/lists.js");
+            const groups = window.NordlysLists?.parse(text, "", file.name.replace(/[.][^.]+$/, "")) || [];
             // Added the way another new tab's folders are: a way back first, and only if the save landed.
-            this.addImportedFolders({ from: file.name, groups: newGroups });
+            this.addImportedFolders({ from: file.name, groups });
           } else {
             /* JSON. The envelope beside the config is lifted out first, so it
                is never validated as a setting and never stored as one; a file
@@ -4280,6 +4310,7 @@ class SettingsController {
                the 2.0 exports people still have — reads as itself. */
             const parsed = JSON.parse(text);
             // Another new tab's backup adds its folders; a Nordlys one replaces the setup.
+            await loadScript("src/js/importers.js");
             const other = window.NordlysImporters?.read(parsed);
             if (other) this.addImportedFolders(other);
             else await this.applyBackupObject(parsed);

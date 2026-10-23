@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nordlys</title>
+  <link rel="stylesheet" href="src/css/foundations.css">
+  <link rel="stylesheet" href="src/css/blocked.css">
+  <script src="src/js/i18n.js"></script>
+  <script src="src/locales/en.js"></script>
+</head>
+<body>
+  <!-- A site kept shut while a focus runs (worker.js); it goes on to the site by itself once no focus runs (blocked.js). -->
+  <main class="shut">
+    <h1 data-i18n="shut.title">Kept shut while you focus</h1>
+    <p id="shut-said" class="shut-said" role="status"></p>
+    <p class="shut-note" data-i18n="shut.note">It opens here by itself when the focus ends, or as soon as you pause the timer.</p>
+  </main>
+  <script src="src/js/blocked.js"></script>
+</body>
+</html>

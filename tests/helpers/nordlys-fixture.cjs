@@ -70,7 +70,16 @@ const test = base.extend({
           }
         },
         permissions: {
+          // Leave handed back: recorded, and no longer held.
+          remove(request, callback) {
+            const origins = (window.__origins ||= {});
+            origins.removed = [...(origins.removed || []), ...(request?.origins || [])];
+            origins.held = (origins.held || []).filter(origin => !(request?.origins || []).includes(origin));
+            callback?.(true);
+          },
           contains(request, callback) {
+            if (request?.origins?.length) { const held = window.__origins?.held || []; callback(request.origins.every(origin => held.includes(origin))); return; }
+            if (request?.permissions?.includes("sessions")) { callback(Boolean(window.__sessions?.granted)); return; }
             if (request?.permissions?.includes("tabs")) { callback(Boolean(window.__tabs?.granted)); return; }
             if (request?.permissions?.includes("history")) { callback(Boolean(window.__history?.granted)); return; }
             callback(Boolean(window.__bookmarks?.granted));
@@ -78,7 +87,19 @@ const test = base.extend({
           request(request, callback) {
             /* Leave to reach a site (a connected app): given unless a test says
                otherwise with window.__origins = { grant: false }. */
-            if (request?.origins?.length) { (window.__origins ||= {}).asked = [...(window.__origins.asked || []), ...request.origins]; callback(window.__origins.grant !== false); return; }
+            if (request?.origins?.length) {
+              const origins = (window.__origins ||= {});
+              origins.asked = [...(origins.asked || []), ...request.origins];
+              if (origins.grant !== false) origins.held = [...(origins.held || []), ...request.origins];
+              callback(origins.grant !== false);
+              return;
+            }
+            if (request?.permissions?.includes("sessions")) {
+              const sessions = (window.__sessions ||= {});
+              sessions.granted = sessions.grantOnRequest !== false;
+              callback(sessions.granted);
+              return;
+            }
             if (request?.permissions?.includes("tabs")) {
               if (window.__tabs) window.__tabs.granted = window.__tabs.grantOnRequest !== false;
               callback(Boolean(window.__tabs?.granted));
@@ -104,6 +125,14 @@ const test = base.extend({
         },
         windows: {
           update(id, details, callback) { (window.__tabs ||= {}); (window.__tabs.focused ||= []).push(id); callback?.(); }
+        },
+        /* Tabs and windows closed lately: window.__sessions = { list, granted,
+           grantOnRequest }; restored ones are recorded, and changed() tells the
+           page as Chrome would. */
+        sessions: {
+          getRecentlyClosed(filter, callback) { setTimeout(() => callback((window.__sessions?.list || []).slice(0, filter?.maxResults || 25)), 0); },
+          restore(id, callback) { const sessions = (window.__sessions ||= {}); (sessions.restored ||= []).push(id); sessions.list = (sessions.list || []).filter(entry => (entry.tab || entry.window).sessionId !== id); callback?.(); for (const listener of sessions.listeners || []) listener(); },
+          onChanged: { addListener(listener) { const sessions = (window.__sessions ||= {}); (sessions.listeners ||= []).push(listener); } }
         },
         /* History the tests can shape: window.__history = { list, granted,
            grantOnRequest }. Searched by title and address as Chrome does. */

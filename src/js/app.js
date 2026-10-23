@@ -37,6 +37,7 @@ const DEFAULT_CONFIG = {
   showSearch: true,
   // Whether the last searches are kept to offer again.
   rememberSearches: true,
+  suggestUsual: true,
   cardRadius: 18,
   // "round", or "smooth": the continuous corner of an app icon (CSS corner-shape).
   cornerShape: "round",
@@ -198,7 +199,9 @@ const OWNED_LOCAL_KEYS = [
   "nordlys_profiles", "nordlys_device_start",
   CSS_WAITING_KEY,
   // What the skies learned on this device: the weather, the K index, the horizon, the day's pictures, and their cost here.
-  "nordlys_sky_data", "nordlys_world_picture", SKY_LOAD_KEY
+  "nordlys_sky_data", "nordlys_world_picture", SKY_LOAD_KEY,
+  // Whether watched sites answered (grid.js), when each followed list was read (lists.js), what is opened at which hour (widgets.js).
+  "nordlys_site_status", "nordlys_lists_read", "nordlys_rhythm"
 ];
 const LIGHT_THEMES = [
   "porcelain-light", "warm-ivory", "sage-light", "sakura-daylight",
@@ -358,6 +361,18 @@ class NordlysApp {
   stopFollowingBrowser() {
     this.unwatchBrowser?.();
     this.unwatchBrowser = null;
+  }
+
+  /* Folders that follow a list at an address (lists.js) are read again on
+     load once an hour has passed. Nothing is read in until a board has one. */
+  async followLists() {
+    if (!(this.config.groups || []).some((group) => group.source?.type === "list")) return;
+    if (!(await loadScript("src/js/lists.js"))) return;
+    if (await window.NordlysLists.refresh(this.config.groups)) {
+      this.saveConfig();
+      this.grid?.render();
+      this.builtSettings?.renderBookmarksManager?.();
+    }
   }
 
   applyGlassLevel() {
@@ -1132,6 +1147,7 @@ class NordlysApp {
     this.applyGlassLevel();
     this.applyLegibility();
     this.followBrowserFolders();
+    this.followLists();
     if (this.config.customCss) {
       this.injectCustomCSS(this.config.customCss);
     }
@@ -1221,7 +1237,7 @@ class NordlysApp {
         this.takingInbox = false;
         const say = (key, fallback, params) => (window.I18N ? window.I18N.t(key, params) : fallback);
         const groups = this.config.groups;
-        const open = (group) => Boolean(group) && !group.source?.folderId;
+        const open = (group) => Boolean(group) && !group.source;
         const into = new Set();
         for (const item of items) {
           if (typeof item?.url !== "string" || !/^https?:\/\/\S+$/i.test(item.url)) continue;

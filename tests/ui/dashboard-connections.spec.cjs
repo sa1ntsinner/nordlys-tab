@@ -103,6 +103,35 @@ test('a calendar link: the next events by day, all-day ones marked', async ({ no
   await expect(agenda(page).locator('.dash-event').nth(1).locator('.dash-event-time')).toHaveText('All day');
 });
 
+test('a meeting with a link has its Join, lit ten minutes before; a second calendar has its own colour', async ({ nordlysPage }) => {
+  const { page, runtimeErrors } = nordlysPage;
+  const cal = lines => ['BEGIN:VCALENDAR', ...lines, 'END:VCALENDAR'].join('\r\n');
+  const at = minutes => new Date(new Date('2026-09-27T10:00:00').getTime() + minutes * 60e3).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  await page.route('https://work.example.com/**', route => route.fulfill({ body: cal([
+    'BEGIN:VEVENT', 'UID:a', `DTSTART:${at(5)}`, `DTEND:${at(35)}`, 'SUMMARY:Standup', 'X-GOOGLE-CONFERENCE:https://meet.google.com/abc-defg-hij', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:b', `DTSTART:${at(120)}`, 'SUMMARY:Review', 'LOCATION:https://zoom.us/j/42', 'END:VEVENT'
+  ]) }));
+  await page.route('https://home.example.com/**', route => route.fulfill({ body: cal(['BEGIN:VEVENT', 'UID:c', `DTSTART:${at(300)}`, 'SUMMARY:Dinner', 'END:VEVENT']) }));
+  await page.locator('#gear').click();
+  await page.locator('#settings-tab-dashboard').click();
+  await page.locator('#sec-dashboard .dash-connection', { hasText: 'Calendar (ICS link)' }).click();
+  await page.locator('#dash-conn-url').fill('https://work.example.com/basic.ics');
+  await page.locator('.dash-dialog').getByRole('button', { name: 'Add another calendar' }).click();
+  await page.locator('#dash-conn-url-1').fill('https://home.example.com/basic.ics');
+  await page.locator('.dash-dialog').getByRole('button', { name: 'Connect' }).click();
+  await expect(page.locator('.dash-dialog')).toHaveCount(0, { timeout: 5000 });
+  await page.keyboard.press('Escape');
+  expect(await page.evaluate(() => window.__origins.asked)).toEqual(['https://work.example.com/*', 'https://home.example.com/*']);
+  await expect(agenda(page).locator('.dash-event-title')).toHaveText(['Standup', 'Review', 'Dinner']);
+  const join = agenda(page).getByRole('link', { name: 'Join Standup' });
+  await expect(join).toHaveAttribute('href', 'https://meet.google.com/abc-defg-hij');
+  await expect(join).toHaveClass(/is-soon/);
+  await expect(agenda(page).getByRole('link', { name: 'Join Review' })).not.toHaveClass(/is-soon/);
+  await expect(agenda(page).locator('.dash-task-meta')).toHaveCount(0);
+  expect(await agenda(page).locator('.dash-event-bar').evaluateAll(bars => bars.map(bar => bar.style.getPropertyValue('--brand')))).toEqual(['#34a853', '#34a853', '#5aa9ff']);
+  expect(runtimeErrors).toEqual([]);
+});
+
 test('with nothing connected the cards offer the apps that work, and nothing marked Soon', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await inbox(page).getByRole('button', { name: 'Connect an app' }).click();

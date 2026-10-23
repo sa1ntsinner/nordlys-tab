@@ -178,3 +178,42 @@ test('an all-day event without an end lasts its whole day, in the viewer\'s own 
   assert.strictEqual(list.length, 1);
   assert.deepStrictEqual([list[0].allDay, list[0].start, list[0].end], [true, '2026-10-23', '2026-10-24']);
 });
+
+test('a meeting gives its link to join: the conference field first, else a meeting link in its place or notes', () => {
+  const ics = zoned([
+    ev(['UID:g', 'DTSTART:20261024T090000Z', 'SUMMARY:Planning', 'DESCRIPTION:Notes at https://docs.example/x\\nJoin with Google Meet: https://meet.google.com/abc-defg-hij', 'X-GOOGLE-CONFERENCE:https://meet.google.com/abc-defg-hij']),
+    ev(['UID:t', 'DTSTART:20261024T100000Z', 'SUMMARY:Teams call', 'LOCATION:Microsoft Teams Meeting', 'DESCRIPTION:Join: <https://teams.microsoft.com/l/meetup-join/19%3ameeting_x%40thread.v2/0?context=1>']),
+    ev(['UID:z', 'DTSTART:20261024T110000Z', 'SUMMARY:Zoom', 'LOCATION:https://us02web.zoom.us/j/123456789?pwd=abc']),
+    ev(['UID:n', 'DTSTART:20261024T120000Z', 'SUMMARY:Lunch', 'LOCATION:Cafe', 'DESCRIPTION:See https://evil.example/meet.google.com/x or https://zoom.us.evil.example/j/1'])
+  ].join('\n'));
+  assert.deepStrictEqual(C.events(ics, at('2026-10-24T00:00:00Z')).map(e => e.join), [
+    'https://meet.google.com/abc-defg-hij',
+    'https://teams.microsoft.com/l/meetup-join/19%3ameeting_x%40thread.v2/0?context=1',
+    'https://us02web.zoom.us/j/123456789?pwd=abc',
+    null
+  ]);
+  const items = K.ics.read([ics], {}, at('2026-10-24T00:00:00Z'));
+  assert.deepStrictEqual(items.map(e => e.where), ['', 'Microsoft Teams Meeting', '', 'Cafe'], 'a place that is only the link is not repeated');
+});
+
+test('several calendars in one connection: each read and told apart, a meeting in two of them shown once', () => {
+  const work = zoned([ev(['UID:shared', 'DTSTART:20261024T090000Z', 'SUMMARY:All hands']), ev(['UID:w', 'DTSTART:20261024T100000Z', 'SUMMARY:Review'])].join('\n'));
+  const home = zoned([ev(['UID:shared', 'DTSTART:20261024T090000Z', 'SUMMARY:All hands']), ev(['UID:h', 'DTSTART:20261024T180000Z', 'SUMMARY:Dinner'])].join('\n'));
+  const creds = { url: 'https://cal.example/work.ics\nwebcal://home.example/me.ics\njavascript:alert(1)' };
+  assert.deepStrictEqual(K.ics.requests(creds).map(r => r.url), ['https://cal.example/work.ics', 'https://home.example/me.ics']);
+  assert.deepStrictEqual(C.originsOf('ics', creds), ['https://cal.example/*', 'https://home.example/*']);
+  const items = K.ics.read([work, home], creds, at('2026-10-24T00:00:00Z'));
+  assert.deepStrictEqual(items.map(e => [e.title, e.calendar]), [['All hands', 0], ['Review', 0], ['Dinner', 1]]);
+});
+
+test('a calendar that does not answer leaves the others shown, and says so', async () => {
+  const realFetch = global.fetch;
+  const answer = (ok, text) => ({ ok, status: ok ? 200 : 404, text: async () => text, headers: { get: () => null } });
+  global.fetch = async (url) => (url.includes('down') ? answer(false, 'Not found') : answer(true, zoned(ev(['UID:a', 'DTSTART:20261024T090000Z', 'SUMMARY:Up']))));
+  try {
+    const items = await C.list('ics', { url: 'https://up.example/a.ics https://down.example/b.ics' }, at('2026-10-24T00:00:00Z'));
+    assert.deepStrictEqual(items.map(e => e.title), ['Up']);
+    assert.strictEqual(items.failed.status, 404);
+    await assert.rejects(C.list('ics', { url: 'https://down.example/b.ics' }, at('2026-10-24T00:00:00Z')), /404/);
+  } finally { global.fetch = realFetch; }
+});
