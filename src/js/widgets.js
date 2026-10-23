@@ -483,7 +483,8 @@ class SearchWidget {
     const groups = app.config.groups || [];
     return {
       themes: [...document.querySelectorAll(".theme-card[data-theme]")].map((card) => ({ key: card.dataset.theme, name: text(card.querySelector("b")) || card.dataset.theme })),
-      scenes: [...document.querySelectorAll("#bg-scene-picker .scene-card[data-scene]")].filter((card) => card.dataset.scene !== "custom-image" && card.dataset.scene !== "custom-video").map((card) => ({ key: card.dataset.scene, name: text(card.querySelector(".scene-name")) || card.dataset.scene })),
+      // Every sky but the person's own picture and video, which a word cannot conjure.
+      scenes: (window.NordlysSkies?.SKIES || []).filter((sky) => sky.kind !== "media").map((sky) => ({ key: sky.id, name: this.say(sky.key, sky.name) })),
       moods: [...document.querySelectorAll("#bg-palette-grid [data-palette]")].map((chip) => ({ key: chip.dataset.palette, name: text(chip.querySelector("span")) || chip.dataset.palette })),
       folders: groups.map((group, index) => ({ key: index, name: group.label || "", hidden: Boolean(group.hidden) })),
       bookmarks: groups.flatMap((group, g) => (group.links || []).map((link, l) => ({ key: `${g}:${l}`, name: link.name || link.url || "", folder: g }))),
@@ -644,7 +645,7 @@ class SearchWidget {
     };
     switch (candidate.kind) {
       case "theme": look((config) => { config.theme = candidate.target.key; delete config.customTheme; }); break;
-      case "sky": look((config) => { config.bgMode = candidate.target.key; }); break;
+      case "sky": look((config) => { config.bgMode = candidate.target.key; delete config.skyLayers; }); break;
       case "mood": look((config) => { config.bgPalette = candidate.target.key; }); break;
       case "hide": case "rename": lift(`.card[data-group-idx="${candidate.target.key}"]`); break;
       case "move": {
@@ -667,7 +668,7 @@ class SearchWidget {
     let done = true;
     switch (candidate.kind) {
       case "theme": config.theme = candidate.target.key; delete config.customTheme; break;
-      case "sky": config.bgMode = candidate.target.key; break;
+      case "sky": config.bgMode = candidate.target.key; delete config.skyLayers; break;
       case "mood": config.bgPalette = candidate.target.key; break;
       case "shuffle": config.bgSeed = crypto.getRandomValues(new Uint32Array(1))[0] || 1; break;
       case "newFolder": groups.push({ label: candidate.name, cols: 4, hidden: false, links: [] }); break;

@@ -12,6 +12,7 @@
      ownSun  draws its own sun, and the light of it
      ownLight  paints its own day, so the engine does not dim it by day
      layers  a composed sky: the layers it starts from (skies/compose.js)
+     readable  a picture whose pixels the page may read (its server allows CORS)
 
    The painting of each is a file of its own in src/js/skies, which names the
    method that paints it with paint() below. Nothing else in the product keeps
@@ -24,8 +25,7 @@
     { id: "weather", key: "sky.cat.weather", name: "Weather" },
     { id: "horizon", key: "sky.cat.horizon", name: "Horizon" },
     { id: "world", key: "sky.cat.world", name: "Picture of the day" },
-    { id: "yours", key: "sky.cat.yours", name: "Yours" },
-    { id: "plain", key: "sky.cat.plain", name: "Plain" }
+    { id: "yours", key: "sky.cat.yours", name: "Yours" }
   ];
 
   /* A composed sky is five layers, each a choice. A sky of the Weather or
@@ -45,42 +45,43 @@
     bodies: ["stars", "moon", "planets", "meteors"]
   };
 
-  const canvas = (id, category, name, flags = {}) => ({ id, category, name, key: `scene.${id}`, kind: "canvas", ...flags });
+  // Each sky's message key is spelled out, so it can be found by searching for it.
+  const canvas = (id, category, name, key, flags = {}) => ({ id, category, name, key, kind: "canvas", ...flags });
   // A composed sky: its own light and sun, painted by the composer, and the real hour kept when held.
-  const composed = (id, category, name, layers) => canvas(id, category, name, { rest: 7.4, budget: 50, clock: true, ownSun: true, ownLight: true, painter: "renderCompose", layers });
+  const composed = (id, category, name, key, layers) => canvas(id, category, name, key, { rest: 7.4, budget: 50, clock: true, ownSun: true, ownLight: true, painter: "renderCompose", layers });
   const SKIES = [
-    canvas("aurora", "nordlys", "Aurora", { rest: 12, night: true }),
-    canvas("polaris", "nordlys", "Polaris", { rest: 20, night: true }),
-    canvas("halo", "nordlys", "Halo", { rest: 7.4 }),
-    canvas("starmap", "nordlys", "Star map", { rest: 7.4, budget: 100, clock: true, night: true }),
-    canvas("meteors", "nordlys", "Meteors", { rest: 9, budget: 100, night: true }),
-    canvas("silk", "nordlys", "Silk", { rest: 31.7 }),
-    canvas("midnightsun", "nordlys", "Midnight sun", { rest: 7.4, budget: 80, clock: true, ownSun: true }),
-    canvas("contour", "nordlys", "Contour", { rest: 7.4 }),
-    canvas("fjord", "nordlys", "Fjord", { rest: 7.4 }),
-    composed("outside", "weather", "Outside now", { weather: "live" }),
-    composed("yourday", "weather", "Your day", { weather: "day", light: "workday" }),
-    composed("clouds", "weather", "Clouds", { weather: "clouds" }),
-    composed("rain", "weather", "Rain", { weather: "rain" }),
-    composed("snow", "weather", "Snow", { weather: "snow", horizon: "forest" }),
-    composed("fog", "weather", "Fog", { weather: "fog", horizon: "forest" }),
-    composed("storm", "weather", "Thunder", { weather: "storm", horizon: "steppe" }),
-    composed("northern", "weather", "Space weather", { aurora: "north", light: "night", horizon: "mountains" }),
-    composed("yours-horizon", "horizon", "Your horizon", { horizon: "yours" }),
-    composed("mountains", "horizon", "Mountains", { horizon: "mountains" }),
-    composed("sea", "horizon", "Sea", { horizon: "sea" }),
-    composed("city", "horizon", "City", { horizon: "city" }),
-    composed("forest", "horizon", "Forest", { horizon: "forest" }),
-    composed("steppe", "horizon", "Steppe", { horizon: "steppe" }),
-    composed("desert", "horizon", "Desert", { horizon: "desert" }),
-    composed("lighthouse", "horizon", "Lighthouse", { horizon: "lighthouse" }),
-    { id: "picture-wikimedia", category: "world", name: "Wikimedia Commons", key: "scene.pictureWikimedia", kind: "picture", source: "wikimedia" },
-    { id: "picture-paintings", category: "world", name: "Masterpieces", key: "scene.picturePaintings", kind: "picture", source: "paintings" },
+    canvas("aurora", "nordlys", "Aurora", "scene.aurora", { rest: 12, night: true }),
+    canvas("polaris", "nordlys", "Polaris", "scene.polaris", { rest: 20, night: true }),
+    canvas("halo", "nordlys", "Halo", "scene.halo", { rest: 7.4 }),
+    canvas("starmap", "nordlys", "Star map", "scene.starmap", { rest: 7.4, budget: 100, clock: true, night: true }),
+    canvas("meteors", "nordlys", "Meteors", "scene.meteors", { rest: 9, budget: 100, night: true }),
+    canvas("silk", "nordlys", "Silk", "scene.silk", { rest: 31.7 }),
+    canvas("midnightsun", "nordlys", "Midnight sun", "scene.midnightsun", { rest: 7.4, budget: 80, clock: true, ownSun: true }),
+    canvas("contour", "nordlys", "Contour", "scene.contour", { rest: 7.4 }),
+    canvas("fjord", "nordlys", "Fjord", "scene.fjord", { rest: 7.4 }),
+    composed("outside", "weather", "Outside now", "scene.outside", { weather: "live" }),
+    composed("yourday", "weather", "Your day", "scene.yourday", { weather: "day", light: "workday" }),
+    composed("clouds", "weather", "Clouds", "scene.clouds", { weather: "clouds" }),
+    composed("rain", "weather", "Rain", "scene.rain", { weather: "rain" }),
+    composed("snow", "weather", "Snow", "scene.snow", { weather: "snow", horizon: "forest" }),
+    composed("fog", "weather", "Fog", "scene.fog", { weather: "fog", horizon: "forest" }),
+    composed("storm", "weather", "Thunder", "scene.storm", { weather: "storm", horizon: "steppe" }),
+    composed("northern", "weather", "Space weather", "scene.northern", { aurora: "north", light: "night", horizon: "mountains" }),
+    composed("yours-horizon", "horizon", "Your horizon", "scene.yoursHorizon", { horizon: "yours" }),
+    composed("mountains", "horizon", "Mountains", "scene.mountains", { horizon: "mountains" }),
+    composed("sea", "horizon", "Sea", "scene.sea", { horizon: "sea" }),
+    composed("city", "horizon", "City", "scene.city", { horizon: "city" }),
+    composed("forest", "horizon", "Forest", "scene.forest", { horizon: "forest" }),
+    composed("steppe", "horizon", "Steppe", "scene.steppe", { horizon: "steppe" }),
+    composed("desert", "horizon", "Desert", "scene.desert", { horizon: "desert" }),
+    composed("lighthouse", "horizon", "Lighthouse", "scene.lighthouse", { horizon: "lighthouse" }),
+    { id: "picture-wikimedia", category: "world", name: "Wikimedia Commons", key: "scene.pictureWikimedia", kind: "picture", source: "wikimedia", readable: true },
+    { id: "picture-paintings", category: "world", name: "Masterpieces", key: "scene.picturePaintings", kind: "picture", source: "paintings", readable: true },
     { id: "picture-met", category: "world", name: "The Met", key: "scene.pictureMet", kind: "picture", source: "met" },
     { id: "picture-earth", category: "world", name: "The Earth today", key: "scene.pictureEarth", kind: "picture", source: "epic" },
     { id: "custom-image", category: "yours", name: "Wallpaper", key: "scene.wallpaper", kind: "media" },
     { id: "custom-video", category: "yours", name: "Video", key: "scene.video", kind: "media" },
-    { id: "solid", category: "plain", name: "Solid", key: "scene.solid", kind: "solid" }
+    { id: "solid", category: "yours", name: "Solid", key: "scene.solid", kind: "solid" }
   ];
 
   const byId = new Map(SKIES.map((sky) => [sky.id, sky]));
@@ -100,6 +101,7 @@
     CATEGORIES,
     SKIES,
     COMPOSE,
+    SHUFFLE,
     get: (id) => byId.get(id) || null,
     inCategory: (category) => SKIES.filter((sky) => sky.category === category),
     canvasSkies: () => SKIES.filter((sky) => sky.kind === "canvas").map((sky) => sky.id),

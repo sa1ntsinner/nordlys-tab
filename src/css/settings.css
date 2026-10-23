@@ -1817,9 +1817,21 @@ input[type="range"].ipt:focus-visible {
 .look-status { min-height: 1.4em; margin: 0; color: var(--nl-text-secondary); font-size: var(--nl-text-xs); }
 .look-status.refused { color: var(--nl-status-danger); }
 .look-decide { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--nl-accent); border-radius: var(--nl-radius-md); background: color-mix(in srgb, var(--nl-accent) 8%, transparent); color: var(--nl-text-primary); font-size: var(--nl-text-sm); }
-.scene-grid { display: grid; gap: 10px; }
-.atmosphere-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.personal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+/* The kinds of sky switch which gallery is shown, as tabs do: words with a
+   line under the one on show, not chips, which here hold values. */
+.sky-kinds { display: flex; flex-wrap: wrap; gap: 0 16px; margin: -4px 0 10px; }
+.sky-kind {
+  position: relative; padding: 0 1px; border: 0; background: none; cursor: pointer;
+  color: var(--nl-text-secondary); font: inherit; font-size: var(--nl-text-sm);
+  transition: color var(--nl-motion-control);
+}
+.sky-kind:hover, .sky-kind[aria-pressed="true"] { color: var(--nl-text-primary); }
+.sky-kind[aria-pressed="true"]::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 4px; height: 2px;
+  border-radius: 1px; background: var(--nl-accent);
+}
+.scene-grid { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.scene-card[hidden] { display: none; }
 .scene-card {
   display: grid; gap: 7px; padding: 7px; border-radius: var(--nl-radius-md);
   border: 1px solid var(--nl-border); background: transparent; cursor: pointer;
@@ -1837,6 +1849,16 @@ input[type="range"].ipt:focus-visible {
    (paintStill in background.js) onto this canvas, over the theme's own sky. */
 .scene-still { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .scene-preview[data-scene="solid"] { background: var(--nl-canvas); }
+/* A picture of the day shows the one kept from the last time it was the sky;
+   one never shown has nothing yet, and a frame says what it will hold. */
+.scene-preview img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.scene-preview img.is-dark { object-fit: contain; background: #000; }
+.scene-preview[data-kind="picture"] { background: var(--nl-canvas); color: color-mix(in srgb, var(--nl-text-primary) 30%, transparent); }
+.scene-preview[data-kind="picture"]::after {
+  content: ""; position: absolute; inset: 24% 36%; border: 2px solid currentColor; border-radius: 2px;
+  box-shadow: inset 0 0 0 3px var(--nl-canvas), inset 0 0 0 5px currentColor;
+}
+.scene-preview[data-kind="picture"]:has(img)::after { content: none; }
 /* These two slots have nothing to preview until the user supplies a file. The
    placeholder stripes that stood here read as a broken texture and looked the
    same for both; a picture and a play mark say what each slot takes. */
@@ -1863,15 +1885,67 @@ input[type="range"].ipt:focus-visible {
   background: currentColor;
   clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
-.scene-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Two lines for a long name ("Метрополитен-музей") before it is cut. */
+.scene-name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 1.3; overflow-wrap: anywhere; }
 .scene-block { display: grid; gap: 10px; margin-bottom: 6px; }
-.scene-block .personal-label { margin-top: 8px; }
 .scene-note { margin: 0 0 4px; font-size: var(--nl-text-xs); line-height: 1.45; color: var(--nl-text-secondary); max-width: 52ch; }
+.scene-note:empty { display: none; }
 
 @media (max-width: 560px) {
-  .atmosphere-grid { grid-template-columns: 1fr; }
-  .personal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .scene-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+.sky-actions { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 2px -8px; }
+/* A choice beside a long label keeps its words; the label wraps instead. */
+#sec-background .setting-row > .nl-select { flex: none; }
+.sky-block-label { display: block; margin-top: 20px; }
+/* Chips with no swatch in them are even on both sides. */
+:is(.sky-body, .sky-look).palette-chip { padding-inline: 12px; }
+.palette-chip[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--nl-accent) 70%, transparent);
+  background: color-mix(in srgb, var(--nl-accent) 10%, transparent); color: var(--nl-text-primary);
+}
+.sky-looks { display: grid; gap: 9px; margin: 14px 0 4px; }
+.sky-looks[hidden] { display: none; }
+.sky-look-pair { display: inline-flex; align-items: center; }
+.sky-look-remove {
+  width: 30px; padding: 0; border: 0; border-radius: var(--nl-radius-sm); background: none; cursor: pointer;
+  color: var(--nl-text-secondary); font: inherit; font-size: var(--nl-text-md);
+}
+.sky-look-remove:hover { color: var(--nl-status-danger); background: color-mix(in srgb, var(--nl-status-danger) 12%, transparent); }
+
+/* A composed sky's layers: a choice each, and a padlock beside the ones a
+   shuffle would choose again, shut when the layer is kept. */
+.sky-composer { display: grid; gap: 2px; margin: 16px 0 4px; }
+.sky-composer[hidden] { display: none; }
+.sky-layer.setting-row { min-height: 48px; padding-block: 2px; }
+.sky-layer-pick { display: inline-flex; align-items: center; gap: 4px; }
+.sky-layer-pick .nl-select { width: 12rem; }
+/* The layers without a padlock line up with the ones that have one. */
+.sky-layer-pick:not(:has(.sky-lock)) { padding-right: 44px; }
+.sky-lock {
+  display: grid; place-items: center; width: 40px; padding: 0; border: 1px solid transparent;
+  border-radius: var(--nl-radius-sm); background: none; color: var(--nl-text-secondary); cursor: pointer;
+  transition: color var(--nl-motion-control), background-color var(--nl-motion-control);
+}
+.sky-lock:hover { color: var(--nl-text-primary); background: color-mix(in srgb, var(--nl-text-primary) 8%, transparent); }
+.sky-lock[aria-pressed="true"] { color: var(--nl-accent-text); background: color-mix(in srgb, var(--nl-accent) 12%, transparent); }
+.sky-lock svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.sky-lock-shackle { transition: transform var(--nl-motion-control); }
+.sky-lock:not([aria-pressed="true"]) .sky-lock-shackle { transform: translateY(-2.5px); }
+.sky-bodies { margin: 6px 0 4px; }
+.sky-place-search {
+  display: grid; gap: 8px; padding: 12px; margin-bottom: 4px;
+  border: 1px solid var(--nl-border); border-radius: var(--nl-radius-md);
+  background: color-mix(in srgb, var(--nl-surface-card) 46%, transparent);
+}
+.sky-place-search[hidden] { display: none; }
+.sky-place-results { display: grid; justify-items: start; }
+.sky-place-results:empty { display: none; }
+.sky-place-result { text-align: start; color: var(--nl-text-primary); margin-left: -8px; }
+#bg-place-zone { justify-self: start; margin-left: -8px; }
+.sky-workday { display: inline-flex; align-items: center; gap: 6px; }
+.sky-workday input { width: 7.5rem; }
 
 .atmosphere-palette { display: grid; gap: 9px; margin: 16px 0 4px; }
 .palette-grid { display: flex; flex-wrap: wrap; gap: 7px; }

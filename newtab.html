@@ -611,33 +611,53 @@
       <!-- 4. Background Section -->
       <section id="sec-background" class="csec">
         <h3 data-i18n="nav.background">Background</h3>
-        <!-- Shuffle is an ordinary button beside the scene radiogroup, never a
-             control nested inside it. -->
-        <div class="scene-block-head">
-          <span class="settings-block-label" data-i18n="background.atmospheres">Atmospheres</span>
-          <button id="bg-shuffle" type="button" class="palette-action" data-scene-only="procedural" data-i18n="background.shuffle">Shuffle this sky</button>
-        </div>
+        <!-- The kinds of sky are a row of switches over one gallery, both built
+             from the catalogue (sky-catalog.js): every sky is two clicks away,
+             and the gallery stays short enough that what belongs to the chosen
+             sky is in view under it. -->
+        <div id="bg-kinds" class="sky-kinds" role="group" aria-label="Kinds of sky" data-i18n-aria="background.kinds"></div>
         <div class="scene-block" id="bg-scene-picker" role="radiogroup" aria-label="Background" data-i18n-aria="nav.background">
-          <select id="cfg-bg-mode" class="ipt" hidden data-native aria-hidden="true" tabindex="-1">
-            <option value="aurora">Aurora</option>
-            <option value="polaris">Polaris</option>
-            <option value="halo">Halo</option>
-            <option value="starmap">Star map</option>
-            <option value="meteors">Meteors</option>
-            <option value="silk">Silk</option>
-            <option value="midnightsun">Midnight sun</option>
-            <option value="contour">Contour</option>
-            <option value="fjord">Fjord</option>
-            <option value="custom-image">Wallpaper</option>
-            <option value="custom-video">Video</option>
-            <option value="solid">Solid</option>
-          </select>
-          <div class="scene-grid atmosphere-grid" id="bg-scene-grid"></div>
-          <span class="settings-block-label personal-label" data-i18n="background.personal">Personal</span>
-          <div class="scene-grid personal-grid" id="bg-personal-grid"></div>
+          <select id="cfg-bg-mode" class="ipt" hidden data-native aria-hidden="true" tabindex="-1"></select>
+          <div class="scene-grid" id="bg-scene-grid"></div>
         </div>
+        <p id="bg-kind-note" class="scene-note"></p>
         <!-- What a sky drawn from the real one shows, and where it comes from. -->
         <p id="bg-scene-note" class="scene-note" aria-live="polite" hidden></p>
+        <!-- Ordinary buttons beside the scene radiogroup, never controls nested
+             inside it. A composed sky shuffles its layers, any other its scatter. -->
+        <div class="sky-actions">
+          <button id="bg-shuffle" type="button" class="palette-action" data-scene-only="procedural" data-i18n="background.shuffle">Shuffle this sky</button>
+          <button id="bg-look-save" type="button" class="palette-action" data-scene-only="savable" data-i18n="background.lookSave">Save this sky</button>
+        </div>
+        <div id="bg-looks-block" class="sky-looks" hidden>
+          <span class="settings-block-label" data-i18n="background.looks">Saved skies</span>
+          <div id="bg-looks" class="palette-grid"></div>
+        </div>
+        <!-- A composed sky is five layers and the bodies in it, each a choice; a
+             layer kept is left as it is by a shuffle and by a rotation. -->
+        <div class="sky-composer" data-scene-only="composed">
+          <span class="settings-block-label" data-i18n="background.layers">Layers</span>
+          <div id="bg-layers" class="sky-layers"></div>
+          <div id="bg-bodies" class="palette-grid sky-bodies" role="group" aria-label="In the sky" data-i18n-aria="background.bodies"></div>
+          <div class="row setting-row">
+            <span><span id="bg-place-label" data-i18n="background.place">Where the sky is</span><small id="bg-place-name" class="setting-note-inline"></small></span>
+            <button id="bg-place-change" type="button" class="palette-action" aria-expanded="false" aria-controls="bg-place-search" data-i18n="background.placeChange">Change</button>
+          </div>
+          <div id="bg-place-search" class="sky-place-search" hidden>
+            <input id="bg-place-input" type="search" class="ipt" autocomplete="off" spellcheck="false" maxlength="60" aria-labelledby="bg-place-label" data-i18n-placeholder="background.placeSearch" placeholder="A city or a town">
+            <div id="bg-place-results" class="sky-place-results" aria-live="polite"></div>
+            <p class="daylight-note" data-i18n="background.placeNote">Only what you type is sent, to Open-Meteo's place search, and only the place you choose is kept.</p>
+            <button id="bg-place-zone" type="button" class="palette-action" data-i18n="background.placeZone">Use my time zone</button>
+          </div>
+          <div class="row setting-row" id="bg-workday-row">
+            <span id="bg-workday-label" data-i18n="background.workday">Working hours</span>
+            <span class="sky-workday">
+              <input id="cfg-workday-start" type="time" class="ipt" step="900" aria-label="Start" data-i18n-aria="background.workdayStart">
+              <span aria-hidden="true">–</span>
+              <input id="cfg-workday-end" type="time" class="ipt" step="900" aria-label="End" data-i18n-aria="background.workdayEnd">
+            </span>
+          </div>
+        </div>
         <!-- The mood chips are built in settings.js so the five that ship and the
              ones somebody mixes are the same kind of thing. The radiogroup holds
              nothing but radios; making a new mood, editing one and removing one
@@ -654,7 +674,7 @@
           </div>
           <!-- The light over whichever mood is chosen: one switch for every
                atmosphere, beside the colours it changes. -->
-          <div class="daylight-block">
+          <div class="daylight-block" data-scene-only="nordlys">
             <div class="row setting-row daylight-row">
               <span><span id="bg-daylight-label" data-i18n="background.daylight">Follow the time of day</span><small id="bg-daylight-now" class="setting-note-inline"></small></span>
               <label class="tg"><input id="cfg-bg-daylight" type="checkbox" aria-labelledby="bg-daylight-label"><i></i></label>
@@ -703,7 +723,7 @@
           <input id="cfg-bg-intensity" type="range" class="ipt" min="0" max="100" value="100">
         </div>
         
-        <div class="row" data-scene-only="media" style="flex-direction: column; align-items: stretch; gap: 8px;">
+        <div class="row" data-scene-only="upload" style="flex-direction: column; align-items: stretch; gap: 8px;">
           <span data-i18n="background.uploadCustom">Upload a wallpaper</span>
           <div class="custom-file-wrap">
             <input id="cfg-custom-media" type="file" class="hidden-file-input" accept="image/*,video/mp4,video/webm">
@@ -723,6 +743,41 @@
         <div class="row" data-scene-only="media">
           <span><span data-i18n="background.dim">Dim</span> <b id="lbl-bgdim">0%</b></span>
           <input id="cfg-bg-dim" type="range" class="ipt" min="0" max="80" value="0">
+        </div>
+        <!-- Only a picture whose pixels the page may read: the person's own, and Commons'. -->
+        <div class="row setting-row" data-scene-only="readable">
+          <span><span id="bg-picture-colours-label" data-i18n="background.pictureColours">Colours from the picture</span><small class="setting-note-inline" data-i18n="background.pictureColoursNote">The accent takes the picture's strongest colour.</small></span>
+          <label class="tg"><input id="cfg-picture-colours" type="checkbox" aria-labelledby="bg-picture-colours-label"><i></i></label>
+        </div>
+
+        <!-- A rotation shows another sky and writes nothing: the person's own
+             choice stays as it is (app.js rotateSky). -->
+        <span class="settings-block-label sky-block-label" data-i18n="background.rotateTitle">Change by itself</span>
+        <div class="row setting-row">
+          <span id="bg-rotate-label" data-i18n="background.rotate">A new sky</span>
+          <select id="cfg-sky-rotate" class="ipt" aria-labelledby="bg-rotate-label">
+            <option value="off" data-i18n="background.rotateOff">Never</option>
+            <option value="tab" data-i18n="background.rotateTab">With every new tab</option>
+            <option value="hour" data-i18n="background.rotateHour">Every hour</option>
+            <option value="day" data-i18n="background.rotateDay">Every day</option>
+          </select>
+        </div>
+        <div class="row setting-row" id="bg-pool-row" hidden>
+          <span id="bg-pool-label" data-i18n="background.pool">Chosen from</span>
+          <select id="cfg-sky-pool" class="ipt" aria-labelledby="bg-pool-label">
+            <option value="layers" data-i18n="background.poolLayers">This sky's layers</option>
+            <option value="category" data-i18n="background.poolCategory">Skies of the same kind</option>
+            <option value="all" data-i18n="background.poolAll">Every sky</option>
+            <option value="looks" data-i18n="background.poolLooks">My saved skies</option>
+          </select>
+        </div>
+        <div class="row setting-row">
+          <span><span id="bg-night-label" data-i18n="background.night">Night light</span><small class="setting-note-inline" data-i18n="background.nightNote">A warm red over the whole page, and the sky held still.</small></span>
+          <select id="cfg-night-mode" class="ipt" aria-labelledby="bg-night-label">
+            <option value="off" data-i18n="background.nightOff">Off</option>
+            <option value="auto" data-i18n="background.nightAuto">From sunset to sunrise</option>
+            <option value="on" data-i18n="background.nightOn">Always</option>
+          </select>
         </div>
       </section>
 
@@ -1492,6 +1547,7 @@
   <script src="src/js/dash-arrange.js"></script>
   <script src="src/js/dashboard.js"></script>
   <script src="src/js/focus-mode.js"></script>
+  <script src="src/js/settings-sky.js"></script>
   <script src="src/js/settings.js"></script>
   <script src="src/js/importers.js"></script>
   <script src="src/js/shortcut-hints.js"></script>

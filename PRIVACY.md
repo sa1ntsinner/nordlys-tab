@@ -1,8 +1,8 @@
 # Nordlys privacy policy
 
 Effective date: August 16, 2026
-Last updated: October 21, 2026
-Version: 2.5.2
+Last updated: October 23, 2026
+Version: 3.0.0
 
 Nordlys runs as a new tab page in your browser. It has no server or account.
 
@@ -32,6 +32,8 @@ Everything is saved on your device. Settings and bookmarks use Chrome's extensio
 | Custom CSS | `chrome.storage.local` / `localStorage` | Stylesheets you added | No |
 | One page fit sizes | `localStorage` | With One page fit on, the sizes it last worked out for up to four window sizes, so a new tab opens already fitted. Never in backups, cleared by Reset | No |
 | Your own wallpaper | IndexedDB | The picture or video loop you picked as the background | No |
+| Where the sky is, working hours, saved skies | `chrome.storage.local` / `localStorage` | The place you set for the sky, the hours the Your day sky knows, and the skies you saved | Only to your own browser's sync, if you turn sync on |
+| What the sky learned | `localStorage` | The weather and the K index last asked for, the horizon of the sky's place, and today's picture of the day with its caption, so a new tab draws at once instead of asking again. Cleared by Reset | No |
 
 ---
 
@@ -39,13 +41,13 @@ Everything is saved on your device. Settings and bookmarks use Chrome's extensio
 
 Sync is off until you turn it on in Settings. Then your setup (folders, bookmarks, profiles, look and layout) is saved in the browser's own sync storage, `storage.sync`, and the browser carries it to your other devices where you're signed in to it: Chrome with your Google account, Edge with your Microsoft account, Firefox with your Mozilla account. Nordlys has no server in between and never sees it. What the browser does with its sync data is covered by that browser's privacy policy.
 
-These never go to sync: uploaded or cropped icon images, wallpapers and video loops, custom CSS, folders that follow your browser's bookmarks, recent searches, One page fit sizes, and what dashboard cards hold (tasks, notes, habits, stashed tabs). A deleted bookmark is kept in sync only as the fact that it was deleted, and is dropped from sync 30 days later. Turning sync off stops sending; it doesn't delete what the browser already holds.
+The place you set for the sky travels with your setup. What was fetched for it (the weather, the K index, the horizon and the pictures) never does. These never go to sync: uploaded or cropped icon images, wallpapers and video loops, custom CSS, folders that follow your browser's bookmarks, recent searches, One page fit sizes, and what dashboard cards hold (tasks, notes, habits, stashed tabs). A deleted bookmark is kept in sync only as the fact that it was deleted, and is dropped from sync 30 days later. Turning sync off stops sending; it doesn't delete what the browser already holds.
 
 ---
 
 ## 4. When it goes online
 
-A new tab with no dashboard cards makes no network request at all. These can take it online:
+A new tab with no dashboard cards, under a sky drawn on your computer, makes no network request at all. These can take it online:
 
 1. When you press Enter in the search box, the text goes through Chrome's `chrome.search` API to the search engine set in Chrome, as it does from the address bar. Nordlys doesn't choose the engine or know which one answered. Nothing is sent while you type. Older versions fetched live suggestions; this one doesn't. Safari gives extensions no search API, so there you pick an engine once in Settings → General and the search goes straight to it.
 2. Opening the icon picker and typing sends nothing. When you press Search, only your phrase goes to Iconify's public API (`api.iconify.design`) for the Simple Icons set. The chosen icon is rebuilt as plain image data and saved locally, so new tabs don't load it online. Bookmark addresses, folders, history and settings aren't included.
@@ -54,11 +56,23 @@ A new tab with no dashboard cards makes no network request at all. These can tak
 5. The dashboard weather card asks Open-Meteo (`geocoding-api.open-meteo.com` and `api.open-meteo.com`) for a city you search for and the forecast of the place you chose, and nothing else. Open-Meteo needs no key or account.
 6. Connected apps (Settings → Dashboard) read your tasks and events from the apps you connect: Todoist, GitHub, and any calendar by its link (Google Calendar, Outlook, iCloud, Proton and others give one). Your browser asks that app for your tasks with your own token, and nothing goes anywhere else. Ticking a task tells that app it is done. The token is kept only on this device: it is not synced and not written into backups. The browser asks for your leave to reach each app's address when you connect it. Disconnecting deletes the token.
 7. **Cards refresh on their own while they are on your dashboard.** You don't have to click anything for these requests: the weather card asks Open-Meteo again when its forecast is more than 30 minutes old; the From your apps card asks the apps you connected when its list is more than 5 minutes old, and every 10 minutes while a tab is open; the Calendar card asks for your calendar link when its events are more than 10 minutes old, and every 15 minutes while a tab is open. They do this only while a new tab is open and the card is on the dashboard. Remove the card, or turn the dashboard off, and they stop.
-8. Settings → Support contains plain links to a donation page, the repository, its issue tracker and this policy. Opening the section loads no remote image, script, beacon or counter. Clicking a link opens a new tab without a referrer or identifier, and Nordlys doesn't learn that you clicked it. A wallet address shown there is copied by your browser's clipboard and goes nowhere else.
+8. **Skies drawn from the world.** Only while one of them is the sky on screen. Each answer is kept, so a new tab asks again only when it could have changed:
+   - The weather, for Outside now or a sky whose weather is set to "As it is outside": Open-Meteo (`api.open-meteo.com`) is asked for the current weather at the sky's place, at most every 30 minutes.
+   - The aurora, for Space weather or an aurora set to "As seen from here" or "As under the oval": NOAA's Space Weather Prediction Center (`services.swpc.noaa.gov`) is asked for the planetary K index, at most every 30 minutes. Nothing about you or your place is sent.
+   - The real horizon, for Your horizon: Open-Meteo's elevation service (`api.open-meteo.com`) is asked for the height of about 260 points around the sky's place, once for each place.
+   - The sky's place is the city you set under Where the sky is, otherwise the weather card's city, otherwise the main city of your time zone, rounded to a hundredth of a degree (about a kilometre). Nordlys never asks the browser for your location. Searching for a place sends only what you type to Open-Meteo's place search (`geocoding-api.open-meteo.com`), and only the place you choose is kept.
+   - Your day draws today's meetings from your calendar cards, on your device. It sends nothing of its own.
+9. **The picture of the day.** Only while one of the Picture of the day skies is on screen, once a day for each, and again only in another language or 30 minutes after a failed try:
+   - Wikimedia Commons: Wikimedia's feed (`api.wikimedia.org`) is asked for the day's picture with the date and your language, and the picture comes from `upload.wikimedia.org`.
+   - Masterpieces: Wikimedia Commons' search (`commons.wikimedia.org`) is asked for one of its featured paintings, by a number made from the date, and the picture comes from `upload.wikimedia.org`.
+   - The Met: the Metropolitan Museum's open collection (`collectionapi.metmuseum.org`) is asked for one of its highlighted paintings, by a number made from the date, and the picture comes from `images.metmuseum.org`.
+   - The Earth today: NASA's EPIC service (`epic.gsfc.nasa.gov`) is asked for its latest day, and the picture comes from the same server.
+   The browser loads the picture as it loads any picture on the web, so that server sees an ordinary request for it. A rotation (Settings → Background → Change by itself) can land on one of these skies or on a sky drawn from the world; its requests are then the ones above.
+10. Settings → Support contains plain links to a donation page, the repository, its issue tracker and this policy. Opening the section loads no remote image, script, beacon or counter. Clicking a link opens a new tab without a referrer or identifier, and Nordlys doesn't learn that you clicked it. A wallet address shown there is copied by your browser's clipboard and goes nowhere else.
 
-The time-of-day light uses the date and your time zone on your device. It doesn't ask for your location or send anything.
+The time-of-day light uses the date and your time zone on your device. The night light's "From sunset to sunrise" works out where the sun is from the date and the sky's place, on your device too. Neither asks for your location or sends anything.
 
-Nordlys never sends your bookmark list or browsing activity anywhere. At install it asks for access to no site at all. Access to a site is asked for when you connect it yourself: Todoist, GitHub, or the one address of a calendar link. That is why the list of optional sites includes any `https` address: a calendar link can be on any server. Nordlys asks only for that one address, and never on its own. Iconify, Open-Meteo and `images.weserv.nl` allow browser requests (CORS), so they need no permission.
+Nordlys never sends your bookmark list or browsing activity anywhere. At install it asks for access to no site at all. Access to a site is asked for when you connect it yourself: Todoist, GitHub, or the one address of a calendar link. That is why the list of optional sites includes any `https` address: a calendar link can be on any server. Nordlys asks only for that one address, and never on its own. Iconify, Open-Meteo, NOAA, Wikimedia, the Met, NASA EPIC and `images.weserv.nl` allow browser requests (CORS), so they need no permission.
 
 ---
 

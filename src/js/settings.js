@@ -2,40 +2,6 @@
    NORDLYS - SETTINGS CONTROLLER & CUSTOMIZATION
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Fallback names, and the keys that translate them. Marking the card with
-   data-i18n lets a language switch retranslate it without a listener here. */
-/* The fallbacks used to read Aurora / Drift / Horizon while the dictionary that
-   actually paints the cards said Nordlys / Contour / Fjord, so a missing key or
-   a late I18N renamed three scenes on the spot. Same words in both places now. */
-const SCENE_NAMES = {
-  "aurora": "Aurora",
-  "halo": "Halo",
-  "polaris": "Polaris",
-  "starmap": "Star map",
-  "meteors": "Meteors",
-  "silk": "Silk",
-  "midnightsun": "Midnight sun",
-  "contour": "Contour",
-  "fjord": "Fjord",
-  "custom-image": "Wallpaper",
-  "custom-video": "Video",
-  "solid": "Solid"
-};
-const SCENE_KEYS = {
-  "aurora": "scene.aurora",
-  "halo": "scene.halo",
-  "polaris": "scene.polaris",
-  "starmap": "scene.starmap",
-  "meteors": "scene.meteors",
-  "silk": "scene.silk",
-  "midnightsun": "scene.midnightsun",
-  "contour": "scene.contour",
-  "fjord": "scene.fjord",
-  "custom-image": "scene.wallpaper",
-  "custom-video": "scene.video",
-  "solid": "scene.solid"
-};
-
 /* The settings a shared look may change (look-share.js). */
 const LOOK_SETTINGS = ["bgMode", "bgMotion", "bgIntensity", "bgSeed", "bgRealSky", "bgDaylight", "boardLayout", "glassLevel", "cardRadius", "tileSize", "cardGap", "boardGap", "boardWidth", "tileLabels", "cardGlow", "iconShape", "hoverEffect", "cornerShape"];
 
@@ -75,6 +41,8 @@ class SettingsController {
     this.initAppearance();
     this.initCustomThemeBuilder();
     this.initGeneral();
+    // The sky's part of the Background panel (settings-sky.js), before the controls that read its choices.
+    this.skySettings = window.NordlysSkySettings ? new NordlysSkySettings(this.app, this) : null;
     this.initBackgroundSettings();
     this.initBookmarksManager();
     this.initIconPickerModal();
@@ -125,139 +93,13 @@ class SettingsController {
     }
   }
 
-  /* ── 0a. Background scenes ────────────────────────────────────── */
-  /* The old control was a dropdown of engine names, which told the user nothing
-     about what they would get — and the procedural scenes looked so alike that
-     switching read as no change. Now the choice is shown, and two sliders that
-     apply to every scene make the difference something you can actually dial. */
+  /* ── 0a. Background: the atmosphere of a drawn sky ────────────── */
+  /* The skies themselves are chosen in settings-sky.js; here are the two
+     sliders that apply to every drawn sky, the colour moods, the time of day
+     and the real moon. */
   initScenePicker() {
-    const select = document.getElementById("cfg-bg-mode");
-    const grid = document.getElementById("bg-scene-grid");
-    const personalGrid = document.getElementById("bg-personal-grid");
-    if (!select || !grid || !personalGrid) return;
-
-    /* The generative previews are stills of the real scenes (paintStill), so
-       they are drawn once the grid has a size to draw into, and again whenever
-       the palette moves: a new mood, a new theme, a mood still being mixed. */
-    let stillsQueued = false;
-    const paintStills = () => {
-      stillsQueued = false;
-      const engine = this.app.bgEngine;
-      if (!engine || !grid.offsetParent) return;
-      for (const still of grid.querySelectorAll("canvas.scene-still")) {
-        if (engine.paintStill(still, still.dataset.scene)) still.parentElement.classList.add("is-live");
-      }
-    };
-    const queueStills = () => {
-      if (stillsQueued) return;
-      stillsQueued = true;
-      requestAnimationFrame(paintStills);
-    };
-    if (typeof ResizeObserver === "function") new ResizeObserver(queueStills).observe(grid);
-    window.addEventListener("nordlys:palette", queueStills);
-
-    const paint = () => {
-      grid.replaceChildren();
-      personalGrid.replaceChildren();
-      for (const option of select.options) {
-        const card = document.createElement("button");
-        card.type = "button";
-        card.className = "scene-card";
-        card.dataset.scene = option.value;
-        card.setAttribute("role", "radio");
-        card.setAttribute("aria-checked", String(option.value === select.value));
-        const preview = document.createElement("span");
-        preview.className = "scene-preview";
-        preview.dataset.scene = option.value;
-        preview.setAttribute("aria-hidden", "true");
-        if (NORDLYS_GENERATIVE_SCENES.has(option.value)) {
-          const still = document.createElement("canvas");
-          still.className = "scene-still";
-          still.dataset.scene = option.value;
-          preview.append(still);
-        }
-        const name = document.createElement("span");
-        name.className = "scene-name";
-        // The stored labels are engine descriptions ("Dynamic Aurora Borealis
-        // (Ribbons & Meteors)"). A card is a picture with a name under it.
-        const sceneKey = SCENE_KEYS[option.value];
-        if (sceneKey) name.dataset.i18n = sceneKey;
-        name.textContent = (sceneKey && window.I18N?.t(sceneKey))
-          || SCENE_NAMES[option.value]
-          || option.textContent.replace(/\s*\(.*\)\s*$/, "").trim();
-        card.append(preview, name);
-        card.addEventListener("click", () => {
-          select.value = option.value;
-          select.dispatchEvent(new Event("change", { bubbles: true }));
-          paint();
-        });
-        const personal = ["custom-image", "custom-video", "solid"].includes(option.value);
-        (personal ? personalGrid : grid).append(card);
-      }
-      queueStills();
-    };
-
-    select.addEventListener("change", () => {
-      document.querySelectorAll("#bg-scene-picker .scene-card").forEach((card) => {
-        card.setAttribute("aria-checked", String(card.dataset.scene === select.value));
-      });
-      showRelevant();
-      sayScene();
-    });
-
-    /* The skies drawn from the real one say under the picker what they show
-       and where it comes from, and Meteors which shower is on, as Halo says
-       which moon. Spelled out so every message key can be found by searching. */
-    const SCENE_NOTES = {
-      starmap: ["scene.starmapNote", "The bright stars and their constellations as they stand in your sky right now."],
-      meteors: ["scene.meteorsNote", "A calm night sky with a shooting star now and then, and more on the nights of the big meteor showers."],
-      midnightsun: ["scene.midnightsunNote", "The sun where it is in your sky right now, over a calm sea."]
-    };
-    const SHOWER_NAMES = {
-      quadrantids: ["shower.quadrantids", "the Quadrantids"], lyrids: ["shower.lyrids", "the Lyrids"],
-      etaAquariids: ["shower.etaAquariids", "the Eta Aquariids"], perseids: ["shower.perseids", "the Perseids"],
-      orionids: ["shower.orionids", "the Orionids"], leonids: ["shower.leonids", "the Leonids"], geminids: ["shower.geminids", "the Geminids"]
-    };
-    const sceneNote = document.getElementById("bg-scene-note");
-    const sayScene = () => {
-      if (!sceneNote) return;
-      const note = SCENE_NOTES[select.value];
-      sceneNote.hidden = !note;
-      if (!note) return;
-      const lines = [say(note[0], note[1])];
-      // A shower counts from a third of the way up to its peak, which is a day or two either side of it.
-      const clock = this.app.bgEngine?.now?.() || new Date();
-      const shower = select.value === "meteors" && (window.NordlysSky?.meteorShowers?.(clock) || [])
-        .filter((candidate) => candidate.activity > 0.3 && SHOWER_NAMES[candidate.name])
-        .sort((a, b) => b.activity * b.rate - a.activity * a.rate)[0];
-      if (shower) {
-        const [key, english] = SHOWER_NAMES[shower.name];
-        const name = say(key, english);
-        lines.push(say("background.showerTonight", `Tonight: ${name}`, { shower: name }));
-      }
-      sceneNote.textContent = lines.join(" ");
-    };
-
-    /* Offering an Upload Wallpaper button while Aurora is running, or a blur
-       slider with nothing to blur, is noise the user has to read and dismiss.
-       Each control declares the scenes it belongs to and the rest step aside. */
-    const SCENE_GROUPS = {
-      media: ["custom-image", "custom-video"],
-      image: ["custom-image"],
-      halo: ["halo"]
-    };
-    const showRelevant = () => {
-      const scene = select.value;
-      for (const node of document.querySelectorAll("#sec-background [data-scene-only]")) {
-        // "procedural" is every scene the canvas draws itself, which background.js
-        // already names; listing them again here is how a new atmosphere ships
-        // without the controls that belong to it.
-        const belongs = node.dataset.sceneOnly === "procedural"
-          ? NORDLYS_GENERATIVE_SCENES.has(scene)
-          : (SCENE_GROUPS[node.dataset.sceneOnly] || []).includes(scene);
-        node.hidden = !belongs;
-      }
-    };
+    const sky = this.skySettings;
+    if (!sky) return;
 
     const applyAtmosphere = () => {
       const motion = Number(document.getElementById("cfg-bg-motion")?.value ?? 100) / 100;
@@ -613,8 +455,6 @@ class SettingsController {
       sayTonight();
     });
     window.addEventListener("nordlys:languagechange", sayTonight);
-    window.addEventListener("nordlys:languagechange", sayScene);
-    sayScene();
 
     /* The time of day, as light on the chosen mood: the switch, what the sun
        is doing now in words beside it, and a day played through in a few
@@ -695,25 +535,6 @@ class SettingsController {
     });
     sayDaylight();
 
-    /* A new scatter of the same scene — other stars, other ice, another
-       weave — kept until shuffled again, and one undo away from the last. */
-    document.getElementById("bg-shuffle")?.addEventListener("click", () => {
-      const previous = this.app.config.bgSeed ?? 0;
-      const next = crypto.getRandomValues(new Uint32Array(1))[0] || 1;
-      const sow = (seed) => {
-        this.app.config.bgSeed = seed;
-        this.app.bgEngine?.setSeed(seed);
-        this.app.saveConfig();
-      };
-      sow(next);
-      window.NordlysUI?.showUndoToast?.({
-        message: say("background.shuffled", "A new sky"),
-        onAction: () => {
-          sow(previous);
-          window.NordlysUI?.announce?.(say("background.unshuffled", "The previous sky is back"));
-        }
-      });
-    });
     moodEditor?.addEventListener("keydown", (event) => {
       // The drawer closes on Escape too, and the editor is the nearer layer.
       if (event.key === "Escape") {
@@ -731,14 +552,10 @@ class SettingsController {
     /* Uploading a wallpaper or removing one sets the mode from code rather than
        from a card, and the picker has to follow: otherwise Wallpaper stays
        highlighted while Aurora is already running behind it. */
-    this.syncScenePicker = () => { paint(); showRelevant(); paintPalette(); sayScene(); };
+    this.syncScenePicker = () => { sky.sync(); paintPalette(); };
 
-    /* The still field has its own small picker, built the same way, because a
-       composition is a picture too and a list of four words would say less. */
     applyAtmosphere();
-    paintPalette();
-    showRelevant();
-    paint();
+    this.syncScenePicker();
   }
 
   /* ── 0. Typography slots ──────────────────────────────────────── */

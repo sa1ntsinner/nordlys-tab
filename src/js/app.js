@@ -182,7 +182,9 @@ const OWNED_LOCAL_KEYS = [
   "nordlys_fit_hint",
   // The list of profiles and which one this device opens on (profiles.js, sync-ui.js).
   "nordlys_profiles", "nordlys_device_start",
-  CSS_WAITING_KEY
+  CSS_WAITING_KEY,
+  // What the skies learned on this device: the weather, the K index, the horizon, the day's pictures, and their cost here.
+  "nordlys_sky_data", "nordlys_world_picture", SKY_LOAD_KEY
 ];
 const LIGHT_THEMES = [
   "porcelain-light", "warm-ivory", "sage-light", "sakura-daylight",
@@ -541,6 +543,13 @@ class NordlysApp {
       this.shadeUnread(layer);
       return;
     }
+    // A picture's colours, for an accent asked to follow them (applyPictureColours).
+    if (source === image) {
+      const pixels = [];
+      for (let i = 0; i < data.length; i += 16) pixels.push([data[i], data[i + 1], data[i + 2]]);
+      this.picturePixels = pixels;
+      this.applyPictureColours(pixels);
+    }
     // The picture as it is on screen, after the dim the person chose.
     const chosen = Math.max(0, Math.min(0.8, (this.config.bgDim || 0) / 100));
     const paint = (value) => {
@@ -635,6 +644,36 @@ class NordlysApp {
       credit.href = picture.link;
       credit.hidden = !credit.textContent;
     }
+  }
+
+  /* Colours from the picture: the page's accent taken from the strongest of
+     the three colours the picture is mostly made of, at the lightness the
+     theme reads an accent at. Only a picture whose pixels can be read, the
+     person's own or Commons', and only while the option is on; anything else
+     gives the theme its accent back. */
+  applyPictureColours(pixels = this.picturePixels) {
+    const C = window.NordlysColour;
+    const sky = window.NordlysSkies?.get(this.shownSky().bgMode);
+    const wanted = this.config.pictureColours === true && (sky?.id === "custom-image" || Boolean(sky?.readable));
+    const palette = wanted && pixels?.length && C ? C.paletteFromPixels(pixels) : null;
+    if (!palette) {
+      if (this.pictureAccent) this.applyThemeTokens();
+      return;
+    }
+    const [, chroma, hue] = palette.map((hex) => C.toOklch(C.hexToRgb(hex))).sort((a, b) => b[1] - a[1])[0];
+    // Light enough to read on a dark theme's glass, dark enough on a light one's.
+    const rgb = C.displayable(this.isLightTheme() ? 0.48 : 0.8, Math.max(0.1, chroma), hue);
+    const accent = C.rgbToHex(rgb);
+    if (accent === this.pictureAccent) return;
+    this.pictureAccent = accent;
+    const root = document.documentElement.style;
+    const [r, g, b] = rgb;
+    root.setProperty("--accent", accent);
+    root.setProperty("--accent-ink", accent);
+    root.setProperty("--accent-glow", `rgba(${r}, ${g}, ${b}, 0.4)`);
+    root.setProperty("--frost", `rgba(${r}, ${g}, ${b}, 0.18)`);
+    // Black or white on it, whichever reads better (they cross at a luminance of 0.18).
+    root.setProperty("--nl-on-accent", C.luminance(rgb) > 0.18 ? "#000000" : "#ffffff");
   }
 
   scrimLayer() {
@@ -1504,6 +1543,8 @@ class NordlysApp {
   applyThemeTokens() {
     const root = document.documentElement;
     const isLight = this.isLightTheme();
+    // The theme's own accent comes back; a picture's is measured again (applyPictureColours).
+    this.pictureAccent = null;
 
     if (this.config.theme === "custom" && this.config.customTheme) {
       root.dataset.theme = "custom";
@@ -1807,6 +1848,12 @@ class NordlysApp {
        kept as one, never left on a scene the engine cannot paint. */
     if (migratedSky(this.config.bgMode)) this.config.bgMode = migratedSky(this.config.bgMode);
     const { bgMode } = this.shownSky();
+    // The accent follows a picture only while one that can be read is the sky.
+    const entry = window.NordlysSkies?.get(bgMode);
+    if (!(entry?.id === "custom-image" || entry?.readable)) {
+      this.picturePixels = null;
+      this.applyPictureColours(null);
+    }
     /* A wallpaper is read from the vault, which answers later; another sky
        chosen meanwhile is the one shown, and the late answer is let go. */
     const generation = (this.backgroundGeneration = (this.backgroundGeneration || 0) + 1);

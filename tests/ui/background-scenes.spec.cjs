@@ -31,7 +31,7 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
      and differ by the mark drawn on it, so comparing their background alone
      would report them identical. */
   await expect(page.locator('#bg-scene-grid .scene-preview.is-live')).toHaveCount(9);
-  const stills = await page.locator('#bg-scene-grid canvas.scene-still').evaluateAll(
+  const stills = await page.locator('#bg-scene-grid .scene-card:not([hidden]) canvas.scene-still').evaluateAll(
     nodes => nodes.map(node => {
       const data = node.getContext('2d').getImageData(0, 0, node.width, node.height).data;
       let painted = 0;
@@ -41,7 +41,9 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
   );
   for (const still of stills) expect(still.painted, 'a still must show its scene').toBeGreaterThan(0.02);
   expect(new Set(stills.map(still => still.image)).size, 'each scene must look like itself').toBe(9);
-  const personal = await page.locator('#bg-personal-grid .scene-preview').evaluateAll(
+  await expect(page.locator('#bg-scene-grid .scene-card:not([hidden])')).toHaveCount(9);
+  await page.locator('.sky-kind[data-kind="yours"]').click();
+  const personal = await page.locator('#bg-scene-grid .scene-card:not([hidden]) .scene-preview').evaluateAll(
     nodes => nodes.map(node => {
       const own = getComputedStyle(node);
       const mark = getComputedStyle(node, '::after');
@@ -49,8 +51,7 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
     })
   );
   expect(new Set(personal).size, 'each personal source must look like itself').toBe(personal.length);
-  await expect(page.locator('#bg-scene-grid .scene-card')).toHaveCount(9);
-  await expect(page.locator('#bg-personal-grid .scene-card')).toHaveCount(3);
+  await expect(page.locator('#bg-scene-grid .scene-card:not([hidden])')).toHaveCount(3);
 
   const solid = page.locator('.scene-card[data-scene="solid"]');
   await solid.click();
@@ -59,18 +60,24 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
   await expect.poll(() => nordlysPage.storageState.nordlys_config?.bgMode).toBe('solid');
 });
 
-/* The generated choices are compositions rather than effect-level variants:
-   curtains, star trails round the pole, an ice halo, a chart of the real
-   stars, meteors, a flow field, the real sun over the sea, a contour map and
-   a low horizon. Personal media remains alongside them without pretending to
-   be a shader. */
-test('the atmosphere gallery offers nine distinct compositions and personal media', async ({ nordlysPage }) => {
+/* Every sky in the catalogue is offered, and nothing else: the nine of the
+   north, the composed skies of weather and horizon, the pictures of the day
+   and the person's own. Each kind shows its own. */
+test('the gallery offers every sky in the catalogue, by kind', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await openBackground(page);
   const offered = await page.locator('#cfg-bg-mode option').evaluateAll(
     nodes => nodes.map(node => node.value)
   );
-  expect(offered).toEqual(['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'contour', 'fjord', 'custom-image', 'custom-video', 'solid']);
+  expect(offered).toEqual(await page.evaluate(() => window.NordlysSkies.SKIES.map(sky => sky.id)));
+  const shown = () => page.locator('#bg-scene-grid .scene-card:not([hidden])').evaluateAll(cards => cards.map(card => card.dataset.scene));
+  expect(await shown()).toEqual(['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'contour', 'fjord']);
+  await page.locator('.sky-kind[data-kind="horizon"]').click();
+  await expect(page.locator('.sky-kind[data-kind="horizon"]')).toHaveAttribute('aria-pressed', 'true');
+  expect(await shown()).toEqual(['yours-horizon', 'mountains', 'sea', 'city', 'forest', 'steppe', 'desert', 'lighthouse']);
+  await expect(page.locator('#bg-kind-note')).toContainText('landscape');
+  await page.locator('.sky-kind[data-kind="yours"]').click();
+  expect(await shown()).toEqual(['custom-image', 'custom-video', 'solid']);
   // And nothing anywhere still offers a composition to pick between.
   expect(await page.locator('#bg-gradient-grid').count()).toBe(0);
 });

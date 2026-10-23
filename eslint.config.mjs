@@ -38,7 +38,7 @@ const pageGlobals = {
   ClockWidget: "readonly", SearchWidget: "readonly", WidgetsController: "readonly", LOCALE_MAP: "readonly",
   GridController: "readonly", MIN_COLUMNS: "readonly", MAX_COLUMNS: "readonly",
   SettingsController: "readonly", SCENE_NAMES: "readonly", SCENE_KEYS: "readonly",
-  NordlysSettingsShell: "readonly", NordlysBookmarkSettings: "readonly",
+  NordlysSettingsShell: "readonly", NordlysBookmarkSettings: "readonly", NordlysSkySettings: "readonly",
   NordlysSupportSettings: "readonly"
 };
 
