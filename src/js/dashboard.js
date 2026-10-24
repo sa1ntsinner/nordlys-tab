@@ -1065,7 +1065,7 @@
           el("span", { class: "dash-settings-actions" }, [
             this.iconButton(ICONS.up, () => this.move(widget.id, -1), { key: `up-${widget.id}`, label: say("dash.moveUp", "Move {name} up", { name: this.title(widget) }), disabled: index === 0 }),
             this.iconButton(ICONS.down, () => this.move(widget.id, 1), { key: `down-${widget.id}`, label: say("dash.moveDown", "Move {name} down", { name: this.title(widget) }), disabled: index === widgets.length - 1 }),
-            this.iconButton(ICONS.gear, () => this.openSettings(widget), { key: `set-${widget.id}`, label: `${say("dash.settings", "Settings")}: ${this.title(widget)}`, hidden: !(TYPES[widget.type].settings || widget.type === "tasks" || widget.type === "notes") }),
+            this.iconButton(ICONS.gear, (event) => this.openSettings(widget, event.currentTarget), { key: `set-${widget.id}`, label: `${say("dash.settings", "Settings")}: ${this.title(widget)}`, hidden: !(TYPES[widget.type].settings || widget.type === "tasks" || widget.type === "notes") }),
             this.iconButton(ICONS.trash, () => this.remove(widget.id), { key: `rm-${widget.id}`, label: `${say("dash.remove", "Remove card")}: ${this.title(widget)}`, danger: true })
           ])
         ])) : [el("li", { class: "dash-empty", text: say("dash.noCards", "No cards yet") })]));
@@ -1467,7 +1467,8 @@
       this.place(this.layout(), { animate: false });
       this.arrange?.bind(this.grid);
       if (!this.resizer && window.ResizeObserver) {
-        this.resizer = new ResizeObserver(() => { if (this.grid?.isConnected && !this.dragging) this.place(this.layout(), { animate: false }); });
+        // Placing sets the height it watches, so it waits a frame; at once, Safari calls that a loop.
+        this.resizer = new ResizeObserver(() => requestAnimationFrame(() => { if (this.grid?.isConnected && !this.dragging) this.place(this.layout(), { animate: false }); }));
         this.resizer.observe(this.root);
       }
       if (focusedAdder) this.root.querySelector(".dash-add")?.focus({ preventScroll: true });
@@ -1747,7 +1748,7 @@
         type: "button", class: `dash-connection${this.connected(id) ? " is-on" : ""}`, "data-focus-key": `conn-${id}`, onclick: () => this.openConnect(id)
       }, [this.brandIcon(id, 22), el("span", { class: "dash-connection-name", text: c.name }), el("small", { text: this.connected(id) ? say("dash.connected", "Connected") : c.kind === "events" ? say("dash.kindEvents", "Events") : say("dash.kindTasks", "Tasks") })])));
     }
-    async openSettings(widget) {
+    async openSettings(widget, opener) {
       const type = TYPES[widget.type];
       const fields = [...(widget.type === "tasks" || widget.type === "notes" || type.named ? [{ key: "title", type: "text", value: "", label: () => say("dash.cardName", "Name of the card") }] : []), ...(type.settings || [])];
       const values = structuredClone(widget.settings || {});
@@ -1809,11 +1810,13 @@
         });
         dialog.close();
       });
-      // The browser puts focus back where it was; from the card's menu, gone by now, it goes to the menu's button.
+      /* The browser puts focus back where it was; from the card's menu, gone by now, it goes to the menu's button.
+         Safari never focuses a clicked button, so the button that opened it is named. */
       dialog.addEventListener("close", () => {
         const lost = !document.activeElement || document.activeElement === document.body || dialog.contains(document.activeElement);
         dialog.remove();
-        if (lost) this.cards.get(widget.id)?.root.querySelector(".dash-menu-btn")?.focus();
+        if (opener?.isConnected) opener.focus();
+        else if (lost) this.cards.get(widget.id)?.root.querySelector(".dash-menu-btn")?.focus();
       });
       document.body.append(dialog);
       NordlysUI.showModal(dialog);

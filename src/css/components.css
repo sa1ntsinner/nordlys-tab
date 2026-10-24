@@ -1063,7 +1063,7 @@ body.searching.commanding #dim { background: rgba(3, 7, 18, 0.12); }
 .sugg-command-help .sugg-command-text small { color: var(--nl-text-secondary); font-size: var(--nl-text-xs); }
 
 /* The first stop for a keyboard: straight past the clock and search to the
-   board. Out of sight until it is focused. Moved with `translate`, not
+   board. Out of sight until it is focused; tabindex lets Safari Tab reach it. Moved with `translate`, not
    `transform`: reduced motion drops every transform, which left it on screen. */
 .skip-link {
   position: fixed;

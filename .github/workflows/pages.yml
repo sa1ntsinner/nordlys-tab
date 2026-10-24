@@ -39,7 +39,7 @@ jobs:
       - run: cp -r .site-src/site .site-src/tools .site-src/docs .
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
       - run: node tools/site-build.cjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
