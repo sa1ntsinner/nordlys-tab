@@ -67,6 +67,16 @@ test.describe('drawn', () => {
       expect((await box(tile.locator('.lbl'))).bottom, 'over its icon').toBeLessThan((await box(tile.locator('.box'))).top);
       expect(nordlysPage.runtimeErrors).toEqual([]);
     });
+
+    test('on a phone the shelf is the page\'s width, and a long folder goes on in a second row', async ({ nordlysPage }) => {
+      const { page } = nordlysPage;
+      await page.setViewportSize({ width: 320, height: 900 });
+      expect((await box(page.locator('#board'))).width).toBeGreaterThan(280);
+      const icons = await page.locator('#board .tile .box').evaluateAll((nodes) => nodes.map((node) => { const r = node.getBoundingClientRect(); return { left: r.left, right: r.right }; }));
+      expect(icons).toHaveLength(22);
+      expect(icons.filter((icon) => icon.left < 0 || icon.right > 320), 'every icon on the page').toEqual([]);
+      expect(nordlysPage.runtimeErrors).toEqual([]);
+    });
   });
 
   for (const layout of ['prompt', 'poster']) {
@@ -101,6 +111,41 @@ test('Today turns the dashboard on and puts the folders beside it, in two column
   // Narrow, it is Columns under the dashboard.
   await page.setViewportSize({ width: 900, height: 900 });
   await expect.poll(async () => (await box(page.locator('#board'))).top).toBeGreaterThan((await box(page.locator('#dash'))).bottom - 1);
+  expect(nordlysPage.runtimeErrors).toEqual([]);
+});
+
+/* Somebody who turned the dashboard off keeps it off. Today brings it, as the
+   dashboard's own page, and takes it away again when the page leaves Today;
+   the arrow keys passing over Today on the way to another page leave it off. */
+test('the dashboard Today brought goes again with Today; one turned on by hand stays', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const html = page.locator('html');
+  await choose(page, 'today');
+  await expect(html).toHaveAttribute('data-dashboard', '');
+  await choose(page, 'columns');
+  await expect(html).not.toHaveAttribute('data-dashboard', /.*/);
+  await expect.poll(() => saved(nordlysPage).dashboard?.on).toBe(false);
+  // Columns, Dock, Today, Prompt.
+  for (let step = 0; step < 3; step++) await page.keyboard.press('ArrowRight');
+  await expect(html).toHaveAttribute('data-page', 'prompt');
+  await expect(html).not.toHaveAttribute('data-dashboard', /.*/);
+  await page.evaluate(() => window.Nordlys.dashboard.setOn(true));
+  await choose(page, 'today');
+  await choose(page, 'board');
+  await expect(html, 'turned on by hand, it stays on').toHaveAttribute('data-dashboard', '');
+  expect(nordlysPage.runtimeErrors).toEqual([]);
+});
+
+test('a command to Today brings the dashboard, and a command to another page takes it away again', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const html = page.locator('html');
+  const run = async (text) => { await page.locator('#q').click(); await page.locator('#q').fill(text); await page.waitForTimeout(220); await page.keyboard.press('Enter'); };
+  await run('>page today');
+  await expect(html).toHaveAttribute('data-dashboard', '');
+  await run('>page dock');
+  await expect(html).toHaveAttribute('data-page', 'dock');
+  await expect(html).not.toHaveAttribute('data-dashboard', /.*/);
+  await expect.poll(() => saved(nordlysPage).dashboard?.on).toBe(false);
   expect(nordlysPage.runtimeErrors).toEqual([]);
 });
 

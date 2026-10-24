@@ -151,15 +151,10 @@ values the engine ended up with:
   Midnight sun's coast; at seed 0 the Star map faces the equator), dark UI,
   and daylight off.
   High legibility is off; it would cap the intensity at 0.6.
-- `realSky`: Halo draws tonight's moon from the date and the machine's time
-  zone (`bgRealSky`, on by default). Two Halo runs on different days draw a
-  different moon. `--real-sky off` seeds `bgRealSky: false`, which holds the moon
-  full, and `--real-sky on` seeds `true`. Without the flag nothing is seeded.
-  `startup.scene.moon` shows the phase that was drawn, and `timeZone` the
-  zone. The Star map, Meteors and the Midnight sun always draw the sky of the
-  moment over the time zone's city, so their runs differ by the hour too: a
-  Meteors run on the night of a big shower draws more meteors, and paints
-  more frames for them.
+- `timeZone`: the zone the page ran in. The Star map, Meteors and the Black
+  hole's sky draw the sky of the moment over the time zone's city, so their
+  runs differ by the hour too: a Meteors run on the night of a big shower
+  draws more meteors, and paints more frames for them.
 - `silk`: the thread count and total walk steps (66 threads and 2971 steps at
   2048 × 1152), since both scale with the viewport.
 - Each scene starts at its own rest phase (`NORDLYS_REST_PHASE`: Aurora 12,
@@ -234,13 +229,13 @@ page `errors`, and compare `renderCadence.fps` first.
 `newtab.cjs` reports now carry `"reportVersion": 3`. Run without the new flags,
 a version 3 report keeps every version 2 field with its old meaning, and the
 first sample is still `aurora`. It adds:
-- `probe.scene`, `probe.realSky` (`null` when not given), `probe.skippedMethods`
+- `probe.scene` (`null` when not given), `probe.skippedMethods`
   (the parsed `--skip-method` list; `probe.skipMethod` keeps the raw string), and
   `probe.silkSkip`;
 - `startup.scene`: `requested`, `config` (the stored `bgMode`), `engine` (the
   engine's mode), `attribute` (`data-bg`), `running`, `motion`, `intensity`,
-  `palette`, `seed`, `realSky` and `timeZone`, plus `silk` or `moon` in those
-  scenes;
+  `palette`, `seed` and `timeZone`, plus `silk` in that
+  scene;
 - `silkSplit` on each sample, with `--silk-skip` only.
 
 `ab.cjs` is unchanged. Its summary stays at version 2. Scene flags go after

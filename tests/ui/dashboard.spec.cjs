@@ -156,6 +156,28 @@ test('Settings has a Dashboard tab that turns it on and adds cards', async ({ no
   await expect(page.locator('#dash .dash-card[data-type="clocks"] .dash-clocks li')).toHaveCount(2);
 });
 
+// A card's settings open over Settings: Tab goes through them, and Escape closes them alone.
+test('a card\'s settings opened from Settings are a layer of their own', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.locator('#gear').click();
+  await page.locator('#settings-tab-dashboard').click();
+  const section = page.locator('#sec-dashboard');
+  await section.locator('label.tg').first().click();
+  const opener = section.getByRole('button', { name: 'Settings: Tasks', exact: true });
+  await opener.click();
+  const dialog = page.locator('.dash-dialog[open]');
+  await expect(page.locator('#dash-field-title')).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator('#cfg')).toBeVisible();
+  await expect(opener).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#cfg')).toBeHidden();
+  expect(nordlysPage.runtimeErrors).toEqual([]);
+});
+
 test('each profile keeps its own dashboard', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await turnOn(page);

@@ -8,69 +8,77 @@ const at = (page, iso) => page.evaluate(iso => {
   const engine = window.Nordlys.bgEngine;
   engine.now = () => new Date(iso);
   engine.followSun();
-  return { phase: engine.sky?.phase ?? null, palette: engine.palette.join(' '), day: engine.sky?.day ?? null };
+  return { phase: engine.sky?.phase ?? null, palette: engine.palette.join(' ') };
 }, iso);
 
 async function openBackground(page) {
   await page.locator('#gear').click();
   await page.locator('#settings-tab-background').click();
-  await expect(page.locator('#cfg-bg-daylight')).toBeAttached();
+  await expect(page.locator('#bg-palette-grid [data-palette="daylight"]')).toBeAttached();
 }
+const chooseDaylight = page => page.locator('#bg-palette-grid [data-palette="daylight"]').click();
 
-test('the switch sits with the colour moods and starts off', async ({ nordlysPage }) => {
+test('Time of day is a colour mood of its own, and not the one chosen at first', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await openBackground(page);
-  expect(await page.evaluate(() => Boolean(document.getElementById('cfg-bg-daylight').closest('.atmosphere-palette')))).toBe(true);
-  await expect(page.locator('#cfg-bg-daylight')).not.toBeChecked();
-  await expect(page.locator('#bg-daylight-now')).toBeHidden();
-  await expect(page.locator('#bg-daylight-play')).toBeHidden();
+  await expect(page.locator('#bg-palette-grid [data-palette="daylight"]')).toHaveText('Time of day');
+  await expect(page.locator('#bg-palette-grid [data-palette="daylight"]')).toHaveAttribute('aria-checked', 'false');
+  await expect(page.locator('#bg-daylight')).toBeHidden();
   expect(await page.evaluate(() => window.Nordlys.bgEngine.sky)).toBeNull();
 });
 
-test('turned on, every atmosphere is lit by the hour, and says which hour it is', async ({ nordlysPage }) => {
+test('chosen, the sky takes the colours of the hour on every atmosphere, and says which hour it is', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await openBackground(page);
-  const asMixed = await page.evaluate(() => window.Nordlys.bgEngine.palette.join(' '));
-  await page.locator('label.tg:has(#cfg-bg-daylight)').click();
-  expect(await page.evaluate(() => window.Nordlys.config.bgDaylight)).toBe(true);
-  const night = await at(page, '2026-09-22T00:00:00Z');
-  const noon = await at(page, '2026-09-22T11:00:00Z');
-  const sunset = await at(page, '2026-09-22T17:05:00Z');
-  expect([night.phase, noon.phase, sunset.phase]).toEqual(['night', 'afternoon', 'sunset']);
-  expect(noon.day).toBe(1);
-  expect(new Set([asMixed, night.palette, noon.palette, sunset.palette]).size, 'each hour lights the mood differently').toBe(4);
+  await chooseDaylight(page);
+  expect(await page.evaluate(() => window.Nordlys.config.bgPalette)).toBe('daylight');
+  const hours = [];
+  for (const iso of ['2026-09-22T00:00:00Z', '2026-09-22T07:30:00Z', '2026-09-22T11:00:00Z', '2026-09-22T14:30:00Z', '2026-09-22T17:05:00Z']) hours.push(await at(page, iso));
+  expect(hours.map(hour => hour.phase)).toEqual(['night', 'morning', 'afternoon', 'afternoon', 'sunset']);
+  expect(new Set(hours.map(hour => hour.palette)).size, 'every hour has colours of its own').toBe(5);
   await expect(page.locator('#bg-daylight-now')).toHaveText('Now: sunset');
   await expect(page.locator('#bg-daylight-play')).toBeVisible();
-  for (const scene of ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'contour', 'fjord']) {
+  for (const scene of ['aurora', 'polaris', 'starmap', 'meteors', 'silk', 'blackhole', 'contour', 'fjord']) {
     const lit = await page.evaluate(scene => { window.Nordlys.config.bgMode = scene; window.Nordlys.updateBackgroundMode(); return window.Nordlys.bgEngine.sky?.phase; }, scene);
     expect(lit, `${scene} follows the sun too`).toBe('sunset');
   }
 });
 
-test('turned off, the mood is exactly as it was mixed', async ({ nordlysPage }) => {
+test('any other mood holds still, exactly as it was mixed', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await openBackground(page);
-  const asMixed = await page.evaluate(() => window.Nordlys.bgEngine.palette.join(' '));
-  await page.locator('label.tg:has(#cfg-bg-daylight)').click();
+  await page.locator('#bg-palette-grid [data-palette="polar"]').click();
+  const polar = await page.evaluate(() => window.Nordlys.bgEngine.palette.join(' '));
+  expect(polar).toBe('#68e1d1 #6ea8fe #9d8cff');
+  await chooseDaylight(page);
   await at(page, '2026-09-22T17:05:00Z');
-  await page.locator('label.tg:has(#cfg-bg-daylight)').click();
-  expect(await page.evaluate(() => window.Nordlys.bgEngine.palette.join(' '))).toBe(asMixed);
+  await page.locator('#bg-palette-grid [data-palette="polar"]').click();
+  expect(await page.evaluate(() => window.Nordlys.bgEngine.palette.join(' '))).toBe(polar);
   expect(await page.evaluate(() => window.Nordlys.bgEngine.sky)).toBeNull();
+  await expect(page.locator('#bg-daylight')).toBeHidden();
 });
 
-test('the choice survives a reload', async ({ nordlysPage }) => {
+test('the choice survives a reload, and the old switch becomes the mood', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await openBackground(page);
-  await page.locator('label.tg:has(#cfg-bg-daylight)').click();
+  await chooseDaylight(page);
   await page.reload();
   await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
-  expect(await page.evaluate(() => [window.Nordlys.config.bgDaylight, window.Nordlys.bgEngine.daylight, Boolean(window.Nordlys.bgEngine.sky)])).toEqual([true, true, true]);
+  expect(await page.evaluate(() => [window.Nordlys.config.bgPalette, window.Nordlys.bgEngine.daylight, Boolean(window.Nordlys.bgEngine.sky)])).toEqual(['daylight', true, true]);
+  const migrated = await page.evaluate(() => {
+    const on = { bgPalette: 'polar', bgDaylight: true, bgRealSky: false, bgMode: 'halo' };
+    const off = { bgPalette: 'polar', bgDaylight: false };
+    window.Nordlys.normalizeStoredConfig(on);
+    window.Nordlys.normalizeStoredConfig(off);
+    return [on, off];
+  });
+  expect(migrated).toEqual([{ bgPalette: 'daylight', bgMode: 'starmap' }, { bgPalette: 'polar' }]);
 });
 
 test('a day plays through in seconds and hands the sky back to the clock', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await openBackground(page);
-  await page.locator('label.tg:has(#cfg-bg-daylight)').click();
+  await chooseDaylight(page);
   const clock = await page.evaluate(() => window.Nordlys.bgEngine.now().getTime());
   await page.locator('#bg-daylight-play').click();
   await expect(page.locator('#bg-daylight-play')).toBeDisabled();
@@ -83,12 +91,12 @@ test('a day plays through in seconds and hands the sky back to the clock', async
   await expect(page.locator('#bg-daylight-now')).toHaveText(/^Now: /);
 });
 
-test('the light is named in the language of the page', async ({ nordlysPage }) => {
+test('the mood and the light are named in the language of the page', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.evaluate(() => window.I18N.setLanguage('ru'));
   await openBackground(page);
-  await page.locator('label.tg:has(#cfg-bg-daylight)').click();
+  await expect(page.locator('#bg-palette-grid [data-palette="daylight"]')).toHaveText('Время суток');
+  await chooseDaylight(page);
   await at(page, '2026-09-22T17:05:00Z');
   await expect(page.locator('#bg-daylight-now')).toHaveText('Сейчас: закат');
-  await expect(page.locator('#cfg-bg-daylight').locator('xpath=ancestor::div[contains(@class,"row")]')).toContainText('Следовать времени суток');
 });

@@ -25,6 +25,18 @@ test('numbers are read the way they are written', () => {
   assert.equal(convert.numberOf('1.000,25'), 1000.25);
   assert.equal(convert.numberOf('1 000'), 1000);
   assert.equal(convert.numberOf('12abc'), null);
+  assert.equal(convert.numberOf('0.001'), 0.001, 'a thousand never starts with a nought');
+  assert.equal(convert.numberOf('0,001'), 0.001);
+  assert.equal(convert.numberOf('1.234.567'), 1234567);
+  // "1.234" alone could be either: it is read as the language writes decimals.
+  assert.equal(convert.numberOf('1.234'), 1.234);
+  assert.equal(convert.numberOf('1,234'), 1234);
+  assert.equal(convert.numberOf('1.234', 'de-DE'), 1234);
+  assert.equal(convert.numberOf('1,234', 'ru-RU'), 1.234);
+  assert.equal(convert.units('0.001 km in miles', 'en').text, '0.001 km = 0.000621 mi');
+  assert.equal(convert.units('1.234 kg to g', 'en').text, '1.234 kg = 1,234 g');
+  assert.deepEqual(convert.money('1.000 eur to usd', 'de-DE'), { amount: 1000, from: 'EUR', to: 'USD' });
+  assert.deepEqual(convert.money('2.500 usd to eur', 'en-US'), { amount: 2.5, from: 'USD', to: 'EUR' });
 });
 
 test('what is not a conversion is left to the search', () => {

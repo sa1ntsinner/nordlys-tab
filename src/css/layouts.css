@@ -164,7 +164,12 @@
 }
 :root[data-page="dock"] #board :is(.board-row, .board-line, .card) { display: contents; }
 :root[data-page="dock"] #board :is(.cat, .card-resize-handle) { display: none; }
-:root[data-page="dock"] :is(#board, .drag-lift) .grid { display: flex; flex: none; gap: 8px; }
+/* A folder longer than the shelf goes on in a second row. */
+:root[data-page="dock"] :is(#board, .drag-lift) .grid { display: flex; flex: 0 1 auto; flex-wrap: wrap; justify-content: center; gap: 8px; }
+/* The gear goes up to the top corner here, so the shelf takes the page's width. */
+@media (max-width: 480px) {
+  :root[data-page="dock"] #board:has(.card) { max-width: calc(100vw - 32px); }
+}
 :root[data-page="dock"] :is(#board, .drag-lift) .tile { gap: 0; }
 /* The shelf is the folders' glass, so a plate in the folder's tone would
    vanish on it; a plate a step lighter keeps each mark on a tile of its own. */

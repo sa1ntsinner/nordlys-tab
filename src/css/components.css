@@ -1982,6 +1982,35 @@ body.arranging .fit-toggle { display: none; }
   .toast { max-width: 100%; }
 }
 
+/* ── A review, asked for once (review-ask.js) ─────────────────── */
+/* A note in the corner, not a dialog: it takes no focus and blocks nothing,
+   and rises in the way a toast does. */
+.review-ask {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: var(--nl-z-toast);
+  box-sizing: border-box;
+  width: min(calc(100vw - 40px), 340px);
+  padding: 16px 16px 14px;
+  border-radius: var(--nl-radius-lg);
+  border: 1px solid var(--nl-polish-hairline);
+  background: color-mix(in srgb, var(--nl-surface-card-deep) 90%, transparent);
+  box-shadow: var(--nl-shadow-2);
+  backdrop-filter: blur(16px) saturate(125%);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+  color: var(--nl-text-primary);
+  animation: review-ask-in var(--nl-transition-pop-panel) both;
+}
+.review-ask h2 { margin: 0 0 6px; font-size: var(--nl-text-md, 15px); font-weight: 600; letter-spacing: var(--nl-track-tight); }
+.review-ask p { margin: 0 0 14px; color: var(--nl-text-secondary); font-size: var(--nl-text-sm); line-height: 1.45; }
+.review-ask-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.review-ask-actions .glass-btn { text-decoration: none; }
+.review-ask.is-leaving { opacity: 0; transform: translateY(6px); transition: opacity var(--nl-transition-fast), transform var(--nl-transition-fast); }
+@keyframes review-ask-in { from { opacity: 0; transform: translateY(10px); } }
+@media (prefers-reduced-motion: reduce) { .review-ask, .review-ask.is-leaving { animation: none; transition: none; } }
+@media (max-width: 480px) { .review-ask { left: 12px; bottom: 12px; width: calc(100vw - 24px); } }
+
 /* ── Glass Confirm Dialog ─────────────────────────────────────── */
 .confirm-backdrop {
   z-index: var(--nl-z-modal);

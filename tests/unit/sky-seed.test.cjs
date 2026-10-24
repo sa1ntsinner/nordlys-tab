@@ -10,7 +10,7 @@ function sky(seed, w = 1440, h = 900) {
   const context = vm.createContext({ window: {}, document: {} });
   vm.runInContext(`${skySource()}\nthis.Engine = NordlysBackgroundEngine;`, context);
   const engine = Object.assign(Object.create(context.Engine.prototype), {
-    w, h, seed, rng: null, stars: [], nebulae: [], silk: [], polaris: [], chart: null, field: [], coast: []
+    w, h, seed, rng: null, stars: [], nebulae: [], silk: [], polaris: [], chart: null, field: []
   });
   engine.seedFields();
   return engine;
@@ -24,7 +24,7 @@ const WORLDS = {
   // The Star map's stars are the real ones; the seed turns the way it looks.
   starmap: e => e.chart,
   meteors: e => e.field,
-  midnightsun: e => e.coast
+  blackhole: e => ({ stars: e.hole.stars, rings: e.hole.rings.slice(0, 4).map(ring => Array.from(ring)) })
 };
 
 for (const [name, world] of Object.entries(WORLDS)) {
@@ -42,7 +42,7 @@ test('every new composition has something in it', () => {
   const engine = sky(0);
   assert.ok(engine.polaris.length > 200, `${engine.polaris.length} stars`);
   assert.ok(engine.field.length >= 150, `${engine.field.length} stars behind the meteors`);
-  assert.ok(engine.coast.length >= 4 && engine.coast.every(hill => hill.back.length >= 8));
+  assert.ok(engine.hole.stars.length >= 150 && engine.hole.rings.length > 50, 'stars behind the hole and its disk');
   // Seed zero is the authored view, facing the equator; any other faces some other way.
   assert.equal(engine.chart.turn, 0);
   assert.ok(sky(7).chart.turn > 0 && sky(7).chart.turn < 360);

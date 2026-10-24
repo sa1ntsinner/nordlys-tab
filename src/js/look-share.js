@@ -13,10 +13,10 @@
      but the person's own wallpaper and video, which stay on their device. */
   const scenes = () => window.NordlysSkies
     ? window.NordlysSkies.SKIES.filter(sky => sky.kind !== 'media').map(sky => sky.id)
-    : ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'contour', 'fjord', 'solid'];
+    : ['aurora', 'polaris', 'starmap', 'meteors', 'silk', 'blackhole', 'contour', 'fjord', 'solid'];
   /* Skies retired or renamed since a look could be shared, each to the one a
      stored config of it becomes (app.js), so a look sent before still brings a sky. */
-  const RETIRED = { frost: 'starmap', pillars: 'meteors', nacre: 'midnightsun', baikal: 'starmap', drift: 'contour', horizon: 'fjord' };
+  const RETIRED = { frost: 'starmap', pillars: 'meteors', nacre: 'blackhole', midnightsun: 'blackhole', halo: 'starmap', baikal: 'starmap', drift: 'contour', horizon: 'fjord' };
   const FAMILY = /^[\p{L}\p{N} .'&+-]{1,64}$/u;
   const STUDIO = ['bg', 'card', 'border', 'accent', 'glow', 'text', 'dim'];
 
@@ -29,8 +29,7 @@
     bgMotion: number(0, 1.5),
     bgIntensity: number(0.15, 1.5),
     bgSeed: value => (Number.isInteger(value) && value >= 0 && value <= 0xffffffff ? value : undefined),
-    bgRealSky: value => (typeof value === 'boolean' ? value : undefined),
-    bgDaylight: value => (typeof value === 'boolean' ? value : undefined),
+    photoTone: value => (typeof value === 'boolean' ? value : undefined),
     boardLayout: oneOf(['natural', 'fitted']),
     pageLayout: oneOf(['board', 'columns', 'dock', 'today', 'prompt', 'poster']),
     glassLevel: oneOf(['full', 'subtle', 'off']),
@@ -65,16 +64,6 @@
     return out;
   }
 
-  // A composed sky's layers: each one of the catalogue's choices, a body on or off.
-  function cleanLayers(raw) {
-    const compose = window.NordlysSkies?.COMPOSE;
-    if (!compose || !raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
-    const out = {};
-    for (const [layer, options] of Object.entries(compose.choices)) if (options.includes(raw[layer])) out[layer] = raw[layer];
-    for (const body of compose.bodies) if (typeof raw[body] === 'boolean') out[body] = raw[body];
-    return Object.keys(out).length ? out : undefined;
-  }
-
   function cleanMood(mood) {
     if (!mood || typeof mood !== 'object' || Array.isArray(mood)) return undefined;
     const colors = Array.isArray(mood.colors) && mood.colors.length === 3 && mood.colors.every(color => HEX.test(color || '')) ? mood.colors.map(color => color.toLowerCase()) : null;
@@ -99,8 +88,8 @@
     }
     const mood = cleanMood(raw.mood);
     if (mood) look.mood = mood;
-    const layers = cleanLayers(raw.skyLayers);
-    if (layers) look.skyLayers = layers;
+    // A look sent while the time of day was a switch over the mood brings the Time of day mood.
+    if (raw.bgDaylight === true) look.bgPalette = 'daylight';
     return Object.keys(look).length ? look : null;
   }
 

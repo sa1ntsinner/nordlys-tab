@@ -177,5 +177,24 @@
     return ground.map(Math.round);
   }
 
-  window.NordlysColour = { hexToRgb, rgbToHex, luminance, contrast, toOklch, fromOklch, displayable, harmony, paletteFromPixels, backgroundAt };
+  /* A photograph in the colours of a mood: its lightness read along five
+     stops, the mood's deepest colour in the shadows, its middle one in the
+     half-tones and its brightest in the lights, which run out towards white.
+     On a light page the whole run is lifted, so the picture stays a light
+     one. The stops as [r, g, b], darkest first. */
+  function toneRamp(colors, light = false) {
+    const [c1, c2, c3] = colors.map(hex => toOklch(hexToRgb(hex) || [128, 128, 128]));
+    const stops = light
+      ? [[0.32, c3, 0.6], [0.5, c3, 0.7], [0.68, c2, 0.6], [0.84, c1, 0.4], [0.97, c1, 0.1]]
+      : [[0.1, c3, 0.45], [0.27, c3, 0.75], [0.47, c2, 0.85], [0.68, c1, 0.75], [0.88, c1, 0.3]];
+    return stops.map(([L, [, C, H], share]) => displayable(L, C * share, H));
+  }
+  // The colour a lightness from 0 to 255 takes along the ramp, as the filter on the page has it.
+  function toneAt(ramp, value) {
+    const at = Math.min(1, Math.max(0, value / 255)) * (ramp.length - 1);
+    const i = Math.min(ramp.length - 2, Math.floor(at));
+    return ramp[i].map((channel, c) => Math.round(channel + (ramp[i + 1][c] - channel) * (at - i)));
+  }
+
+  window.NordlysColour = { hexToRgb, rgbToHex, luminance, contrast, toOklch, fromOklch, displayable, harmony, paletteFromPixels, backgroundAt, toneRamp, toneAt };
 })();

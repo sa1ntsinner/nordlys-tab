@@ -75,3 +75,48 @@ test('a source that fails is left alone for half an hour', async () => {
   await settle();
   assert.equal(asked.length, 1);
 });
+
+test('with nothing kept, a failure or no network is said, and a kept picture needs no word', async () => {
+  const { World } = load(() => undefined);
+  let missed = 0;
+  World.today('met', null, { now: DAY, missed: () => missed++ });
+  await settle(); await settle();
+  assert.equal(missed, 1, 'the source failed');
+  const browser = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  Object.defineProperty(globalThis, 'navigator', { value: { onLine: false }, configurable: true });
+  try {
+    World.today('wikimedia', null, { now: DAY, missed: () => missed++ });
+    assert.equal(missed, 2, 'offline');
+  } finally { if (browser) Object.defineProperty(globalThis, 'navigator', browser); else delete globalThis.navigator; }
+});
+
+/* A photograph of a subject: the day and the seed step through the search,
+   an animation is passed over, and of the ten found the first wide enough to
+   fill the screen is shown, with its maker and licence under it. A new seed
+   is another photograph, kept as today's in place of the first. */
+test('a photograph of a subject is a wide still from the featured ones, another for another seed', async () => {
+  const entry = (index, mime, width, height, name) => ({ index, title: `File:${name}.jpg`, imageinfo: [{
+    mime, width, height, thumburl: `https://upload.wikimedia.org/thumb/${name}.jpg/1920px-${name}.jpg?utm=x`,
+    descriptionurl: `https://commons.wikimedia.org/wiki/File:${name}.jpg`,
+    extmetadata: { Artist: { value: '<bdi><a href="x">A. Photographer</a></bdi>' }, LicenseShortName: { value: 'CC BY-SA 4.0' } }
+  }] });
+  const { World, asked } = load((url) => {
+    const query = new URL(url).searchParams;
+    if (query.get('gsrlimit') === '1') return { query: { searchinfo: { totalhits: 902 } } };
+    return { query: { pages: {
+      1: entry(1, 'image/gif', 2400, 1200, 'Loop'),
+      2: entry(2, 'image/jpeg', 1200, 1600, 'Tall'),
+      3: entry(3, 'image/jpeg', 4000, 2600, 'Fjord')
+    } } };
+  });
+  const picture = await World.SOURCES['photo-nature'].ask(DAY, 'en', 0);
+  const search = new URL(asked[1]).searchParams;
+  assert.match(search.get('gsrsearch'), /^incategory:Featured_pictures_of_landscapes\|.+ filetype:bitmap$/);
+  assert.equal(search.get('gsroffset'), String(Math.min((World.dayOf(DAY) * 7919) % 902, 892)));
+  assert.equal(picture.url, 'https://upload.wikimedia.org/thumb/Fjord.jpg/1920px-Fjord.jpg');
+  assert.deepEqual([picture.fit, picture.cors, picture.title, picture.by], ['fill', true, 'Fjord', 'A. Photographer · CC BY-SA 4.0']);
+
+  await World.SOURCES['photo-nature'].ask(DAY, 'en', 5);
+  assert.notEqual(new URL(asked[3]).searchParams.get('gsroffset'), search.get('gsroffset'), 'another seed, another place in the search');
+  assert.deepEqual(Object.keys(World.TOPICS), ['nature', 'weather', 'horizon', 'space', 'scifi', 'tech', 'cities']);
+});

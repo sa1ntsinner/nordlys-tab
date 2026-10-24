@@ -22,8 +22,8 @@ NordlysSkies.paint("starmap", "renderStarmap", {
      dot for each star, larger by its magnitude and coloured by its colour
      index — Betelgeuse orange, Rigel blue-white — and a hairline in the
      mood's colour from star to star of a figure, stopping short of each.
-     Below the horizon nothing is drawn, and near it the stars dim, through
-     the extra air. The sky turns at its real rate, a quarter of a degree a
+     The horizon runs along the foot of the page, so the sky fills it, and
+     near it the stars dim, through the extra air. The sky turns at its real rate, a quarter of a degree a
      minute: sped up, it would be the sky of some other hour within a minute,
      and the point of it is that it is this one. So nothing moves to the eye,
      and a tab left open shows Orion further round an hour later. The
@@ -89,9 +89,7 @@ NordlysSkies.paint("starmap", "renderStarmap", {
     ctx.restore();
   },
 
-  /* The air just over the horizon, lit faintly from below by places out of
-     sight, and nothing under it: no stars below the line is what makes it
-     the ground. */
+  // The air just over the horizon, at the foot of the page, lit faintly from below by places out of sight.
   paintHorizon(view, light) {
     const ctx = this.ctx;
     const air = ctx.createLinearGradient(0, view.horizon, 0, view.horizon - this.h * 0.34);
@@ -100,12 +98,6 @@ NordlysSkies.paint("starmap", "renderStarmap", {
     air.addColorStop(1, this.rgba(1, 0));
     ctx.fillStyle = air;
     ctx.fillRect(0, view.horizon - this.h * 0.34, this.w, this.h * 0.34);
-    const line = ctx.createLinearGradient(0, 0, this.w, 0);
-    line.addColorStop(0, this.rgba(0, 0));
-    line.addColorStop(0.5, this.rgba(0, light ? 0.16 : 0.22));
-    line.addColorStop(1, this.rgba(0, 0));
-    ctx.fillStyle = line;
-    ctx.fillRect(0, view.horizon, this.w, 1);
   },
 
   /* The chart onto a context: the figures, the words cleared of them, then

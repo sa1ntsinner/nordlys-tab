@@ -83,6 +83,18 @@
     if (event.key !== 'Escape' || !layers.length) return;
     event.preventDefault(); event.stopPropagation(); layers[layers.length - 1].close();
   }, true);
+  /* A native <dialog> joins the stack while it is open, so Escape closes it
+     and not Settings under it, and Tab is left to the browser inside it. It
+     has no root: the browser keeps focus in it and the page under it out of
+     reach, and a list opened in it must not make it inert. */
+  function showModal(dialog) {
+    // Left at once on Escape; the close event comes a moment after the dialog is gone.
+    const layer = { close: () => { leave(); dialog.close(); } };
+    function leave() { const index = layers.indexOf(layer); if (index >= 0) layers.splice(index, 1); }
+    dialog.addEventListener('close', leave, { once: true });
+    layers.push(layer);
+    dialog.showModal();
+  }
   document.addEventListener('focusin', event => {
     const top = layers[layers.length - 1];
     if (!top?.root || top.root.contains(event.target)) return;
@@ -571,5 +583,5 @@
     return zoom;
   }
 
-  window.NordlysUI = { cssZoom, FocusScope, DialogController, RovingTabs, MenuController, SelectMenu, enhanceSelect, enhanceSelects, refreshSelects, announce, showUndoToast, undoText, animateReflow, visibleFocusable, layers, settled, motion, trackThumb };
+  window.NordlysUI = { cssZoom, FocusScope, DialogController, showModal, RovingTabs, MenuController, SelectMenu, enhanceSelect, enhanceSelects, refreshSelects, announce, showUndoToast, undoText, animateReflow, visibleFocusable, layers, settled, motion, trackThumb };
 })();

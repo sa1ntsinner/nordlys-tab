@@ -141,6 +141,11 @@ html[data-bg="solid"] body {
 }
 #bg-media.is-framed { filter: blur(var(--bg-blur)) drop-shadow(0 24px 48px rgba(0, 0, 0, 0.45)); }
 #bg-container:has(#bg-media.is-dark.active) { background: #000; }
+/* A photograph in the colours of the mood (the filter in newtab.html). */
+#bg-media.is-toned { filter: url(#bg-tone) blur(var(--bg-blur)); }
+#bg-media.is-toned.is-framed { filter: url(#bg-tone) blur(var(--bg-blur)) drop-shadow(0 24px 48px rgba(0, 0, 0, 0.45)); }
+#bg-frame.is-toned { filter: url(#bg-tone) blur(48px) brightness(0.62); }
+.bg-tone { position: absolute; }
 
 /* Night mode (app.js applyNightMode): every colour on the page multiplied
    by a deep orange, which takes the blue out and leaves the words. Above

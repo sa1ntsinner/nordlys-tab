@@ -37,14 +37,14 @@
     hoverEffect: "string", language: "string", skyRotate: "string", skyPool: "string", nightMode: "string",
     bgBlur: "number", bgDim: "number", cardRadius: "number", tileSize: "number",
     cardGap: "number", boardGap: "number", cardGlow: "number", bgMotion: "number", bgIntensity: "number", bgSeed: "number",
-    showSeconds: "boolean", openNewTab: "boolean", showSearch: "boolean", rememberSearches: "boolean", suggestUsual: "boolean", shortcutHints: "boolean", highLegibility: "boolean", bgRealSky: "boolean", bgDaylight: "boolean", tileLabels: "boolean", onePageFit: "boolean", pictureColours: "boolean",
-    groups: "list", bgPalettes: "list", skyLocks: "list", looks: "list", searchFrom: "list", golinks: "list",
-    customTheme: "object", skyLayers: "object", skyPlace: "object", workday: "object"
+    showSeconds: "boolean", openNewTab: "boolean", showSearch: "boolean", rememberSearches: "boolean", suggestUsual: "boolean", shortcutHints: "boolean", highLegibility: "boolean", tileLabels: "boolean", onePageFit: "boolean", photoTone: "boolean", pictureColours: "boolean",
+    groups: "list", bgPalettes: "list", looks: "list", searchFrom: "list", golinks: "list",
+    customTheme: "object", skyPlace: "object"
   };
   // Settings that are one of a few words; anything else goes back to the first.
   const CHOICES = {
     boardLayout: ["natural", "fitted"], boardWidth: ["standard", "narrow", "wide"], hoverEffect: ["lift", "glow", "scale", "none"],
-    skyRotate: ["off", "tab", "hour", "day"], skyPool: ["layers", "category", "all", "looks"], nightMode: ["off", "auto", "on"],
+    skyRotate: ["off", "tab", "hour", "day"], skyPool: ["this", "category", "all", "looks"], nightMode: ["off", "auto", "on"],
     pageLayout: ["board", "columns", "dock", "today", "prompt", "poster"]
   };
   const NUMERIC_FIELDS = Object.entries(FIELDS)
@@ -211,15 +211,11 @@
       if (config.theme === "custom") config.theme = defaults.theme || "aurora-void";
       repaired = true;
     }
-    /* The sky's own: layers are choices and switches, a place is a point on
-       the Earth, a working day two hours of one day, and a saved look a name
+    /* The sky's own: a place is a point on the Earth, and a saved look a name
        over a look (look-share.js checks the look again when it is used). */
-    if (config.skyLayers !== undefined && !Object.values(config.skyLayers).every((value) => typeof value === "string" || typeof value === "boolean")) { delete config.skyLayers; repaired = true; }
     const place = config.skyPlace;
     if (place !== undefined && !(Number.isFinite(place.lat) && Number.isFinite(place.lon) && Math.abs(place.lat) <= 90 && Math.abs(place.lon) <= 180 && (place.name === undefined || typeof place.name === "string"))) { delete config.skyPlace; repaired = true; }
-    const day = config.workday;
-    if (day !== undefined && !(Number.isFinite(day.start) && Number.isFinite(day.end) && day.start >= 0 && day.end <= 24 && day.start < day.end)) { delete config.workday; repaired = true; }
-    for (const [field, fits] of [["skyLocks", (lock) => typeof lock === "string"], ["looks", (look) => isObject(look) && typeof look.id === "string" && typeof look.name === "string" && isObject(look.look)], ["golinks", isKeyword]]) {
+    for (const [field, fits] of [["looks", (look) => isObject(look) && typeof look.id === "string" && typeof look.name === "string" && isObject(look.look)], ["golinks", isKeyword]]) {
       if (config[field] === undefined) continue;
       const kept = Array.isArray(config[field]) ? config[field].filter(fits) : [];
       if (!Array.isArray(config[field]) || kept.length !== config[field].length) { config[field] = kept; repaired = true; }

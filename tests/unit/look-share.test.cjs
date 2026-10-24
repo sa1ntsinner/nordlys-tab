@@ -62,13 +62,15 @@ test('a studio theme travels with its colours, and only whole ones', () => {
 });
 
 /* How the board is laid out and whether the sky follows the sun are part of
-   how the page looks; which folders share a row is part of what it holds. */
-test('a look carries the layout and the daylight, never the rows', () => {
+   how the page looks; which folders share a row is part of what it holds. A
+   look from when the time of day was a switch brings the Time of day mood. */
+test('a look carries the layout and the time of day, never the rows', () => {
   const { capture, encode, decode } = looks();
-  const config = { ...CONFIG, boardLayout: 'fitted', bgDaylight: true, groups: [{ label: 'Daily', row: 0, links: [] }, { label: 'Work', row: 1, links: [] }] };
+  const config = { ...CONFIG, boardLayout: 'fitted', bgPalette: 'daylight', groups: [{ label: 'Daily', row: 0, links: [] }, { label: 'Work', row: 1, links: [] }] };
   const { look } = decode(encode(capture(config)));
   assert.equal(look.boardLayout, 'fitted');
-  assert.equal(look.bgDaylight, true);
+  assert.equal(look.bgPalette, 'daylight');
+  assert.equal(decode(encode({ bgPalette: 'polar', bgDaylight: true })).look.bgPalette, 'daylight');
   assert.equal(JSON.stringify(look).includes('"row"'), false);
   assert.equal(decode(encode({ boardLayout: 'masonry' })).error, 'empty', 'a layout this version does not know is dropped');
 });
@@ -87,31 +89,29 @@ test('a look carries the size and spacing of the board, and refuses what it cann
 
 /* A look shared before a sky was retired still brings a sky — the same one
    a stored config of it becomes — rather than quietly losing it: Pillars
-   becomes Meteors, Nacre the Midnight sun, Baikal and Frost (which became
-   Baikal) the Star map. */
+   becomes Meteors, Nacre and the Midnight sun the Black hole, Baikal and
+   Frost (which became Baikal) the Star map. */
 test('a look shared with a retired sky arrives with its successor', () => {
   const { encode, decode } = looks();
-  for (const [retired, successor] of [['pillars', 'meteors'], ['nacre', 'midnightsun'], ['baikal', 'starmap'], ['frost', 'starmap']]) {
+  for (const [retired, successor] of [['pillars', 'meteors'], ['nacre', 'blackhole'], ['midnightsun', 'blackhole'], ['baikal', 'starmap'], ['frost', 'starmap']]) {
     const { look } = decode(encode({ theme: 'nord-frost', bgMode: retired, bgSeed: 7 }));
     assert.equal(look.bgMode, successor, retired);
     assert.equal(look.bgSeed, 7);
   }
   // And the skies that are there arrive as themselves.
-  for (const scene of ['starmap', 'meteors', 'midnightsun']) assert.equal(decode(encode({ bgMode: scene })).look.bgMode, scene);
+  for (const scene of ['starmap', 'meteors', 'blackhole']) assert.equal(decode(encode({ bgMode: scene })).look.bgMode, scene);
   // A name that only looks like a key of the table is still refused.
   assert.equal(decode(encode({ bgMode: 'constructor', iconShape: 'circle' })).look.bgMode, undefined);
 });
 
-// With the catalogue loaded, as on the page: composed skies and the day's picture travel, with checked layers.
-test('a look carries a composed sky and its layers, and only the layers the catalogue knows', () => {
+// With the catalogue loaded, as on the page: a photograph and the day's picture travel, the photograph with its seed and its tone.
+test('a look carries a photograph sky with its seed and its tone', () => {
   const window = { NordlysSkies: require('../../src/js/sky-catalog.js') };
   vm.runInContext(readFileSync('src/js/look-share.js', 'utf8'), vm.createContext({ window, TextEncoder, TextDecoder, btoa, atob }));
   const { capture, encode, decode } = window.NordlysLook;
-  const { look } = decode(encode(capture({ bgMode: 'mountains', skyLayers: { horizon: 'sea', style: 'poster', stars: false } })));
-  assert.equal(look.bgMode, 'mountains');
-  assert.deepEqual(plain(look.skyLayers), { horizon: 'sea', style: 'poster', stars: false });
+  const { look } = decode(encode(capture({ bgMode: 'photo-space', bgSeed: 9, photoTone: false })));
+  assert.deepEqual(plain(look), { bgMode: 'photo-space', bgSeed: 9, photoTone: false });
   assert.equal(decode(encode(capture({ bgMode: 'picture-met' }))).look.bgMode, 'picture-met');
-  const hostile = decode(encode({ bgMode: 'sea', skyLayers: { horizon: 'url(https://x.test/)', style: 'poster', moon: 'yes', extra: 1 } })).look;
-  assert.deepEqual(plain(hostile.skyLayers), { style: 'poster' });
+  assert.equal(decode(encode({ bgMode: 'photo-space', photoTone: 'yes' })).look.photoTone, undefined, 'a tone is true or false');
   assert.equal(decode(encode({ bgMode: 'custom-image' })).error, 'empty', 'a wallpaper stays on its device');
 });

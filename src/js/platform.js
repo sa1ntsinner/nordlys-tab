@@ -25,10 +25,25 @@
     return { name, faviconCache: name !== "firefox" && name !== "safari" };
   }
 
+  /* Where a review of this copy goes: the store it came from. A Chromium
+     store writes its update address into the installed manifest, so Brave,
+     Opera or an Edge that took it from the Chrome Web Store go there, and an
+     Edge copy from Edge's own store goes to its page there. Every Firefox
+     family browser has AMO. Safari is not in the App Store yet, and a copy
+     loaded by hand has no store: neither is asked. */
+  const CHROME_STORE_ID = "fepiibfbbjhaoldgcfpfcikbonnjbfdc";
+  function reviewUrl({ name, id, updateUrl } = {}) {
+    const from = String(updateUrl || "");
+    if (name === "firefox") return "https://addons.mozilla.org/firefox/addon/nordlys/reviews/";
+    if (/^https:\/\/edge\.microsoft\.com\//.test(from) && /^[a-p]{32}$/.test(id || "")) return `https://microsoftedge.microsoft.com/addons/detail/${id}`;
+    if (/^https:\/\/clients2\.google\.com\//.test(from)) return `https://chromewebstore.google.com/detail/${CHROME_STORE_ID}/reviews`;
+    return null;
+  }
+
   const searchUrl = (engine, text) => (ENGINES[engine] ? ENGINES[engine].url + encodeURIComponent(String(text)) : null);
 
   const here = typeof location !== "undefined" ? detect({ protocol: location.protocol, userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "" }) : detect();
-  const api = { ENGINES, detect, searchUrl, ...here };
+  const api = { ENGINES, detect, searchUrl, reviewUrl, ...here };
   root.NordlysPlatform = api;
   if (typeof document !== "undefined") document.documentElement.dataset.browser = here.name;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

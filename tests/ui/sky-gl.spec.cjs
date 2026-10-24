@@ -78,7 +78,7 @@ test('Silk draws its threads on the GPU, and they look as the 2D strokes do', as
   expect(Math.abs(dark.ink - 1), 'the same light in all').toBeLessThan(0.03);
 
   await page.evaluate(() => { window.Nordlys.config.theme = 'porcelain-light'; window.Nordlys.applyThemeTokens(); });
-  await page.evaluate(async () => { window.Nordlys.config.bgMode = 'halo'; await window.Nordlys.updateBackgroundMode(); });
+  await page.evaluate(async () => { window.Nordlys.config.bgMode = 'meteors'; await window.Nordlys.updateBackgroundMode(); });
   const light = await bothWays(page, 'silk');
   expect(light.light, 'the light theme multiplies instead of screening').toBe(true);
   expect(light.layer).toBe('gpu');
@@ -96,8 +96,8 @@ test('the GPU layer is kept only while a scene draws with it', async ({ nordlysP
   });
   await page.evaluate(async () => { window.Nordlys.config.bgMode = 'silk'; await window.Nordlys.updateBackgroundMode(); });
   await expect.poll(state).toBe('live');
-  await page.evaluate(async () => { window.Nordlys.config.bgMode = 'halo'; await window.Nordlys.updateBackgroundMode(); });
-  expect(await state(), 'Halo draws no long lines, so the surface goes').toBe('none');
+  await page.evaluate(async () => { window.Nordlys.config.bgMode = 'meteors'; await window.Nordlys.updateBackgroundMode(); });
+  expect(await state(), 'Meteors draws no long lines, so the surface goes').toBe('none');
 });
 
 /* Contour's lines went to the GPU layer for the same reason (sky-gl.js), as

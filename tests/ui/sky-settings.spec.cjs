@@ -1,8 +1,8 @@
 /* Settings → Background, as far as choosing the sky goes (settings-sky.js):
-   the layers of a composed sky, the skies someone saved, where the sky is,
-   the working hours, the rotation, the night light and the colours of a
-   picture. Nothing here reaches the network: what would leave the machine is
-   answered here, or refused. */
+   the photographs and their tone, a shuffle, the skies someone saved, where
+   the sky is, the rotation, the night light and the colours of a picture.
+   Nothing here reaches the network: what would leave the machine is answered
+   here, or refused. */
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
 
 // One pixel of a warm orange, served as a picture of the day.
@@ -14,13 +14,13 @@ async function openBackground(page) {
   await expect(page.locator('#sec-background')).toBeVisible();
 }
 
-async function chooseSky(page, bgMode, skyLayers) {
-  await page.evaluate(([mode, layers]) => {
+async function chooseSky(page, bgMode, seed) {
+  await page.evaluate(([mode, sow]) => {
     window.Nordlys.config.bgMode = mode;
-    if (layers) window.Nordlys.config.skyLayers = layers; else delete window.Nordlys.config.skyLayers;
+    if (sow !== null) window.Nordlys.config.bgSeed = sow;
     window.Nordlys.saveConfig();
     return window.Nordlys.updateBackgroundMode();
-  }, [bgMode, skyLayers || null]);
+  }, [bgMode, seed ?? null]);
 }
 
 async function pick(page, select, option) {
@@ -29,7 +29,6 @@ async function pick(page, select, option) {
 }
 
 const saved = nordlysPage => nordlysPage.storageState.nordlys_config || {};
-const layersNow = page => page.evaluate(() => window.NordlysSkies.layersOf(window.Nordlys.config.bgMode, window.Nordlys.config.skyLayers));
 
 // Every request that would leave the machine is answered by host, or refused.
 async function offline(page, answers = {}) {
@@ -40,92 +39,92 @@ async function offline(page, answers = {}) {
 }
 const json = (route, body) => route.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
 
-test('a composed sky is chosen layer by layer, and only what differs from it is kept', async ({ nordlysPage }) => {
+test('a photograph of a subject comes in the colours of the mood, or in its own', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  await offline(page);
+  const searched = [];
+  await offline(page, {
+    'commons.wikimedia.org': (route, url) => {
+      searched.push(url.searchParams.get('gsrsearch'));
+      if (url.searchParams.get('gsrlimit') === '1') return json(route, { query: { searchinfo: { totalhits: 40 } } });
+      return json(route, { query: { pages: { 5: { index: 1, title: 'File:Orange evening.jpg', imageinfo: [{
+        mime: 'image/jpeg', width: 4000, height: 2600, thumburl: 'https://upload.wikimedia.org/test/Orange.png',
+        descriptionurl: 'https://commons.wikimedia.org/wiki/File:Orange_evening.jpg',
+        extmetadata: { Artist: { value: 'Someone' }, LicenseShortName: { value: 'CC BY-SA 4.0' } }
+      }] } } } });
+    },
+    'upload.wikimedia.org': route => route.fulfill({ contentType: 'image/png', headers: { 'access-control-allow-origin': '*' }, body: ORANGE })
+  });
   await openBackground(page);
-  await expect(page.locator('.sky-composer')).toBeHidden();
-  await page.locator('.sky-kind[data-kind="horizon"]').click();
-  await page.locator('.scene-card[data-scene="mountains"]').click();
-  await expect(page.locator('.sky-composer')).toBeVisible();
-  await expect(page.locator('#bg-layers select[data-layer="horizon"]')).toHaveValue('mountains');
+  await page.locator('.sky-kind[data-kind="photos"]').click();
+  await expect(page.locator('#bg-kind-note')).toContainText('Only the date and the subject are sent');
+  await page.locator('.scene-card[data-scene="photo-space"]').click();
 
-  await pick(page, '#bg-layers select[data-layer="weather"]', 'Snow');
-  await expect.poll(() => saved(nordlysPage).skyLayers).toEqual({ weather: 'snow' });
-  expect(await page.evaluate(() => window.Nordlys.bgEngine.skyLayers), 'the sky on screen has it').toEqual({ weather: 'snow' });
-  // Back to what the sky comes with, nothing is kept.
-  await pick(page, '#bg-layers select[data-layer="weather"]', 'Clear');
-  await expect.poll(() => saved(nordlysPage).skyLayers).toBeUndefined();
+  const media = page.locator('#bg-media');
+  await expect(media).toHaveAttribute('src', 'https://upload.wikimedia.org/test/Orange.png');
+  expect(searched[0], 'the subject is all that is searched for').toContain('Featured_pictures_of_astronomy');
+  await expect(page.locator('#bg-credit')).toHaveText('Orange evening — Someone · CC BY-SA 4.0');
+  await expect(media).toHaveClass(/is-toned/);
+  // In the mood's colours, the moods are offered and the picture's own colours are not.
+  const colours = page.locator('label.tg:has(#cfg-picture-colours)');
+  await expect(page.locator('.atmosphere-palette')).toBeVisible();
+  await expect(colours).toBeHidden();
 
-  // A body taken out of the sky is kept as taken out.
-  const stars = page.locator('#bg-bodies [data-body="stars"]');
-  await expect(stars).toHaveAttribute('aria-pressed', 'true');
-  await stars.click();
-  await expect(stars).toHaveAttribute('aria-pressed', 'false');
-  await expect.poll(() => saved(nordlysPage).skyLayers).toEqual({ stars: false });
+  await expect(page.locator('#cfg-photo-tone')).toBeChecked();
+  await page.locator('label.tg:has(#cfg-photo-tone)').click();
+  await expect.poll(() => saved(nordlysPage).photoTone).toBe(false);
+  await expect(media).not.toHaveClass(/is-toned/);
+  await expect(page.locator('.atmosphere-palette')).toBeHidden();
+  await expect(colours).toBeVisible();
 
-  // Another sky is chosen as it comes, not with the layers changed on this one.
-  await page.locator('.scene-card[data-scene="sea"]').click();
-  await expect.poll(() => saved(nordlysPage).bgMode).toBe('sea');
-  expect(saved(nordlysPage).skyLayers).toBeUndefined();
-  await expect(stars).toHaveAttribute('aria-pressed', 'true');
-});
-
-test('a shuffle chooses again every layer not kept, and is one undo away', async ({ nordlysPage }) => {
-  const { page } = nordlysPage;
-  await offline(page);
-  await chooseSky(page, 'mountains');
-  await openBackground(page);
-  const lock = page.locator('#bg-layers [data-lock="horizon"]');
-  await expect(lock).toHaveAttribute('aria-pressed', 'false');
-  await lock.click();
-  await expect(lock).toHaveAttribute('aria-pressed', 'true');
-  await expect.poll(() => saved(nordlysPage).skyLocks).toEqual(['horizon']);
-  // The light is never shuffled, so it has no padlock.
-  await expect(page.locator('#bg-layers [data-lock="light"]')).toHaveCount(0);
-
-  const first = await layersNow(page);
-  let before = null, now = first;
-  for (let turn = 0; turn < 6 && JSON.stringify(now) === JSON.stringify(first); turn++) {
-    before = await page.evaluate(() => window.Nordlys.config.skyLayers || null);
-    await page.locator('#bg-shuffle').click();
-    now = await layersNow(page);
-    expect(now.horizon, 'a kept layer stays as it is').toBe('mountains');
-  }
-  expect(now, 'a shuffle changes the sky').not.toEqual(first);
-  await expect(page.locator('#bg-layers select[data-layer="weather"]')).toHaveValue(now.weather);
-
-  await page.locator('.toast .toast-action').last().click();
-  await expect.poll(() => page.evaluate(() => window.Nordlys.config.skyLayers || null)).toEqual(before);
-});
-
-test('a sky can be saved, worn again from its chip and removed with an undo', async ({ nordlysPage }) => {
-  const { page } = nordlysPage;
-  await offline(page);
-  await chooseSky(page, 'mountains', { weather: 'snow' });
-  await openBackground(page);
-  await expect(page.locator('#bg-looks-block')).toBeHidden();
-  await page.locator('#bg-look-save').click();
-  const chip = page.locator('#bg-looks .sky-look');
-  await expect(chip).toHaveText('Mountains · Snow');
-  await expect(chip).toHaveAttribute('aria-pressed', 'true');
-  await expect.poll(() => saved(nordlysPage).looks?.map(entry => entry.look)).toEqual([{ bgMode: 'mountains', skyLayers: { weather: 'snow' } }]);
-  // The same sky is not saved twice.
-  await page.locator('#bg-look-save').click();
-  await expect(chip).toHaveCount(1);
-
+  // A drawn sky has no photograph to tone.
   await page.locator('.sky-kind[data-kind="nordlys"]').click();
-  await page.locator('.scene-card[data-scene="polaris"]').click();
-  await expect(chip).toHaveAttribute('aria-pressed', 'false');
-  await chip.click();
-  await expect.poll(() => [saved(nordlysPage).bgMode, saved(nordlysPage).skyLayers]).toEqual(['mountains', { weather: 'snow' }]);
-  await expect(chip).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('.scene-card[data-scene="silk"]').click();
+  await expect(page.locator('label.tg:has(#cfg-photo-tone)')).toBeHidden();
+});
 
-  await page.locator('#bg-looks .sky-look-remove').click();
-  await expect(page.locator('#bg-looks-block')).toBeHidden();
-  await expect.poll(() => saved(nordlysPage).looks).toEqual([]);
+test('a shuffle gives the sky another scatter, one undo away', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await offline(page);
+  await chooseSky(page, 'silk', 42);
+  await openBackground(page);
+  await page.locator('#bg-shuffle').click();
+  await expect.poll(() => saved(nordlysPage).bgSeed).not.toBe(42);
+  const seed = saved(nordlysPage).bgSeed;
+  expect(Number.isInteger(seed) && seed > 0, 'a whole number').toBe(true);
+  expect(await page.evaluate(() => window.Nordlys.bgEngine.seed), 'the sky on screen is the new one').toBe(seed);
+
   await page.locator('.toast .toast-action').last().click();
-  await expect(chip).toHaveText('Mountains · Snow');
+  await expect.poll(() => saved(nordlysPage).bgSeed).toBe(42);
+});
+
+test('a sky is saved with its scatter, worn again from its chip and removed with an undo', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await offline(page);
+  await chooseSky(page, 'silk', 42);
+  await openBackground(page);
+  await expect(page.locator('#bg-looks-block')).toBeHidden();
+  await page.locator('#bg-look-save').click();
+  const chips = page.locator('#bg-looks .sky-look');
+  await expect(chips).toHaveText(['Silk']);
+  await expect(chips.first()).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(() => saved(nordlysPage).looks?.map(entry => entry.look)).toEqual([{ bgMode: 'silk', bgSeed: 42 }]);
+  // The same sky is not saved twice; shuffled another way it is another, told apart by a number.
+  await page.locator('#bg-look-save').click();
+  await expect(chips).toHaveCount(1);
+  await page.locator('#bg-shuffle').click();
+  await page.locator('#bg-look-save').click();
+  await expect(chips).toHaveText(['Silk', 'Silk 2']);
+
+  await page.locator('.scene-card[data-scene="polaris"]').click();
+  await expect(chips.first()).toHaveAttribute('aria-pressed', 'false');
+  await chips.first().click();
+  await expect.poll(() => [saved(nordlysPage).bgMode, saved(nordlysPage).bgSeed]).toEqual(['silk', 42]);
+  await expect(chips.first()).toHaveAttribute('aria-pressed', 'true');
+
+  await page.locator('#bg-looks .sky-look-remove').first().click();
+  await expect(chips).toHaveText(['Silk 2']);
+  await page.locator('.toast .toast-action').last().click();
+  await expect(chips).toHaveText(['Silk', 'Silk 2']);
 });
 
 test('where the sky is, is searched by what is typed and only the place chosen is kept', async ({ nordlysPage }) => {
@@ -137,8 +136,12 @@ test('where the sky is, is searched by what is typed and only the place chosen i
       return json(route, { results: [{ name: 'Tromsø', admin1: 'Troms', country: 'Norway', latitude: 69.6496, longitude: 18.956 }] });
     }
   });
-  await chooseSky(page, 'mountains');
+  await chooseSky(page, 'silk');
   await openBackground(page);
+  // Only the skies drawn from the real one have a place.
+  await expect(page.locator('.sky-place')).toBeHidden();
+  await page.locator('.scene-card[data-scene="starmap"]').click();
+  await expect(page.locator('.sky-place')).toBeVisible();
   await expect(page.locator('#bg-place-name')).toContainText('time zone');
   await page.locator('#bg-place-change').click();
   await expect(page.locator('#bg-place-change')).toHaveAttribute('aria-expanded', 'true');
@@ -156,23 +159,6 @@ test('where the sky is, is searched by what is typed and only the place chosen i
   await page.locator('#bg-place-zone').click();
   await expect.poll(() => saved(nordlysPage).skyPlace).toBeUndefined();
   await expect(page.locator('#bg-place-name')).toContainText('time zone');
-});
-
-test('the working hours are asked for only by a sky that uses them', async ({ nordlysPage }) => {
-  const { page } = nordlysPage;
-  await offline(page);
-  await chooseSky(page, 'mountains');
-  await openBackground(page);
-  await expect(page.locator('#bg-workday-row')).toBeHidden();
-  await pick(page, '#bg-layers select[data-layer="light"]', 'My working day');
-  await expect(page.locator('#bg-workday-row')).toBeVisible();
-  await expect(page.locator('#cfg-workday-start')).toHaveValue('09:00');
-  await page.locator('#cfg-workday-start').fill('08:30');
-  await expect.poll(() => saved(nordlysPage).workday).toEqual({ start: 8.5, end: 18 });
-  expect(await page.evaluate(() => window.Nordlys.bgEngine.workday)).toEqual({ start: 8.5, end: 18 });
-  // An end before the start is not kept.
-  await page.locator('#cfg-workday-end').fill('07:00');
-  await expect.poll(() => saved(nordlysPage).workday).toEqual({ start: 8.5, end: 18 });
 });
 
 test('a rotation shows another sky and writes nothing over the one chosen', async ({ nordlysPage }) => {
@@ -263,37 +249,11 @@ test('the picture of the day is credited, and its colours can become the accent'
 test('the panel follows a change of language, dropdowns included', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await offline(page);
-  await chooseSky(page, 'mountains');
+  await chooseSky(page, 'blackhole');
   await openBackground(page);
   await page.evaluate(() => window.I18N.setLanguage('de'));
-  await expect(page.locator('.sky-kind[data-kind="weather"]')).toHaveText('Wetter');
-  await expect(page.locator('.scene-card[data-scene="mountains"] .scene-name')).toHaveText('Berge');
-  await expect(page.locator('#bg-layers select[data-layer="horizon"] + .nl-select .nl-select-value')).toHaveText('Berge');
+  await expect(page.locator('.sky-kind[data-kind="photos"]')).toHaveText('Fotos');
+  await expect(page.locator('.scene-card[data-scene="blackhole"] .scene-name')).toHaveText('Schwarzes Loch');
+  await expect(page.locator('#bg-scene-note')).toContainText('wie ein Schwarzes Loch es krümmt');
   await expect(page.locator('#cfg-night-mode + .nl-select .nl-select-value')).toHaveText('Aus');
-  await expect(page.locator('#bg-layers [data-lock="weather"]')).toHaveAttribute('aria-label', 'Wetter beim Mischen behalten');
-});
-
-/* Words over a sky that paints its own daylight get their quiet as a band
-   from the top, the whole width, never as a dark blot under each line: at
-   the height of the date the sky is taken back as much at the window's edge
-   as under the words. */
-test('over a sky with its own daylight, the words are quietened by a band, not a blot', async ({ nordlysPage }) => {
-  const { page } = nordlysPage;
-  await offline(page);
-  await chooseSky(page, 'mountains', { light: 'day' });
-  await page.waitForFunction(() => window.Nordlys.bgEngine.quietZones.length > 0);
-  const read = await page.evaluate(() => {
-    const engine = window.Nordlys.bgEngine;
-    engine.quietSolvedAt = -Infinity;
-    engine.render(0);
-    const canvas = document.getElementById('bg-canvas');
-    const ratio = canvas.width / innerWidth;
-    const date = document.getElementById('date').getBoundingClientRect();
-    const y = Math.round((date.top + date.height / 2) * ratio);
-    const alphaAt = x => canvas.getContext('2d').getImageData(Math.round(x * ratio), y, 1, 1).data[3];
-    return { needed: Math.max(...engine.quietAlphas), edge: alphaAt(12), middle: alphaAt(date.left + date.width / 2) };
-  });
-  expect(read.needed, 'a day sky behind white words needs quiet').toBeGreaterThan(0.05);
-  expect(read.middle, 'the sky under the words is taken back').toBeLessThan(250);
-  expect(Math.abs(read.edge - read.middle), 'as much at the edge as under the words').toBeLessThan(6);
 });

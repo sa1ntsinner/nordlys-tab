@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   NORDLYS - THE PICTURE OF THE DAY
+   NORDLYS - THE PICTURE OF THE DAY, AND THE PHOTOGRAPHS
    ═══════════════════════════════════════════════════════════════════
 
    Four places with a picture for every day, none wanting an account or a key:
@@ -8,6 +8,12 @@
      paintings   a painting from Commons' featured pictures, in the public domain
      met         a painting from the Met's highlights, in the public domain
      epic        the Earth as NASA's EPIC camera saw it, a million miles out
+
+   and the Photos, one source for each subject (photo-nature, photo-space…),
+   all from Wikimedia Commons: a photograph a day, and another for a shuffle.
+   The stock libraries were no use here: Unsplash and Pexels both rule out
+   wallpaper apps and want their keys kept secret, which a page whose code
+   anyone can read cannot do.
 
    Each is asked once a day for where the picture is and whose it is. The
    picture itself is an ordinary image the browser loads and keeps for the
@@ -18,8 +24,8 @@
    wide enough fills it.
 
    Nothing is asked until one of these is the sky on screen. What is asked is
-   the date and the language, and for the collections a number that turns
-   the date into a picture. */
+   the date and the language, and for the collections and the subjects a
+   number that turns the date into a picture. */
 (function (root) {
   "use strict";
 
@@ -167,28 +173,80 @@
   const asking = {};
   /* Today's picture from a source: the one kept if it is today's, and if it
      is not, the newest kept one while today's is asked for. `fresh` hears
-     about today's when it arrives. A thumbnail passes ask: false. */
-  function today(source, fresh, { ask = true, now = new Date(), lang = "en" } = {}) {
+     about today's when it arrives. A thumbnail passes ask: false. A shuffled
+     photograph is another seed, and is kept as today's in its place. */
+  function today(source, fresh, { ask = true, now = new Date(), lang = "en", seed = 0, missed = null } = {}) {
     if (!SOURCES[source]) return null;
     const kept = read()[source];
     const day = dayOf(now);
-    if (kept?.day === day && kept.lang === lang) return kept.picture;
-    if (ask && !asking[source] && root.navigator?.onLine !== false && !(kept?.failedAt && Date.now() - kept.failedAt < 30 * 60000)) {
-      asking[source] = SOURCES[source].ask(now, lang).then((picture) => {
+    if (kept?.day === day && kept.lang === lang && (kept.seed || 0) === seed) return kept.picture;
+    const offline = root.navigator?.onLine === false;
+    if (ask && !asking[source] && !offline && !(kept?.failedAt && Date.now() - kept.failedAt < 30 * 60000)) {
+      asking[source] = SOURCES[source].ask(now, lang, seed).then((picture) => {
         const data = read();
-        data[source] = picture ? { day, lang, picture } : { ...(data[source] || {}), failedAt: Date.now() };
+        data[source] = picture ? { day, lang, seed, picture } : { ...(data[source] || {}), failedAt: Date.now() };
         try { root.localStorage.setItem(KEY, JSON.stringify(data)); } catch (error) { /* asked again next tab */ }
         if (picture) fresh?.(picture);
+        else if (!kept?.picture) missed?.();
       }).catch(() => {
         const data = read();
         data[source] = { ...(data[source] || {}), failedAt: Date.now() };
         try { root.localStorage.setItem(KEY, JSON.stringify(data)); } catch (error) { /* asked again next tab */ }
+        if (!kept?.picture) missed?.();
       }).finally(() => { delete asking[source]; });
-    }
+    } else if (ask && offline && !kept?.picture) missed?.();
     return kept?.picture || null;
   }
 
-  const api = { SOURCES, today, dayOf, firstSentence, KEY };
+  /* What each subject searches Commons for. Most are its featured pictures,
+     the ones its community chose as its finest, from the categories it sorts
+     them into by subject; Sci-fi is artists' impressions of other worlds,
+     from ESO, ESA and NASA. Every one of them is free to show with its
+     maker's name and its licence, which go in the credit under it. */
+  const featured = (...subjects) => `incategory:${subjects.map((subject) => `Featured_pictures_of_${subject}`).join("|")} filetype:bitmap`;
+  const TOPICS = {
+    nature: featured("landscapes", "mountains", "lakes", "forests", "waterfalls", "volcanoes"),
+    weather: featured("clouds", "fog", "snow", "lightning", "storms", "ice"),
+    horizon: featured("sunsets", "sunrises", "beaches", "coasts", "reflections"),
+    space: featured("astronomy", "galaxies", "the_Milky_Way", "the_Moon", "space_exploration"),
+    scifi: `deepcat:"Artist's impressions of space" filetype:bitmap`,
+    tech: featured("machines", "rail_vehicles", "bridges", "ships", "airplanes", "rockets", "spacecraft"),
+    cities: featured("cityscapes", "skylines")
+  };
+
+  /* The photograph of a subject for a day and a seed: a step through the
+     search that comes back to a picture only after it has been through all
+     of them, and of the ten found there the first wide enough to fill a
+     screen (else the first, shown whole). */
+  async function photoOf(search, date, lang, seed) {
+    const width = (root.screen?.width || 1920) * (root.devicePixelRatio || 1) > 2000 ? 2560 : 1920;
+    const api = (offset, limit) => "https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6"
+      + `&gsrsearch=${encodeURIComponent(search)}&gsrlimit=${limit}&gsroffset=${offset}&gsrinfo=totalhits&prop=imageinfo&iiprop=url%7Csize%7Cmime%7Cextmetadata`
+      + `&iiurlwidth=${width}&iiextmetadatafilter=ObjectName%7CArtist%7CLicenseShortName`;
+    // Commons' search goes ten thousand deep.
+    const total = Math.min(9990, (await getJSON(api(0, 1)))?.query?.searchinfo?.totalhits || 0);
+    if (!total) return null;
+    const start = (dayOf(date) * 7919 + (seed >>> 0)) % total;
+    const pages = Object.values((await getJSON(api(Math.min(start, Math.max(0, total - 10)), 10)))?.query?.pages || {})
+      .sort((a, b) => (a.index || 0) - (b.index || 0));
+    const fills = (info) => info?.width >= 1600 && info.width / Math.max(1, info.height) >= 1.3;
+    // A photograph, not an animation or a drawing.
+    const still = pages.filter((entry) => /jpeg|png|tiff|webp/.test(entry.imageinfo?.[0]?.mime || ""));
+    const page = still.find((entry) => fills(entry.imageinfo[0])) || still[0];
+    const info = page?.imageinfo?.[0];
+    const url = safe((info?.thumburl || info?.url || "").replace(/\?.*$/, ""));
+    if (!url) return null;
+    const meta = (key, prefer) => visibleText(info.extmetadata?.[key]?.value, lang, 90, prefer);
+    return {
+      url, cors: true, fit: fills(info) ? "fill" : "frame",
+      title: meta("ObjectName") || plain(String(page.title || "").replace(/^File:/, "").replace(/\.\w+$/, "")),
+      by: plain([meta("Artist", "bdi, a"), meta("LicenseShortName")].filter(Boolean).join(" · "), 90),
+      link: safe(info.descriptionurl) || "https://commons.wikimedia.org/"
+    };
+  }
+  for (const [topic, search] of Object.entries(TOPICS)) SOURCES[`photo-${topic}`] = { ask: (date, lang, seed = 0) => photoOf(search, date, lang, seed) };
+
+  const api = { SOURCES, TOPICS, today, dayOf, firstSentence, KEY };
   root.NordlysWorldPicture = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

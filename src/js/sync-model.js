@@ -41,7 +41,7 @@
   const DAY = 86400000;
   // About the person, not the board, so every profile shares them.
   const PERSON = new Set(["language", "timeFormat", "userName", "openNewTab", "showSeconds", "showSearch", "rememberSearches", "suggestUsual", "shortcutHints",
-    "skyPlace", "workday", "nightMode", "looks"]);
+    "skyPlace", "nightMode", "looks"]);
   // Kept on the device that has them: too big, or meaningless anywhere else.
   const LOCAL_LOOK = new Set(["version", "customCss"]);
 

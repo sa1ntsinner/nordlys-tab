@@ -32,7 +32,7 @@ const pageGlobals = {
   NordlysSkyGL: "readonly", NORDLYS_GL_FLOATS: "readonly",
   // background.js, calc.js, config-schema.js, bookmark-sync.js
   NordlysBackgroundEngine: "readonly", MediaVault: "readonly", NordlysSkies: "readonly", NORDLYS_SOFT: "readonly",
-  NORDLYS_GENERATIVE_SCENES: "readonly", NORDLYS_BACKGROUND_PALETTES: "readonly",
+  NORDLYS_GENERATIVE_SCENES: "readonly", NORDLYS_BACKGROUND_PALETTES: "readonly", NORDLYS_DAYLIGHT_SWATCH: "readonly",
   NordlysCalc: "readonly", NordlysConvert: "readonly", NordlysSearchSources: "readonly", NordlysConfigSchema: "readonly", NordlysBookmarks: "readonly",
   // widgets.js, grid.js, settings*.js
   ClockWidget: "readonly", SearchWidget: "readonly", WidgetsController: "readonly", LOCALE_MAP: "readonly",

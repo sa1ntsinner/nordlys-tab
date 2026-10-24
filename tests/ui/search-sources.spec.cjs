@@ -83,6 +83,31 @@ test('the browser\'s lists are read only once turned on, each with the browser\'
   expect(nordlysPage.runtimeErrors).toEqual([]);
 });
 
+/* Chrome puts the bookmarks and the history on the page only once their
+   leave is given, so a fresh install has neither: a switch is offered by what
+   this build may ask for, and left out only by a build that cannot (Safari's). */
+test('a fresh install offers every list this build may ask for, and no other', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const fresh = async (optional) => {
+    await page.addInitScript((optional) => {
+      delete window.chrome.bookmarks;
+      delete window.chrome.history;
+      window.chrome.runtime.getManifest = () => ({ optional_permissions: optional });
+    }, optional);
+    await page.reload();
+    await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+    await page.locator('#gear').click();
+    await page.locator('#cfg .ctab[data-tab="general"]').click();
+  };
+  const offered = (source) => page.locator(`label.tg:has(#cfg-search-${source})`);
+  await fresh(['bookmarks', 'tabs', 'topSites', 'history', 'sessions']);
+  for (const source of ['tabs', 'bookmarks', 'history']) await expect(offered(source), source).toBeVisible();
+  await fresh(['tabs']);
+  await expect(offered('tabs')).toBeVisible();
+  for (const source of ['bookmarks', 'history']) await expect(offered(source), source).toBeHidden();
+  expect(nordlysPage.runtimeErrors).toEqual([]);
+});
+
 test('refused leave leaves the switch off and the list unread', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await browserLists(page, { history: { grantOnRequest: false } });

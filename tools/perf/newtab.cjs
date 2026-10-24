@@ -66,9 +66,6 @@ if (!Number.isFinite(seconds) || seconds < 2 || !Number.isFinite(warmupMs) || wa
 const SCENES = require('../../src/js/sky-catalog.js').canvasSkies();
 const scene = args.includes('--scene') ? String(option('scene', '')) : '';
 if (args.includes('--scene') && !SCENES.includes(scene)) throw Error(`--scene takes ${SCENES.join(', ')}`);
-// Halo draws tonight's moon from the date (bgRealSky, on by default); `off` holds it full.
-const realSky = args.includes('--real-sky') ? String(option('real-sky', '')) : '';
-if (args.includes('--real-sky') && !['on', 'off'].includes(realSky)) throw Error('--real-sky takes on or off');
 
 /* The first sample is the scene as it moves. It was always labelled `aurora`, and it still is
    when no --scene is given, so every earlier report and `--only aurora` keep their meaning. With
@@ -170,7 +167,7 @@ const denseBoard = { ...DEMO_BOARD, groups: [
 const savedBoard = boardName === 'dense' ? denseBoard : DEMO_BOARD;
 // Only the keys a flag asks for; with none, the board is seeded exactly as saved.
 const board = { ...savedBoard, ...(onePageFit ? { onePageFit: onePageFit === 'on' } : {}),
-  ...(scene ? { bgMode: scene } : {}), ...(realSky ? { bgRealSky: realSky === 'on' } : {}) };
+  ...(scene ? { bgMode: scene } : {}) };
 
 const metricMap = metrics => Object.fromEntries(metrics.map(({ name, value }) => [name, value]));
 const round = (value, digits = 2) => value == null ? null : Number(value.toFixed(digits));
@@ -482,12 +479,10 @@ async function main() {
     // The scene as the page settled on it: what was stored, what the engine draws, and what shapes it.
     startup.scene = await page.evaluate(requested => {
       const engine = window.Nordlys.bgEngine;
-      const moon = engine.mode === 'halo' && typeof engine.moonTonight === 'function' ? engine.moonTonight() : null;
       return { requested, config: window.Nordlys.config.bgMode, engine: engine.mode, attribute: document.documentElement.dataset.bg,
         running: engine.running, motion: engine.motion, intensity: engine.intensity, palette: engine.paletteName ?? null,
-        seed: engine.seed ?? null, realSky: engine.realSky ?? null, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        ...(engine.mode === 'silk' && Array.isArray(engine.silk) ? { silk: { threads: engine.silk.length, steps: engine.silk.reduce((sum, thread) => sum + thread.steps, 0) } } : {}),
-        ...(moon ? { moon: { phase: moon.phase, illumination: moon.illumination, south: moon.south } } : {}) };
+        seed: engine.seed ?? null, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        ...(engine.mode === 'silk' && Array.isArray(engine.silk) ? { silk: { threads: engine.silk.length, steps: engine.silk.reduce((sum, thread) => sum + thread.steps, 0) } } : {}) };
     }, scene || null);
     if (scene && (startup.scene.engine !== scene || startup.scene.config !== scene)) throw Error(`--scene ${scene} was seeded, but the page stored ${startup.scene.config} and the engine draws ${startup.scene.engine}`);
     // Read before any probe option changes the page, and before the scenes, so settling costs no sample time.
@@ -581,7 +576,7 @@ async function main() {
     const report = { reportVersion: 3, timestamp: new Date().toISOString(), browser: version, channel, extension, platform: process.platform, gpu,
       probe: { only, canvasDpr, skipMethod, noGlass, idle, fixedPhase, noDesynchronized: args.includes('--no-desynchronized'),
         onePageFit: onePageFit || null, cadence, quietAlpha, forcedQuietZones, seed, gl: glMode,
-        scene: scene || null, realSky: realSky || null, skippedMethods: skipMethods, silkSkip: silkSkip.length ? silkSkip : null },
+        scene: scene || null, skippedMethods: skipMethods, silkSkip: silkSkip.length ? silkSkip : null },
       viewport: { width, height, dpr: deviceScaleFactor }, board: boardName,
       secondsPerSample: seconds, warmupSec: warmupMs / 1000, wallStartupMs: startupWallMs,
       startup, ...(pageFit ? { pageFit } : {}), errors, samples, ...(multitab ? { multitab } : {}) };

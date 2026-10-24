@@ -70,7 +70,7 @@
     const angle = ((hour / RAD) % 360 + 540) % 360 - 180;
     // Where the sun is on the ecliptic, which is what the calendar of meteor showers is kept in.
     const longitude = ((ecliptic / RAD) % 360 + 360) % 360;
-    return { elevation, azimuth, declination: declination / RAD, longitude, rising: angle < 0 };
+    return { elevation, azimuth, declination: declination / RAD, longitude, angle, rising: angle < 0 };
   }
 
   /* The moon's place in the sky, from the same Almanac's low-precision
@@ -163,40 +163,72 @@
     return { day, golden, blue, night, phase };
   }
 
-  /* The three colours of a mood as that light falls on them. The mood stays
-     itself: a hue is only ever drawn a little way towards the light, and only
-     as far as it is already near it — a blue leans violet at sunset and an
-     orange leans gold, while a teal, far from both, stays teal instead of
-     souring into lime. The warmth of a sunset comes mostly from the glow
-     drawn over the sky (renderSunlight), which is where it looks like light.
-     The blue hour and the night draw hues towards twilight blue; the day
-     pales and lifts them. A grey mood is given a trace of the light's colour,
-     or it would never see a sunset at all. */
-  function lightMood(colors, sky, { light = false } = {}) {
+  /* The Time of day mood: the colours of the sky itself for where the sun is,
+     three at a time (a light, a middle, a depth). Kept as moments by the
+     sun's height, one run for the morning and one for the afternoon, since a
+     sky at ten degrees is rose at dawn and amber at dusk: the night deep blue
+     and indigo, dawn rose and lilac, sunrise gold and coral, the morning a
+     fresh clear blue, the high day the palest and brightest, the afternoon
+     warmer, the golden hour amber and pink, dusk violet, midnight deepest.
+     Between two moments the colours are blended in OKLab, straight across
+     rather than round the hue circle, so gold going to blue passes through a
+     pale haze and not through green; the morning and afternoon runs are
+     blended across noon and midnight, so the sky turns and never switches. */
+  const NIGHT = [[-90, ["#5b6fe0", "#2d2c8c", "#1b1450"]], [-28, ["#5b6fe0", "#2d2c8c", "#1b1450"]], [-12, ["#7d95ff", "#4b45b5", "#2a2068"]]];
+  const HIGH = [[40, ["#eefaff", "#86d0ff", "#3c8af2"]], [90, ["#eefaff", "#86d0ff", "#3c8af2"]]];
+  const DAY_MOMENTS = {
+    morning: [...NIGHT,
+      [-6, ["#8fb0ff", "#6f5fd6", "#3b2f86"]],
+      [-2, ["#ffb0c8", "#b48cf0", "#4b4aa8"]],
+      [2, ["#ffc27a", "#ff7d92", "#7a5cd0"]],
+      [8, ["#ffe2a6", "#ffa88a", "#5d8fe8"]],
+      [18, ["#c9ecff", "#74b8ff", "#4a74e0"]],
+      ...HIGH],
+    afternoon: [...NIGHT,
+      [-6, ["#9d8dff", "#6a4fcf", "#33246f"]],
+      [-2, ["#ff98b0", "#c06ad0", "#4c3aa0"]],
+      [2, ["#ffa25e", "#ff5f7a", "#7e3fb8"]],
+      [8, ["#ffd27c", "#ff8c5e", "#8a5ccc"]],
+      [18, ["#ffe2ad", "#9cc0ff", "#5a70cf"]],
+      ...HIGH]
+  };
+
+  function dayColours(sky) {
     const colour = window.NordlysColour;
-    if (!colour || !sky) return colors;
-    // Squared, so a hue a third of the circle away barely stirs.
-    const lean = (hue, target, strength) => {
-      const delta = Math.atan2(Math.sin(target - hue), Math.cos(target - hue));
-      const near = Math.max(0, 1 - Math.abs(delta) / Math.PI);
-      return hue + delta * strength * near * near;
+    const lab = (hex) => { const [L, C, H] = colour.toOklch(colour.hexToRgb(hex)); return [L, C * Math.cos(H), C * Math.sin(H)]; };
+    const mix = (a, b, t) => a.map((value, i) => value + (b[i] - value) * t);
+    const at = (moments) => {
+      const e = Math.max(-90, Math.min(90, sky.elevation));
+      let i = 0;
+      while (e > moments[i + 1][0]) i++;
+      const [from, a] = moments[i];
+      const [to, b] = moments[i + 1];
+      return a.map((hex, k) => mix(lab(hex), lab(b[k]), (e - from) / (to - from)));
     };
-    const gold = (sky.rising ? 36 : 46) * RAD;
-    const rose = (sky.rising ? 332 : 318) * RAD;
-    const twilight = 252 * RAD;
-    return colors.map((hex) => {
-      const rgb = colour.hexToRgb(hex);
-      if (!rgb) return hex;
-      let [L, C, H] = colour.toOklch(rgb);
-      if (C < 0.02) { H = sky.golden >= sky.blue ? gold : twilight; C += 0.035 * Math.max(sky.golden, sky.blue); }
-      const warm = Math.abs(Math.atan2(Math.sin(gold - H), Math.cos(gold - H))) < Math.abs(Math.atan2(Math.sin(rose - H), Math.cos(rose - H))) ? gold : rose;
-      H = lean(H, warm, 0.5 * sky.golden);
-      H = lean(H, twilight, 0.4 * sky.blue + 0.15 * sky.night);
-      C *= 1 - 0.3 * sky.day + 0.12 * sky.golden;
-      L += light ? 0.015 * sky.day : 0.05 * sky.day - 0.025 * sky.night;
-      return colour.rgbToHex(colour.displayable(Math.min(0.95, Math.max(0.2, L)), Math.max(0, C), H));
+    // All morning before noon and all afternoon after it, half and half at noon and at midnight.
+    const morning = 0.5 + 0.5 * Math.max(-1, Math.min(1, -2.5 * Math.sin((sky.angle ?? (sky.rising ? -90 : 90)) * RAD)));
+    const am = at(DAY_MOMENTS.morning);
+    const pm = at(DAY_MOMENTS.afternoon);
+    return am.map((c, k) => {
+      const [L, A, B] = mix(pm[k], c, morning);
+      return colour.rgbToHex(colour.displayable(L, Math.hypot(A, B), Math.atan2(B, A)));
     });
   }
 
-  window.NordlysSky = { moonPhase, phaseName, SYNODIC_DAYS, sunPosition, moonPosition, siderealAngle, horizontal, meteorShowers, zonePlace, daylight, lightAt, lightMood };
+  /* Where the sky is: the place the person gave the sky, else the weather
+     card's, else the principal city of the time zone. */
+  function placeOf(config) {
+    const own = config && config.skyPlace;
+    if (own && Number.isFinite(own.lat) && Number.isFinite(own.lon)) return own;
+    for (const widget of config?.dashboard?.widgets || []) {
+      const place = widget && widget.type === "weather" && widget.settings && widget.settings.place;
+      if (place && Number.isFinite(place.lat) && Number.isFinite(place.lon)) return place;
+    }
+    let zone = "";
+    try { zone = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (error) { /* the offset will do */ }
+    const found = zonePlace(zone);
+    return found ? { ...found, name: zone.split("/").pop().replace(/_/g, " ") } : { lat: 52.5, lon: 13.4, name: "" };
+  }
+
+  window.NordlysSky = { moonPhase, phaseName, SYNODIC_DAYS, sunPosition, moonPosition, siderealAngle, horizontal, meteorShowers, zonePlace, placeOf, daylight, lightAt, dayColours };
 })();

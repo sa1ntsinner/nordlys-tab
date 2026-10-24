@@ -69,11 +69,21 @@
     return null;
   }
 
-  // "1,5" and "1.5" are one and a half; "1,000" and "1 000" are a thousand.
-  function numberOf(text) {
+  // The mark a language writes before decimals: "." in English, "," in German.
+  function decimalMark(lang) {
+    try { return new Intl.NumberFormat(lang || "en").formatToParts(1.5).find((part) => part.type === "decimal").value; }
+    catch (error) { return "."; }
+  }
+
+  /* "1,5" and "1.5" are one and a half; "1,000", "1.000,25" and "1 000" a
+     thousand and more. "1.234" alone could be either, and is read the way
+     the language writes decimals. */
+  function numberOf(text, lang) {
     let value = String(text).trim().replace(/\s/g, "");
-    if (/^[+-]?\d{1,3}(,\d{3})+(\.\d+)?$/.test(value)) value = value.replace(/,/g, "");
-    else if (/^[+-]?\d{1,3}(\.\d{3})+(,\d+)?$/.test(value)) value = value.replace(/\./g, "").replace(",", ".");
+    const either = /^[+-]?[1-9]\d{0,2}([.,])\d{3}$/.exec(value);
+    if (either) value = either[1] === decimalMark(lang) ? value.replace(",", ".") : value.replace(either[1], "");
+    else if (/^[+-]?[1-9]\d{0,2}(,\d{3})+(\.\d+)?$/.test(value)) value = value.replace(/,/g, "");
+    else if (/^[+-]?[1-9]\d{0,2}(\.\d{3})+(,\d+)?$/.test(value)) value = value.replace(/\./g, "").replace(",", ".");
     else value = value.replace(",", ".");
     if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(value)) return null;
     const number = Number(value);
@@ -99,7 +109,7 @@
   function units(text, lang) {
     const match = new RegExp(`^\\s*(${NUMBER})\\s*([^\\d\\s][^\\d]*?)(?:\\s+(?:${joinerPattern()})\\s+([^\\d]+?))?\\s*$`, "iu").exec(String(text || ""));
     if (!match) return null;
-    const value = numberOf(match[1]);
+    const value = numberOf(match[1], lang);
     const from = unitOf(match[2]);
     if (value === null || !from) return null;
     const to = match[3] ? unitOf(match[3]) : (OTHER[from.id] ? unitOf(OTHER[from.id]) : null);
@@ -232,13 +242,13 @@
   }
 
   // "100 usd to eur", "€20 in azn", "50 euro в рублях": the amount and both currencies.
-  function money(text) {
+  function money(text, lang) {
     const typed = String(text || "").trim();
     const match = new RegExp(`^(\\S*?)\\s*(${NUMBER})\\s*(\\S*?)\\s+(?:${joinerPattern()})\\s+(\\S+)$`, "iu").exec(typed);
     if (!match) return null;
     const [, before, digits, after, target] = match;
     if (before && after) return null;
-    const amount = numberOf(digits);
+    const amount = numberOf(digits, lang);
     const from = currencyOf(before || after);
     const to = currencyOf(target);
     if (amount === null || !from || !to || from === to) return null;

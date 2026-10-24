@@ -238,6 +238,16 @@
         const foot = el("div", { class: "dash-foot" });
         const now = () => card.now();
         const save = () => { card.save(); render(); };
+        // A task or a step taken out goes back where it was with Undo, the task with its steps.
+        const remove = (name, list, item, take) => {
+          const at = list().indexOf(item);
+          take();
+          save();
+          window.NordlysUI?.showUndoToast?.({
+            message: say("dash.removed", "Removed {name}", { name }),
+            onAction: () => { const into = list(true); if (into && !into.includes(item)) { into.splice(Math.min(at, into.length), 0, item); save(); } }
+          });
+        };
         const dueLabel = (task) => {
           const state = K.tasks.state(task, now());
           if (state === "none") return "";
@@ -349,7 +359,7 @@
                 el("button", { type: "button", class: "dash-icon-btn", "aria-label": say("dash.taskMore", "Steps and details: {task}", { task: task.text }), "aria-expanded": String(expanded), onclick: () => { open = expanded ? null : task.id; render(); } }, icon(ICONS.chevron)),
                 el("button", { type: "button", class: "dash-icon-btn", "aria-label": say("dash.dueMenu", "When"), title: say("dash.dueMenu", "When"), onclick: (e) => dateMenu(task, e.currentTarget) }, icon(ICONS.calendar)),
                 el("button", { type: "button", class: `dash-icon-btn${task.priority ? " is-on" : ""}`, "aria-pressed": String(Boolean(task.priority)), "aria-label": say("dash.important", "Important"), title: say("dash.important", "Important"), onclick: () => { K.tasks.setPriority(card.data, task.id, !task.priority); save(); } }, icon(ICONS.flag)),
-                el("button", { type: "button", class: "dash-icon-btn dash-task-remove", "aria-label": say("dash.taskRemove", "Remove {task}", { task: task.text }), onclick: () => { K.tasks.remove(card.data, task.id); save(); } }, icon(ICONS.close))
+                el("button", { type: "button", class: "dash-icon-btn dash-task-remove", "aria-label": say("dash.taskRemove", "Remove {task}", { task: task.text }), onclick: () => remove(task.text, () => card.data.items, task, () => K.tasks.remove(card.data, task.id)) }, icon(ICONS.close))
               ])
             ])
           ]);
@@ -359,7 +369,7 @@
               box.checked = sub.done;
               box.addEventListener("change", () => { K.tasks.toggleSub(card.data, task.id, sub.id); save(); });
               return el("li", { class: sub.done ? "is-done" : "" }, [box, el("span", { text: sub.text }),
-                el("button", { type: "button", class: "dash-icon-btn dash-task-remove", "aria-label": say("dash.taskRemove", "Remove {task}", { task: sub.text }), onclick: () => { K.tasks.removeSub(card.data, task.id, sub.id); save(); } }, icon(ICONS.close))]);
+                el("button", { type: "button", class: "dash-icon-btn dash-task-remove", "aria-label": say("dash.taskRemove", "Remove {task}", { task: sub.text }), onclick: () => remove(sub.text, (create) => { const owner = K.tasks.find(card.data, task.id); return owner && (create ? (owner.subs ||= []) : owner.subs || []); }, sub, () => K.tasks.removeSub(card.data, task.id, sub.id)) }, icon(ICONS.close))]);
             }));
             const addSub = el("input", { type: "text", class: "dash-input dash-sub-add", placeholder: say("dash.subAdd", "Add a step"), "aria-label": say("dash.subAdd", "Add a step"), maxlength: String(K.tasks.MAX_TEXT) });
             addSub.addEventListener("keydown", (event) => {
@@ -1175,8 +1185,11 @@
       return [...list.filter((t) => !t.more), ...list.filter((t) => t.more)];
     }
 
-    setOn(on) {
+    setOn(on, { today = false } = {}) {
       const state = { ...this.state, on: Boolean(on), widgets: [...(this.state.widgets || [])] };
+      // Brought by the Today page it goes again with it (followPage); turned on or off by hand, it stays.
+      if (today) state.today = true;
+      else delete state.today;
       // The first time, three cards to start from rather than an empty row.
       if (on && !state.seeded) {
         if (!state.widgets.length) state.widgets = STARTER.map((type) => this.blank(type));
@@ -1185,6 +1198,12 @@
       this.write(state);
       if (!on) this.sounds.stop();
       window.NordlysUI?.announce?.(on ? say("dash.onSaid", "Dashboard on") : say("dash.offSaid", "Dashboard off"));
+    }
+    /* Today is the dashboard's own page: choosing it brings the dashboard, and
+       leaving it takes the dashboard away again if it was Today that brought it. */
+    followPage(layout) {
+      if (layout === "today") { if (!this.on) this.setOn(true, { today: true }); }
+      else if (this.state.today) this.setOn(false);
     }
     blank(type) {
       const settings = {};
@@ -1699,7 +1718,7 @@
       });
       dialog.addEventListener("close", () => dialog.remove());
       document.body.append(dialog);
-      dialog.showModal();
+      NordlysUI.showModal(dialog);
       (Object.values(inputs)[0]?.querySelector("input") || submit).focus();
     }
     /* Leave to read these sites, asked from the click that needs it (a
@@ -1790,9 +1809,14 @@
         });
         dialog.close();
       });
-      dialog.addEventListener("close", () => { dialog.remove(); this.cards.get(widget.id)?.root.querySelector(".dash-menu-btn")?.focus(); });
+      // The browser puts focus back where it was; from the card's menu, gone by now, it goes to the menu's button.
+      dialog.addEventListener("close", () => {
+        const lost = !document.activeElement || document.activeElement === document.body || dialog.contains(document.activeElement);
+        dialog.remove();
+        if (lost) this.cards.get(widget.id)?.root.querySelector(".dash-menu-btn")?.focus();
+      });
       document.body.append(dialog);
-      dialog.showModal();
+      NordlysUI.showModal(dialog);
       form.querySelector("input, select")?.focus();
     }
     zonesField(id, values) {

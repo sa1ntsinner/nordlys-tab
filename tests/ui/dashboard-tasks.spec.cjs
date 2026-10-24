@@ -91,6 +91,27 @@ test('steps inside a task: added, ticked and counted', async ({ nordlysPage }) =
   await expect(tasks(page).getByRole('checkbox', { name: 'Move house' })).not.toBeChecked();
 });
 
+test('a removed step or task comes back with Undo, steps and all', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const undo = () => page.locator('#toast-dock .toast-action').last().click();
+  await add(page, 'Move house');
+  await tasks(page).getByRole('button', { name: 'Steps and details: Move house' }).click();
+  for (const text of ['Boxes', 'Van']) {
+    await tasks(page).getByRole('textbox', { name: 'Add a step' }).fill(text);
+    await tasks(page).getByRole('textbox', { name: 'Add a step' }).press('Enter');
+  }
+  await tasks(page).getByRole('button', { name: 'Remove Boxes' }).click();
+  await expect(tasks(page).locator('.dash-task-subs')).toHaveText('0/1');
+  await undo();
+  await expect(tasks(page).locator('.dash-subs li')).toHaveText(['Boxes', 'Van']);
+  await tasks(page).getByRole('button', { name: 'Remove Move house' }).click();
+  await expect.poll(() => texts(page)).not.toContain('Move house');
+  await undo();
+  await expect.poll(() => texts(page)).toContain('Move house');
+  await expect(tasks(page).locator('.dash-task-subs')).toHaveText('0/2');
+  expect(nordlysPage.runtimeErrors).toEqual([]);
+});
+
 test('the date menu moves a task to tomorrow and takes the date away', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await add(page, 'Thing');

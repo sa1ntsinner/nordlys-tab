@@ -17,6 +17,8 @@ test('a conversion and the time elsewhere are answered on the spot, and Enter ta
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
   await expect(page.locator('#q')).toHaveValue('6.21371');
+  await type(page, '1.234 kg to g');
+  await expect(page.locator('#sugg .sugg-units .calc-val')).toHaveText('1.234 kg = 1,234 g');
   await type(page, 'time in tokyo');
   await expect(page.locator('#sugg .sugg-time .calc-val')).toContainText('Tokyo');
   await expect(page.locator('#sugg .sugg-time svg')).toHaveCount(1);

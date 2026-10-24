@@ -65,3 +65,25 @@ test('the page behind the sky is read from its own gradients', () => {
   // A form it does not know is left out, not guessed at.
   assert.deepEqual([...c.backgroundAt('conic-gradient(red, blue)', 'rgb(1, 2, 3)', 5, 5, 10, 10)], [1, 2, 3]);
 });
+
+/* A photograph in the colours of a mood: its shadows take the deep colour,
+   its middle tones the middle one and its lights the bright one, darkest to
+   lightest along the ramp, on a dark page and on a light one. */
+test('a tone ramp runs from the mood\'s deep colour to its bright one, in order of lightness', () => {
+  const c = tools();
+  const mood = ['#ffd1dc', '#c3a3e6', '#4d5b9e'];
+  for (const light of [false, true]) {
+    const ramp = c.toneRamp(mood, light);
+    assert.equal(ramp.length, 5);
+    const lightness = ramp.map(rgb => c.toOklch(rgb)[0]);
+    for (let i = 1; i < lightness.length; i++) assert.ok(lightness[i] > lightness[i - 1], `stop ${i} is lighter than the one before (${light ? 'light' : 'dark'} page)`);
+    assert.ok(ramp.flat().every(channel => Number.isInteger(channel) && channel >= 0 && channel <= 255));
+    assert.ok(turn(c.toOklch(ramp[0])[2], hue(c, mood[2])) < 0.35, 'the shadows lean to the deep colour');
+    assert.ok(turn(c.toOklch(ramp[4])[2], hue(c, mood[0])) < 0.35, 'the lights lean to the bright one');
+  }
+  const ramp = c.toneRamp(mood);
+  assert.deepEqual(c.toneAt(ramp, 0), ramp[0]);
+  assert.deepEqual(c.toneAt(ramp, 255), ramp[4]);
+  assert.deepEqual(c.toneAt(ramp, 127.5), ramp[2]);
+  assert.deepEqual(c.toneAt(ramp, -40), ramp[0], 'held at the ends');
+});

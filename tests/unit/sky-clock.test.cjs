@@ -104,31 +104,28 @@ test('the day turns through its phases, and the weights blend rather than switch
   }
 });
 
-test('the light falls on a mood without making it another mood', () => {
+/* Time of day is a mood of its own: the sky's colours for where the sun is.
+   It turns all day without a jump, the morning and the afternoon differ at
+   the same height of sun, noon is lighter than midnight and a sunset warm. */
+test('the Time of day mood turns all day, and never jumps', () => {
   const sky = sunlit();
   const { toOklch, hexToRgb } = (() => { const window = {}; vm.runInContext(readFileSync('src/js/colour-tools.js', 'utf8'), vm.createContext({ window })); return window.NordlysColour; })();
+  const lab = hex => { const [L, C, H] = toOklch(hexToRgb(hex)); return [L, C * Math.cos(H), C * Math.sin(H)]; };
+  const apartColours = (a, b) => Math.max(...a.map((hex, i) => { const [x, y] = [lab(hex), lab(b[i])]; return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); }));
   const berlin = { lat: 52.5, lon: 13.4 };
-  const mood = ['#35d6c0', '#5b6cff', '#9d4edd'];
-  const night = sky.lightMood(mood, sky.daylight(new Date(Date.UTC(2024, 8, 22, 0)), berlin));
-  const noon = sky.lightMood(mood, sky.daylight(new Date(Date.UTC(2024, 8, 22, 11)), berlin));
-  const sunset = sky.lightMood(mood, sky.daylight(new Date(Date.UTC(2024, 8, 22, 17, 5)), berlin));
-  const L = hex => toOklch(hexToRgb(hex))[0];
-  const C = hex => toOklch(hexToRgb(hex))[1];
-  const H = hex => toOklch(hexToRgb(hex))[2];
-  const turn = (a, b) => { const d = Math.abs(a - b) % (2 * Math.PI); return d > Math.PI ? 2 * Math.PI - d : d; };
-  for (let i = 0; i < 3; i++) {
-    assert.ok(L(noon[i]) > L(night[i]), 'the day is lighter than the night');
-    assert.ok(C(noon[i]) < C(night[i]), 'and paler');
-    assert.ok(turn(H(sunset[i]), H(mood[i])) < 1.5, 'a sunset pulls the hue part of the way, never all of it');
+  const at = (h, m = 0, month = 8, day = 22) => sky.dayColours(sky.daylight(new Date(Date.UTC(2024, month, day, h, m)), berlin));
+  for (const [month, day] of [[8, 22], [11, 21], [5, 21]]) {
+    for (let minute = 0; minute < 24 * 60; minute += 5) {
+      const step = apartColours(at(0, minute, month, day), at(0, minute + 5, month, day));
+      assert.ok(step < 0.05, `a jump of ${step.toFixed(3)} at minute ${minute} on ${month + 1}/${day}`);
+    }
   }
-  // A teal is far from every sunset hue, so it stays teal instead of souring
-  // into lime; a blue, nearer the rose of a dusk sky, leans towards it.
-  assert.ok(turn(H(sunset[0]), H(mood[0])) < 8 * Math.PI / 180, 'teal keeps its hue at sunset');
-  const rose = 318 * Math.PI / 180;
-  assert.ok(turn(H(sunset[1]), rose) < turn(H(mood[1]), rose), 'blue leans rose at dusk');
-  // A grey mood still sees the sunset.
-  const grey = sky.lightMood(['#8a8a8a', '#bdbdbd', '#5c5c5c'], sky.daylight(new Date(Date.UTC(2024, 8, 22, 17, 5)), berlin));
-  assert.ok(grey.every(hex => C(hex) > 0.02));
+  const [midnight, morning, noon, afternoon, sunset] = [at(23), at(7, 30), at(11), at(14, 30), at(17, 5)];
+  assert.ok(lab(noon[0])[0] > lab(midnight[0])[0] + 0.1, 'noon is lighter than midnight');
+  assert.ok(apartColours(morning, afternoon) > 0.08, 'the morning and the afternoon are not the same sky');
+  assert.ok(apartColours(noon, afternoon) > 0.05, 'the afternoon has moved on from noon');
+  const hue = hex => ((Math.atan2(lab(hex)[2], lab(hex)[1]) * 180 / Math.PI) + 360) % 360;
+  assert.ok(hue(sunset[0]) < 80 || hue(sunset[0]) > 330, `a sunset is warm, gold to rose (${hue(sunset[0]).toFixed(0)})`);
 });
 
 /* The Star map and the meteor radiants put a point of the sky where the
@@ -186,4 +183,13 @@ test('each meteor shower peaks on its night', () => {
   }
   assert.equal(meteorShowers(new Date(Date.UTC(2026, 5, 21))).length, 0, 'midsummer has none of the seven');
   assert.equal(meteorShowers(new Date(Date.UTC(2026, 2, 1))).length, 0, 'nor has March');
+});
+
+test('the sky is placed where the person said, else at the weather card, else in the time zone', () => {
+  const { placeOf } = sky();
+  assert.equal(placeOf({ skyPlace: { lat: 1, lon: 2, name: 'A' } }).name, 'A');
+  const card = { type: 'weather', settings: { place: { lat: 3, lon: 4, name: 'B' } } };
+  assert.equal(placeOf({ dashboard: { widgets: [card] } }).name, 'B');
+  const zone = placeOf({});
+  assert.ok(Number.isFinite(zone.lat) && Number.isFinite(zone.lon));
 });

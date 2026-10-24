@@ -39,8 +39,8 @@ const args = Object.fromEntries(process.argv.slice(2).map(arg => {
 }));
 const list = value => (value && value !== 'true' ? value.split(',').filter(Boolean) : null);
 
-const SCENES = ['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'contour', 'fjord'];
-const MOODS = ['theme', 'polar', 'violet', 'ember', 'mono'];
+const SCENES = ['aurora', 'polaris', 'starmap', 'meteors', 'silk', 'blackhole', 'contour', 'fjord'];
+const MOODS = ['theme', 'polar', 'violet', 'ember', 'mono', 'twilight', 'patina', 'tundra', 'gilt', 'sepia', 'mars'];
 // The fonts pass is opt-in (--surfaces=fonts): it re-renders every tab per face.
 const SURFACES = list(args.surfaces) || ['home', 'search', 'settings', 'menus', 'panels'];
 /* The font pass sets one family on the display and interface slots at once.
@@ -59,7 +59,7 @@ const DAYLIGHT = list(args.daylight) || ['2026-09-22T05:02:00Z', '2026-09-22T11:
    phase of the scene clock, so they are measured at moments of the same
    equinox day in Berlin instead: the sun high, low, just set, and gone. The
    theme's own mood at all four; the others at noon and in the night. */
-const REAL_SKY = new Set(['starmap', 'meteors', 'midnightsun']);
+const REAL_SKY = new Set(['starmap', 'meteors']);
 const MOMENTS = list(args.moments) || ['2026-09-22T11:00:00Z', '2026-09-22T16:50:00Z', '2026-09-22T17:42:00Z', '2026-09-22T22:00:00Z'];
 const DAYLIGHT_MOODS = ['theme', 'ember', 'mono'];
 /* The Atmosphere slider goes to 150%, and a brighter sky is the harder test,

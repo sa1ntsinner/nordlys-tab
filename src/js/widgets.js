@@ -470,7 +470,7 @@ class SearchWidget {
     const lists = { query, golink, calcResult, capture, bookmarkMatches, found, settingsMatches, historyMatches };
     this.renderSuggestions(lists);
     // An amount of money waits for the day's rates, and the list is drawn again when they come.
-    const money = !calcResult && window.NordlysConvert?.money(query);
+    const money = !calcResult && window.NordlysConvert?.money(query, LOCALE_MAP[window.I18N?.currentLang] || "en-US");
     if (!money) return;
     const answer = this.exchange(money, await this.rates());
     if (answer && token === this.queryToken && this.input.value.trim() === query) this.renderSuggestions({ ...lists, calcResult: answer });
@@ -487,7 +487,7 @@ class SearchWidget {
     if (units) return { ...units, kind: "units" };
     const time = convert.time(query, { lang, hour12: format === "12h" ? true : format === "24h" ? false : undefined });
     if (time) return { ...time, kind: "time" };
-    const money = convert.money(query);
+    const money = convert.money(query, lang);
     return money ? this.exchange(money, this.keptRates()) : null;
   }
 
@@ -810,7 +810,7 @@ class SearchWidget {
     };
     switch (candidate.kind) {
       case "theme": look((config) => { config.theme = candidate.target.key; delete config.customTheme; }); break;
-      case "sky": look((config) => { config.bgMode = candidate.target.key; delete config.skyLayers; }); break;
+      case "sky": look((config) => { config.bgMode = candidate.target.key; }); break;
       case "mood": look((config) => { config.bgPalette = candidate.target.key; }); break;
       case "page": look((config) => { config.pageLayout = candidate.target.key; }); break;
       case "hide": case "rename": lift(`.card[data-group-idx="${candidate.target.key}"]`); break;
@@ -834,12 +834,12 @@ class SearchWidget {
     let done = true;
     switch (candidate.kind) {
       case "theme": config.theme = candidate.target.key; delete config.customTheme; break;
-      case "sky": config.bgMode = candidate.target.key; delete config.skyLayers; break;
+      case "sky": config.bgMode = candidate.target.key; break;
       case "mood": config.bgPalette = candidate.target.key; break;
       case "page":
         config.pageLayout = candidate.target.key;
-        // Today is the dashboard's layout; Undo puts the dashboard back as it was.
-        if (candidate.target.key === "today" && this.app.dashboard && !this.app.dashboard.on) this.app.dashboard.setOn(true);
+        // Today brings the dashboard and takes it away again; Undo puts it back as it was.
+        this.app.dashboard?.followPage(candidate.target.key);
         break;
       case "shuffle": config.bgSeed = crypto.getRandomValues(new Uint32Array(1))[0] || 1; break;
       case "newFolder": groups.push({ label: candidate.name, cols: 4, hidden: false, links: [] }); break;

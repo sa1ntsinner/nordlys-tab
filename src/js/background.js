@@ -9,12 +9,27 @@
    adding a composition meant finding three places and the third one was always
    the one missed. Each one's painting is a file in src/js/skies. */
 const NORDLYS_GENERATIVE_SCENES = new Set(NordlysSkies.canvasSkies());
+/* The colour moods that ship, brightest first: the lights of a sky, then its
+   middle, then its deep, which a photograph in the mood's colours also reads
+   from its shadows up. The later six are kept away from the themes' own
+   accents, so a mood is a second colour and not the theme's again: the
+   twilight's belt of pink over the earth's shadow, copper going green,
+   frost on lichen, gold on ink, an old print, and the butterscotch day and
+   blue sunset of Mars. */
 const NORDLYS_BACKGROUND_PALETTES = {
   polar: ["#68e1d1", "#6ea8fe", "#9d8cff"],
   violet: ["#8be9fd", "#8b7cff", "#cf78ff"],
   ember: ["#ffd166", "#f48c6b", "#b86bff"],
-  mono: ["#dbeafe", "#94a3b8", "#64748b"]
+  mono: ["#dbeafe", "#94a3b8", "#64748b"],
+  twilight: ["#ffd1dc", "#c3a3e6", "#4d5b9e"],
+  patina: ["#9be8cf", "#d4956b", "#4a2f45"],
+  tundra: ["#e6efe0", "#9fb8a0", "#4e6470"],
+  gilt: ["#ffe2a0", "#c9a45c", "#3b3f4a"],
+  sepia: ["#f4e6cc", "#c49a6c", "#5e4636"],
+  mars: ["#ffd9a8", "#d8794f", "#3f5e8c"]
 };
+// The Time of day mood has no colours of its own; its chip shows a day in three.
+const NORDLYS_DAYLIGHT_SWATCH = { daylight: ["#ffb36b", "#74b8ff", "#3a2f8f"] };
 
 /* The moment each scene is held at when it is still — motion at zero, reduced
    motion, the settings thumbnails — and the moment a moving one starts from.
@@ -26,17 +41,19 @@ const NORDLYS_STILLS = new WeakMap();
 const NORDLYS_IDLE_AFTER = 60000;
 /* The least time between paints some scenes need, in milliseconds. The real
    sky turns a quarter of a degree a minute, so the Star map paints for its
-   twinkle alone, and the Midnight sun for the light on the water; Meteors
-   wait at this between meteors and take the full rate for one (meteorDue). */
+   twinkle alone, and the Black hole's disk turns smoothly at twenty frames a
+   second; Meteors wait at this between meteors and take the full rate for
+   one (meteorDue). */
 const NORDLYS_SCENE_BUDGET = NordlysSkies.table("budget");
 // The scenes that keep time with the real sky even when held still.
 const NORDLYS_CLOCK_SCENES = new Set(Object.keys(NordlysSkies.table("clock")));
 
 // How a light falls off from its centre, as [offset, share] stops: a soft glow.
 const NORDLYS_SOFT = [[0, 1], [0.32, 0.34], [1, 0]];
-/* The Star map and Meteors look out over a horizon low on the page with the
-   zenith at the top, both as shares of the height (skyView). */
-const NORDLYS_SKY_VIEW = { horizon: 0.9, zenith: 0.03 };
+/* The Star map and Meteors look out over a horizon at the foot of the page,
+   so the sky fills it, with the zenith at the top: both as shares of the
+   height (skyView). */
+const NORDLYS_SKY_VIEW = { horizon: 1, zenith: 0.03 };
 // The scenes that are a night thing, and step back further by day.
 const NORDLYS_NIGHT_SCENES = new Set(Object.keys(NordlysSkies.table("night")));
 
@@ -72,27 +89,15 @@ class NordlysBackgroundEngine {
        stars and the ice. */
     this.seed = 0;
     this.rng = null;
-    /* The date the sky is drawn for, and whether it follows the real one. The
-       clock is a field so a test, or a still, can hold it at a moment. */
+    /* The date the sky is drawn for. The clock is a field so a test, or a
+       still, can hold it at a moment. */
     this.now = () => new Date();
-    this.realSky = true;
-    /* Whether the light follows the sun where the person is, and what the sun
-       is doing if it does. Everything that reads `sky` treats null as the
-       mood exactly as it was mixed. */
+    /* Whether the Time of day mood is chosen, and what the sun is doing where
+       the person is if it is. Everything that reads `sky` treats null as a
+       mood that holds still. */
     this.daylight = false;
     this.sky = null;
     this.place = null;
-    /* What the composed skies read from the rest of the page (setWorld): the
-       person's own layers, the working day, how full today's calendar is, and
-       whether a focus session is on; and what they keep between frames. */
-    this.skyLayers = null;
-    this.workday = null;
-    this.dayLoad = 0;
-    this.focusing = false;
-    this.composer = null;
-    /* Set by a sky whose frame has nothing moving in it, a clear day over the
-       hills: the frame is held as if at rest, and the minute keeps time. */
-    this.held = false;
     this.lastFrame = 0;
     this.running = false;
     this.lastInput = performance.now();
@@ -111,15 +116,13 @@ class NordlysBackgroundEngine {
     this.silk = [];
     this.polaris = [];
     /* The real sky's scenes: the Star map's view and its layer of stars and
-       figures; the Meteors' field, its layer, and the showers of the minute;
-       the Midnight sun's coast. Each layer is drawn on the screen once and
-       laid down every frame. */
+       figures; the Meteors' field, its layer, and the showers of the minute.
+       Each layer is drawn on the screen once and laid down every frame. */
     this.chart = null;
     this.chartLayer = null;
     this.field = [];
     this.fieldLayer = null;
     this.showerRates = null;
-    this.coast = [];
     // The minute timer a held real-sky scene keeps time by (keepTime).
     this.timeKeeper = null;
     this.terrain = [];
@@ -167,25 +170,21 @@ class NordlysBackgroundEngine {
       this.quietGround = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
     }
     const fallback = ["#35d6c0", "#5b6cff", "#9d4edd"];
-    const preset = NORDLYS_BACKGROUND_PALETTES[this.paletteName] || this.customPalettes[this.paletteName];
+    const preset = this.sky ? window.NordlysSky.dayColours(this.sky)
+      : NORDLYS_BACKGROUND_PALETTES[this.paletteName] || this.customPalettes[this.paletteName];
     const colors = preset || [1, 2, 3].map((i, idx) => {
         const v = styles.getPropertyValue(`--shader-${i}`).trim();
         return /^#[0-9a-f]{6}$/i.test(v) ? v : fallback[idx];
       });
-    this.applyPalette(this.lit(colors));
-  }
-
-  /* A mood as the light of the moment falls on it, when the sky follows the
-     sun; the mood as mixed otherwise. */
-  lit(colors) {
-    return this.sky && window.NordlysSky?.lightMood ? window.NordlysSky.lightMood(colors, this.sky, { light: this.lightMode }) : colors;
+    this.applyPalette(colors);
   }
 
   /* ── The time of day ──────────────────────────────────────────────
-     One switch for every atmosphere (NordlysSky.daylight): the mood graded by
-     the sun, a warm glow where it rises and sets, a pale light from above by
-     day, a cool band in the blue hour, and stars that come out only after
-     dark. The place is the time zone's city — no permission, no network.
+     A mood of its own, Time of day (NordlysSky.dayColours): the sky's own
+     colours for where the sun is, a warm glow where it rises and sets, a pale
+     light from above by day, a cool band in the blue hour, and stars that come
+     out only after dark. Every other mood holds still. The place is the time
+     zone's city — no permission, no network.
      Read once a minute, which is a quarter of a degree of sun, and again
      whenever the page comes back into view after being away. */
   setDaylight(on) {
@@ -260,9 +259,11 @@ class NordlysBackgroundEngine {
       ctx.fillRect(0, 0, this.w, this.h);
     }
     if (sky.day > 0.02 && !light) {
-      const tone = mix([205, 222, 255], this.paletteRgb[1], 0.3);
-      const wash = ctx.createLinearGradient(0, 0, 0, this.h * 0.7);
-      wash.addColorStop(0, rgba(tone, 0.07 * sky.day));
+      // The day's own blue from the top of the page, as a sky is bluest overhead.
+      const tone = mix([150, 200, 255], this.paletteRgb[1], 0.5);
+      const wash = ctx.createLinearGradient(0, 0, 0, this.h * 0.9);
+      wash.addColorStop(0, rgba(tone, 0.3 * sky.day));
+      wash.addColorStop(0.55, rgba(tone, 0.12 * sky.day));
       wash.addColorStop(1, rgba(tone, 0));
       ctx.fillStyle = wash;
       ctx.fillRect(0, 0, this.w, this.h);
@@ -294,7 +295,7 @@ class NordlysBackgroundEngine {
   previewPalette(colors) {
     const valid = NordlysBackgroundEngine.paletteColors({ colors });
     if (!valid) return false;
-    this.applyPalette(this.lit(valid));
+    this.applyPalette(valid);
     return true;
   }
 
@@ -369,7 +370,7 @@ class NordlysBackgroundEngine {
     this.initPolaris();
     this.initChart();
     this.initField();
-    this.initCoast();
+    this.initBlackHole();
     this.rng = null;
   }
 
@@ -417,7 +418,7 @@ class NordlysBackgroundEngine {
       still = Object.assign(Object.create(NordlysBackgroundEngine.prototype), {
         canvas, ctx: canvas.getContext("2d"), w: width * zoom, h: height * zoom, mode: scene, still: true,
         t: NORDLYS_REST_PHASE[scene], ink: 1, motion: 0, intensity: 1, customPalettes: {}, seed: this.seed, rng: null,
-        stars: [], meteors: [], nebulae: [], silk: [], polaris: [], chart: null, field: [], coast: [], terrain: [], quietZones: [],
+        stars: [], meteors: [], nebulae: [], silk: [], polaris: [], chart: null, field: [], terrain: [], quietZones: [],
         // A still is at rest by definition: nothing in it is mid-fall.
         atRest: () => true
       });
@@ -433,11 +434,6 @@ class NordlysBackgroundEngine {
     still.sky = this.sky;
     still.place = this.place;
     still.now = this.now;
-    // The person's layers belong to the sky they were set on; every other sky is shown as it comes.
-    still.skyLayers = scene === this.mode ? this.skyLayers : null;
-    still.workday = this.workday;
-    still.dayLoad = this.dayLoad;
-    still.focusing = this.focusing;
     still.nebulae.forEach((nebula, index) => { nebula.color = this.paletteRgb[index % 3].join(", "); });
     still.render(0);
     return true;
@@ -490,8 +486,6 @@ class NordlysBackgroundEngine {
       this.gl = undefined;
       this.chartLayer = null;
       this.fieldLayer = null;
-      // A composed sky's backdrops go with it.
-      this.composer = null;
     }
     if (changed && NORDLYS_REST_PHASE[mode] !== undefined) this.t = NORDLYS_REST_PHASE[mode];
     if (NORDLYS_GENERATIVE_SCENES.has(mode)) {
@@ -508,7 +502,7 @@ class NordlysBackgroundEngine {
     this.keepTime();
   }
 
-  /* A held Star map or Midnight sun still keeps time with the sky: nothing
+  /* A held Star map still keeps time with the sky: nothing
      in it moves, but once a minute the frame is painted again where the sky
      has got to. One frame a minute, and none while the page is hidden. */
   keepTime() {
@@ -562,7 +556,7 @@ class NordlysBackgroundEngine {
       /* Nothing in the scene advances at rest, so a second frame would paint
          the same pixels. Holding the last one costs nothing to keep and lets
          every backdrop-filter above it sample a layer that never invalidates. */
-      if (this.atRest() || this.held) return;
+      if (this.atRest()) return;
       // Late wakes are remembered for a while, then forgotten, timer or none.
       this.timerSlack *= 0.97;
       this.scheduleFrame(now, true);
@@ -664,8 +658,7 @@ class NordlysBackgroundEngine {
   repaint() {
     if (!this.running || !this.ctx || this.animId !== null) return;
     this.render(0);
-    // A sky that held itself still may have something moving in it again.
-    if (!this.held) this.resumeIfMoving();
+    this.resumeIfMoving();
   }
 
   resumeIfMoving() {
@@ -702,38 +695,28 @@ class NordlysBackgroundEngine {
     this.quietSolvedAt = -Infinity;
     if (typeof palette === "string" && this.knowsPalette(palette)) {
       this.paletteName = palette;
-      this.refreshPalette();
+      if ((palette === "daylight") !== this.daylight) this.setDaylight(palette === "daylight");
+      else this.refreshPalette();
     }
     this.resumeIfMoving();
     this.repaint();
   }
 
-  /* What the composed skies read from the rest of the page, any of: the
-     person's layers, the working day { start, end } in hours, how full today's
-     calendar is from 0 to 1, whether a focus session is on, and the place the
-     sky is for. The land is worked out again only for a new place. */
+  /* The place the sky is for, from Settings → Background: the Star map and
+     Meteors look out from it, and the time of day follows its sun. */
   setWorld(world = {}) {
-    if ("layers" in world) this.skyLayers = world.layers || null;
-    if ("workday" in world) this.workday = world.workday || null;
-    if ("dayLoad" in world) this.dayLoad = Number(world.dayLoad) || 0;
-    if ("focusing" in world) this.focusing = Boolean(world.focusing);
     const moved = world.place && Number.isFinite(world.place.lat) && Number.isFinite(world.place.lon)
       && (world.place.lat !== this.place?.lat || world.place.lon !== this.place?.lon);
     if (moved) {
       this.place = { lat: world.place.lat, lon: world.place.lon };
       if (this.daylight) this.followSun();
     }
-    if (this.composer) {
-      this.composer.key = null;
-      this.composer.readAt = 0;
-      if (moved) this.composer.shapeKey = null;
-    }
     this.quietSolvedAt = -Infinity;
     this.repaint();
   }
 
   knowsPalette(name) {
-    return name === "theme"
+    return name === "theme" || name === "daylight"
       || Boolean(NORDLYS_BACKGROUND_PALETTES[name])
       || Boolean(this.customPalettes[name]);
   }
@@ -782,17 +765,14 @@ class NordlysBackgroundEngine {
        scene that sets globalAlpha per stroke overwrites it — so the scenes
        multiply by `ink` instead, and the canvas default covers the rest. */
     this.ink = this.intensity ?? 1;
-    const entry = NordlysSkies.get(this.mode);
-    // By day the sky steps back, and the night skies most of all: aurora, the stars, meteors.
-    if (this.sky && !entry?.ownLight) this.ink *= 1 - this.sky.day * (NORDLYS_NIGHT_SCENES.has(this.mode) ? 0.45 : 0.18);
+    // By day the night skies step back: aurora, the stars, meteors. The rest keep their strength.
+    if (this.sky && NORDLYS_NIGHT_SCENES.has(this.mode)) this.ink *= 1 - this.sky.day * 0.35;
     this.ctx.globalAlpha = this.ink;
-    this.held = false;
 
     // Each sky paints from its own file (src/js/skies), by the name it gave.
     const painter = NordlysSkies.painter(this.mode);
     if (painter) this[painter](dt);
-    // A sky that draws its own sun draws the light of it too.
-    if (this.sky && !entry?.ownSun) this.renderSunlight();
+    if (this.sky) this.renderSunlight();
     if (this.quietZones.length && !this.solvingQuiet) this.quieten();
     this.ctx.globalAlpha = 1;
   }
@@ -831,27 +811,6 @@ class NordlysBackgroundEngine {
     ctx.globalCompositeOperation = "destination-out";
     ctx.globalAlpha = 1;
     ctx.fillStyle = "#000";
-    /* A sky that paints its own daylight is a picture of a place, and a blot
-       of night under each line of words reads as a stain on it. It gives the
-       words their quiet as a lock screen does: the whole width, full strength
-       from the top to just past the lowest of them, then gone over a short
-       fall. A sky darker towards the zenith is one anybody has seen. */
-    if (NordlysSkies.get(this.mode)?.ownLight) {
-      const shaded = this.quietZones.filter((zone, index) => (this.quietAlphas[index] || 0) >= 0.01);
-      if (shaded.length) {
-        const alpha = Math.max(...this.quietAlphas).toFixed(3);
-        const solid = Math.max(...shaded.map((zone) => zone.y + zone.h)) + 12;
-        const fall = Math.min(220, this.h * 0.25);
-        const band = ctx.createLinearGradient(0, 0, 0, solid + fall);
-        band.addColorStop(0, `rgba(0, 0, 0, ${alpha})`);
-        band.addColorStop(solid / (solid + fall), `rgba(0, 0, 0, ${alpha})`);
-        band.addColorStop(1, "rgba(0, 0, 0, 0)");
-        ctx.fillStyle = band;
-        ctx.fillRect(0, 0, this.w, solid + fall);
-      }
-      ctx.restore();
-      return;
-    }
     this.quietZones.forEach((zone, index) => {
       const alpha = this.quietAlphas[index] || 0;
       if (alpha < 0.01) return;
@@ -914,7 +873,12 @@ class NordlysBackgroundEngine {
         }
       }
       // The page under the zone, as the theme's own gradients paint it there.
-      return NordlysBackgroundEngine.quietAlpha(pixels, zone.ground || this.quietGround, zone);
+      /* Nine pixels in ten is enough over a soft sky. A thin bright line — the
+         Black hole's disk, a thread of Silk — can fall under the one line of
+         the search box's hint, or a row of a folder over the disk, so there it
+         is forty-nine in fifty. */
+      const strict = this.mode === "blackhole" || zone.id === "search";
+      return NordlysBackgroundEngine.quietAlpha(pixels, zone.ground || this.quietGround, strict ? { ...zone, tolerance: 0.02 } : zone);
     });
   }
 
@@ -940,7 +904,7 @@ class NordlysBackgroundEngine {
           const [x, y] = [luminance(text), luminance(seen)];
           if ((Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05) < target) failing++;
         }
-        if (failing > pixels.length * 0.1) return false;
+        if (failing > pixels.length * (zone.tolerance ?? 0.1)) return false;
       }
       return true;
     };
@@ -1079,9 +1043,9 @@ class NordlysBackgroundEngine {
 
   /* A soft ellipse of light, rx by ry, turned by `angle`, its alpha falling off
      from the centre along `stops` ([offset, share] pairs). One radial gradient
-     squashed to shape and one fill over its own box, like drawShaft, whatever
-     the size: the cheapest light the canvas has. On the scene's own context
-     unless given a layer's. */
+     squashed to shape and one fill over its own box, whatever the size: the
+     cheapest light the canvas has. On the scene's own context unless given a
+     layer's. */
   glow(cx, cy, rx, ry, angle, rgb, alpha, stops = NORDLYS_SOFT, ctx = this.ctx) {
     if (!(alpha > 0.002) || !(rx > 0) || !(ry > 0)) return;
     const colour = `${rgb[0]}, ${rgb[1]}, ${rgb[2]}`;
@@ -1097,10 +1061,10 @@ class NordlysBackgroundEngine {
   }
 
   /* ── The real sky ───────────────────────────────────────────────────
-     Three scenes are drawn from the sky as it is for the person now: the
-     Star map, Meteors and the Midnight sun. Where they are is the time
-     zone's city (sky-zones.js), as it is for the daylight: no permission and
-     no network. When is the engine's clock, which a test can hold and
+     Two scenes are drawn from the sky as it is for the person now: the
+     Star map and Meteors. Where they are is the place given in Settings →
+     Background, or the time zone's city (sky-zones.js), as it is for the
+     daylight: no permission and no network. When is the engine's clock, which a test can hold and
      "Watch a day go by" runs through a day. */
   whereNow() {
     if (!this.place && window.NordlysSky?.zonePlace) {
@@ -1113,8 +1077,8 @@ class NordlysBackgroundEngine {
 
   /* What the Star map and Meteors look out on: a stereographic view centred
      on the horizon, which keeps a constellation its own shape wherever it
-     stands, with the horizon a straight line low on the page and the zenith
-     at the top. It faces the equator, where the sky does most of its
+     stands, with the horizon along the foot of the page and the zenith at
+     the top. It faces the equator, where the sky does most of its
      turning; a shuffled sky faces another way. */
   skyView() {
     const place = this.whereNow();

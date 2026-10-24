@@ -1858,6 +1858,7 @@ input[type="range"].ipt:focus-visible {
    one never shown has nothing yet, and a frame says what it will hold. */
 .scene-preview img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .scene-preview img.is-dark { object-fit: contain; background: #000; }
+.scene-preview img.is-toned { filter: url(#bg-tone); }
 .scene-preview[data-kind="picture"] { background: var(--nl-canvas); color: color-mix(in srgb, var(--nl-text-primary) 30%, transparent); }
 .scene-preview[data-kind="picture"]::after {
   content: ""; position: absolute; inset: 24% 36%; border: 2px solid currentColor; border-radius: 2px;
@@ -1905,7 +1906,7 @@ input[type="range"].ipt:focus-visible {
 #sec-background .setting-row > .nl-select { flex: none; }
 .sky-block-label { display: block; margin-top: 20px; }
 /* Chips with no swatch in them are even on both sides. */
-:is(.sky-body, .sky-look).palette-chip { padding-inline: 12px; }
+.sky-look.palette-chip { padding-inline: 12px; }
 .palette-chip[aria-pressed="true"] {
   border-color: color-mix(in srgb, var(--nl-accent) 70%, transparent);
   background: color-mix(in srgb, var(--nl-accent) 10%, transparent); color: var(--nl-text-primary);
@@ -1919,26 +1920,6 @@ input[type="range"].ipt:focus-visible {
 }
 .sky-look-remove:hover { color: var(--nl-status-danger); background: color-mix(in srgb, var(--nl-status-danger) 12%, transparent); }
 
-/* A composed sky's layers: a choice each, and a padlock beside the ones a
-   shuffle would choose again, shut when the layer is kept. */
-.sky-composer { display: grid; gap: 2px; margin: 16px 0 4px; }
-.sky-composer[hidden] { display: none; }
-.sky-layer.setting-row { min-height: 48px; padding-block: 2px; }
-.sky-layer-pick { display: inline-flex; align-items: center; gap: 4px; }
-.sky-layer-pick .nl-select { width: 12rem; }
-/* The layers without a padlock line up with the ones that have one. */
-.sky-layer-pick:not(:has(.sky-lock)) { padding-right: 44px; }
-.sky-lock {
-  display: grid; place-items: center; width: 40px; padding: 0; border: 1px solid transparent;
-  border-radius: var(--nl-radius-sm); background: none; color: var(--nl-text-secondary); cursor: pointer;
-  transition: color var(--nl-motion-control), background-color var(--nl-motion-control);
-}
-.sky-lock:hover { color: var(--nl-text-primary); background: color-mix(in srgb, var(--nl-text-primary) 8%, transparent); }
-.sky-lock[aria-pressed="true"] { color: var(--nl-accent-text); background: color-mix(in srgb, var(--nl-accent) 12%, transparent); }
-.sky-lock svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.sky-lock-shackle { transition: transform var(--nl-motion-control); }
-.sky-lock:not([aria-pressed="true"]) .sky-lock-shackle { transform: translateY(-2.5px); }
-.sky-bodies { margin: 6px 0 4px; }
 .sky-place-search {
   display: grid; gap: 8px; padding: 12px; margin-bottom: 4px;
   border: 1px solid var(--nl-border); border-radius: var(--nl-radius-md);
@@ -1949,8 +1930,6 @@ input[type="range"].ipt:focus-visible {
 .sky-place-results:empty { display: none; }
 .sky-place-result { text-align: start; color: var(--nl-text-primary); margin-left: -8px; }
 #bg-place-zone { justify-self: start; margin-left: -8px; }
-.sky-workday { display: inline-flex; align-items: center; gap: 6px; }
-.sky-workday input { width: 7.5rem; }
 
 .atmosphere-palette { display: grid; gap: 9px; margin: 16px 0 4px; }
 .palette-grid { display: flex; flex-wrap: wrap; gap: 7px; }
@@ -1970,10 +1949,6 @@ input[type="range"].ipt:focus-visible {
 /* Theme keeps the theme's own colours: it is the one chip that must not follow
    whatever mood happens to be selected. */
 .palette-chip[data-palette="theme"] i { background: conic-gradient(from 215deg, var(--shader-1, #35d6c0), var(--shader-2, #5b6cff), var(--shader-3, #9d4edd), var(--shader-1, #35d6c0)); }
-.palette-chip[data-palette="polar"] i { background: conic-gradient(from 215deg, #68e1d1, #6ea8fe, #9d8cff, #68e1d1); }
-.palette-chip[data-palette="violet"] i { background: conic-gradient(from 215deg, #8be9fd, #8b7cff, #cf78ff, #8be9fd); }
-.palette-chip[data-palette="ember"] i { background: conic-gradient(from 215deg, #ffd166, #f48c6b, #b86bff, #ffd166); }
-.palette-chip[data-palette="mono"] i { background: conic-gradient(from 215deg, #dbeafe, #94a3b8, #64748b, #dbeafe); }
 
 /* Making a mood, changing one and removing one are plain text actions beside
    the row rather than controls nested inside the radios. */
@@ -2376,7 +2351,6 @@ input[type="range"].ipt:focus-visible {
 /* Following the time of day: the switch sits with the moods it lights, and
    says what the sun is doing now. */
 .daylight-block { display: grid; gap: 4px; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--nl-border); }
-.daylight-row { margin: 0; }
 .daylight-note { margin: 0; font-size: var(--nl-text-xs); line-height: 1.45; color: var(--nl-text-secondary); }
 .daylight-block .palette-action { justify-self: start; margin-left: -8px; }
 .daylight-block .palette-action:disabled { opacity: 0.55; cursor: progress; }

@@ -139,7 +139,7 @@ async function main() {
   }
 
   await page.locator('#settings-tab-background').click();
-  for (const scene of ['aurora', 'halo', 'contour', 'fjord']) {
+  for (const scene of ['aurora', 'blackhole', 'contour', 'fjord']) {
     await page.locator(`.scene-card[data-scene="${scene}"]`).click();
     await page.locator('.palette-chip[data-palette="polar"]').click();
     await inspect(`scene-${scene}`);

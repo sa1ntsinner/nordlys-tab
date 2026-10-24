@@ -1,47 +1,18 @@
 {
   "aurora-void": [
     {
-      "scene": "midnightsun",
-      "mood": "violet",
-      "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.125
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "ember",
-      "phase": 7.4,
-      "daylight": "2026-09-22T11:00:00Z",
-      "margin": 1.125
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "polar",
-      "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.127
-    }
-  ],
-  "boreal-emerald": [
-    {
       "scene": "silk",
       "mood": "theme",
-      "phase": 31.7,
-      "margin": 1.552
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "theme",
       "phase": 7.4,
       "daylight": "2026-09-22T11:00:00Z",
-      "margin": 2.05
+      "margin": 0.914
     },
     {
-      "scene": "midnightsun",
+      "scene": "silk",
       "mood": "ember",
       "phase": 7.4,
       "daylight": "2026-09-22T11:00:00Z",
-      "margin": 2.062
+      "margin": 0.914
     }
   ],
   "catppuccin-mocha": [
@@ -50,305 +21,206 @@
       "mood": "theme",
       "phase": 7.4,
       "daylight": "2026-09-22T11:00:00Z",
-      "margin": 1.005
+      "margin": 0.873
     },
     {
-      "scene": "midnightsun",
-      "mood": "theme",
+      "scene": "silk",
+      "mood": "ember",
       "phase": 7.4,
       "daylight": "2026-09-22T11:00:00Z",
-      "margin": 1.098
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "violet",
-      "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.104
+      "margin": 0.873
     }
   ],
   "cyberpunk-neon": [
     {
-      "scene": "aurora",
-      "mood": "theme",
-      "phase": 7.4,
-      "margin": 1.127
-    },
-    {
-      "scene": "aurora",
-      "mood": "polar",
-      "phase": 7.4,
-      "margin": 1.127
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "violet",
-      "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.201
-    }
-  ],
-  "dracula-velvet": [
-    {
-      "scene": "fjord",
-      "mood": "theme",
-      "phase": 31.7,
-      "margin": 1.071
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "theme",
-      "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.154
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "polar",
-      "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.164
-    }
-  ],
-  "frosted-glass": [
-    {
-      "scene": "midnightsun",
+      "scene": "silk",
       "mood": "theme",
       "phase": 7.4,
       "daylight": "2026-09-22T11:00:00Z",
-      "margin": 1.726
+      "margin": 0.996
     },
     {
-      "scene": "midnightsun",
-      "mood": "violet",
-      "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.737
-    },
-    {
-      "scene": "midnightsun",
+      "scene": "silk",
       "mood": "ember",
       "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.737
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 0.996
+    }
+  ],
+  "tokyo-night": [
+    {
+      "scene": "silk",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 0.903
+    },
+    {
+      "scene": "silk",
+      "mood": "ember",
+      "phase": 7.4,
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 0.903
+    }
+  ],
+  "boreal-emerald": [
+    {
+      "scene": "silk",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 1.455
+    },
+    {
+      "scene": "silk",
+      "mood": "ember",
+      "phase": 7.4,
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 1.455
     }
   ],
   "gruvbox-dark": [
     {
       "scene": "silk",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 0.93
+    },
+    {
+      "scene": "silk",
       "mood": "ember",
       "phase": 7.4,
       "daylight": "2026-09-22T11:00:00Z",
-      "margin": 1.083
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "theme",
-      "phase": 7.4,
-      "daylight": "2026-09-22T11:00:00Z",
-      "margin": 1.172
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "ember",
-      "phase": 7.4,
-      "daylight": "2026-09-22T11:00:00Z",
-      "margin": 1.181
-    }
-  ],
-  "gruvbox-light": [
-    {
-      "scene": "aurora",
-      "mood": "theme",
-      "phase": 7.4,
-      "margin": 1.101
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "theme",
-      "phase": 7.4,
-      "at": "2026-09-22T17:42:00Z",
-      "margin": 1.406
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "polar",
-      "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.414
-    }
-  ],
-  "lavender-mist": [
-    {
-      "scene": "aurora",
-      "mood": "theme",
-      "phase": 7.4,
-      "margin": 1.005
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "theme",
-      "phase": 7.4,
-      "at": "2026-09-22T17:42:00Z",
-      "margin": 1.223
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "polar",
-      "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.229
-    }
-  ],
-  "mint-breeze": [
-    {
-      "scene": "aurora",
-      "mood": "theme",
-      "phase": 7.4,
-      "margin": 1.137
-    },
-    {
-      "scene": "aurora",
-      "mood": "polar",
-      "phase": 7.4,
-      "margin": 1.137
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "theme",
-      "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.255
+      "margin": 0.93
     }
   ],
   "nord-frost": [
     {
-      "scene": "midnightsun",
+      "scene": "silk",
       "mood": "theme",
       "phase": 7.4,
       "daylight": "2026-09-22T11:00:00Z",
-      "margin": 1.438
+      "margin": 1.057
     },
     {
-      "scene": "midnightsun",
-      "mood": "violet",
-      "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.451
-    },
-    {
-      "scene": "midnightsun",
+      "scene": "silk",
       "mood": "ember",
       "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.451
-    }
-  ],
-  "nordic-snow": [
-    {
-      "scene": "aurora",
-      "mood": "theme",
-      "phase": 7.4,
-      "margin": 1.039
-    },
-    {
-      "scene": "aurora",
-      "mood": "polar",
-      "phase": 7.4,
-      "margin": 1.039
-    },
-    {
-      "scene": "starmap",
-      "mood": "theme",
-      "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.576
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 1.057
     }
   ],
   "oled-obsidian": [
     {
       "scene": "silk",
-      "mood": "mono",
+      "mood": "theme",
       "phase": 7.4,
-      "margin": 1.017
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 0.942
     },
     {
       "scene": "silk",
       "mood": "ember",
       "phase": 7.4,
-      "margin": 1.022
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "polar",
-      "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.092
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 0.942
     }
   ],
-  "peach-sunset": [
+  "dracula-velvet": [
     {
-      "scene": "aurora",
+      "scene": "silk",
       "mood": "theme",
       "phase": 7.4,
-      "margin": 1.159
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 0.921
     },
     {
-      "scene": "aurora",
-      "mood": "polar",
+      "scene": "silk",
+      "mood": "ember",
       "phase": 7.4,
-      "margin": 1.159
-    },
-    {
-      "scene": "starmap",
-      "mood": "theme",
-      "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.553
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 0.921
     }
   ],
   "porcelain-light": [
     {
-      "scene": "aurora",
+      "scene": "silk",
       "mood": "theme",
       "phase": 7.4,
       "daylight": "2026-09-22T17:42:00Z",
-      "margin": 1.101
+      "margin": 1.075
     },
     {
-      "scene": "midnightsun",
+      "scene": "silk",
+      "mood": "ember",
+      "phase": 7.4,
+      "daylight": "2026-09-22T17:42:00Z",
+      "margin": 1.075
+    }
+  ],
+  "sunset-amber": [
+    {
+      "scene": "silk",
       "mood": "theme",
       "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.121
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 1.448
     },
     {
-      "scene": "midnightsun",
-      "mood": "polar",
+      "scene": "silk",
+      "mood": "ember",
       "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.121
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 1.448
+    }
+  ],
+  "warm-ivory": [
+    {
+      "scene": "silk",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T17:42:00Z",
+      "margin": 1.138
+    },
+    {
+      "scene": "silk",
+      "mood": "ember",
+      "phase": 7.4,
+      "daylight": "2026-09-22T17:42:00Z",
+      "margin": 1.138
+    }
+  ],
+  "nordic-snow": [
+    {
+      "scene": "silk",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T17:42:00Z",
+      "margin": 1.542
+    },
+    {
+      "scene": "silk",
+      "mood": "ember",
+      "phase": 7.4,
+      "daylight": "2026-09-22T17:42:00Z",
+      "margin": 1.542
     }
   ],
   "sage-light": [
     {
       "scene": "silk",
-      "mood": "violet",
-      "phase": 7.4,
-      "margin": 1.206
-    },
-    {
-      "scene": "aurora",
       "mood": "theme",
       "phase": 7.4,
-      "margin": 1.209
+      "daylight": "2026-09-22T17:42:00Z",
+      "margin": 1.177
     },
     {
-      "scene": "midnightsun",
-      "mood": "theme",
+      "scene": "silk",
+      "mood": "ember",
       "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.226
+      "daylight": "2026-09-22T17:42:00Z",
+      "margin": 1.177
     }
   ],
   "sakura-daylight": [
@@ -356,109 +228,105 @@
       "scene": "aurora",
       "mood": "theme",
       "phase": 7.4,
-      "margin": 1.207
+      "margin": 1.506
     },
     {
       "scene": "aurora",
       "mood": "polar",
       "phase": 7.4,
-      "margin": 1.207
-    },
-    {
-      "scene": "starmap",
-      "mood": "theme",
-      "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.529
+      "margin": 1.506
     }
   ],
   "solarized-light": [
     {
-      "scene": "silk",
+      "scene": "aurora",
       "mood": "theme",
       "phase": 7.4,
-      "daylight": "2026-09-22T17:05:00Z",
-      "margin": 1.047
+      "margin": 1.118
     },
     {
       "scene": "aurora",
-      "mood": "theme",
-      "phase": 31.7,
-      "margin": 1.069
-    },
-    {
-      "scene": "starmap",
-      "mood": "theme",
-      "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.137
-    }
-  ],
-  "sunset-amber": [
-    {
-      "scene": "midnightsun",
-      "mood": "theme",
-      "phase": 7.4,
-      "daylight": "2026-09-22T11:00:00Z",
-      "margin": 1.757
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "ember",
-      "phase": 7.4,
-      "daylight": "2026-09-22T11:00:00Z",
-      "margin": 1.761
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "violet",
-      "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.762
-    }
-  ],
-  "tokyo-night": [
-    {
-      "scene": "midnightsun",
-      "mood": "theme",
-      "phase": 7.4,
-      "daylight": "2026-09-22T11:00:00Z",
-      "margin": 1.104
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "ember",
-      "phase": 7.4,
-      "daylight": "2026-09-22T11:00:00Z",
-      "margin": 1.129
-    },
-    {
-      "scene": "midnightsun",
       "mood": "polar",
       "phase": 7.4,
-      "at": "2026-09-22T11:00:00Z",
-      "margin": 1.133
+      "margin": 1.118
     }
   ],
-  "warm-ivory": [
+  "gruvbox-light": [
+    {
+      "scene": "silk",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T17:42:00Z",
+      "margin": 1.354
+    },
+    {
+      "scene": "silk",
+      "mood": "ember",
+      "phase": 7.4,
+      "daylight": "2026-09-22T17:42:00Z",
+      "margin": 1.354
+    }
+  ],
+  "lavender-mist": [
+    {
+      "scene": "silk",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T17:42:00Z",
+      "margin": 1.177
+    },
+    {
+      "scene": "silk",
+      "mood": "ember",
+      "phase": 7.4,
+      "daylight": "2026-09-22T17:42:00Z",
+      "margin": 1.177
+    }
+  ],
+  "mint-breeze": [
+    {
+      "scene": "silk",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T17:42:00Z",
+      "margin": 1.203
+    },
+    {
+      "scene": "silk",
+      "mood": "ember",
+      "phase": 7.4,
+      "daylight": "2026-09-22T17:42:00Z",
+      "margin": 1.203
+    }
+  ],
+  "peach-sunset": [
     {
       "scene": "aurora",
       "mood": "theme",
       "phase": 7.4,
-      "margin": 1.166
+      "margin": 1.537
+    },
+    {
+      "scene": "aurora",
+      "mood": "polar",
+      "phase": 7.4,
+      "margin": 1.537
+    }
+  ],
+  "frosted-glass": [
+    {
+      "scene": "silk",
+      "mood": "theme",
+      "phase": 7.4,
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 1.397
     },
     {
       "scene": "silk",
-      "mood": "violet",
+      "mood": "ember",
       "phase": 7.4,
-      "margin": 1.166
-    },
-    {
-      "scene": "midnightsun",
-      "mood": "theme",
-      "phase": 7.4,
-      "at": "2026-09-22T17:42:00Z",
-      "margin": 1.182
+      "daylight": "2026-09-22T11:00:00Z",
+      "margin": 1.397
     }
   ]
 }

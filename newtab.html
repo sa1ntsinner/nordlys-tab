@@ -42,6 +42,18 @@
     <img id="bg-media" alt="">
     <video id="bg-video" muted loop playsinline disablepictureinpicture></video>
     <div id="bg-dimmer"></div>
+    <!-- A photograph in the colours of the mood: its lightness, then that
+         lightness along five stops of the mood (app.js applyPictureTone). -->
+    <svg class="bg-tone" width="0" height="0" aria-hidden="true" focusable="false">
+      <filter id="bg-tone" color-interpolation-filters="sRGB">
+        <feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0"/>
+        <feComponentTransfer>
+          <feFuncR id="bg-tone-r" type="table" tableValues="0 1"/>
+          <feFuncG id="bg-tone-g" type="table" tableValues="0 1"/>
+          <feFuncB id="bg-tone-b" type="table" tableValues="0 1"/>
+        </feComponentTransfer>
+      </filter>
+    </svg>
   </div>
   <div id="veil"></div>
   <div id="dim"></div>
@@ -691,21 +703,17 @@
         <!-- What a sky drawn from the real one shows, and where it comes from. -->
         <p id="bg-scene-note" class="scene-note" aria-live="polite" hidden></p>
         <!-- Ordinary buttons beside the scene radiogroup, never controls nested
-             inside it. A composed sky shuffles its layers, any other its scatter. -->
+             inside it. A drawn sky shuffles its scatter, a photograph its picture. -->
         <div class="sky-actions">
-          <button id="bg-shuffle" type="button" class="palette-action" data-scene-only="procedural" data-i18n="background.shuffle">Shuffle this sky</button>
+          <button id="bg-shuffle" type="button" class="palette-action" data-scene-only="shufflable" data-i18n="background.shuffle">Shuffle this sky</button>
           <button id="bg-look-save" type="button" class="palette-action" data-scene-only="savable" data-i18n="background.lookSave">Save this sky</button>
         </div>
         <div id="bg-looks-block" class="sky-looks" hidden>
           <span class="settings-block-label" data-i18n="background.looks">Saved skies</span>
           <div id="bg-looks" class="palette-grid"></div>
         </div>
-        <!-- A composed sky is five layers and the bodies in it, each a choice; a
-             layer kept is left as it is by a shuffle and by a rotation. -->
-        <div class="sky-composer" data-scene-only="composed">
-          <span class="settings-block-label" data-i18n="background.layers">Layers</span>
-          <div id="bg-layers" class="sky-layers"></div>
-          <div id="bg-bodies" class="palette-grid sky-bodies" role="group" aria-label="In the sky" data-i18n-aria="background.bodies"></div>
+        <!-- Where the Star map and Meteors look out from (settings-sky.js). -->
+        <div class="sky-place" data-scene-only="place">
           <div class="row setting-row">
             <span><span id="bg-place-label" data-i18n="background.place">Where the sky is</span><small id="bg-place-name" class="setting-note-inline"></small></span>
             <button id="bg-place-change" type="button" class="palette-action" aria-expanded="false" aria-controls="bg-place-search" data-i18n="background.placeChange">Change</button>
@@ -716,21 +724,18 @@
             <p class="daylight-note" data-i18n="background.placeNote">Only what you type is sent, to Open-Meteo's place search, and only the place you choose is kept.</p>
             <button id="bg-place-zone" type="button" class="palette-action" data-i18n="background.placeZone">Use my time zone</button>
           </div>
-          <div class="row setting-row" id="bg-workday-row">
-            <span id="bg-workday-label" data-i18n="background.workday">Working hours</span>
-            <span class="sky-workday">
-              <input id="cfg-workday-start" type="time" class="ipt" step="900" aria-label="Start" data-i18n-aria="background.workdayStart">
-              <span aria-hidden="true">–</span>
-              <input id="cfg-workday-end" type="time" class="ipt" step="900" aria-label="End" data-i18n-aria="background.workdayEnd">
-            </span>
-          </div>
+        </div>
+        <!-- A photograph in the colours of the mood, or in its own (app.js applyPictureTone). -->
+        <div class="row setting-row" data-scene-only="toned">
+          <span><span id="bg-photo-tone-label" data-i18n="background.photoTone">In the colours of the mood</span><small class="setting-note-inline" data-i18n="background.photoToneNote">Off, the photograph keeps its own colours.</small></span>
+          <label class="tg"><input id="cfg-photo-tone" type="checkbox" checked aria-labelledby="bg-photo-tone-label"><i></i></label>
         </div>
         <!-- The mood chips are built in settings.js so the five that ship and the
              ones somebody mixes are the same kind of thing. The radiogroup holds
              nothing but radios; making a new mood, editing one and removing one
              are ordinary buttons beside it rather than controls nested in a
              control. -->
-        <div class="atmosphere-palette" data-scene-only="procedural">
+        <div class="atmosphere-palette" data-scene-only="moody">
           <span class="settings-block-label" data-i18n="background.colorMood">Colour mood</span>
           <div id="bg-palette-grid" class="palette-grid" role="radiogroup" data-i18n-aria="background.colorMood" aria-label="Colour mood"></div>
           <div class="palette-actions">
@@ -739,15 +744,11 @@
             <button id="bg-palette-remove" type="button" class="palette-action danger" hidden data-i18n="background.moodRemove">Remove</button>
             <button id="bg-palette-theme" type="button" class="palette-action" hidden data-i18n="background.moodTheme">Make a theme from it</button>
           </div>
-          <!-- The light over whichever mood is chosen: one switch for every
-               atmosphere, beside the colours it changes. -->
-          <div class="daylight-block" data-scene-only="nordlys">
-            <div class="row setting-row daylight-row">
-              <span><span id="bg-daylight-label" data-i18n="background.daylight">Follow the time of day</span><small id="bg-daylight-now" class="setting-note-inline"></small></span>
-              <label class="tg"><input id="cfg-bg-daylight" type="checkbox" aria-labelledby="bg-daylight-label"><i></i></label>
-            </div>
-            <p class="daylight-note" data-i18n="background.daylightNote">Dawn, day, sunset and night light every atmosphere, from where the sun is in your time zone. Nothing is sent anywhere.</p>
-            <button id="bg-daylight-play" type="button" class="palette-action" hidden data-i18n="background.daylightPlay">Watch a day go by</button>
+          <!-- The Time of day mood: what the sun is doing where you are, and a
+               day played through so the mood shows what it does. -->
+          <div id="bg-daylight" class="daylight-block" hidden>
+            <p class="daylight-note"><span data-i18n="background.daylightNote">The colours of the sky follow the sun where you are: dawn, noon, sunset and night, worked out from your time zone. Nothing is sent anywhere.</span> <small id="bg-daylight-now" class="setting-note-inline"></small></p>
+            <button id="bg-daylight-play" type="button" class="palette-action" data-i18n="background.daylightPlay">Watch a day go by</button>
           </div>
           <div id="bg-palette-editor" class="palette-editor" hidden>
             <span id="bg-palette-preview" class="palette-editor-bar" aria-hidden="true"></span>
@@ -771,10 +772,6 @@
               <button id="bg-palette-save" type="button" class="glass-btn accent" data-i18n="background.moodSave">Save mood</button>
             </div>
           </div>
-        </div>
-        <div class="row setting-row" data-scene-only="halo">
-          <span><span data-i18n="background.realMoon">Follow the real moon</span><small id="bg-moon-tonight" class="setting-note-inline"></small></span>
-          <label class="tg"><input id="cfg-bg-real-sky" type="checkbox" checked><i></i></label>
         </div>
         <!-- Shown when the watchdog held this sky still on this computer (app.js judgeSkyLoad). -->
         <div class="row setting-row" id="bg-heavy-row" hidden>
@@ -832,7 +829,7 @@
         <div class="row setting-row" id="bg-pool-row" hidden>
           <span id="bg-pool-label" data-i18n="background.pool">Chosen from</span>
           <select id="cfg-sky-pool" class="ipt" aria-labelledby="bg-pool-label">
-            <option value="layers" data-i18n="background.poolLayers">This sky's layers</option>
+            <option value="this" data-i18n="background.poolThis">This sky, shuffled</option>
             <option value="category" data-i18n="background.poolCategory">Skies of the same kind</option>
             <option value="all" data-i18n="background.poolAll">Every sky</option>
             <option value="looks" data-i18n="background.poolLooks">My saved skies</option>
@@ -1608,8 +1605,6 @@
   <script src="src/js/sky-zones.js"></script>
   <script src="src/js/sky-clock.js"></script>
   <script src="src/js/sky-stars.js"></script>
-  <script src="src/js/sky-planets.js"></script>
-  <script src="src/js/sky-data.js"></script>
   <script src="src/js/world-picture.js"></script>
   <script src="src/js/sky-gl.js"></script>
   <script src="src/js/sky-catalog.js"></script>
@@ -1617,16 +1612,12 @@
   <script src="src/js/background.js"></script>
   <script src="src/js/skies/aurora.js"></script>
   <script src="src/js/skies/polaris.js"></script>
-  <script src="src/js/skies/halo.js"></script>
   <script src="src/js/skies/starmap.js"></script>
   <script src="src/js/skies/meteors.js"></script>
   <script src="src/js/skies/silk.js"></script>
-  <script src="src/js/skies/midnightsun.js"></script>
+  <script src="src/js/skies/blackhole.js"></script>
   <script src="src/js/skies/contour.js"></script>
   <script src="src/js/skies/fjord.js"></script>
-  <script src="src/js/skies/compose.js"></script>
-  <script src="src/js/skies/compose-weather.js"></script>
-  <script src="src/js/skies/compose-land.js"></script>
   <script src="src/js/calc.js"></script>
   <script src="src/js/commands.js"></script>
   <script src="src/js/search-sources.js"></script>
@@ -1657,6 +1648,7 @@
   <script src="src/js/settings.js"></script>
   <script src="src/js/shortcut-hints.js"></script>
   <script src="src/js/config-schema.js"></script>
+  <script src="src/js/review-ask.js"></script>
   <script src="src/js/app.js"></script>
 </body>
 </html>

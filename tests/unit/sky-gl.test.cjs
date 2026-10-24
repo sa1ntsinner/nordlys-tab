@@ -236,7 +236,7 @@ test('a lost context sends the screen back to 2D until the scene is chosen again
   screen.calls.length = 0;
   engine.render(1);
   assert.equal(strokes(screen), engine.silk.length * 3, 'lost: the frame is drawn in 2D');
-  engine.setMode('halo');
+  engine.setMode('meteors');
   engine.setMode('silk');
   engine.stop();
   engine.render(1);
@@ -246,7 +246,7 @@ test('a lost context sends the screen back to 2D until the scene is chosen again
 test('leaving for a scene that draws no long lines lets the layer go', () => {
   const { engine, layers } = engineWith();
   engine.render(1);
-  engine.setMode('halo');
+  engine.setMode('meteors');
   assert.equal(layers[0].released, true);
 });
 

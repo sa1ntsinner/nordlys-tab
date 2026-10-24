@@ -2,12 +2,12 @@
    NORDLYS - CHOOSING THE SKY (Settings → Background)
    ═══════════════════════════════════════════════════════════════════
 
-   The kinds of sky and the gallery of each, the layers of a composed sky,
-   where the sky is and the working hours it knows, the skies someone saved,
-   the rotation, the night light and the colours from a picture. All of it is
-   built from the catalogue (sky-catalog.js): a sky added there arrives here
-   with its card, its name and the controls that belong to it. The colour
-   moods, the time of day and the sliders are settings.js's. */
+   The kinds of sky and the gallery of each, where the sky is, the skies
+   someone saved, the rotation, the night light, the colours of a photograph
+   and the colours from a picture. All of it is built from the catalogue
+   (sky-catalog.js): a sky added there arrives here with its card, its name
+   and the controls that belong to it. The colour moods, the time of day and
+   the sliders are settings.js's. */
 (function () {
   "use strict";
 
@@ -16,16 +16,23 @@
   const LOOK_LIMIT = 12;
 
   /* A control that belongs to some skies only says which with
-     data-scene-only; each name is a question asked of the sky's entry. */
+     data-scene-only; each name is a question asked of the sky's entry, and
+     of the person's config where the answer depends on it. */
+  const toned = (sky, config) => Boolean(sky.toned) && config.photoTone !== false;
   const BELONGS = {
     procedural: (sky) => sky.kind === "canvas",
     nordlys: (sky) => sky.category === "nordlys",
-    composed: (sky) => Boolean(sky.layers),
-    halo: (sky) => sky.id === "halo",
+    // The colour moods colour a drawn sky, and a photograph in the mood's colours.
+    moody: (sky, config) => sky.kind === "canvas" || toned(sky, config),
+    toned: (sky) => Boolean(sky.toned),
+    place: (sky) => Boolean(sky.place),
+    // Another scatter of a drawn sky, another photograph of a subject.
+    shufflable: (sky) => sky.kind === "canvas" || Boolean(sky.toned),
     upload: (sky) => sky.kind === "media",
     media: (sky) => sky.kind === "media" || sky.kind === "picture",
     image: (sky) => sky.id === "custom-image" || sky.kind === "picture",
-    readable: (sky) => sky.id === "custom-image" || Boolean(sky.readable),
+    // A picture in its own colours, whose pixels the page may read.
+    readable: (sky, config) => (sky.id === "custom-image" || Boolean(sky.readable)) && !toned(sky, config),
     // A sky a rotation can come back to: not a wallpaper, not a plain colour.
     savable: (sky) => sky.kind === "canvas" || sky.kind === "picture"
   };
@@ -35,11 +42,7 @@
   const NOTES = {
     starmap: ["scene.starmapNote", "The bright stars and their constellations as they stand in your sky right now."],
     meteors: ["scene.meteorsNote", "A calm night sky with a shooting star now and then, and more on the nights of the big meteor showers."],
-    midnightsun: ["scene.midnightsunNote", "The sun where it is in your sky right now, over a calm sea."],
-    outside: ["scene.outsideNote", "The weather where the sky is, asked of Open-Meteo at most every half hour."],
-    yourday: ["scene.yourdayNote", "Today's meetings as cloud: the fuller your working hours, the more of it. Read from your calendar cards; nothing is sent."],
-    northern: ["scene.northernNote", "The aurora as strong as it is under the oval tonight, from NOAA's K index."],
-    "yours-horizon": ["scene.yoursHorizonNote", "The hills around the place the sky is, from Open-Meteo's elevation model, asked once for each place."],
+    blackhole: ["scene.blackholeNote", "Light bent as a black hole bends it: its shadow, the thin ring of light that went round it, and a disk brighter on the side coming towards you."],
     "picture-wikimedia": ["scene.pictureWikimediaNote", "Wikimedia Commons' picture of the day, with its caption."],
     "picture-paintings": ["scene.picturePaintingsNote", "A painting from the featured pictures on Wikimedia Commons, a different one each day."],
     "picture-met": ["scene.pictureMetNote", "A painting from the Met's highlights, a different one each day."],
@@ -47,8 +50,7 @@
   };
   const KIND_NOTES = {
     nordlys: ["sky.cat.nordlysNote", "Skies of the north, drawn on this computer. Nothing is sent anywhere."],
-    weather: ["sky.cat.weatherNote", "Skies with weather in them: the weather outside, your day as cloud, or the weather you choose."],
-    horizon: ["sky.cat.horizonNote", "A sky over a landscape, lit for the hour it is where the sky is."],
+    photos: ["sky.cat.photosNote", "Photographs the Wikimedia Commons community chose as its finest, a new one each day, in the colours of your mood. Only the date and the subject are sent, and only while one of these is the sky."],
     world: ["sky.cat.worldNote", "A new picture every day. Only the date and your language are sent, and only while one of these is the sky."],
     yours: ["sky.cat.yoursNote", "Your own picture or video, kept on this computer, or a plain colour."]
   };
@@ -56,30 +58,6 @@
     quadrantids: ["shower.quadrantids", "the Quadrantids"], lyrids: ["shower.lyrids", "the Lyrids"],
     etaAquariids: ["shower.etaAquariids", "the Eta Aquariids"], perseids: ["shower.perseids", "the Perseids"],
     orionids: ["shower.orionids", "the Orionids"], leonids: ["shower.leonids", "the Leonids"], geminids: ["shower.geminids", "the Geminids"]
-  };
-  /* The words of the composer by message key, in English: a layer is
-     layer.<name>, its choices layer.<name>.<choice>, a body layer.<body>. */
-  const WORDS = {
-    "layer.light": "Light", "layer.light.auto": "The real sun", "layer.light.workday": "My working day",
-    "layer.light.dawn": "Dawn", "layer.light.day": "Day", "layer.light.dusk": "Dusk", "layer.light.night": "Night",
-    "layer.weather": "Weather", "layer.weather.clear": "Clear", "layer.weather.clouds": "Clouds", "layer.weather.rain": "Rain",
-    "layer.weather.snow": "Snow", "layer.weather.fog": "Fog", "layer.weather.storm": "Thunder",
-    "layer.weather.live": "As it is outside", "layer.weather.day": "My day, as cloud",
-    "layer.horizon": "Horizon", "layer.horizon.none": "Open sky", "layer.horizon.mountains": "Mountains", "layer.horizon.sea": "Sea",
-    "layer.horizon.city": "City", "layer.horizon.forest": "Forest", "layer.horizon.steppe": "Steppe", "layer.horizon.desert": "Desert",
-    "layer.horizon.lighthouse": "Lighthouse", "layer.horizon.yours": "The real one",
-    "layer.style": "Style", "layer.style.lit": "Lit", "layer.style.poster": "Poster", "layer.style.engraving": "Engraving", "layer.style.pixel": "Pixel",
-    "layer.aurora": "Aurora", "layer.aurora.off": "None", "layer.aurora.live": "As seen from here",
-    "layer.aurora.north": "As under the oval", "layer.aurora.on": "Always",
-    "layer.weather.keep": "Keep the weather when shuffling", "layer.horizon.keep": "Keep the horizon when shuffling",
-    "layer.style.keep": "Keep the style when shuffling", "layer.aurora.keep": "Keep the aurora when shuffling",
-    "layer.stars": "Stars", "layer.moon": "Moon", "layer.planets": "Planets", "layer.meteors": "Meteors"
-  };
-
-  const hhmm = (hours) => `${String(Math.floor(hours)).padStart(2, "0")}:${String(Math.round((hours % 1) * 60)).padStart(2, "0")}`;
-  const hoursOf = (value) => {
-    const [h, m] = String(value || "").split(":").map(Number);
-    return Number.isFinite(h) && Number.isFinite(m) ? h + m / 60 : NaN;
   };
 
   class NordlysSkySettings {
@@ -93,7 +71,6 @@
       for (const sky of Skies().SKIES) this.select.append(new Option(sky.name, sky.id));
       this.kind = Skies().get(app.config.bgMode)?.category || "nordlys";
       this.buildGallery();
-      this.buildComposer();
       this.wire();
     }
 
@@ -101,13 +78,8 @@
       const value = window.I18N?.t(key, params || {});
       return value && value !== key ? value : fallback;
     }
-    word(key) { return this.text(key, WORDS[key] || key); }
     config() { return this.app.config; }
     sky() { return Skies().get(this.select.value) || Skies().get("aurora"); }
-    // The layers the chosen sky draws: the catalogue's, under the person's.
-    layers() { return Skies().layersOf(this.select.value, this.config().skyLayers); }
-    // What a composed sky starts from, so only what the person changed is kept.
-    base() { return Skies().layersOf(this.select.value, null); }
     choose(id) {
       this.select.value = id;
       this.select.dispatchEvent(new Event("change", { bubbles: true }));
@@ -179,8 +151,8 @@
     }
 
     /* A picture card shows the picture kept from the last time that sky was
-       on screen, from the browser's cache; one never shown has nothing to
-       show and asks for nothing. */
+       on screen, from the browser's cache, toned as the sky would be; one
+       never shown has nothing to show and asks for nothing. */
     showKeptPicture(preview, sky) {
       const picture = window.NordlysWorldPicture?.today(sky.source, null, { ask: false, lang: window.I18N?.currentLang || "en" });
       let image = preview.querySelector("img");
@@ -195,6 +167,7 @@
       if (picture.cors) image.crossOrigin = "anonymous";
       if (image.getAttribute("src") !== picture.url) image.src = picture.url;
       image.classList.toggle("is-dark", picture.fit === "dark");
+      image.classList.toggle("is-toned", toned(sky, this.config()));
     }
 
     queueStills() {
@@ -216,11 +189,8 @@
     showRelevant() {
       const sky = this.sky();
       for (const node of document.querySelectorAll("#sec-background [data-scene-only]")) {
-        node.hidden = !BELONGS[node.dataset.sceneOnly]?.(sky);
+        node.hidden = !BELONGS[node.dataset.sceneOnly]?.(sky, this.config());
       }
-      const layers = this.layers();
-      const workday = document.getElementById("bg-workday-row");
-      if (workday) workday.hidden = !(layers.light === "workday" || layers.weather === "day");
     }
 
     sayScene() {
@@ -250,119 +220,20 @@
       this.paint();
       this.showRelevant();
       this.sayScene();
-      this.paintComposer();
       this.paintLooks();
       this.paintPlace();
       this.paintRhythm();
     }
 
-    // ── The layers of a composed sky ────────────────────────────────
-    buildComposer() {
-      const rows = document.getElementById("bg-layers");
-      const bodies = document.getElementById("bg-bodies");
-      const { COMPOSE, SHUFFLE } = Skies();
-      for (const [layer, options] of Object.entries(COMPOSE.choices)) {
-        const row = document.createElement("div");
-        row.className = "row setting-row sky-layer";
-        const label = document.createElement("span");
-        label.id = `bg-layer-${layer}-label`;
-        label.dataset.i18n = `layer.${layer}`;
-        label.textContent = this.word(`layer.${layer}`);
-        const pick = document.createElement("span");
-        pick.className = "sky-layer-pick";
-        const select = document.createElement("select");
-        select.className = "ipt";
-        select.dataset.layer = layer;
-        select.setAttribute("aria-labelledby", label.id);
-        for (const value of options) {
-          const option = new Option(this.word(`layer.${layer}.${value}`), value);
-          option.dataset.i18n = `layer.${layer}.${value}`;
-          select.append(option);
-        }
-        select.addEventListener("change", () => this.setLayer(layer, select.value));
-        pick.append(select);
-        // A layer a shuffle chooses can be kept as it is: a padlock, shut when kept.
-        if (SHUFFLE[layer]) {
-          const lock = document.createElement("button");
-          lock.type = "button";
-          lock.className = "sky-lock";
-          lock.dataset.lock = layer;
-          lock.dataset.i18nAria = `layer.${layer}.keep`;
-          lock.setAttribute("aria-label", this.word(`layer.${layer}.keep`));
-          lock.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path class="sky-lock-shackle" d="M5 7V5a3 3 0 0 1 6 0v2"/><rect x="3.5" y="7" width="9" height="7" rx="1.5"/></svg>';
-          lock.addEventListener("click", () => this.toggleLock(layer));
-          pick.append(lock);
-        }
-        row.append(label, pick);
-        rows?.append(row);
-      }
-      for (const body of COMPOSE.bodies) {
-        const chip = document.createElement("button");
-        chip.type = "button";
-        chip.className = "palette-chip sky-body";
-        chip.dataset.body = body;
-        chip.dataset.i18n = `layer.${body}`;
-        chip.textContent = this.word(`layer.${body}`);
-        chip.addEventListener("click", () => this.setLayer(body, chip.getAttribute("aria-pressed") !== "true"));
-        bodies?.append(chip);
-      }
-    }
-
-    paintComposer() {
-      if (!this.sky().layers) return;
-      const layers = this.layers();
-      const locks = this.config().skyLocks || [];
-      for (const select of document.querySelectorAll("#bg-layers select[data-layer]")) select.value = layers[select.dataset.layer];
-      for (const lock of document.querySelectorAll("#bg-layers [data-lock]")) lock.setAttribute("aria-pressed", String(locks.includes(lock.dataset.lock)));
-      for (const chip of document.querySelectorAll("#bg-bodies [data-body]")) chip.setAttribute("aria-pressed", String(layers[chip.dataset.body] !== false));
-      window.NordlysUI?.refreshSelects?.();
-    }
-
-    // Only what differs from the sky as it comes is kept; nothing different, nothing kept.
-    keepLayers(layers) {
-      const base = this.base();
-      const own = Object.fromEntries(Object.entries(layers).filter(([layer, value]) => base[layer] !== value));
-      if (Object.keys(own).length) this.config().skyLayers = own;
-      else delete this.config().skyLayers;
-    }
-
-    setLayer(layer, value) {
-      this.keepLayers({ ...this.layers(), [layer]: value });
-      this.commit();
-    }
-
-    toggleLock(layer) {
-      const locks = new Set(this.config().skyLocks || []);
-      if (locks.has(layer)) locks.delete(layer); else locks.add(layer);
-      this.config().skyLocks = [...locks];
-      this.app.saveConfig();
-      this.paintComposer();
-    }
-
-    /* A composed sky shuffles the layers not kept; any other sky gets a new
-       scatter of itself. Either is one undo away from the last. */
+    /* A drawn sky gets a new scatter of itself, a photograph is another of
+       its subject: both are a new seed, one undo away from the last. */
     shuffle() {
       const config = this.config();
       const say = (key, english) => this.text(key, english);
-      if (this.sky().layers) {
-        const before = config.skyLayers ? { ...config.skyLayers } : null;
-        this.keepLayers(Skies().shuffle(this.layers(), config.skyLocks || []));
-        this.commit();
-        window.NordlysUI?.showUndoToast?.({
-          message: say("background.shuffled", "A new sky"),
-          onAction: () => {
-            if (before) config.skyLayers = before; else delete config.skyLayers;
-            this.commit();
-            window.NordlysUI?.announce?.(say("background.unshuffled", "The previous sky is back"));
-          }
-        });
-        return;
-      }
       const previous = config.bgSeed ?? 0;
       const sow = (seed) => {
         config.bgSeed = seed;
-        this.app.bgEngine?.setSeed(seed);
-        this.app.saveConfig();
+        this.commit();
       };
       sow(crypto.getRandomValues(new Uint32Array(1))[0] || 1);
       window.NordlysUI?.showUndoToast?.({
@@ -375,19 +246,13 @@
     }
 
     // ── Saved skies ─────────────────────────────────────────────────
+    /* A drawn sky is saved with its scatter, so the one that was shuffled
+       for comes back as it was; a photograph is saved as its subject. */
     looks() { return Array.isArray(this.config().looks) ? this.config().looks : []; }
     lookNow() {
       const look = { bgMode: this.select.value };
-      if (this.config().skyLayers) look.skyLayers = { ...this.config().skyLayers };
+      if (this.sky().kind === "canvas") look.bgSeed = this.config().bgSeed ?? 0;
       return look;
-    }
-    // The sky's name and what was changed in it: "Mountains · Snow · Poster".
-    lookName(look) {
-      const sky = Skies().get(look.bgMode);
-      // A body is named when it was added, not when it was taken away.
-      const words = Object.entries(look.skyLayers || {}).map(([layer, value]) => (typeof value === "string"
-        ? this.word(`layer.${layer}.${value}`) : value ? this.word(`layer.${layer}`) : null)).filter(Boolean);
-      return [this.text(sky.key, sky.name), ...words.slice(0, 2)].join(" · ");
     }
 
     saveLook() {
@@ -398,7 +263,11 @@
         if (typeof toast === "function") toast(this.text("background.lookLimit", `You can keep ${LOOK_LIMIT} skies. Remove one to save another.`, { count: LOOK_LIMIT }), "info");
         return;
       }
-      const entry = { id: `look_${Date.now().toString(36)}`, name: this.lookName(look), look };
+      // The same sky saved again, shuffled another way, is told apart by a number.
+      const sky = this.sky();
+      const before = this.looks().filter((entry) => entry.look?.bgMode === look.bgMode).length;
+      const name = `${this.text(sky.key, sky.name)}${before ? ` ${before + 1}` : ""}`;
+      const entry = { id: `look_${Date.now().toString(36)}`, name, look };
       this.config().looks = [...this.looks(), entry];
       this.app.saveConfig();
       this.paintLooks();
@@ -420,7 +289,7 @@
         wear.addEventListener("click", () => {
           const config = this.config();
           config.bgMode = entry.look.bgMode;
-          if (entry.look.skyLayers) config.skyLayers = { ...entry.look.skyLayers }; else delete config.skyLayers;
+          if (Number.isInteger(entry.look.bgSeed)) config.bgSeed = entry.look.bgSeed;
           this.commit();
         });
         const remove = document.createElement("button");
@@ -448,9 +317,9 @@
     // ── Where the sky is ────────────────────────────────────────────
     paintPlace() {
       const name = document.getElementById("bg-place-name");
-      if (!name || !window.NordlysSkyData) return;
+      if (!name || !window.NordlysSky?.placeOf) return;
       const own = this.config().skyPlace;
-      const place = window.NordlysSkyData.placeOf(this.config());
+      const place = window.NordlysSky.placeOf(this.config());
       name.textContent = own ? own.name || `${own.lat}, ${own.lon}`
         : this.text("background.placeZoneNow", `From your time zone: ${place.name}`, { name: place.name });
     }
@@ -459,7 +328,7 @@
       if (place) this.config().skyPlace = place; else delete this.config().skyPlace;
       this.app.saveConfig();
       this.app.applyNightMode?.({ redraw: false });
-      this.app.updateBackgroundMode();
+      this.app.tellSkyTheWorld?.();
       this.paintPlace();
       this.closePlaceSearch();
       document.getElementById("bg-place-change")?.focus();
@@ -507,30 +376,25 @@
       }, 350);
     }
 
-    // ── Working hours, the rotation, the night light, picture colours ──
+    // ── The rotation, the night light, a photograph's colours ───────
     paintRhythm() {
       const config = this.config();
-      const workday = config.workday || {};
-      const start = document.getElementById("cfg-workday-start");
-      const end = document.getElementById("cfg-workday-end");
-      if (start) start.value = hhmm(Number.isFinite(workday.start) ? workday.start : 9);
-      if (end) end.value = hhmm(Number.isFinite(workday.end) ? workday.end : 18);
       const rotate = document.getElementById("cfg-sky-rotate");
       const pool = document.getElementById("cfg-sky-pool");
       if (rotate) rotate.value = config.skyRotate || "off";
-      if (pool) pool.value = config.skyPool || "layers";
+      if (pool) pool.value = config.skyPool || "this";
       const poolRow = document.getElementById("bg-pool-row");
       if (poolRow) poolRow.hidden = !config.skyRotate || config.skyRotate === "off";
       const night = document.getElementById("cfg-night-mode");
       if (night) night.value = config.nightMode || "off";
+      const tone = document.getElementById("cfg-photo-tone");
+      if (tone) tone.checked = config.photoTone !== false;
       const colours = document.getElementById("cfg-picture-colours");
       if (colours) colours.checked = config.pictureColours === true;
       window.NordlysUI?.refreshSelects?.();
     }
 
     wire() {
-      // A sky chosen is chosen as it comes: the layers changed on another are not carried over.
-      this.select.addEventListener("change", () => { delete this.config().skyLayers; });
       document.getElementById("bg-shuffle")?.addEventListener("click", () => this.shuffle());
       document.getElementById("bg-look-save")?.addEventListener("click", () => this.saveLook());
 
@@ -554,23 +418,11 @@
       });
       document.getElementById("bg-place-zone")?.addEventListener("click", () => this.setPlace(null));
 
-      const start = document.getElementById("cfg-workday-start");
-      const end = document.getElementById("cfg-workday-end");
-      const setWorkday = () => {
-        const from = hoursOf(start?.value), to = hoursOf(end?.value);
-        if (!(from >= 0 && to <= 24 && from < to)) return;
-        this.config().workday = { start: from, end: to };
-        this.app.saveConfig();
-        this.app.tellSkyTheWorld?.();
-      };
-      start?.addEventListener("change", setWorkday);
-      end?.addEventListener("change", setWorkday);
-
       const rotate = document.getElementById("cfg-sky-rotate");
       const pool = document.getElementById("cfg-sky-pool");
       const setRotation = () => {
         this.config().skyRotate = rotate?.value || "off";
-        this.config().skyPool = pool?.value || "layers";
+        this.config().skyPool = pool?.value || "this";
         this.app.saveConfig();
         this.app.rotateSky?.();
         this.app.updateBackgroundMode();
@@ -583,6 +435,11 @@
         this.config().nightMode = event.target.value;
         this.app.saveConfig();
         this.app.applyNightMode?.();
+      });
+      // A photograph in its own colours has its own colours to give the accent, and no mood.
+      document.getElementById("cfg-photo-tone")?.addEventListener("change", (event) => {
+        this.config().photoTone = event.target.checked;
+        this.commit();
       });
       document.getElementById("cfg-picture-colours")?.addEventListener("change", (event) => {
         this.config().pictureColours = event.target.checked;

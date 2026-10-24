@@ -30,7 +30,7 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
      one is compared by its pixels. Wallpaper, Video and Solid share a ground
      and differ by the mark drawn on it, so comparing their background alone
      would report them identical. */
-  await expect(page.locator('#bg-scene-grid .scene-preview.is-live')).toHaveCount(9);
+  await expect(page.locator('#bg-scene-grid .scene-preview.is-live')).toHaveCount(8);
   const stills = await page.locator('#bg-scene-grid .scene-card:not([hidden]) canvas.scene-still').evaluateAll(
     nodes => nodes.map(node => {
       const data = node.getContext('2d').getImageData(0, 0, node.width, node.height).data;
@@ -40,8 +40,8 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
     })
   );
   for (const still of stills) expect(still.painted, 'a still must show its scene').toBeGreaterThan(0.02);
-  expect(new Set(stills.map(still => still.image)).size, 'each scene must look like itself').toBe(9);
-  await expect(page.locator('#bg-scene-grid .scene-card:not([hidden])')).toHaveCount(9);
+  expect(new Set(stills.map(still => still.image)).size, 'each scene must look like itself').toBe(8);
+  await expect(page.locator('#bg-scene-grid .scene-card:not([hidden])')).toHaveCount(8);
   await page.locator('.sky-kind[data-kind="yours"]').click();
   const personal = await page.locator('#bg-scene-grid .scene-card:not([hidden]) .scene-preview').evaluateAll(
     nodes => nodes.map(node => {
@@ -60,9 +60,9 @@ test('scenes are chosen from shown previews, not a list of engine names', async 
   await expect.poll(() => nordlysPage.storageState.nordlys_config?.bgMode).toBe('solid');
 });
 
-/* Every sky in the catalogue is offered, and nothing else: the nine of the
-   north, the composed skies of weather and horizon, the pictures of the day
-   and the person's own. Each kind shows its own. */
+/* Every sky in the catalogue is offered, and nothing else: the eight of the
+   north, the photographs by subject, the pictures of the day and the
+   person's own. Each kind shows its own. */
 test('the gallery offers every sky in the catalogue, by kind', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await openBackground(page);
@@ -71,11 +71,11 @@ test('the gallery offers every sky in the catalogue, by kind', async ({ nordlysP
   );
   expect(offered).toEqual(await page.evaluate(() => window.NordlysSkies.SKIES.map(sky => sky.id)));
   const shown = () => page.locator('#bg-scene-grid .scene-card:not([hidden])').evaluateAll(cards => cards.map(card => card.dataset.scene));
-  expect(await shown()).toEqual(['aurora', 'polaris', 'halo', 'starmap', 'meteors', 'silk', 'midnightsun', 'contour', 'fjord']);
-  await page.locator('.sky-kind[data-kind="horizon"]').click();
-  await expect(page.locator('.sky-kind[data-kind="horizon"]')).toHaveAttribute('aria-pressed', 'true');
-  expect(await shown()).toEqual(['yours-horizon', 'mountains', 'sea', 'city', 'forest', 'steppe', 'desert', 'lighthouse']);
-  await expect(page.locator('#bg-kind-note')).toContainText('landscape');
+  expect(await shown()).toEqual(['aurora', 'polaris', 'starmap', 'meteors', 'silk', 'blackhole', 'contour', 'fjord']);
+  await page.locator('.sky-kind[data-kind="photos"]').click();
+  await expect(page.locator('.sky-kind[data-kind="photos"]')).toHaveAttribute('aria-pressed', 'true');
+  expect(await shown()).toEqual(['photo-nature', 'photo-weather', 'photo-horizon', 'photo-space', 'photo-scifi', 'photo-tech', 'photo-cities']);
+  await expect(page.locator('#bg-kind-note')).toContainText('Wikimedia Commons');
   await page.locator('.sky-kind[data-kind="yours"]').click();
   expect(await shown()).toEqual(['custom-image', 'custom-video', 'solid']);
   // And nothing anywhere still offers a composition to pick between.
@@ -88,14 +88,14 @@ test('scene previews repaint in the chosen colour mood', async ({ nordlysPage, b
   test.skip(browserName === 'firefox', 'Gecko does not paint the same preview twice byte for byte, which this test compares');
   const { page } = nordlysPage;
   await openBackground(page);
-  const halo = page.locator('#bg-scene-grid canvas.scene-still[data-scene="halo"]');
-  await expect(page.locator('#bg-scene-grid .scene-preview.is-live')).toHaveCount(9);
-  const before = await halo.evaluate(node => node.toDataURL());
+  const silk = page.locator('#bg-scene-grid canvas.scene-still[data-scene="silk"]');
+  await expect(page.locator('#bg-scene-grid .scene-preview.is-live')).toHaveCount(8);
+  const before = await silk.evaluate(node => node.toDataURL());
   await page.locator('[data-palette="ember"]').click();
-  await expect.poll(() => halo.evaluate(node => node.toDataURL())).not.toBe(before);
+  await expect.poll(() => silk.evaluate(node => node.toDataURL())).not.toBe(before);
   // Painted from the same seeded world: the mood changes the colours, not the scene.
   await page.locator('[data-palette="theme"]').click();
-  await expect.poll(() => halo.evaluate(node => node.toDataURL())).toBe(before);
+  await expect.poll(() => silk.evaluate(node => node.toDataURL())).toBe(before);
 });
 
 test('colour mood reaches the canvas engine and persists', async ({ nordlysPage }) => {
@@ -146,12 +146,13 @@ test('a stored scene that no longer exists migrates to its closest survivor', as
     expect(await page.evaluate(() => 'gradient' in window.Nordlys.config),
       'the composition key is not carried forward').toBe(false);
   }
-  /* Pillars, Nacre and Baikal were retired for skies drawn from the real one,
-     each for the nearest in kind, and Frost, retired for Baikal before, goes
-     straight on to the Star map. Drift and Horizon were only renamed, to the
+  /* Pillars and Baikal were retired for skies drawn from the real one, each
+     for the nearest in kind, and Frost, retired for Baikal before, goes
+     straight on to the Star map; Nacre, and the Midnight sun that took its
+     place, became the Black hole. Drift and Horizon were only renamed, to the
      Contour and the Fjord they were always called on screen. Each keeps its
      pace, and is painted. */
-  for (const [stored, successor] of [['pillars', 'meteors'], ['nacre', 'midnightsun'], ['baikal', 'starmap'], ['frost', 'starmap'], ['drift', 'contour'], ['horizon', 'fjord']]) {
+  for (const [stored, successor] of [['pillars', 'meteors'], ['nacre', 'blackhole'], ['midnightsun', 'blackhole'], ['halo', 'starmap'], ['baikal', 'starmap'], ['frost', 'starmap'], ['drift', 'contour'], ['horizon', 'fjord']]) {
     await page.evaluate(mode => {
       window.Nordlys.config.bgMode = mode;
       window.Nordlys.config.bgMotion = 0.3;
@@ -182,7 +183,7 @@ test('a retired sky that arrives later is drawn as its successor', async ({ nord
     await window.Nordlys.updateBackgroundMode();
     return [window.Nordlys.config.bgMode, window.Nordlys.bgEngine.mode, document.documentElement.dataset.bg];
   });
-  expect(mode).toEqual(['midnightsun', 'midnightsun', 'midnightsun']);
+  expect(mode).toEqual(['blackhole', 'blackhole', 'blackhole']);
 });
 
 /* Before this the procedural scenes differed only in the particles they drew, so
@@ -291,11 +292,11 @@ test('switching a still atmosphere repaints the new composition immediately', as
     window.Nordlys.config.bgMotion = 0;
     window.Nordlys.bgEngine.setAtmosphere({ motion: 0 });
   });
-  await chooseBackground(page, 'halo');
-  const halo = await page.locator('#bg-canvas').screenshot();
+  await chooseBackground(page, 'meteors');
+  const meteors = await page.locator('#bg-canvas').screenshot();
   await chooseBackground(page, 'contour');
   const contour = await page.locator('#bg-canvas').screenshot();
-  expect(Buffer.compare(halo, contour)).not.toBe(0);
+  expect(Buffer.compare(meteors, contour)).not.toBe(0);
   expect(await page.evaluate(() => window.Nordlys.bgEngine.mode)).toBe('contour');
 });
 
@@ -320,6 +321,31 @@ test('reduced motion holds the scene instead of blanking it', async ({ nordlysPa
   expect(state.mode).toBe('aurora');
   expect(state.lit, 'the aurora is painted for a reduced-motion user too').toBeGreaterThan(100);
   expect(state.scheduled, 'but nothing keeps moving').toBeNull();
+});
+
+// A video of one's own holds still when a sky would: in night mode and with less motion asked for.
+test('a video holds still in night mode and with reduced motion', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.addInitScript(() => {
+    window.__played = 0;
+    HTMLMediaElement.prototype.play = function () { window.__played++; return Promise.resolve(); };
+  });
+  const show = async (night) => page.evaluate(async (night) => {
+    await MediaVault.saveMedia('custom_bg', new Blob(['not really a film'], { type: 'video/webm' }), 'video/webm');
+    window.__played = 0;
+    Object.assign(window.Nordlys.config, { bgMode: 'custom-video', nightMode: night ? 'on' : 'off' });
+    window.Nordlys.applyNightMode({ redraw: false });
+    await window.Nordlys.updateBackgroundMode();
+    document.dispatchEvent(new Event('visibilitychange'));
+    return window.__played;
+  }, night);
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  expect(await show(true), 'night mode').toBe(0);
+  expect(await show(false), 'by day it plays').toBeGreaterThan(0);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  expect(await show(false), 'reduced motion').toBe(0);
+  expect(nordlysPage.runtimeErrors).toEqual([]);
 });
 
 test('the atmosphere sliders visibly change what the canvas draws', async ({ nordlysPage }) => {
@@ -412,42 +438,6 @@ test('the sky keeps its composition across reloads, and shuffle is one undo away
   expect(await still(), 'undo brings the previous sky back').toBe(first);
 });
 
-/* Halo draws tonight's moon, from the date alone. The same sky at a new moon and
-   a full moon is two different pictures; with the real sky off it holds full. */
-test('Halo follows the real moon, and holds a full one when told not to', async ({ nordlysPage }) => {
-  const { page } = nordlysPage;
-  const moonAt = iso => page.evaluate(async when => {
-    window.Nordlys.config.bgMode = 'halo';
-    window.Nordlys.config.bgMotion = 0;
-    await window.Nordlys.updateBackgroundMode();
-    const engine = window.Nordlys.bgEngine;
-    engine.now = () => new Date(when);
-    engine.moonCache = null;
-    engine.t = NORDLYS_REST_PHASE.halo;
-    engine.render(0);
-    // The moon itself, top right: read back just that patch.
-    const canvas = document.getElementById('bg-canvas');
-    const ratio = canvas.width / innerWidth;
-    const x = Math.round(innerWidth * 0.775 * ratio), y = Math.round(innerHeight * 0.24 * ratio);
-    const { data } = canvas.getContext('2d').getImageData(x - 20, y - 20, 40, 40);
-    let lit = 0;
-    for (let i = 0; i < data.length; i += 4) lit += data[i + 3] > 200 ? 1 : 0;
-    return { lit, info: engine.moonTonight() };
-  }, iso);
-  const newMoon = await moonAt('2024-04-08T18:21:00Z');
-  const fullMoon = await moonAt('2024-10-17T11:26:00Z');
-  expect(newMoon.info.illumination).toBeLessThan(0.02);
-  expect(fullMoon.info.illumination).toBeGreaterThan(0.98);
-  expect(fullMoon.lit, 'a full moon lights more of its patch').toBeGreaterThan(newMoon.lit * 2);
-
-  await openBackground(page);
-  await page.locator('.scene-card[data-scene="halo"]').click();
-  await expect(page.locator('#bg-moon-tonight')).toHaveText(/^Tonight: .+, \d+% lit$/);
-  await page.locator('label.tg:has(#cfg-bg-real-sky)').click();
-  await expect.poll(() => nordlysPage.storageState.nordlys_config?.bgRealSky).toBe(false);
-  expect((await moonAt('2024-04-08T18:21:00Z')).info.illumination, 'held full').toBe(1);
-});
-
 /* A mood can start from somewhere other than three blank pickers: two harmonies
    of its first colour, and — when there is one — the person's own wallpaper. */
 test('a mood can start from a harmony, or from the wallpaper when there is one', async ({ nordlysPage, browserName }) => {
@@ -504,10 +494,10 @@ test('a mood becomes a theme in the studio, readable from the start', async ({ n
   await expect(page.locator('#custom-theme-contrast-warning')).toBeHidden();
 });
 
-/* Three skies are the real one where the person is, at the engine's clock:
-   the Star map turns with it, the Midnight sun's sun climbs and sets with it,
-   and Meteors come from the radiant of the shower that is on. The same
-   moment is the same picture; another moment is another. */
+/* Two skies are the real one where the person is, at the engine's clock:
+   the Star map turns with it, and Meteors come from the radiant of the
+   shower that is on. The same moment is the same picture; another moment is
+   another. */
 test('the real-sky scenes draw the sky of the moment they are given', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   const at = (scene, iso) => page.evaluate(async ([scene, iso]) => {
@@ -527,25 +517,16 @@ test('the real-sky scenes draw the sky of the moment they are given', async ({ n
   }, [scene, iso]);
   for (const [scene, one, other] of [
     ['starmap', '2026-10-22T03:00:00Z', '2026-10-22T09:00:00Z'],
-    ['midnightsun', '2026-10-21T10:00:00Z', '2026-10-21T16:20:00Z'],
     ['meteors', '2026-10-22T01:00:00Z', '2026-06-20T22:00:00Z']
   ]) {
     const first = await at(scene, one);
     expect(await at(scene, one), `${scene} at the same moment`).toBe(first);
     expect(await at(scene, other), `${scene} at another moment`).not.toBe(first);
   }
-  // Where the sun is, the Midnight sun's disc is: high at noon in Berlin, gone below the horizon at night.
-  const sun = iso => page.evaluate(iso => {
-    const engine = window.Nordlys.bgEngine;
-    engine.now = () => new Date(iso);
-    return engine.sunNow().elevation;
-  }, iso);
-  expect(await sun('2026-10-21T10:00:00Z')).toBeGreaterThan(20);
-  expect(await sun('2026-10-21T20:00:00Z')).toBeLessThan(-10);
 });
 
 /* The skies drawn from the real one say under the picker what they show,
-   and Meteors which shower is on, as Halo says which moon. */
+   and Meteors which shower is on. */
 test('a sky drawn from the real one says what it shows, and which shower is on', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.evaluate(() => { window.Nordlys.bgEngine.now = () => new Date('2026-08-12T22:00:00Z'); });
@@ -558,7 +539,7 @@ test('a sky drawn from the real one says what it shows, and which shower is on',
   await page.locator('.scene-card[data-scene="meteors"]').click();
   await expect(note).toContainText('Tonight: the Perseids');
   await page.evaluate(() => { window.Nordlys.bgEngine.now = () => new Date('2026-06-21T22:00:00Z'); });
-  await page.locator('.scene-card[data-scene="midnightsun"]').click();
+  await page.locator('.scene-card[data-scene="blackhole"]').click();
   await page.locator('.scene-card[data-scene="meteors"]').click();
   await expect(note).not.toContainText('Tonight');
   await page.evaluate(() => window.I18N.setLanguage('de'));

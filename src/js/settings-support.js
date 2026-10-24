@@ -45,6 +45,7 @@
     shield: ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z', 'm9 12 2 2 4-4'],
     copy: ['M11 9h7a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z', 'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'],
     check: ['m20 6-11 11-5-5'],
+    review: ['M12 20h9', 'M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z'],
     external: ['M7 17 17 7', 'M9 7h8v8'],
     notes: ['M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z', 'M14 3v5h5', 'M9 13h6', 'M9 17h4'],
     keyboard: ['M4 7h16a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z', 'M7 11h.01', 'M11 11h.01', 'M15 11h.01', 'M8 14h8']
@@ -261,9 +262,11 @@
     }
 
     /* The part of the section that costs nothing and is worth the most: the
-       three things a person can do that actually keep the project going. */
+       things a person can do that actually keep the project going; a review
+       only where there is a store to write it in (review-ask.js). */
     renderActions() {
       const entries = [
+        { url: window.NordlysReviewAsk?.storeUrl(), mark: 'review', key: 'support.review', fallback: 'Write a review', hintKey: 'support.reviewHint', hint: 'In the store you got it from. It is how others find it.' },
         { url: SUPPORT_CONFIG.repositoryUrl, mark: 'star', key: 'support.star', fallback: 'Star it on GitHub', hintKey: 'support.starHint', hint: 'Stars are how people find it.' },
         { url: SUPPORT_CONFIG.issuesUrl, mark: 'idea', key: 'support.report', fallback: 'Report a bug or suggest an idea', hintKey: 'support.reportHint', hint: 'Bugs and ideas go to the same place.' },
         { url: SUPPORT_CONFIG.privacyUrl, mark: 'shield', key: 'support.privacy', fallback: 'Read the privacy promise', hintKey: 'support.privacyHint', hint: 'What stays on your machine, and what never leaves it.' }
@@ -389,7 +392,7 @@
       });
       dialog.append(title, list, close);
       document.body.append(dialog);
-      dialog.showModal();
+      NordlysUI.showModal(dialog);
       close.focus();
     }
 

@@ -9,10 +9,9 @@
      budget  the least time between paints it needs, in milliseconds
      clock   keeps time with the real sky even when held still
      night   a night thing, which steps back further by day
-     ownSun  draws its own sun, and the light of it
-     ownLight  paints its own day, so the engine does not dim it by day
-     layers  a composed sky: the layers it starts from (skies/compose.js)
+     place   drawn for the place the sky is (Settings → Background)
      readable  a picture whose pixels the page may read (its server allows CORS)
+     toned   a photograph shown in the colours of the mood, unless asked not to
 
    The painting of each is a file of its own in src/js/skies, which names the
    method that paints it with paint() below. Nothing else in the product keeps
@@ -22,59 +21,31 @@
 
   const CATEGORIES = [
     { id: "nordlys", key: "sky.cat.nordlys", name: "Nordlys" },
-    { id: "weather", key: "sky.cat.weather", name: "Weather" },
-    { id: "horizon", key: "sky.cat.horizon", name: "Horizon" },
+    { id: "photos", key: "sky.cat.photos", name: "Photos" },
     { id: "world", key: "sky.cat.world", name: "Picture of the day" },
     { id: "yours", key: "sky.cat.yours", name: "Yours" }
   ];
 
-  /* A composed sky is five layers, each a choice. A sky of the Weather or
-     Horizon group starts from a few of them; whatever the person changes is
-     kept beside it (config.skyLayers) and wins. */
-  const COMPOSE = {
-    defaults: { light: "auto", stars: true, moon: true, planets: true, meteors: false, aurora: "live", weather: "clear", horizon: "none", style: "lit" },
-    choices: {
-      light: ["auto", "workday", "dawn", "day", "dusk", "night"],
-      weather: ["clear", "clouds", "rain", "snow", "fog", "storm", "live", "day"],
-      horizon: ["none", "mountains", "sea", "city", "forest", "steppe", "desert", "lighthouse", "yours"],
-      style: ["lit", "poster", "engraving", "pixel"],
-      // live: as it is at the sky's place now; north: as it is under the oval tonight, by the K index.
-      aurora: ["off", "live", "north", "on"]
-    },
-    // The bodies of the sky, each on or off.
-    bodies: ["stars", "moon", "planets", "meteors"]
-  };
-
   // Each sky's message key is spelled out, so it can be found by searching for it.
   const canvas = (id, category, name, key, flags = {}) => ({ id, category, name, key, kind: "canvas", ...flags });
-  // A composed sky: its own light and sun, painted by the composer, and the real hour kept when held.
-  const composed = (id, category, name, key, layers) => canvas(id, category, name, key, { rest: 7.4, budget: 50, clock: true, ownSun: true, ownLight: true, painter: "renderCompose", layers });
+  // A photograph of a subject from Wikimedia Commons, a new one each day (world-picture.js).
+  const photo = (topic, name, key) => ({ id: `photo-${topic}`, category: "photos", name, key, kind: "picture", source: `photo-${topic}`, readable: true, toned: true });
   const SKIES = [
     canvas("aurora", "nordlys", "Aurora", "scene.aurora", { rest: 12, night: true }),
     canvas("polaris", "nordlys", "Polaris", "scene.polaris", { rest: 20, night: true }),
-    canvas("halo", "nordlys", "Halo", "scene.halo", { rest: 7.4 }),
-    canvas("starmap", "nordlys", "Star map", "scene.starmap", { rest: 7.4, budget: 100, clock: true, night: true }),
-    canvas("meteors", "nordlys", "Meteors", "scene.meteors", { rest: 9, budget: 100, night: true }),
+    canvas("starmap", "nordlys", "Star map", "scene.starmap", { rest: 7.4, budget: 100, clock: true, night: true, place: true }),
+    canvas("meteors", "nordlys", "Meteors", "scene.meteors", { rest: 9, budget: 100, night: true, place: true }),
     canvas("silk", "nordlys", "Silk", "scene.silk", { rest: 31.7 }),
-    canvas("midnightsun", "nordlys", "Midnight sun", "scene.midnightsun", { rest: 7.4, budget: 80, clock: true, ownSun: true }),
+    canvas("blackhole", "nordlys", "Black hole", "scene.blackhole", { rest: 7.4, budget: 50, night: true }),
     canvas("contour", "nordlys", "Contour", "scene.contour", { rest: 7.4 }),
     canvas("fjord", "nordlys", "Fjord", "scene.fjord", { rest: 7.4 }),
-    composed("outside", "weather", "Outside now", "scene.outside", { weather: "live" }),
-    composed("yourday", "weather", "Your day", "scene.yourday", { weather: "day", light: "workday" }),
-    composed("clouds", "weather", "Clouds", "scene.clouds", { weather: "clouds" }),
-    composed("rain", "weather", "Rain", "scene.rain", { weather: "rain" }),
-    composed("snow", "weather", "Snow", "scene.snow", { weather: "snow", horizon: "forest" }),
-    composed("fog", "weather", "Fog", "scene.fog", { weather: "fog", horizon: "forest" }),
-    composed("storm", "weather", "Thunder", "scene.storm", { weather: "storm", horizon: "steppe" }),
-    composed("northern", "weather", "Space weather", "scene.northern", { aurora: "north", light: "night", horizon: "mountains" }),
-    composed("yours-horizon", "horizon", "Your horizon", "scene.yoursHorizon", { horizon: "yours" }),
-    composed("mountains", "horizon", "Mountains", "scene.mountains", { horizon: "mountains" }),
-    composed("sea", "horizon", "Sea", "scene.sea", { horizon: "sea" }),
-    composed("city", "horizon", "City", "scene.city", { horizon: "city" }),
-    composed("forest", "horizon", "Forest", "scene.forest", { horizon: "forest" }),
-    composed("steppe", "horizon", "Steppe", "scene.steppe", { horizon: "steppe" }),
-    composed("desert", "horizon", "Desert", "scene.desert", { horizon: "desert" }),
-    composed("lighthouse", "horizon", "Lighthouse", "scene.lighthouse", { horizon: "lighthouse" }),
+    photo("nature", "Nature", "scene.photoNature"),
+    photo("weather", "Weather", "scene.photoWeather"),
+    photo("horizon", "Horizon", "scene.photoHorizon"),
+    photo("space", "Space", "scene.photoSpace"),
+    photo("scifi", "Sci-fi", "scene.photoScifi"),
+    photo("tech", "Tech", "scene.photoTech"),
+    photo("cities", "Cities", "scene.photoCities"),
     { id: "picture-wikimedia", category: "world", name: "Wikimedia Commons", key: "scene.pictureWikimedia", kind: "picture", source: "wikimedia", readable: true },
     { id: "picture-paintings", category: "world", name: "Masterpieces", key: "scene.picturePaintings", kind: "picture", source: "paintings", readable: true },
     { id: "picture-met", category: "world", name: "The Met", key: "scene.pictureMet", kind: "picture", source: "met" },
@@ -86,22 +57,13 @@
 
   const byId = new Map(SKIES.map((sky) => [sky.id, sky]));
   const painters = {};
-
-  /* What a shuffle may choose for each layer: the looks that need nothing of
-     the person. The light stays as it is, and so do the bodies. */
-  const SHUFFLE = {
-    weather: ["clear", "clouds", "rain", "snow", "fog", "storm"],
-    horizon: ["mountains", "sea", "city", "forest", "steppe", "desert", "lighthouse"],
-    style: ["lit", "poster", "engraving", "pixel"],
-    aurora: ["off", "off", "live", "on"]
-  };
   const one = (list, random) => list[Math.floor(random() * list.length) % list.length];
+  // A drawn sky's scatter, or a photograph of the day: any whole number will do.
+  const seedFrom = (random) => Math.floor(random() * 0xffffffff) >>> 0;
 
   const api = {
     CATEGORIES,
     SKIES,
-    COMPOSE,
-    SHUFFLE,
     get: (id) => byId.get(id) || null,
     inCategory: (category) => SKIES.filter((sky) => sky.category === category),
     canvasSkies: () => SKIES.filter((sky) => sky.kind === "canvas").map((sky) => sky.id),
@@ -112,36 +74,24 @@
        them), and the name of the one that paints a frame. */
     paint(id, method, members = {}, statics = {}) {
       painters[id] = method;
-      api.mix(members, statics);
-    },
-    // Methods several skies share, with no sky of their own.
-    mix(members = {}, statics = {}) {
       Object.assign(NordlysBackgroundEngine.prototype, members);
       Object.assign(NordlysBackgroundEngine, statics);
     },
-    painter: (id) => byId.get(id)?.painter || painters[id] || null,
-    // The layers a composed sky draws: the catalogue's, under the person's.
-    layersOf: (id, own) => ({ ...COMPOSE.defaults, ...(byId.get(id)?.layers || {}), ...(own || {}) }),
-    // The person's layers with every one not locked chosen again; `random` answers 0 to 1.
-    shuffle(own, locks = [], random = Math.random) {
-      const layers = { ...(own || {}) };
-      for (const [layer, options] of Object.entries(SHUFFLE)) if (!locks.includes(layer)) layers[layer] = one(options, random);
-      return layers;
-    },
-    /* A sky for a rotation, from the pool the person chose: this sky with its
-       unlocked layers shuffled, another of its group, any sky, or the sky of
-       one of their saved looks. Never their own wallpaper or video. */
-    pick({ bgMode, skyLayers, skyLocks, looks } = {}, pool = "layers", random = Math.random) {
+    painter: (id) => painters[id] || null,
+    /* A sky for a rotation, from the pool the person chose: this sky shuffled
+       (another scatter, another photograph), another of its group, any sky,
+       or one of their saved skies. Never their own wallpaper or video. */
+    pick({ bgMode, looks } = {}, pool = "this", random = Math.random) {
       const current = byId.get(bgMode);
       const saved = (Array.isArray(looks) ? looks : []).map((entry) => entry?.look).filter((look) => byId.get(look?.bgMode)?.kind !== "media" && byId.has(look?.bgMode));
       if (pool === "looks" && saved.length) {
         const look = one(saved, random);
-        return { bgMode: look.bgMode, skyLayers: look.skyLayers || null };
+        return { bgMode: look.bgMode, seed: Number.isInteger(look.bgSeed) ? look.bgSeed : seedFrom(random) };
       }
-      if (pool === "layers" && current?.layers) return { bgMode, skyLayers: api.shuffle(skyLayers, skyLocks || [], random) };
+      if (pool === "this" && current && ["canvas", "picture"].includes(current.kind)) return { bgMode, seed: seedFrom(random) };
       const group = current && current.kind !== "media" && current.kind !== "solid" ? current.category : "nordlys";
       const choices = SKIES.filter((sky) => ["canvas", "picture"].includes(sky.kind) && (pool === "all" || sky.category === group));
-      return { bgMode: one(choices, random).id, skyLayers: null };
+      return { bgMode: one(choices, random).id, seed: seedFrom(random) };
     }
   };
 

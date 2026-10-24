@@ -285,7 +285,7 @@ function setLook(page, { theme, scene, mood, phase, intensity = 1.5, daylight = 
     app.config.bgMotion = 0;
     app.config.bgIntensity = intensity;
     app.config.bgPalette = mood;
-    app.config.bgDaylight = Boolean(daylight);
+    if (daylight) app.config.bgPalette = 'daylight';
     const engine = app.bgEngine;
     if (engine) {
       engine.place = { lat: 52.5, lon: 13.4 };

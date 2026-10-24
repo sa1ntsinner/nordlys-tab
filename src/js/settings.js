@@ -3,7 +3,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 /* The settings a shared look may change (look-share.js). */
-const LOOK_SETTINGS = ["bgMode", "bgMotion", "bgIntensity", "bgSeed", "bgRealSky", "bgDaylight", "boardLayout", "pageLayout", "glassLevel", "cardRadius", "tileSize", "cardGap", "boardGap", "boardWidth", "tileLabels", "cardGlow", "iconShape", "hoverEffect", "cornerShape"];
+const LOOK_SETTINGS = ["bgMode", "bgMotion", "bgIntensity", "bgSeed", "boardLayout", "pageLayout", "glassLevel", "cardRadius", "tileSize", "cardGap", "boardGap", "boardWidth", "tileLabels", "cardGlow", "iconShape", "hoverEffect", "cornerShape"];
 
 class SettingsController {
   constructor(app) {
@@ -136,7 +136,7 @@ class SettingsController {
     }
 
     /* ── Colour moods ───────────────────────────────────────────────
-       Five that ship and as many as somebody cares to mix. A mood is three
+       Eleven that ship and as many as somebody cares to mix. A mood is three
        colours and a name — nothing else about a scene changes with it — which
        is why this is a row of chips and not a second theme studio. */
     const paletteGrid = document.getElementById("bg-palette-grid");
@@ -153,7 +153,14 @@ class SettingsController {
       ["polar", "Polar", "background.palettePolar"],
       ["violet", "Violet", "background.paletteViolet"],
       ["ember", "Ember", "background.paletteEmber"],
-      ["mono", "Mono", "background.paletteMono"]
+      ["mono", "Mono", "background.paletteMono"],
+      ["twilight", "Twilight", "background.paletteTwilight"],
+      ["patina", "Patina", "background.palettePatina"],
+      ["tundra", "Tundra", "background.paletteTundra"],
+      ["gilt", "Gilt", "background.paletteGilt"],
+      ["sepia", "Sepia", "background.paletteSepia"],
+      ["mars", "Mars", "background.paletteMars"],
+      ["daylight", "Time of day", "background.paletteDaylight"]
     ];
     // Enough for anyone with a mood per season and a few spare; past this the
     // row stops being a row and the chips stop being findable.
@@ -174,8 +181,7 @@ class SettingsController {
       chip.dataset.palette = id;
       chip.setAttribute("role", "radio");
       const swatch = document.createElement("i");
-      // The five that ship carry their swatch in CSS; a mixed one carries its
-      // own, because its colours are not known until somebody picks them.
+      // The theme's swatch follows the theme in CSS; every other mood shows its own three colours.
       if (colors) swatch.style.background = `conic-gradient(from 215deg, ${colors[0]}, ${colors[1]}, ${colors[2]}, ${colors[0]})`;
       const text = document.createElement("span");
       if (i18nKey) text.dataset.i18n = i18nKey;
@@ -189,7 +195,7 @@ class SettingsController {
       if (!paletteGrid) return;
       const selected = this.app.config.bgPalette || "theme";
       paletteGrid.replaceChildren();
-      for (const [id, label, key] of BUILT_IN_MOODS) paletteGrid.append(moodChip(id, label, key));
+      for (const [id, label, key] of BUILT_IN_MOODS) paletteGrid.append(moodChip(id, label, key, NORDLYS_BACKGROUND_PALETTES[id] || NORDLYS_DAYLIGHT_SWATCH[id]));
       for (const mood of moods()) {
         if (mood && mood.id) paletteGrid.append(moodChip(mood.id, mood.name || say("background.moodUntitled", "My mood"), null, mood.colors));
       }
@@ -428,38 +434,10 @@ class SettingsController {
       editor?.scrollIntoView({ block: "nearest" });
     });
 
-    /* Tonight's moon, said in words beside the switch that follows it. */
-    const realSky = document.getElementById("cfg-bg-real-sky");
-    const tonight = document.getElementById("bg-moon-tonight");
-    // Spelled out so every phase's message key can be found by searching for it.
-    const MOON_WORDS = {
-      new: ["moon.new", "new moon"], waxingCrescent: ["moon.waxingCrescent", "waxing crescent"],
-      firstQuarter: ["moon.firstQuarter", "first quarter"], waxingGibbous: ["moon.waxingGibbous", "waxing gibbous"],
-      full: ["moon.full", "full moon"], waningGibbous: ["moon.waningGibbous", "waning gibbous"],
-      lastQuarter: ["moon.lastQuarter", "last quarter"], waningCrescent: ["moon.waningCrescent", "waning crescent"]
-    };
-    const sayTonight = () => {
-      if (!tonight || !window.NordlysSky) return;
-      const moon = window.NordlysSky.moonPhase(new Date());
-      const [key, english] = MOON_WORDS[window.NordlysSky.phaseName(moon.phase)];
-      const percent = Math.round(moon.illumination * 100);
-      tonight.textContent = say("background.moonTonight", `Tonight: ${english}, ${percent}% lit`, { phase: say(key, english), percent });
-      tonight.hidden = this.app.config.bgRealSky === false;
-    };
-    if (realSky) realSky.checked = this.app.config.bgRealSky !== false;
-    sayTonight();
-    realSky?.addEventListener("change", () => {
-      this.app.config.bgRealSky = realSky.checked;
-      this.app.saveConfig();
-      this.app.updateBackgroundMode();
-      sayTonight();
-    });
-    window.addEventListener("nordlys:languagechange", sayTonight);
-
-    /* The time of day, as light on the chosen mood: the switch, what the sun
-       is doing now in words beside it, and a day played through in a few
-       seconds so the switch shows what it does instead of promising it. */
-    const daylight = document.getElementById("cfg-bg-daylight");
+    /* The Time of day mood: what the sun is doing now in words, and a day
+       played through in a few seconds so the mood shows what it does
+       instead of promising it. */
+    const daylightBlock = document.getElementById("bg-daylight");
     const daylightNow = document.getElementById("bg-daylight-now");
     const daylightPlay = document.getElementById("bg-daylight-play");
     // Spelled out so every phase's message key can be found by searching for it.
@@ -469,10 +447,10 @@ class SettingsController {
       sunset: ["daylight.sunset", "sunset"], dusk: ["daylight.dusk", "dusk"]
     };
     const sayDaylight = (sky = this.app.bgEngine?.sky, clock = null) => {
+      const on = this.app.config.bgPalette === "daylight";
+      if (daylightBlock) daylightBlock.hidden = !on;
       if (!daylightNow) return;
-      const on = this.app.config.bgDaylight === true;
       daylightNow.hidden = !on || !sky;
-      if (daylightPlay) daylightPlay.hidden = !on;
       if (!on || !sky) return;
       const [key, english] = DAYLIGHT_WORDS[sky.phase] || DAYLIGHT_WORDS.night;
       const phase = say(key, english);
@@ -480,13 +458,7 @@ class SettingsController {
         ? say("background.daylightAt", `${clock}: ${phase}`, { time: clock, phase })
         : say("background.daylightNow", `Now: ${phase}`, { phase });
     };
-    if (daylight) daylight.checked = this.app.config.bgDaylight === true;
-    daylight?.addEventListener("change", () => {
-      this.app.config.bgDaylight = daylight.checked;
-      this.app.saveConfig();
-      this.app.bgEngine?.setDaylight(daylight.checked);
-      sayDaylight();
-    });
+    sayDaylight();
     window.addEventListener("nordlys:palette", () => { if (!this.playingDay) sayDaylight(); });
     window.addEventListener("nordlys:languagechange", () => sayDaylight());
     /* Twenty-four hours in fourteen seconds, from now, on the real sky. With
@@ -752,11 +724,6 @@ class SettingsController {
       if (key in look) config[key] = look[key];
     }
     if (look.fonts) config.fonts = { ...(config.fonts || {}), ...look.fonts };
-    // A look brings its sky whole: the layers it was made with, or the sky as it comes.
-    if ("bgMode" in look) {
-      if (look.skyLayers) config.skyLayers = look.skyLayers;
-      else delete config.skyLayers;
-    }
     if (look.theme === "custom" && look.customTheme) {
       config.theme = "custom";
       config.customTheme = look.customTheme;
@@ -771,7 +738,7 @@ class SettingsController {
       const mood = same || { id: `shared-${look.mood.colors.join("").replace(/#/g, "")}`, name: look.mood.name, colors: look.mood.colors };
       if (!same) moods.push(mood);
       config.bgPalette = mood.id;
-    } else if (["theme", "polar", "violet", "ember", "mono"].includes(look.bgPalette)) {
+    } else if (look.bgPalette === "theme" || Object.prototype.hasOwnProperty.call(NORDLYS_BACKGROUND_PALETTES, look.bgPalette)) {
       config.bgPalette = look.bgPalette;
     }
     this.refreshLookEverywhere();
@@ -782,7 +749,7 @@ class SettingsController {
      look was being tried — or saved by another tab — went back with it. */
   lookSnapshot() {
     const config = this.app.config;
-    const keys = [...LOOK_SETTINGS, "fonts", "theme", "customTheme", "bgPalette", "bgPalettes", "skyLayers"];
+    const keys = [...LOOK_SETTINGS, "fonts", "theme", "customTheme", "bgPalette", "bgPalettes"];
     return JSON.stringify(Object.fromEntries(keys.map((key) => [key, config[key] === undefined ? null : config[key]])));
   }
 
@@ -976,8 +943,6 @@ class SettingsController {
 
   syncFormValues() {
     const cfg = this.app.config;
-    const daylightSwitch = document.getElementById("cfg-bg-daylight");
-    if (daylightSwitch) daylightSwitch.checked = cfg.bgDaylight === true;
     this.syncBoardLayout();
     this.syncPageLayout();
     this.syncSearchSources();
@@ -1894,14 +1859,18 @@ class SettingsController {
 
   /* General → The search box also finds. Turning a source on asks the
      browser for its leave there and then, while the click still counts as
-     the person's; refused, the switch goes back off. A browser without the
-     list at all (Safari has no history) does not offer it. */
+     the person's; refused, the switch goes back off. Chrome puts a list on
+     the page only once its leave is given, so a switch is offered by what
+     this build may ask for: Safari's cannot ask for the bookmarks or the
+     history, and does not offer them. */
   initSearchSources() {
     const sources = window.NordlysSearchSources;
     const api = typeof chrome !== "undefined" ? chrome : null;
+    const manifest = api?.runtime?.getManifest?.() || {};
+    const askable = new Set([...(manifest.optional_permissions || []), ...(manifest.permissions || [])]);
     for (const input of document.querySelectorAll("#search-from input[data-source]")) {
       const source = input.dataset.source;
-      input.closest(".row").hidden = !api?.[source];
+      input.closest(".row").hidden = !api?.[source] && !askable.has(sources.PERMISSION[source]);
       input.addEventListener("change", async () => {
         let on = input.checked;
         if (on) {
@@ -2010,12 +1979,12 @@ class SettingsController {
   }
 
   /* Appearance → Page: what the page is (layouts.css). Today is the
-     dashboard's own layout, so choosing it turns the dashboard on. */
+     dashboard's own layout: it brings the dashboard and takes it away again. */
   setPageLayout(layout) {
     const config = this.app.config;
     if ((config.pageLayout || "board") === layout) return;
     config.pageLayout = layout;
-    if (layout === "today" && this.app.dashboard && !this.app.dashboard.on) this.app.dashboard.setOn(true);
+    this.app.dashboard?.followPage(layout);
     this.app.saveConfig();
     this.app.applyPageLayout();
     this.app.pageFit?.request();
