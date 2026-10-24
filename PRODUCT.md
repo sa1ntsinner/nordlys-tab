@@ -15,7 +15,7 @@ Nordlys replaces the browser's new tab page: the person's favourite sites in fol
 
 ## Positioning
 
-- The skies are drawn live in the browser: nine scenes of its own, and Weather and Horizon skies put together from layers. A picture of the day, or the person's own picture or video, when they want one.
+- The skies are drawn live in the browser: nine scenes of its own, among them the real stars over the person and a black hole drawn from the way light bends near one. Photographs in the colours of the mood, a picture of the day, or the person's own picture or video, when they want one.
 - Nothing leaves the device: there is no Nordlys account and nothing is tracked. Sync, when turned on, goes through the browser's own sync.
 - It is free and open source, and one extension covers Chrome, Edge, Firefox and Safari.
 
@@ -29,7 +29,7 @@ Nordlys replaces the browser's new tab page: the person's favourite sites in fol
 What ships in 2.5.3:
 - Favourite sites in folders; move folders, change tile size and spacing, tidy them in one click, undo. Save any page from the toolbar button or the right-click menu, or drop a link onto the board.
 - Page layouts: the board, Columns, Dock, Today (the dashboard beside the folders), Prompt (only the search box) and Poster (a large clock).
-- Skies in kinds: the nine Nordlys skies drawn live, Weather and Horizon skies put together from layers (light, sky, weather, horizon, style), a picture of the day (Wikimedia Commons, the Met, NASA EPIC), or your own picture, looping video or colour. Shuffle with locks, saved skies, a sky that changes by itself, colours from the picture, a night light. 21 colour themes (11 dark, 10 light, including pure black for OLED).
+- Skies in kinds: the nine Nordlys skies drawn live, photographs by subject from Wikimedia Commons' featured pictures in the colours of the mood or their own, a picture of the day (Wikimedia Commons, the Met, NASA EPIC), or your own picture, looping video or colour. Shuffle, saved skies, a sky that changes by itself, colours from the picture, a night light. 21 colour themes (11 dark, 10 light, including pure black for OLED) and eleven colour moods.
 - The search box uses the browser's search engine, finds your sites, open tabs, the browser's bookmarks and history and places in Settings, answers units, times and money, takes your own keywords (also `nl` in the address bar), adds a task after `+`, takes commands after `>`, and offers what you usually open at this hour.
 - Brand icons by name (Iconify's Simple Icons), a site's favicon, an image link or a letter.
 - Spaces such as Work and Home, each with its own folders, look and keywords, opening by themselves at set hours if wanted; optional sync through the browser's own sync.

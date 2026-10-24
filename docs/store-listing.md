@@ -42,7 +42,7 @@ Folders and bookmarks
 • Save the page you're on from the toolbar or the right-click menu. Find the bookmarks that are gone or there twice.
 
 Skies and pages
-• The northern lights, the real stars over you tonight, skies you put together from weather and a horizon, or a picture of the day. Your own picture or video too.
+• The northern lights, the real stars over you tonight, a black hole, photographs in your mood's colours, or a picture of the day. Your own picture or video too.
 • 21 colour themes. The page can be a board, columns, a dock or only the search box.
 
 Search
@@ -57,7 +57,7 @@ Before every update, a copy of your whole setup is kept in Settings → Backup.
 In English, Russian, Spanish, German, French, Japanese, Chinese and Turkish. Open source (MIT): https://github.com/sa1ntsinner/nordlys-tab
 ```
 
-The description is 1499 characters, under the 1,500 the store shows
+The description is 1498 characters, under the 1,500 the store shows
 before "More". Privacy and the price come first: they are why people leave
 other new-tab extensions.
 
@@ -251,9 +251,8 @@ No login or sample files are needed.
 4. External services
 Nordlys has no server of its own, and no analytics or ads. It makes a request only when the user uses a feature that needs one:
 - Search: the search engine the user picks in Settings > General.
-- Weather card, and skies set to the weather outside: Open-Meteo (api.open-meteo.com and geocoding-api.open-meteo.com), for the place the user chooses. No key or account.
-- A sky showing the aurora as seen from here: NOAA's Space Weather Prediction Center (services.swpc.noaa.gov). Nothing about the user is sent.
-- Picture of the day skies, only while one is shown: Wikimedia Commons (api.wikimedia.org, commons.wikimedia.org, upload.wikimedia.org), the Metropolitan Museum (collectionapi.metmuseum.org, images.metmuseum.org) or NASA EPIC (epic.gsfc.nasa.gov).
+- Weather card, and the place search for the sky: Open-Meteo (api.open-meteo.com and geocoding-api.open-meteo.com), for the place the user chooses. No key or account.
+- Photos and picture of the day skies, only while one is shown: Wikimedia Commons (api.wikimedia.org, commons.wikimedia.org, upload.wikimedia.org), the Metropolitan Museum (collectionapi.metmuseum.org, images.metmuseum.org) or NASA EPIC (epic.gsfc.nasa.gov).
 - Money typed in the search box ("100 usd to eur"): ExchangeRate-API (open.er-api.com), at most once a day, carrying nothing the user typed.
 - Icon search: Iconify's public API (api.iconify.design), only when the user searches for an icon; images.weserv.nl, only to load an icon image address the user pasted.
 - Addresses the user gives: feeds, a value from a JSON address, a list of links a folder follows, settings read from an address, and the user's own bookmarks when they ask to check them or to see whether a site is up.

@@ -10,13 +10,15 @@ Chrome Web Store's rule that they only ever go up.
 
 ### Added
 
-- Skies come in kinds: Nordlys (the nine made for it), Weather, Horizon, Picture of the day, and Yours (a picture, a video loop or a colour). Settings → Background shows one kind at a time.
-- Weather and Horizon skies are put together from layers you can change one by one: the light (the sun, the moon, the season, or your working day), the sky (stars, the moon's phase, the planets, the aurora, meteors), the weather (clouds, rain, snow, fog, wind, or as it is outside now), the horizon (mountains, sea, a city, forest, steppe, desert, a lighthouse, or the real land around the sky's place) and a style (lit, poster, engraving, pixel).
+- Skies come in kinds: Nordlys (the ones made for it), Photos, Picture of the day, and Yours (a picture, a video loop or a colour). Settings → Background shows one kind at a time.
+- Photos: nature, weather, the horizon, space, other worlds, machines or cities, a new photograph each day from the ones the Wikimedia Commons community chose as its finest. It comes in the colours of your mood, or in its own.
+- Black hole, a new Nordlys sky, rising from the foot of the page and drawn from the paths light really takes near one: its shadow, the far side of the disk bent up over it and under it, a disk of hot gas that turns faster towards the middle and burns brighter and bluer on the side coming towards you, and the stars behind it bent into arcs. The graphics card works it out for every pixel.
+- Time of day, a colour mood that follows the sun where you are: deep blue at night, rose and lilac at dawn, gold at sunrise, a clear blue by day, amber and pink at sunset and violet at dusk. It replaces the "Follow the time of day" switch, and if you had that on, you get the mood.
+- Six more colour moods: Twilight, Patina, Tundra, Gilt, Sepia and Mars.
 - Picture of the day: the day's picture from Wikimedia Commons, one of its featured paintings, a highlight of the Met's collection, or the whole Earth as NASA's EPIC camera saw it, with its caption.
-- Shuffle changes the layers you haven't locked. A sky you like can be saved (up to 12) and worn again, and the sky can change by itself on every new tab, every hour or every day, from all skies or only your saved ones.
+- Shuffle draws the sky again, or brings another photograph of the same subject, with Undo. A sky you like can be saved (up to 12) and worn again, and the sky can change by itself on every new tab, every hour or every day: the same sky shuffled, skies of the same kind, all skies, or only your saved ones.
 - The accent colour can come from the picture on screen.
-- Night light: from sunset to sunrise, or between hours you set, the page turns red and quiet.
-- The sky knows your day: clouds gather as today's calendar fills, the lighthouse is lit while a focus runs, and snow lies on the peaks in winter.
+- Night light: from sunset to sunrise, or all the time, the page turns red and quiet.
 - Page layouts besides the board: Columns (each folder a list), Dock (one shelf of icons), Today (the dashboard beside your folders), Prompt (only the search box) and Poster (a large clock). Settings → Appearance → Page, or `> page dock` in the search box.
 - The search box answers some things itself: units ("5 km in miles"), the time elsewhere ("time in Tokyo") and money ("100 usd to eur", at the day's rates from ExchangeRate-API, asked for only when you type an amount).
 - It can also find your open tabs, the browser's bookmarks, pages you visited and places in Settings. Each is turned on in Settings → General, and the browser asks for leave the first time.
@@ -32,12 +34,17 @@ Chrome Web Store's rule that they only ever go up.
 - A bookmark can show whether its site is up: right-click it and choose Show if it is up. A dot on the tile says whether it answers and how fast.
 - Settings → Bookmarks → Check the bookmarks finds the bookmarks on the board more than once and the pages that are gone, and each can be removed with a way back.
 - Settings → Bookmarks → Follow a list at an address: a list of links your team keeps (a Nordlys backup, a bookmarks file a browser exported, or plain text with an address on each line) comes onto the board as folders that follow it, read again every hour.
+- After two weeks, Nordlys asks once, in a corner, for a review in the store you got it from, and never again whatever you answer. Settings → Support keeps the link.
 - Sites kept shut while focusing: list them in the Focus timer card's settings. While a focus runs, a tab that goes to one waits on a quiet page and goes on when the focus ends or you pause it.
 
 ### Changed
 
 - Profiles are called Spaces, in all eight languages. Each still has its own folders, look, search and keywords.
 - Drift is now called Contour, Horizon is Fjord, and the Nordlys sky is Aurora. What you chose carries over.
+- The Black hole takes the Midnight sun's place. If you were using Midnight sun, or Nacre before it, you get the Black hole, and so does a shared look or a synced space that names either.
+- Halo is retired, and its "Follow the real moon" switch with it. If you were using Halo, you get the Star map, and so does a shared look or a synced space that names it.
+- The other colour moods no longer change with the time of day: a mood stays the colours you chose.
+- Star map fills the page: the horizon now runs along its foot.
 - A new tab reads less before it draws: English and the language in use instead of all eight, each sky's painting only when that sky is shown, and the parts few people use (importing, feeds, the checks, the conversions) only when they are used.
 - A bookmarks file whose links are not in folders comes over as one folder named after the file.
 

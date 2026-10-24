@@ -204,16 +204,16 @@ every other improvement.
 
 ## Backgrounds
 
-Nine authored skies — Nordlys, Polaris, Halo, Star map, Meteors, Silk,
-Midnight sun, Contour and Fjord — the user's own image or video, and a flat
-colour. Each sky is a different *kind* of picture: curtains, star trails
-turning round the pole, an optical display around a moon, a chart of the stars
-overhead, shooting stars on a still night, threads walked through a vector
-field, the sun over a calm sea, a survey map of hills and hollows, a low
-horizon. Frost, rime grown in from the edges, was retired, and later Pillars,
-Nacre and Baikal; a stored one becomes the nearest sky in kind that is left:
-Pillars, a night sky, Meteors; Nacre, cloud lit by a low sun, the Midnight
-sun; Baikal, the stillest, and Frost the Star map.
+Eight authored skies — Nordlys, Polaris, Star map, Meteors, Silk, Black
+hole, Contour and Fjord — the user's own image or video, and a flat colour.
+Each sky is a different *kind* of picture: curtains, star trails turning round
+the pole, a chart of the stars overhead, shooting stars on a still night,
+threads walked through a vector field, a black hole and its disk worked out on
+the GPU, a survey map of hills and hollows, a low horizon. Frost, rime grown in
+from the edges, was retired, and later Pillars, Nacre, Baikal, the Midnight
+sun and Halo; a stored one becomes the nearest sky in kind that is left:
+Pillars, a night sky, Meteors; Nacre and the Midnight sun the Black hole;
+Baikal, the stillest, Frost and Halo, a moonlit night, the Star map.
 Contour was once nine sine waves at an eighth of an opacity —
 a paler Silk that vanished on dark themes — and became a map: closed contour
 lines traced from a seeded, slowly wandering terrain (marching squares), a
