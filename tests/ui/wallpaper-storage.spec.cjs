@@ -55,7 +55,8 @@ test('a large photo is kept at the size the screen can show', async ({ nordlysPa
     const bitmap = await createImageBitmap(blob);
     return { type: blob.type, width: bitmap.width, height: bitmap.height, size: blob.size };
   });
-  expect(kept.type).toBe('image/webp');
+  // Safari cannot write WebP, so it keeps a JPEG.
+  expect(['image/webp', 'image/jpeg']).toContain(kept.type);
   expect(Math.max(kept.width, kept.height)).toBeLessThanOrEqual(3840);
   expect(kept.width / kept.height).toBeCloseTo(1.5, 2);
 });

@@ -157,7 +157,7 @@ test('Settings has a Dashboard tab that turns it on and adds cards', async ({ no
 });
 
 // A card's settings open over Settings: Tab goes through them, and Escape closes them alone.
-test('a card\'s settings opened from Settings are a layer of their own', async ({ nordlysPage }) => {
+test('a card\'s settings opened from Settings are a layer of their own', async ({ nordlysPage, browserName }) => {
   const { page } = nordlysPage;
   await page.locator('#gear').click();
   await page.locator('#settings-tab-dashboard').click();
@@ -167,7 +167,8 @@ test('a card\'s settings opened from Settings are a layer of their own', async (
   await opener.click();
   const dialog = page.locator('.dash-dialog[open]');
   await expect(page.locator('#dash-field-title')).toBeFocused();
-  await page.keyboard.press('Tab');
+  // Safari on a Mac tabs only to fields unless Option is held.
+  await page.keyboard.press(browserName === 'webkit' && process.platform === 'darwin' ? 'Alt+Tab' : 'Tab');
   await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);

@@ -20,7 +20,7 @@ test('a hidden search box still opens with / and Ctrl+K, and hides again', async
   await expect(page.locator('#searchwrap')).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.locator('#searchwrap')).toBeHidden();
-  await page.keyboard.press('Control+k');
+  await page.keyboard.press('ControlOrMeta+k');
   await expect(page.locator('#q')).toBeFocused();
   await page.reload();
   await page.waitForFunction(() => Boolean(window.Nordlys?.grid));

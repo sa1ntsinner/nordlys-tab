@@ -76,7 +76,10 @@ class SettingsController {
     context.imageSmoothingQuality = "high";
     context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     bitmap.close?.();
-    const smaller = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.9));
+    const encode = (type) => new Promise((resolve) => canvas.toBlob(resolve, type, 0.9));
+    // Safari cannot write WebP and hands back a PNG, larger than the photo it came from.
+    let smaller = await encode("image/webp");
+    if (smaller?.type !== "image/webp") smaller = await encode("image/jpeg");
     return smaller && smaller.size < file.size ? smaller : file;
   }
 
