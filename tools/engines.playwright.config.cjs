@@ -15,6 +15,8 @@ module.exports = defineConfig({
   testIgnore: ['**/*.sweep.cjs', '**/visual-regression.spec.cjs', '**/extension-*.spec.cjs', '**/real-*.spec.cjs', '**/accessibility.spec.cjs', '**/perf*.spec.cjs'],
   reporter: [['list'], ['json', { outputFile: '../test-results/engines.json' }]],
   retries: 1,
+  // Mac runners are slower than the Windows and Linux ones the 30s was set on.
+  timeout: 60000,
   projects: [
     { name: 'firefox', use: { ...base.use, browserName: 'firefox' } },
     { name: 'webkit', use: { ...base.use, browserName: 'webkit' } }
