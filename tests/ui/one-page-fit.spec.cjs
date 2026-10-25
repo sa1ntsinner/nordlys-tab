@@ -262,6 +262,9 @@ test.describe('live', () => {
       for (let i = 0; i < 20; i++) window.dispatchEvent(new Event('resize'));
       window.visualViewport?.dispatchEvent(new Event('resize'));
       await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+      // A slow machine may need more than two frames for the one pass.
+      for (const start = performance.now(); !count && performance.now() - start < 1000;) await new Promise((done) => requestAnimationFrame(done));
+      await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
       const burst = count;
       const trials = fit.trials;
       await new Promise((done) => setTimeout(done, 1200));
