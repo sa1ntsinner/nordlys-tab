@@ -16,6 +16,8 @@ async function expectCycles(page, root) {
 }
 
 test('every settings section contains forward and backward keyboard focus', async ({ nordlysPage }) => {
+  // Seven sections of 35 Tabs each runs past 30s on a Mac runner.
+  test.slow();
   const { page } = nordlysPage; await page.locator('#gear').click(); const drawer = page.locator('#cfg');
   for (const id of ['appearance', 'background', 'bookmarks', 'general', 'support', 'custom-css', 'backup']) {
     await page.locator(`#settings-tab-${id}`).click(); await expectCycles(page, drawer);
