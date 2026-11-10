@@ -60,8 +60,7 @@ test('arranging, the address pane and a second tab work under the real policy', 
   await page.keyboard.press('Escape');
 
   await page.evaluate(() => window.Nordlys.settings.openIconModal(0, 0));
-  await page.locator('.icon-tab-btn[data-tab="custom"]').click();
-  await expect(page.locator('#icon-url-source')).toBeVisible();
+  await expect(page.locator('#icon-find')).toBeVisible();
   await page.keyboard.press('Escape');
 
   const second = await page.context().newPage();
@@ -79,7 +78,7 @@ test('arranging, the address pane and a second tab work under the real policy', 
 });
 
 /* An icon from an address, the whole way, in the real extension: fetched,
-   drawn into its thumbnail on a canvas, stored, and remembered after a
+   measured on a canvas, stored, and remembered after a
    reload — each a step the content security policy or real storage could
    break where the test server does not. */
 test('an icon taken from an address is remembered across a reload', async () => {
@@ -88,11 +87,10 @@ test('an icon taken from an address is remembered across a reload', async () => 
   await page.context().route('https://icons.test/**', route => route.fulfill({ status: 200, contentType: 'image/png', body: PNG, headers: { 'access-control-allow-origin': '*' } }));
   await ext.installBoard(DEMO_BOARD);
   await page.evaluate(() => window.Nordlys.settings.openIconModal(0, 0));
-  await page.locator('.icon-tab-btn[data-tab="custom"]').click();
-  await page.locator('#icon-url-input').fill('https://icons.test/real.png');
-  await page.locator('#icon-url-input').press('Enter');
-  await expect(page.locator('#icon-url-status')).toHaveText('Image ready', { timeout: 10000 });
-  await page.locator('#icon-url-apply-btn').click();
+  await page.locator('#icon-find').fill('https://icons.test/real.png');
+  await page.locator('#icon-find').press('Enter');
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0].links[0].iconUrl), { timeout: 10000 }).toBe('https://icons.test/real.png');
+  await page.keyboard.press('Escape');
   await expect(page.locator('#icon-modal')).toBeHidden();
 
   await page.reload();
@@ -100,9 +98,6 @@ test('an icon taken from an address is remembered across a reload', async () => 
   const link = await page.evaluate(() => window.Nordlys.config.groups[0].links[0]);
   expect(link.iconUrl).toBe('https://icons.test/real.png');
   expect(link.customImg).toMatch(/^data:image\//);
-  expect(link.iconUrls[0].thumb).toMatch(/^data:image\/(webp|png);base64,/);
-  await page.evaluate(() => window.Nordlys.settings.openIconModal(0, 0));
-  await page.locator('.icon-tab-btn[data-tab="custom"]').click();
-  await expect(page.locator('#icon-url-input')).toHaveValue('https://icons.test/real.png');
+  expect(link.iconUrls[0].url).toBe('https://icons.test/real.png');
   expect(await ext.violations()).toEqual([]);
 });

@@ -26,7 +26,7 @@ I wanted a new tab page with my bookmarks and something nice to look at, so I ma
 - The page as a board, columns, a dock, the dashboard beside your folders, only the search box, or a large clock.
 - Skies drawn live in the browser, among them the real stars over you and a black hole, photographs in the colours of your mood, a picture of the day, or your own picture or looping video. Dark and light colour themes, or your own.
 - A search box that uses your browser's engine, finds your sites, open tabs and places in Settings, works out units, times and money, and takes your own keywords and commands after `>`.
-- Brand icons by name, a site's favicon, an image link or a letter.
+- Type a name or paste a link and Nordlys finds the icon: the brand's own mark as a vector where there is one. Then move and scale it on the tile.
 - A dashboard if you want one: tasks, a focus timer that can keep sites shut, notes, weather, world clocks, feeds, calendars with a Join button, plus tasks from Todoist and GitHub.
 - Spaces for Work and Home, each with its own folders and look. Turn on sync and your browser carries them to your other computers.
 - Start from your browser's bookmarks, or import a backup from FVD Speed Dial, Speed Dial 2, Infinity, nightTab, Bonjourr or Tabliss. A folder can also follow a list of links kept at a web address.

@@ -137,28 +137,22 @@ test('at 320px the undo stays inside the viewport', async ({ nordlysPage }) => {
    on offer, from anywhere but a text field. */
 test('Ctrl+Z takes back the newest change still on offer, even from inside a dialog', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  await page.evaluate(() => {
-    const link = window.Nordlys.config.groups[0].links[0];
-    link.iconUrls = [{ url: 'https://cdn.example.com/a.png', thumb: '', at: 2 }, { url: 'https://cdn.example.com/b.png', thumb: '', at: 1 }];
-    link.iconUrl = 'https://cdn.example.com/a.png';
-    window.Nordlys.settings.openIconModal(0, 0);
-  });
-  await page.locator('.icon-tab-btn[data-tab="custom"]').click();
-  const pick = page.locator('.icon-url-version').nth(1).locator('.icon-url-pick');
-  await pick.focus();
-  await page.keyboard.press('Delete');
-  await expect(page.locator('.icon-url-version')).toHaveCount(1);
+  const before = await page.locator('#board .tile').count();
+  await deleteFirstTile(page);
+  await expect(page.locator('#board .tile')).toHaveCount(before - 1);
+  await page.evaluate(() => window.Nordlys.settings.openIconModal(0, 0));
+  await page.locator('#icon-letters').focus();
   await page.keyboard.press('Control+z');
-  await expect(page.locator('.icon-url-version')).toHaveCount(2);
-  expect(await page.evaluate(() => window.Nordlys.config.groups[0].links[0].iconUrls.length)).toBe(2);
+  await expect(page.locator('#board .tile')).toHaveCount(before);
 
   // In a text field that has been typed in, Ctrl+Z is the field's own.
-  await page.locator('.icon-url-version').nth(1).locator('.icon-url-pick').focus();
-  await page.keyboard.press('Delete');
-  await page.locator('#icon-url-input').focus();
+  await page.keyboard.press('Escape');
+  await deleteFirstTile(page);
+  await page.evaluate(() => window.Nordlys.settings.openIconModal(0, 0));
+  await page.locator('#icon-find').focus();
   await page.keyboard.type('x');
   await page.keyboard.press('Control+z');
-  await expect(page.locator('.icon-url-version')).toHaveCount(1);
+  await expect(page.locator('#board .tile')).toHaveCount(before - 1);
 });
 
 /* A five-second Undo that left while the pointer was on its way to it took

@@ -59,7 +59,7 @@ test('JSON export and import preserve groups, and custom CSS once it is read and
   expect(storageState.nordlys_config.groups[0].label).toBe('IMPORTED');
   // A style sheet from a file can load addresses: it is shown, not used, until it is saved.
   expect(await page.evaluate(() => document.getElementById('user-custom-css')?.textContent || '')).not.toContain('opacity: .88');
-  await page.locator('#gear').click(); await page.getByRole('tab', { name: 'Custom CSS' }).click();
+  await page.locator('#gear').click(); await page.locator('#custom-css-block > summary').click();
   await expect(page.locator('#css-waiting')).toBeVisible();
   await expect(page.locator('#css-editor')).toHaveValue(/opacity: \.88/);
   await page.locator('#cfg-inject-css').click();

@@ -79,7 +79,7 @@ Answer the dashboard's justification fields from `PRIVACY.md`:
 | `activeTab` | Gives the toolbar button the address and title of the page in view when it is pressed, to save that page to a folder. |
 | `contextMenus` | Adds "Save to Nordlys" to the right-click menu of pages and links. |
 | `topSites` (optional) | Requested only when the user presses "Start from my most visited sites" on an empty board, to make one folder of them. |
-| Optional host permissions | Asked from the click that needs them: Todoist, GitHub, a calendar link, a feed, a JSON address, a list of links, an address to read settings from, or, while Check the bookmarks runs, the sites on the board. `https://*/*` is listed because these can be on any server; only the origins of addresses the user gave are requested. |
+| Optional host permissions | Asked from the click that needs them: Todoist, GitHub, a calendar link, a feed, a JSON address, a list of links, an address to read settings from, a site whose link is typed into the icon dialog, or, while Check the bookmarks runs, the sites on the board. `https://*/*` is listed because these can be on any server; only the origins of addresses the user gave are requested. |
 | `bookmarks` (optional) | Requested only when the user brings their browser bookmarks onto the board, points a folder at a browser bookmark folder, or lets the search box find bookmarks. Only read from. Never requested at install. |
 | Remote code | None. The CSP is `script-src 'self'; object-src 'self'`. |
 | Data collection | None. Declare no collected data. |
@@ -149,10 +149,10 @@ The toolbar button saves the page in view to one of the user's folders. activeTa
 Adds "Save to Nordlys" to the right-click menu of pages and links. The page or link is kept on the device until the next new tab puts it on the user's board. Nothing is sent anywhere.
 ```
 
-### Optional host permissions — 737 chars
+### Optional host permissions — 792 chars
 
 ```
-Nothing is granted at install. Sites are asked for from the click that needs them: Todoist (api.todoist.com) and GitHub (api.github.com) for the user's own tasks; the address of a calendar link; the feeds and sites the user lists on the Feeds card; the JSON address on a Value card; a list of links a folder follows; an address the user reads settings from; and, for "Check the bookmarks", the sites on the user's board, handed back with permissions.remove() when the check ends. Because these can be at any address, the list includes https://*/*, but Nordlys only ever requests the origins of addresses the user has given. Cards refresh only while they are on the dashboard, and a followed list at most once an hour, as PRIVACY.md says.
+Nothing is granted at install. Sites are asked for from the click that needs them: Todoist (api.todoist.com) and GitHub (api.github.com) for the user's own tasks; the address of a calendar link; the feeds and sites the user lists on the Feeds card; the JSON address on a Value card; a site whose link the user types into the icon dialog; a list of links a folder follows; an address the user reads settings from; and, for "Check the bookmarks", the sites on the user's board, handed back with permissions.remove() when the check ends. Because these can be at any address, the list includes https://*/*, but Nordlys only ever requests the origins of addresses the user has given. Cards refresh only while they are on the dashboard, and a followed list at most once an hour, as PRIVACY.md says.
 ```
 
 ### `storage` — 233 chars
@@ -181,10 +181,10 @@ The new tab page has a search box. What is typed there is handed to chrome.searc
 That is the permission's only use. The extension has no search engine of its own, no list to choose from, and no setting that changes which engine is used; it never learns which engine answered. A previous version carried its own engine list and was rejected for it. Using this API is how the box respects the user's choice instead of making one for them.
 ```
 
-### Host permissions — 464 chars
+### Host permissions — 351 chars
 
 ```
-None. Nordlys asks for no site at install. Earlier versions listed images.weserv.nl, a fallback for an icon image address a site will not hand over; that service allows cross-origin requests, so it is used without a permission, and only when the user pastes such an address.
+None. Nordlys asks for no site at install. A site is asked for from the click that needs it, such as the one site whose link the user types into the icon dialog.
 
 Earlier versions also listed seven search-suggestion endpoints. Those are gone: the box no longer fetches live suggestions, so nothing typed leaves the device until the user presses Enter.
 ```
@@ -211,7 +211,7 @@ Upload `nordlys-firefox-v<version>.zip`. The add-on id is `nordlys@sa1ntsinner.g
 
 - **Summary (250 characters):** Your favourite sites in folders on every new tab, over a sky that moves. Free, with no account and no tracking.
 - **Description:** the Chrome text above, word for word: it names no browser.
-- **Differences in Firefox**, worth one line in the description: site icons come from the site or a provider you pick, because Firefox has no icon cache for extensions; Focus mode has no small floating timer window (Firefox has no document picture-in-picture yet).
+- **Differences in Firefox**, worth one line in the description: the icon dialog works the same, but a bookmark with no icon chosen shows a letter, because Firefox has no icon cache for extensions; Focus mode has no small floating timer window (Firefox has no document picture-in-picture yet).
 - **Categories:** Tabs; Appearance.
 - **Data collection:** the manifest declares `data_collection_permissions: { required: ["none"] }`. Answer "none" in the form as well.
 - **Source code:** not needed. Nothing is minified or built; the package is the source.
@@ -254,7 +254,7 @@ Nordlys has no server of its own, and no analytics or ads. It makes a request on
 - Weather card, and the place search for the sky: Open-Meteo (api.open-meteo.com and geocoding-api.open-meteo.com), for the place the user chooses. No key or account.
 - Photos and picture of the day skies, only while one is shown: Wikimedia Commons (api.wikimedia.org, commons.wikimedia.org, upload.wikimedia.org), the Metropolitan Museum (collectionapi.metmuseum.org, images.metmuseum.org) or NASA EPIC (epic.gsfc.nasa.gov).
 - Money typed in the search box ("100 usd to eur"): ExchangeRate-API (open.er-api.com), at most once a day, carrying nothing the user typed.
-- Icon search: Iconify's public API (api.iconify.design), only when the user searches for an icon; images.weserv.nl, only to load an icon image address the user pasted.
+- Icon search, only when the user presses Find in the icon dialog: the name goes to Iconify and Simple Icons (api.iconify.design, cdn.simpleicons.org) and to Wikidata and Wikimedia Commons (www.wikidata.org, query.wikidata.org, commons.wikimedia.org, upload.wikimedia.org); for a link, that one site is read once, after the browser asks.
 - Addresses the user gives: feeds, a value from a JSON address, a list of links a folder follows, settings read from an address, and the user's own bookmarks when they ask to check them or to see whether a site is up.
 - Connected apps (optional, off by default): Todoist, GitHub, or a calendar link (ICS), with a token the user enters. The token stays on the Mac. While such a card is on the dashboard it refreshes itself every few minutes.
 The privacy policy lists all of it: https://github.com/sa1ntsinner/nordlys-tab/blob/main/PRIVACY.md

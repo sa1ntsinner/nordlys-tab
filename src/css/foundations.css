@@ -6,7 +6,13 @@
   /* Tracks the active theme like its sibling surfaces. A fixed literal here renders
      dark-on-dark in every light theme, where --ink is dark. */
   --nl-surface-elevated: var(--card-tint, #141c34);
-  --nl-overlay: rgba(2, 6, 15, .46);
+  /* What floats (a menu, a dialog) and what is set into a panel (a field, a
+     row). Both come from the theme in use. They were one navy written out in
+     two dozen places, so every dark theme opened the same blue menus. */
+  --nl-surface-float: var(--card-tint, #141c34);
+  --nl-surface-well: var(--card-tint-deep, #090e1c);
+  --nl-surface-well-strong: var(--card-tint, #141c34);
+  --nl-overlay: rgba(0, 0, 0, .46);
   --nl-text-primary: var(--ink, #e9effb);
   --nl-text-secondary: var(--dim, #a7b5d0);
   --nl-text-tertiary: var(--faint, #8da0c2);
@@ -19,8 +25,9 @@
      borders and rings keep --nl-accent. */
   --nl-accent-text: var(--accent-ink, var(--accent, #7c9cff));
   --nl-on-accent: #071018;
-  --nl-focus: #a9c4ff;
-  --nl-focus-outer: rgba(3, 7, 18, .86);
+  /* The ring is the theme's accent as ink, over a halo of the theme's ground. */
+  --nl-focus: var(--nl-accent-text);
+  --nl-focus-outer: var(--nl-canvas);
   --nl-status-success: #34d399;
   --nl-status-danger: #fb7185;
   --nl-status-warning: #fbbf24;
@@ -256,9 +263,16 @@ html.light-ui[data-legibility="high"] :is(#clock, #date, #greet) {
     /* Lift the card tint toward the text colour: lighter than the card on dark themes,
        darker than it on light ones, so it separates in both directions. */
     --nl-surface-elevated: color-mix(in srgb, var(--card-tint, #141c34) 88%, var(--ink, #e9effb) 12%);
+    --nl-surface-float: color-mix(in srgb, color-mix(in srgb, var(--card-tint, #141c34) 95%, var(--ink, #e9effb) 5%) 97%, transparent);
+    --nl-surface-well: color-mix(in srgb, var(--ink, #e9effb) 5%, transparent);
+    --nl-surface-well-strong: color-mix(in srgb, var(--ink, #e9effb) 9%, transparent);
+    --nl-focus-outer: color-mix(in srgb, var(--void, #060a14) 86%, transparent);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root { --nl-motion-control: 80ms; --nl-motion-panel: 100ms; --nl-motion-enter: 100ms; --nl-motion-settle: 100ms; --nl-motion-reveal: 100ms; }
 }
+
+/* On a light theme what floats is the card's own paper, not a lifted shade of it. */
+html.light-ui { --nl-surface-float: var(--card-tint, #ffffff); }

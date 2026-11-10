@@ -69,7 +69,7 @@ for (const locale of ['en', 'ru', 'es', 'de', 'fr', 'ja', 'zh', 'tr']) {
       await page.waitForTimeout(100);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
       const tabs = page.locator('#cfg [role="tab"]');
-      await expect(tabs).toHaveCount(9);
+      await expect(tabs).toHaveCount(8);
       const names = await tabs.evaluateAll(items => items.map(item => item.getAttribute('aria-label') || item.textContent.trim()));
       expect(names.every(Boolean)).toBe(true);
     });
@@ -125,7 +125,7 @@ test('every target in the product has a 40px hit area', async ({ nordlysPage }) 
   await page.keyboard.press('Escape');
 
   await page.locator('#gear').click();
-  for (const section of ['appearance', 'background', 'bookmarks', 'general', 'support', 'custom-css', 'backup']) {
+  for (const section of ['appearance', 'background', 'bookmarks', 'general', 'support', 'backup']) {
     await page.locator(`#settings-tab-${section}`).click();
     await expect(page.locator(`#sec-${section}`)).toBeVisible();
     small.push(...await undersizedTargets(page, section));
@@ -207,18 +207,15 @@ test('size and spacing, and the icon address versions, have no high-impact viola
   await page.keyboard.press('Escape');
 
   await page.evaluate(() => {
-    const link = window.Nordlys.config.groups[0].links[0];
-    link.iconUrls = [{ url: 'https://cdn.example.com/a.png', thumb: '', at: 2 }, { url: 'https://cdn.example.com/b.png', thumb: '', at: 1 }];
-    link.iconUrl = 'https://cdn.example.com/a.png';
     window.Nordlys.settings.openIconModal(0, 0);
   });
-  await page.locator('.icon-tab-btn[data-tab="custom"]').click();
-  await expect(page.locator('.icon-url-version')).toHaveCount(2);
-  await page.locator('.icon-url-version').first().hover();
-  await expectNoHighImpactViolations(page, '#icon-url-source');
+  await expectNoHighImpactViolations(page, '#icon-modal');
+  await page.locator('#icon-file-input').setInputFiles({ name: 'icon.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAHUlEQVR42mNkYPhfz0AEYBxVSF+FjKMKRxWSrhAAhm0f8Uq+1cQAAAAASUVORK5CYII=', 'base64') });
+  await page.locator('#icon-adjust:not([disabled])').click();
+  await expectNoHighImpactViolations(page, '#icon-modal');
 });
 
-test('arranging, its size panel and the icon address versions keep the 40px contract', async ({ nordlysPage }) => {
+test('arranging, its size panel and the icon dialog keep the 40px contract', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   const small = [];
   await page.mouse.click(40, 700, { button: 'right' });
@@ -228,15 +225,12 @@ test('arranging, its size panel and the icon address versions keep the 40px cont
   small.push(...await undersizedTargets(page, 'size panel'));
   await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
   await page.evaluate(() => {
-    const link = window.Nordlys.config.groups[0].links[0];
-    link.iconUrls = [{ url: 'https://cdn.example.com/a.png', thumb: '', at: 2 }, { url: 'https://cdn.example.com/b.png', thumb: '', at: 1 }];
-    link.iconUrl = 'https://cdn.example.com/a.png';
     window.Nordlys.settings.openIconModal(0, 0);
   });
-  await page.locator('.icon-tab-btn[data-tab="custom"]').click();
-  await page.locator('.icon-url-version').nth(1).hover();
-  await page.locator('.icon-url-version').nth(1).locator('.icon-url-pick').focus();
-  small.push(...(await undersizedTargets(page, 'icon addresses')).filter(item => /icon-url|Change|Remove|cdn/.test(item.name) || item.where === 'icon addresses'));
+  small.push(...await undersizedTargets(page, 'icon dialog'));
+  await page.locator('#icon-file-input').setInputFiles({ name: 'icon.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAHUlEQVR42mNkYPhfz0AEYBxVSF+FjKMKRxWSrhAAhm0f8Uq+1cQAAAAASUVORK5CYII=', 'base64') });
+  await page.locator('#icon-adjust:not([disabled])').click();
+  small.push(...await undersizedTargets(page, 'adjust'));
   expect(small.filter(item => !/^#board|tile/.test(item.name)), 'controls smaller than the 40px contract').toEqual([]);
 });
 

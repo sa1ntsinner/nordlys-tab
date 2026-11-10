@@ -18,7 +18,7 @@
 .focus-mode > :not(.fm-veil) { position: relative; }
 .fm-veil {
   position: absolute; inset: 0;
-  background: radial-gradient(120% 90% at 50% 45%, rgba(4, 7, 14, 0.42), rgba(4, 7, 14, 0.78));
+  background: radial-gradient(120% 90% at 50% 45%, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.78));
   backdrop-filter: blur(14px) saturate(1.1);
   -webkit-backdrop-filter: blur(14px) saturate(1.1);
 }

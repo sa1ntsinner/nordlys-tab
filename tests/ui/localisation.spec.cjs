@@ -38,7 +38,7 @@ test('no message key leaks to the screen in any locale', async ({ nordlysPage })
       select.value = value; select.dispatchEvent(new Event('change', { bubbles: true }));
     }, locale);
     await page.waitForTimeout(60);
-    for (const section of ['appearance', 'background', 'bookmarks', 'general', 'support', 'custom-css', 'backup']) {
+    for (const section of ['appearance', 'background', 'bookmarks', 'general', 'support', 'backup']) {
       await page.locator(`#settings-tab-${section}`).click();
       // Compare against the real key list rather than a shape: text like
       // "nordlys.app" is a domain in the preview card, not an unresolved key.
@@ -97,7 +97,7 @@ test('titles, accessible names and placeholders are translated, not only the vis
 /* The icon picker, its cropper, the bookmark list's accessible names and the
    font list were English in every language: written into the markup or the
    script and never given a key. */
-test('the icon picker, the cropper and the bookmark list speak the chosen language', async ({ nordlysPage }) => {
+test('the icon dialog, Adjust and the bookmark list speak the chosen language', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.evaluate(() => window.I18N.setLanguage('ru'));
   await page.locator('#gear').click();
@@ -119,20 +119,19 @@ test('the icon picker, the cropper and the bookmark list speak the chosen langua
     const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     while (walk.nextNode()) {
       const el = walk.currentNode.parentElement;
-      if (el.closest('[hidden], .modal-tab-pane:not(.active)') || !el.getClientRects().length) continue;
+      if (el.closest('[hidden]') || !el.getClientRects().length) continue;
       const text = walk.currentNode.textContent.trim();
       if (/[A-Za-z]{4,}/.test(text) && !/[а-яё]/i.test(text)) out.push(text);
     }
     return out;
   });
   const brands = /^(YouTube|Bookmark|Google|DuckDuckGo|www\.[\w.]+|[\w.-]+\.[a-z]{2,})$/;
-  for (const tab of ['search', 'favicon', 'custom']) {
-    await page.locator(`.icon-tab-btn[data-tab="${tab}"]`).click();
-    expect((await visible()).filter(text => !brands.test(text)), `English left in the ${tab} pane`).toEqual([]);
-  }
-  await page.evaluate(() => window.Nordlys.settings.openCropper(`data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"/>')}`, 'url'));
-  await page.waitForFunction(() => Boolean(window.Nordlys.settings.cropperImage));
-  expect((await visible()).filter(text => !brands.test(text)), 'English left in the cropper').toEqual([]);
+  expect((await visible()).filter(text => !brands.test(text)), 'English left in the icon dialog').toEqual([]);
+  expect(await page.locator('#icon-find').getAttribute('placeholder')).toMatch(/[а-яё]/i);
+  await page.locator('#icon-file-input').setInputFiles({ name: 'icon.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAHUlEQVR42mNkYPhfz0AEYBxVSF+FjKMKRxWSrhAAhm0f8Uq+1cQAAAAASUVORK5CYII=', 'base64') });
+  await page.locator('#icon-adjust:not([disabled])').click();
+  expect((await visible()).filter(text => !brands.test(text)), 'English left in Adjust').toEqual([]);
+  expect(await page.locator('#icon-adjust-box').getAttribute('aria-label')).toMatch(/[а-яё]/i);
 });
 
 /* The page says which language it is in, so a screen reader reads German

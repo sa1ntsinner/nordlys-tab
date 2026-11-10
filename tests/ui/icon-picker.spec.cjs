@@ -1,26 +1,23 @@
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
 const { openIconPicker } = require('../helpers/flows.cjs');
 
-test('icon picker is a focus-contained source-tab dialog with real tile preview', async ({ nordlysPage }) => {
+test('the icon dialog holds focus, has one field and shows the real tile', async ({ nordlysPage }) => {
   const { page } = nordlysPage; await page.locator('#gear').click(); await page.getByRole('tab', { name: 'Bookmarks' }).click();
   const folder = page.locator('.bookmark-folder-accordion').first(); await folder.locator('summary').click();
   const trigger = await openIconPicker(page, folder);
   const dialog = page.locator('#icon-modal'); await expect(dialog).toHaveAttribute('role', 'dialog'); await expect(dialog).toHaveAttribute('aria-modal', 'true');
   await page.waitForTimeout(300);
-  const width = (await dialog.locator('.modal-box').boundingBox()).width; expect(width).toBeGreaterThanOrEqual(640); expect(width).toBeLessThanOrEqual(680);
-  /* Three sources, not five: a pasted URL, an uploaded file and a monogram are
-     all "something of your own" and made the user pick a mechanism first. */
-  await expect(dialog.getByRole('tab')).toHaveCount(3);
-  await expect(dialog.getByRole('tab', { name: 'Find online' })).toBeVisible();
-  await expect(dialog.getByRole('tab', { name: 'Website icon' })).toBeVisible();
-  await expect(dialog.getByRole('tab', { name: 'Custom' })).toBeVisible();
+  const width = (await dialog.locator('.modal-box').boundingBox()).width; expect(width).toBeGreaterThanOrEqual(420); expect(width).toBeLessThanOrEqual(460);
+  /* One field, no tabs: a name or a link, and the finder does the rest. */
+  await expect(dialog.getByRole('tab')).toHaveCount(0);
   await expect(dialog.locator('#icon-live-preview .tile .box')).toBeVisible();
   await expect(dialog.locator('#icon-live-preview .nl-icon[data-icon-kind="builtin"]')).toHaveCount(1);
   await expect(dialog.locator('#icon-live-preview .mono')).toHaveCount(0);
-  await page.locator('#icon-search').fill('github');
+  await expect(page.locator('#icon-find')).toBeFocused();
+  await page.locator('#icon-find').fill('github');
   /* Typing alone is private; the explicit button is the network boundary. */
-  await expect(dialog.locator('#modal-icon-grid .icon-item')).toHaveCount(0);
-  const search = dialog.getByRole('button', { name: 'Search' });
+  await expect(dialog.locator('#icon-choices [role="radio"]')).toHaveCount(0);
+  const search = dialog.getByRole('button', { name: 'Find' });
   const target = await search.boundingBox(); expect(target.height).toBeGreaterThanOrEqual(40);
   await page.keyboard.press('Escape'); await expect(trigger).toBeFocused();
 });

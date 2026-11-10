@@ -19,7 +19,7 @@ test('every settings section contains forward and backward keyboard focus', asyn
   // Seven sections of 35 Tabs each runs past 30s on a Mac runner.
   test.slow();
   const { page } = nordlysPage; await page.locator('#gear').click(); const drawer = page.locator('#cfg');
-  for (const id of ['appearance', 'background', 'bookmarks', 'general', 'support', 'custom-css', 'backup']) {
+  for (const id of ['appearance', 'background', 'bookmarks', 'general', 'support', 'backup']) {
     await page.locator(`#settings-tab-${id}`).click(); await expectCycles(page, drawer);
     for (let index = 0; index < 35; index++) await page.keyboard.press('Tab');
     expect(await page.evaluate(() => document.activeElement.closest('#cfg') !== null), `${id} leaked focus`).toBe(true);
@@ -48,7 +48,7 @@ test('quick edit and nested confirmation close one top layer at a time', async (
 });
 
 test('CSS guide is a contained nested settings dialog and restores its opener', async ({ nordlysPage }) => {
-  const { page } = nordlysPage; await page.locator('#gear').click(); await page.locator('#settings-tab-custom-css').click();
+  const { page } = nordlysPage; await page.locator('#gear').click(); await page.locator('#custom-css-block > summary').click();
   const opener = page.locator('#btn-open-css-docs'); await opener.click(); const guide = page.locator('#css-docs-modal');
   await expect(guide).toBeVisible(); await expect(guide).toHaveAttribute('aria-labelledby', 'css-docs-title'); await expect(page.locator('#cfg')).toHaveAttribute('inert', ''); await expectCycles(page, guide);
   await page.keyboard.press('Escape'); await expect(guide).toBeHidden(); await expect(opener).toBeFocused(); await expect(page.locator('#cfg')).not.toHaveAttribute('inert', '');

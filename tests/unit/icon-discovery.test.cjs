@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { vectorDataUrl, search, titleFromSlug } = require('../../src/js/icon-discovery.js');
+const { vectorDataUrl, markupDataUrl, titleFromSlug, parseQuery, originsFor, brandFromHost, rank, find, fromIconify, context } = require('../../src/js/icon-discovery.js');
 
 test('brand vectors become inert path-only data URLs', () => {
   const url = vectorDataUrl({ width: 24, height: 24, body: '<path fill="currentColor" d="M2 2H22V22H2Z"/>' }, '#35d6c0');
@@ -15,9 +15,149 @@ test('active or unsupported SVG markup is refused', () => {
   assert.throws(() => vectorDataUrl({ width: 100000, height: 24, body: '<path d="M0 0"/>' }), /dimensions/);
 });
 
+/* A full-colour mark keeps its fills and gradients, and nothing that could
+   run or reach outside. */
+test('a colour mark keeps its gradients and refuses script, handlers and outside addresses', () => {
+  const kept = decodeURIComponent(markupDataUrl({ width: 256, height: 256, body: '<defs><linearGradient id="a"><stop stop-color="#f00"/></linearGradient></defs><path fill="url(#a)" d="M0 0h9v9z"/>' }));
+  assert.match(kept, /fill="url\(#a\)"/);
+  assert.match(kept, /viewBox="0 0 256 256"/);
+  for (const body of ['<script>1</script>', '<path d="M0 0" onclick="x()"/>', '<image href="https://example.org/a.png"/>', '<use href="https://example.org/a.svg#b"/>',
+    '<path style="x" fill="url(https://example.org/a)" d="M0 0"/>', '<foreignObject></foreignObject>', '<style>a{}</style>']) {
+    assert.throws(() => markupDataUrl({ body }), /Unsupported/, body);
+  }
+});
+
+test('what is typed is a name, a site or a picture', () => {
+  assert.deepEqual(parseQuery('  '), { kind: 'empty' });
+  assert.equal(parseQuery('Spotify').kind, 'name');
+  assert.equal(parseQuery('Stack Overflow').kind, 'name');
+  assert.equal(parseQuery('Node.js runtime').kind, 'name');
+  const site = parseQuery('open.spotify.com/collection');
+  assert.deepEqual([site.kind, site.origin, site.name], ['site', 'https://open.spotify.com', 'spotify']);
+  assert.equal(parseQuery('https://github.com').kind, 'site');
+  assert.equal(parseQuery('https://upload.wikimedia.org/wikipedia/commons/8/84/Spotify_icon.svg').kind, 'image');
+  assert.equal(parseQuery('example.org/logo.PNG?v=2').kind, 'image');
+  assert.equal(parseQuery('data:image/png;base64,AAAA').kind, 'image');
+  assert.equal(parseQuery('javascript:alert(1)').kind, 'name');
+});
+
+test('only a link asks for a site, and only for that site', () => {
+  assert.deepEqual(originsFor(parseQuery('Spotify')), []);
+  assert.deepEqual(originsFor(parseQuery('https://open.spotify.com/x')), ['https://open.spotify.com/*']);
+  assert.deepEqual(originsFor(parseQuery('https://cdn.example.org/a/logo.svg')), ['https://cdn.example.org/*']);
+  assert.deepEqual(originsFor(parseQuery('data:image/png;base64,AAAA')), []);
+});
+
+test('a host is known by its own word', () => {
+  const expectations = { 'www.youtube.com': 'youtube', 'open.spotify.com': 'spotify', 'bbc.co.uk': 'bbc', 'store.steampowered.com': 'steampowered', 'localhost': 'localhost', 'chatgpt.com': 'chatgpt' };
+  for (const [host, brand] of Object.entries(expectations)) assert.equal(brandFromHost(host), brand, host);
+});
+
+const pick = (list) => rank(list).map(choice => choice.id);
+
+test('a vector comes first, then a large clear picture; an opaque one and a favicon come last', () => {
+  const order = pick([
+    { id: 'favicon', src: 'a', from: 'site-icon', width: 32, height: 32, measured: true },
+    { id: 'opaque', src: 'b', from: 'site-touch', width: 180, height: 180, opaque: true, measured: true },
+    { id: 'clear', src: 'c', from: 'site-icon', width: 192, height: 192, measured: true },
+    { id: 'vector', src: 'd', from: 'site-icon', vector: true, width: 24, height: 24, measured: true }
+  ]);
+  assert.deepEqual(order, ['vector', 'clear', 'opaque', 'favicon']);
+});
+
+test('a smaller clear picture beats a larger one on an opaque plate', () => {
+  assert.deepEqual(pick([
+    { id: 'plate', src: 'a', from: 'site-touch', width: 180, height: 180, opaque: true, measured: true },
+    { id: 'clear', src: 'b', from: 'site-icon', width: 96, height: 96, measured: true }
+  ]), ['clear', 'plate']);
+});
+
+test('wordmarks and banners are refused, a picture the person pointed at never is', () => {
+  assert.deepEqual(pick([
+    { id: 'wordmark', src: 'a', from: 'wikimedia-logo', vector: true, width: 800, height: 240 },
+    { id: 'banner', src: 'b', from: 'site-og', width: 1200, height: 630, measured: true },
+    { id: 'pasted', src: 'c', from: 'address', width: 1200, height: 400, measured: true }
+  ]), ['pasted']);
+});
+
+test('one favicon at most, the same picture once, six choices in all', () => {
+  const many = Array.from({ length: 9 }, (_, at) => ({ id: `v${at}`, src: `s${at}`, from: 'logos', vector: true, width: 10, height: 10 }));
+  assert.equal(rank(many).length, 6);
+  const small = [16, 24, 32].map(size => ({ id: `f${size}`, src: `f${size}`, from: 'site-icon', width: size, height: size, measured: true }));
+  assert.deepEqual(pick(small), ['f32']);
+  assert.equal(rank([many[0], { ...many[1], src: many[0].src }]).length, 1);
+});
+
+const reply = (body, status = 200) => new Response(typeof body === 'string' ? body : JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+
+test('the brand sets answer with the brand itself, not its neighbours', async () => {
+  const asked = [];
+  const fetchImpl = async (url) => {
+    asked.push(url);
+    if (url.includes('/search?')) return reply({ icons: ['simple-icons:steam', 'logos:steam', 'simple-icons:steamdb', 'simple-icons:steamdeck', 'logos:steam-icon', 'other:steam'] });
+    if (url.includes('cdn.simpleicons.org')) return new Response('<svg fill="#000000"/>');
+    if (url.includes('/logos.json')) return reply({ prefix: 'logos', icons: { steam: { body: '<path fill="#000" d="M0 0h9v9z"/>', width: 512, height: 128 }, 'steam-icon': { body: '<path fill="#000" d="M0 0h9v9z"/>', width: 256, height: 256 } } });
+    return reply({ prefix: 'simple-icons', width: 24, height: 24, icons: { steam: { body: '<path d="M0 0h9v9z"/>' } } });
+  };
+  const found = await fromIconify('Steam', context({ fetchImpl }));
+  assert.deepEqual(found.map(icon => icon.id).sort(), ['logos:steam', 'logos:steam-icon', 'simple-icons:steam']);
+  assert.ok(asked.every(url => ['api.iconify.design', 'cdn.simpleicons.org'].includes(new URL(url).host)));
+  // The wide wordmark is dropped by the ranking, the square mark leads, the single-colour one follows.
+  assert.deepEqual(pick(found), ['logos:steam-icon', 'simple-icons:steam']);
+});
+
 test('oversized provider responses are rejected before parsing', async () => {
   const fetchImpl = async () => new Response(' '.repeat(512 * 1024 + 1), { status: 200, headers: { 'content-type': 'application/json' } });
-  await assert.rejects(search('github', { fetchImpl }), /too large/);
+  await assert.rejects(fromIconify('github', context({ fetchImpl })), /too large/);
+});
+
+test('a name asks the two catalogues and never the site', async () => {
+  const asked = [];
+  const fetchImpl = async (url) => {
+    asked.push(new URL(url).host);
+    if (url.includes('iconify.design/search')) return reply({ icons: ['logos:spotify-icon'] });
+    if (url.includes('logos.json')) return reply({ prefix: 'logos', icons: { 'spotify-icon': { body: '<path fill="#1ed760" d="M0 0h9v9z"/>', width: 256, height: 256 } } });
+    if (url.includes('wbsearchentities')) return reply({ search: [{ id: 'Q689141' }] });
+    if (url.includes('query.wikidata.org')) return reply({ results: { bindings: [
+      { item: { value: 'http://www.wikidata.org/entity/Q689141' }, p: { value: 'http://www.wikidata.org/prop/direct/P8972' }, v: { value: 'http://commons.wikimedia.org/wiki/Special:FilePath/Spotify%20icon.svg' } },
+      { item: { value: 'http://www.wikidata.org/entity/Q689141' }, p: { value: 'http://www.wikidata.org/prop/direct/P154' }, v: { value: 'http://commons.wikimedia.org/wiki/Special:FilePath/Spotify%20logo%20with%20text.svg' } }
+    ] } });
+    if (url.includes('commons.wikimedia.org')) return reply({ query: { pages: {
+      1: { title: 'File:Spotify icon.svg', imageinfo: [{ url: 'https://upload.wikimedia.org/a/Spotify_icon.svg', width: 512, height: 512, mime: 'image/svg+xml' }] },
+      2: { title: 'File:Spotify logo with text.svg', imageinfo: [{ url: 'https://upload.wikimedia.org/a/Spotify_logo_with_text.svg', width: 559, height: 168, mime: 'image/svg+xml' }] }
+    } } });
+    throw new Error(`unexpected ${url}`);
+  };
+  // Pictures are measured in a browser; here each is taken as its catalogue describes it.
+  const measureImpl = async (candidate) => ({ ...candidate, src: candidate.src || candidate.url, measured: true });
+  const { choices, offline } = await find('Spotify', { fetchImpl, measureImpl });
+  assert.equal(offline, false);
+  assert.deepEqual(choices.map(choice => choice.id).sort(), ['logos:spotify-icon', 'wikimedia:Spotify icon.svg']);
+  assert.deepEqual([...new Set(asked)].sort(), ['api.iconify.design', 'commons.wikimedia.org', 'query.wikidata.org', 'www.wikidata.org']);
+});
+
+test('a link whose site may not be read still gets the catalogues, and says so', async () => {
+  const asked = [];
+  const fetchImpl = async (url) => {
+    asked.push(new URL(url).host);
+    if (url.includes('iconify.design/search')) return reply({ icons: ['simple-icons:example'] });
+    if (url.includes('cdn.simpleicons.org')) return new Response('<svg fill="#336699"/>');
+    if (url.includes('simple-icons.json')) return reply({ prefix: 'simple-icons', width: 24, height: 24, icons: { example: { body: '<path d="M0 0h9v9z"/>' } } });
+    return reply({ search: [] });
+  };
+  const measureImpl = async (candidate) => ({ ...candidate, src: candidate.src || candidate.url, measured: true });
+  const result = await find('https://example.org/', { access: Promise.resolve(false), fetchImpl, measureImpl });
+  assert.equal(result.declined, true);
+  assert.deepEqual(result.choices.map(choice => choice.id), ['simple-icons:example']);
+  assert.ok(!asked.includes('example.org'), 'the site itself was never asked');
+});
+
+test('with no network the answer is "offline", not "nothing found"', async () => {
+  const fetchImpl = async () => { throw new TypeError('Failed to fetch'); };
+  const result = await find('Spotify', { fetchImpl });
+  assert.deepEqual([result.choices.length, result.offline], [0, true]);
+  const none = await find('Zzyzx', { fetchImpl: async () => reply({ icons: [], search: [] }) });
+  assert.deepEqual([none.choices.length, none.offline], [0, false]);
 });
 
 /* Simple Icons runs a brand's words together; a result used to read

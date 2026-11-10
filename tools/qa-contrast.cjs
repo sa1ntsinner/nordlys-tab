@@ -236,25 +236,17 @@ async function main() {
         done++;
       }
     }
-    /* The panels opened over the board to change it: the icon picker's three
-       panes (with remembered icon addresses in the strip) and Arrange with its
+    /* The panels opened over the board to change it: the icon dialog and Arrange with its
        size panel. Their chosen segments sit on sliding thumbs painted by a
        pseudo-element, which only a measure of pixels can see. */
     if (SURFACES.includes('panels')) {
       await applyLook(theme, 'aurora', 'theme', PHASES[0]);
       await page.evaluate(() => {
-        const link = window.Nordlys.config.groups[0]?.links?.[0];
-        if (!link) return;
-        link.iconUrls = [{ url: 'https://cdn.example.com/a.png', thumb: '', at: 2 }, { url: 'https://cdn.example.com/b.png', thumb: '', at: 1 }];
-        link.iconUrl = 'https://cdn.example.com/a.png';
-        window.Nordlys.settings.openIconModal(0, 0);
+        if (window.Nordlys.config.groups[0]?.links?.[0]) window.Nordlys.settings.openIconModal(0, 0);
       });
-      for (const pane of ['search', 'favicon', 'custom']) {
-        await page.locator(`.icon-tab-btn[data-tab="${pane}"]`).click();
-        await page.waitForTimeout(260);
-        await record({ surface: 'panels', theme, scene: 'aurora', mood: 'theme', phase: PHASES[0], layer: `icon picker, ${pane}`, scope: '#icon-modal' });
-        done++;
-      }
+      await page.waitForTimeout(260);
+      await record({ surface: 'panels', theme, scene: 'aurora', mood: 'theme', phase: PHASES[0], layer: 'icon dialog', scope: '#icon-modal' });
+      done++;
       await page.keyboard.press('Escape');
       await page.waitForTimeout(200);
       await page.evaluate(() => window.Nordlys.grid.arrange.enter());

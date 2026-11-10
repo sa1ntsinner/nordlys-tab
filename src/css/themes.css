@@ -788,12 +788,12 @@ html[data-theme="oled-obsidian"] #veil {
 }
 
 .light-ui .ctab:hover {
-  color: #0f172a;
+  color: var(--ink);
   background: rgba(0, 0, 0, 0.05);
 }
 
 .light-ui .ctab.active {
-  background: rgba(15, 23, 42, 0.07);
+  background: var(--nl-surface-well-strong);
   color: var(--ink);
 }
 
@@ -810,13 +810,13 @@ html[data-theme="oled-obsidian"] #veil {
 }
 
 .light-ui .ipt {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--nl-surface-float);
   border-color: rgba(0, 0, 0, 0.14);
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .light-ui .ipt:focus {
-  background: #ffffff;
+  background: var(--nl-surface-well-strong);
   border-color: var(--accent);
   box-shadow: var(--nl-ring);
 }
@@ -826,17 +826,17 @@ html[data-theme="oled-obsidian"] #veil {
 }
 
 .light-ui .glass-context-menu {
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--nl-surface-float);
   border: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow: var(--nl-shadow-3);
 }
 
 .light-ui .ctx-header {
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .light-ui .ctx-item {
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .light-ui .ctx-item svg {
@@ -846,12 +846,12 @@ html[data-theme="oled-obsidian"] #veil {
 .light-ui .ctx-item:hover,
 .light-ui .ctx-item:focus-visible {
   background: rgba(15, 23, 42, 0.07);
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .light-ui .ctx-item:hover svg,
 .light-ui .ctx-item:focus-visible svg {
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .light-ui .ctx-divider {
@@ -862,14 +862,14 @@ html[data-theme="oled-obsidian"] #veil {
 .light-ui .confirm-backdrop,
 .light-ui #icon-modal,
 .light-ui #css-docs-modal {
-  background: rgba(15, 25, 45, 0.35);
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .light-ui .quick-modal-card,
 .light-ui .confirm-card,
 .light-ui .modal-box,
 .light-ui .css-docs-box {
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--nl-surface-float);
   border: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow: var(--nl-shadow-3);
 }
@@ -893,19 +893,19 @@ html[data-theme="oled-obsidian"] #veil {
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow: var(--nl-shadow-2);
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .light-ui .glass-btn {
   background: rgba(0, 0, 0, 0.05);
   border-color: rgba(0, 0, 0, 0.12);
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .light-ui .glass-btn:hover {
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   border-color: var(--accent);
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .light-ui .glass-btn.accent {
@@ -918,7 +918,7 @@ html[data-theme="oled-obsidian"] #veil {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(0, 0, 0, 0.09);
   box-shadow: var(--nl-shadow-1);
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .light-ui .theme-card:hover {
@@ -934,7 +934,7 @@ html[data-theme="oled-obsidian"] #veil {
 }
 
 .light-ui .theme-card b {
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .light-ui .custom-theme-tuning-card {
@@ -948,7 +948,7 @@ html[data-theme="oled-obsidian"] #veil {
 }
 
 .light-ui .hex-text {
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .light-ui .bm-group-card,
@@ -970,7 +970,7 @@ html[data-theme="oled-obsidian"] #veil {
 .light-ui .cols-select {
   background: rgba(0, 0, 0, 0.04);
   border-color: rgba(0, 0, 0, 0.1);
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .light-ui .move-btn {
@@ -981,19 +981,19 @@ html[data-theme="oled-obsidian"] #veil {
 
 .light-ui .move-btn:hover:not(:disabled) {
   background: rgba(0, 0, 0, 0.08);
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .light-ui .folder-transfer-select {
   background: rgba(255, 255, 255, 0.95);
   border-color: rgba(0, 0, 0, 0.12);
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .light-ui #css-editor {
   background: rgba(255, 255, 255, 0.95);
   border-color: rgba(0, 0, 0, 0.14);
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .light-ui .icon-modal-tabs {
@@ -1006,7 +1006,7 @@ html[data-theme="oled-obsidian"] #veil {
 }
 
 .light-ui .icon-tab-btn:hover {
-  color: #0f172a;
+  color: var(--ink);
 }
 
 /* The tint and the underline say which tab is chosen; the words stay ink.
@@ -1017,78 +1017,14 @@ html[data-theme="oled-obsidian"] #veil {
 }
 
 .light-ui .glass-input {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--nl-surface-float);
   border-color: rgba(0, 0, 0, 0.12);
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .light-ui .glass-input:focus {
-  background: #ffffff;
+  background: var(--nl-surface-float);
   border-color: var(--accent);
-}
-
-.light-ui .icon-chip {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.08);
-  color: #475569;
-}
-
-.light-ui .icon-chip:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: #0f172a;
-}
-
-/* White on a light theme's own accent was 3.2–4.2:1. The accent made to be
-   read on a light page is dark enough to carry white words as well. */
-.light-ui .icon-chip.active {
-  background: var(--nl-accent-text);
-  color: #ffffff;
-}
-
-.light-ui .icon-item {
-  background: rgba(0, 0, 0, 0.03);
-  border-color: rgba(0, 0, 0, 0.08);
-}
-
-.light-ui .icon-item:hover {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  border-color: var(--accent);
-}
-
-.light-ui .icon-item svg {
-  color: #0f172a;
-}
-
-.light-ui .icon-item span {
-  color: #475569;
-}
-
-.light-ui .file-drop-zone {
-  background: rgba(0, 0, 0, 0.02);
-  border-color: rgba(0, 0, 0, 0.14);
-}
-
-.light-ui .file-drop-zone:hover {
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-  border-color: var(--accent);
-}
-
-.light-ui .cropper-preview-card,
-.light-ui .cropper-slider-block {
-  background: rgba(0, 0, 0, 0.03);
-  border-color: rgba(0, 0, 0, 0.08);
-}
-
-.light-ui .cropper-top-bar,
-.light-ui .cropper-actions-footer {
-  border-color: rgba(0, 0, 0, 0.08);
-}
-
-.light-ui .crop-tool-btn,
-.light-ui .crop-pill-btn {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.1);
-  color: #0f172a;
 }
 
 /* ── Specific Fine-Tuned Light Theme Ambient Profiles ────────── */

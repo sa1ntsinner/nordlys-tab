@@ -37,7 +37,7 @@ async function main() {
     };
   });
   await page.route('https://api.iconify.design/search?**', route => route.fulfill({
-    contentType: 'application/json', body: JSON.stringify({ icons: ['simple-icons:github', 'simple-icons:githubactions', 'simple-icons:githubcopilot'] })
+    contentType: 'application/json', body: JSON.stringify({ icons: ['simple-icons:github'] })
   }));
   await page.route('https://api.iconify.design/simple-icons.json?**', route => route.fulfill({
     contentType: 'application/json', body: JSON.stringify({ prefix: 'simple-icons', width: 24, height: 24, icons: {
@@ -47,7 +47,7 @@ async function main() {
     } })
   }));
   /* The static harness has no chrome://favicon store. Supply a local inert pixel
-     so exercising the Website icon pane cannot hide real console errors. */
+     so a tile drawn from it cannot hide real console errors. */
   await page.route('**/_favicon/**', route => route.fulfill({
     contentType: 'image/png',
     body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lwO+WQAAAABJRU5ErkJggg==', 'base64')
@@ -131,7 +131,7 @@ async function main() {
 
   await shot('01-main');
   await page.locator('#gear').click();
-  const tabs = ['appearance', 'background', 'bookmarks', 'general', 'support', 'custom-css', 'backup'];
+  const tabs = ['appearance', 'background', 'bookmarks', 'general', 'support', 'backup'];
   for (const id of tabs) {
     await page.locator(`#settings-tab-${id}`).click();
     await inspect(`settings-${id}`);
@@ -163,15 +163,13 @@ async function main() {
   await shot('04-context-menu');
   await page.keyboard.press('Enter');
   await page.locator('#quick-icon-preview').click();
-  await page.locator('#icon-search').fill('GitHub');
-  await page.locator('#icon-search-btn').click();
-  await page.locator('#modal-icon-grid .icon-item').first().waitFor();
-  await inspect('icon-search-results');
-  await shot('05-icon-search');
-  await page.locator('.icon-tab-btn[data-tab="favicon"]').click();
-  await shot('06-website-icon');
-  await page.locator('.icon-tab-btn[data-tab="custom"]').click();
-  await shot('07-custom-icon');
+  await page.locator('#icon-find').fill('GitHub');
+  await page.locator('#icon-find-btn').click();
+  await page.locator('#icon-choices [role="radio"]').first().waitFor();
+  await inspect('icon-found');
+  await shot('05-icon-found');
+  await page.locator('#icon-adjust').click();
+  await shot('06-icon-adjust');
   await page.locator('#modal-x').click();
   /* #modal-x only closes the icon picker. The quick-edit modal it was opened from
      is still up, and its backdrop swallows every click aimed at #gear below. */

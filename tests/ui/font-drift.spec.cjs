@@ -14,7 +14,7 @@ for (const choice of ['default', 'Georgia', 'Arial']) {
     }, choice);
     await page.locator('#gear').click();
     const drift = [];
-    for (const tab of ['appearance', 'general', 'background', 'bookmarks', 'custom-css', 'backup', 'support']) {
+    for (const tab of ['appearance', 'general', 'background', 'bookmarks', 'backup', 'support']) {
       await page.locator(`.ctab[data-tab="${tab}"]`).click();
       drift.push(...await page.evaluate(() => {
         const root = getComputedStyle(document.documentElement);

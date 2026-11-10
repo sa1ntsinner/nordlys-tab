@@ -180,7 +180,7 @@ body.seconds .sc, body.seconds #ss {
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid var(--frost);
-  background: rgba(9, 15, 30, 0.88);
+  background: var(--nl-surface-float);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
   box-shadow: var(--nl-shadow-3);
@@ -321,7 +321,7 @@ body.seconds .sc, body.seconds #ss {
   position: fixed;
   inset: 0;
   z-index: var(--nl-z-scrim);
-  background: rgba(3, 7, 18, 0.32);
+  background: rgba(0, 0, 0, 0.32);
   opacity: 0;
   visibility: hidden;
   backdrop-filter: blur(0px);
@@ -333,7 +333,7 @@ body.seconds .sc, body.seconds #ss {
 body.searching #dim {
   opacity: 1;
   visibility: visible;
-  background: rgba(3, 7, 18, 0.5);
+  background: rgba(0, 0, 0, 0.5);
   transition: opacity var(--nl-transition-panel), visibility 0s;
   pointer-events: auto;
 }
@@ -961,7 +961,7 @@ body.arranging #board .card.is-resizing .card-resize-handle::after { border-colo
   transform: translateY(10px);
   padding: 6px 16px;
   border-radius: 20px;
-  background: rgba(14, 22, 42, 0.85);
+  background: var(--nl-surface-float);
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: #ffffff;
   font-size: var(--nl-text-xs);
@@ -1000,7 +1000,7 @@ body.arranging #board .card.is-resizing .card-resize-handle::after { border-colo
   translate: -50% 0;
   padding: 6px 16px;
   border-radius: 20px;
-  background: rgba(14, 22, 42, 0.9);
+  background: var(--nl-surface-float);
   border: 1px solid var(--accent);
   color: #ffffff;
   font-size: var(--nl-text-xs);
@@ -1038,7 +1038,7 @@ body.arranging #board .card.is-resizing .card-resize-handle::after { border-colo
    While a command is being typed the page stays in view behind a lighter
    dim, so a previewed theme or sky can be judged, and the folder or bookmark
    a command would act on is lifted above the rest. */
-body.searching.commanding #dim { background: rgba(3, 7, 18, 0.12); }
+body.searching.commanding #dim { background: rgba(0, 0, 0, 0.12); }
 .light-ui body.searching.commanding #dim { background: rgba(255, 255, 255, 0.1); }
 #board.command-preview .card:not(.command-target):not(:has(.command-target)) { opacity: 0.45; }
 #board.command-preview .tile:not(.command-target) { opacity: 0.55; }
@@ -1613,7 +1613,7 @@ body.arranging .fit-toggle { display: none; }
   position: fixed;
   z-index: var(--nl-z-menu);
   min-width: 220px;
-  background: rgba(11, 18, 36, 0.94);
+  background: var(--nl-surface-float);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 14px;
   padding: 6px;
@@ -1775,7 +1775,7 @@ body.arranging .fit-toggle { display: none; }
   position: fixed;
   inset: 0;
   z-index: var(--nl-z-overlay);
-  background: rgba(2, 6, 14, 0.65);
+  background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   display: grid;
@@ -1793,7 +1793,7 @@ body.arranging .fit-toggle { display: none; }
 
 .quick-modal-card {
   width: min(92vw, 420px);
-  background: rgba(11, 18, 38, 0.95);
+  background: var(--nl-surface-float);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 18px;
   box-shadow: var(--nl-shadow-3);
@@ -2047,7 +2047,7 @@ body.arranging .fit-toggle { display: none; }
 .tile:focus-visible {
   outline: 2px solid var(--nl-focus, var(--accent));
   outline-offset: 4px;
-  box-shadow: 0 0 0 6px var(--nl-focus-outer, rgba(3, 7, 18, .86));
+  box-shadow: 0 0 0 6px var(--nl-focus-outer, rgba(0, 0, 0, .86));
   border-radius: var(--tile-radius);
 }
 ::selection {
@@ -2370,7 +2370,6 @@ body.arranging:has(.arrange-size:not([hidden])) #page { padding-bottom: 560px; }
     outline: 3px solid Highlight;
     outline-offset: 2px;
   }
-  .icon-url-version.is-current .icon-url-thumb { outline: 3px solid Highlight; }
   [data-thumb]::before,
   .ctabs.has-indicator::after { display: none; }
   .tg i { forced-color-adjust: none; background: Canvas !important; border: 1px solid CanvasText !important; }

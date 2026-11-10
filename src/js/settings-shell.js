@@ -2,8 +2,7 @@
 (function () {
   const groups = [
     { ids: ['appearance', 'background', 'bookmarks', 'dashboard'] },
-    { ids: ['general', 'sync', 'support'] },
-    { ids: ['custom-css', 'backup'] }
+    { ids: ['general', 'sync', 'support', 'backup'] }
   ];
   const iconPaths = {
     appearance: 'M12 3a9 9 0 1 0 0 18h1.2a1.8 1.8 0 0 0 0-3.6h-1a1.4 1.4 0 0 1 0-2.8H15a6 6 0 0 0-3-11.6ZM7.5 10h.01M10 7h.01M14 7.5h.01',
@@ -11,7 +10,6 @@
     bookmarks: 'M6 3h12v18l-6-4-6 4z',
     dashboard: 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z',
     general: 'M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5ZM19 12l2-1-2-4-2 .5-1.5-1L15 4h-6l-.5 2.5-1.5 1L5 7l-2 4 2 1v2l-2 1 2 4 2-.5 1.5 1L9 22h6l.5-2.5 1.5-1 2 .5 2-4-2-1z',
-    'custom-css': 'M8 7 3 12l5 5M16 7l5 5-5 5M14 4l-4 16',
     backup: 'M12 3v12M7 10l5 5 5-5M4 19h16',
     sync: 'M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4',
     support: 'M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z'

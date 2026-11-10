@@ -237,7 +237,6 @@
       <button class="ctab" data-tab="background" data-i18n="nav.background">Background</button>
       <button class="ctab" data-tab="bookmarks" data-i18n="nav.bookmarks">Bookmarks</button>
       <button class="ctab" data-tab="dashboard" data-i18n="nav.dashboard">Dashboard</button>
-      <button class="ctab" data-tab="custom-css" data-i18n="nav.customCss">Custom CSS</button>
       <button class="ctab" data-tab="backup" data-i18n="nav.backup">Backup</button>
     </nav>
 
@@ -536,6 +535,29 @@
             </div>
           </div>
         </div>
+        </details>
+        <!-- Custom CSS: part of how the page looks, and opened by few. It was a panel of its own. -->
+        <details id="custom-css-block" class="advanced-settings">
+          <summary data-i18n="customCss.title">Custom CSS</summary>
+          <div class="custom-css-body">
+            
+            <button id="btn-open-css-docs" type="button" class="glass-btn css-guide-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              <span data-i18n="customCss.guideBtn">CSS guide and class list</span>
+            </button>
+            
+            <!-- Preset Snippets -->
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+              <button type="button" class="css-preset-btn" data-preset="monochrome" data-i18n="customCss.presetMono">Monochrome</button>
+            </div>
+    
+            <p id="css-waiting" class="settings-note" role="status" hidden data-i18n="customCss.waiting">This CSS came with an imported backup and is not in use. Read it, then press Save CSS to use it.</p>
+            <textarea id="css-editor" placeholder="/* Custom CSS snippets */&#10;.card { border-radius: 30px; }" data-i18n-placeholder="css.editorPlaceholder"></textarea>
+            <div style="display: flex; gap: 8px; margin-top: 10px;">
+              <button id="cfg-inject-css" class="glass-btn accent" data-i18n="customCss.applySave">Save CSS</button>
+              <button id="cfg-clear-css" class="glass-btn" style="width: 90px;" data-i18n="customCss.clear">Clear</button>
+            </div>
+          </div>
         </details>
       </section>
 
@@ -853,27 +875,6 @@
       </section>
 
       <!-- 6. Custom CSS Section -->
-      <section id="sec-custom-css" class="csec">
-        <h3 data-i18n="customCss.title">Custom CSS</h3>
-        <p style="font-size: var(--nl-text-xs); color: var(--dim); margin-bottom: 8px;" data-i18n="customCss.desc">Write custom CSS rules. Changes apply in real time.</p>
-        
-        <button id="btn-open-css-docs" type="button" class="glass-btn css-guide-btn">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-          <span data-i18n="customCss.guideBtn">CSS guide and class list</span>
-        </button>
-        
-        <!-- Preset Snippets -->
-        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
-          <button type="button" class="css-preset-btn" data-preset="monochrome" data-i18n="customCss.presetMono">Monochrome</button>
-        </div>
-
-        <p id="css-waiting" class="settings-note" role="status" hidden data-i18n="customCss.waiting">This CSS came with an imported backup and is not in use. Read it, then press Save CSS to use it.</p>
-        <textarea id="css-editor" placeholder="/* Custom CSS snippets */&#10;.card { border-radius: 30px; }" data-i18n-placeholder="css.editorPlaceholder"></textarea>
-        <div style="display: flex; gap: 8px; margin-top: 10px;">
-          <button id="cfg-inject-css" class="glass-btn accent" data-i18n="customCss.applySave">Save CSS</button>
-          <button id="cfg-clear-css" class="glass-btn" style="width: 90px;" data-i18n="customCss.clear">Clear</button>
-        </div>
-      </section>
 
       <!-- 7. Data & Backup Section -->
       <section id="sec-backup" class="csec">
@@ -903,25 +904,15 @@
           <button id="cfg-undo-point" class="glass-btn" data-i18n="backup.undoPointBtn">Undo that</button>
         </div>
 
-        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-          <button id="cfg-export" class="glass-btn" style="flex: 1;" data-i18n="backup.exportJson">Save a backup file</button>
-          <button id="cfg-export-html" class="glass-btn" style="flex: 1;" data-i18n="backup.exportHtml">Export HTML Bookmarks</button>
+        <div class="backup-actions">
+          <button id="cfg-export" class="glass-btn" data-i18n="backup.exportJson">Save a backup file</button>
+          <button id="cfg-export-html" class="glass-btn" data-i18n="backup.exportHtml">Export HTML Bookmarks</button>
+          <input id="cfg-import-universal" type="file" class="hidden-file-input" accept=".json,.html,.htm,.txt,.infinity,application/json,text/html,text/plain">
+          <label for="cfg-import-universal" class="glass-btn glass-file-btn" title="Also reads the backup files of FVD Speed Dial, Speed Dial 2, Infinity, nightTab, Bonjourr and Tabliss. Their folders are added after yours." data-i18n-title="backup.importOthers"><span data-i18n="backup.importBtn">Import JSON / HTML file...</span></label>
         </div>
         <!-- What the file holds, and what it cannot: a backup that quietly
              leaves out the themes you authored is found out after a reset. -->
         <p class="backup-note" id="backup-export-note" data-i18n="backup.exportNote">The JSON file holds your folders, bookmarks, appearance and the themes you made. Wallpaper and video files stay on this device — they are far too large for a settings file. Your search history is never exported.</p>
-
-        <div class="row" style="flex-direction: column; align-items: stretch; gap: 8px; margin-bottom: 14px;">
-          <span data-i18n="backup.importUniversal">Import a backup (JSON or browser HTML)</span>
-          <div class="custom-file-wrap">
-            <input id="cfg-import-universal" type="file" class="hidden-file-input" accept=".json,.html,.htm,.txt,.infinity,application/json,text/html,text/plain">
-            <label for="cfg-import-universal" class="glass-file-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              <span data-i18n="backup.importBtn">Import JSON / HTML file...</span>
-            </label>
-          </div>
-          <p class="backup-note" data-i18n="backup.importOthers">Also reads the backup files of FVD Speed Dial, Speed Dial 2, Infinity, nightTab, Bonjourr and Tabliss. Their folders are added after yours.</p>
-        </div>
 
         <!-- The settings as text: to read, to change, to paste in, or to read
              from an address (a team's file, a gist). Applied as a backup file
@@ -941,9 +932,8 @@
           </div>
         </details>
 
-        <h3 style="margin-top: 24px;" data-i18n="backup.dangerZone">Danger zone</h3>
-        <div class="row">
-          <button id="cfg-reset" class="glass-btn danger" style="width: 100%;" data-i18n="backup.resetDefaults">Reset to defaults</button>
+        <div class="backup-reset">
+          <button id="cfg-reset" class="glass-btn danger" data-i18n="backup.resetDefaults">Reset to defaults</button>
         </div>
       </section>
 
@@ -970,207 +960,51 @@
     </div>
   </aside>
 
-  <!-- Universal 4-Source Icon Picker Modal -->
+  <!-- The icon dialog: one field, what it found, and Adjust (icon-picker.js) -->
   <div id="icon-modal">
-    <div class="modal-box">
+    <div class="modal-box icon-dialog">
       <div class="modal-head">
-        <b data-i18n="picker.title">Choose an icon</b>
-        <button id="modal-x" type="button" class="xbtn">✕</button>
-      </div>
-
-      <!-- 5 Modal Source Tabs -->
-      <div class="icon-modal-tabs">
-        <button class="icon-tab-btn active" data-tab="search" data-i18n="modal.tabLibrary">Find online</button>
-        <button class="icon-tab-btn" data-tab="favicon" data-i18n="modal.tabFavicon">Website icon</button>
-        <button class="icon-tab-btn" data-tab="custom" data-i18n="modal.tabCustom">Custom</button>
+        <b id="icon-picker-title" data-i18n="picker.title">Choose an icon</b>
+        <button id="modal-x" type="button" class="xbtn" aria-label="Close" data-i18n-aria="a11y.close">✕</button>
       </div>
 
       <div class="modal-body">
-        
-        <!-- Tab 1: Explicit online discovery. Nothing is requested until Search. -->
-        <div id="modal-pane-search" class="modal-tab-pane active">
-          <p class="icon-search-intro" data-i18n="picker.searchIntro">Search by brand or product name.</p>
-          <div class="icon-search-row">
-            <input id="icon-search" type="search" class="glass-input" data-i18n-placeholder="picker.searchPlaceholder" placeholder="GitHub, Figma, Spotify…">
-            <button id="icon-search-btn" type="button" class="glass-btn accent" data-i18n="picker.searchAction">Search</button>
+        <div id="icon-view-find" class="icon-view">
+          <div id="icon-live-preview" class="icon-live-preview" aria-hidden="true">
+            <div class="tile"><div class="box"></div><span class="lbl"></span></div>
           </div>
-          <div id="icon-search-status" class="icon-search-status" role="status" aria-live="polite" data-i18n="picker.searchIdle">Search happens only when you ask.</div>
-          <div id="modal-icon-grid" class="icon-grid"></div>
-          <small class="icon-search-legal" data-i18n="picker.legal">Simple Icons · Brand marks belong to their owners.</small>
-        </div>
-
-        <!-- Tab 2: Smart Favicon / High-Res Fetcher -->
-        <div id="modal-pane-favicon" class="modal-tab-pane">
-          <label style="display: block; font-size: var(--nl-text-xs); color: var(--dim); margin-bottom: 6px;" data-i18n="modal.faviconDesc">The icon the site itself uses, found from its address.</label>
-          <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-            <input id="favicon-url-input" type="text" class="glass-input" placeholder="https://github.com or domain.com" data-i18n-placeholder="modal.faviconPlaceholder" style="flex: 1;">
-            <button id="favicon-fetch-btn" type="button" class="glass-btn accent" data-i18n="picker.fetch">Fetch</button>
-          </div>
-          
-          <details class="favicon-sources">
-            <summary data-i18n="modal.trySource">Try another source</summary>
-            <div class="favicon-source-chips">
-              <button type="button" class="icon-chip active" data-fav-source="chrome" data-i18n="picker.sourceBrowser">Browser cache</button>
-              <button type="button" class="icon-chip" data-fav-source="direct" data-i18n="picker.sourceSite">The site itself</button>
-              <button type="button" class="icon-chip" data-fav-source="google">Google</button>
-              <button type="button" class="icon-chip" data-fav-source="duckduckgo">DuckDuckGo</button>
-            </div>
-          </details>
-
-          <div class="url-preview-box" id="favicon-preview-wrap">
-            <div id="favicon-preview-img-box" class="url-preview-square" title="Click to open in Cropper Studio" data-i18n-title="modal.openCropper">
-              <span style="font-size: var(--nl-text-2xs); color: var(--dim);">No icon</span>
-            </div>
-            <div style="flex: 1; min-width: 0;">
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                <b id="favicon-domain-name" style="font-size: var(--nl-text-sm); color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Domain.com</b>
-                <span id="favicon-res-badge" class="theme-section-badge" style="font-size: var(--nl-text-2xs);" hidden></span>
-              </div>
-              <span id="favicon-status" style="font-size: var(--nl-text-xs); color: var(--dim); display: block; margin-top: 2px;">From your browser's own cache</span>
-              <div id="favicon-actions" style="display: flex; gap: 8px; margin-top: 10px;">
-                <button id="favicon-apply-btn" type="button" class="glass-btn accent" style="flex: 1.2;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                  <span data-i18n="modal.applyFavicon">Use this icon</span>
-                </button>
-                <button id="favicon-crop-btn" type="button" class="glass-btn" style="flex: 1;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg><span data-i18n="picker.cropAdjust">Crop &amp; adjust</span></button>
-              </div>
-            </div>
+          <form id="icon-find-form" class="icon-find-row" novalidate>
+            <input id="icon-find" type="text" class="glass-input" autocomplete="off" spellcheck="false" enterkeyhint="search"
+              placeholder="Name or link" data-i18n-placeholder="picker.findPlaceholder" aria-label="Name or link" data-i18n-aria="picker.findPlaceholder" aria-describedby="icon-find-status">
+            <button id="icon-find-btn" type="submit" class="glass-btn accent" data-i18n="picker.find">Find</button>
+          </form>
+          <p id="icon-find-status" class="icon-find-status" role="status" aria-live="polite"></p>
+          <button id="icon-find-site" type="button" class="icon-quiet" hidden></button>
+          <div id="icon-choices" class="icon-choices" role="radiogroup" aria-label="Icons found" data-i18n-aria="picker.choices" hidden></div>
+          <div class="icon-dialog-foot">
+            <button id="icon-adjust" type="button" class="icon-quiet" data-i18n="picker.adjust">Adjust</button>
+            <input type="file" id="icon-file-input" class="hidden-file-input" tabindex="-1" aria-label="From a file" data-i18n-aria="picker.file" accept="image/png, image/jpeg, image/svg+xml, image/webp, image/gif">
+            <button id="icon-file-btn" type="button" class="icon-quiet" data-i18n="picker.file">From a file</button>
+            <button id="icon-letters" type="button" class="icon-quiet" data-i18n="picker.letters">As letters</button>
           </div>
         </div>
 
-        <div id="modal-pane-custom" class="modal-tab-pane">
-          <!-- One pane, three ways in. Splitting an image URL, a local file and
-               a monogram across three tabs made the user choose a mechanism
-               before knowing which one they had. -->
-          <section class="custom-source">
-            <h4 data-i18n="modal.customUpload">From a file on this computer</h4>
-          <input type="file" id="icon-file-input" class="hidden-file-input" accept="image/png, image/jpeg, image/svg+xml, image/webp, image/gif">
-          <label for="icon-file-input" class="file-drop-zone" id="icon-drop-zone">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 8px; color: var(--accent);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <b style="font-size: var(--nl-text-sm); color: var(--ink);" data-i18n="modal.fileDrop">Drag a file here or click to choose one</b>
-            <span id="icon-file-hint" class="file-drop-hint" data-i18n="modal.fileHint">PNG, SVG, JPG, WebP or GIF, up to 5 MB</span>
-          </label>
-          <div id="icon-file-preview-wrap" style="display: none; margin-top: 12px;" class="url-preview-box">
-            <div id="icon-file-preview-img-box" class="url-preview-square" title="Click to open Cropper" data-i18n-title="modal.openCropper"></div>
-            <div style="flex: 1;">
-              <b id="icon-file-name" style="font-size: var(--nl-text-xs); color: var(--ink);">image.png</b>
-              <div style="display: flex; gap: 8px; margin-top: 8px;">
-                <button id="icon-file-crop-btn" type="button" class="glass-btn accent" style="flex: 1.2;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg><span data-i18n="picker.cropAdjust">Crop &amp; adjust</span></button>
-                <button id="icon-file-apply-btn" type="button" class="glass-btn" style="flex: 1;" data-i18n="picker.useFull">Use full image</button>
-              </div>
+        <div id="icon-view-adjust" class="icon-view" hidden>
+          <div class="icon-adjust-stage">
+            <div id="icon-adjust-box" class="box" tabindex="0" role="img" aria-label="Drag to move. Scroll, pinch or use the slider to zoom." data-i18n-aria="adjust.stage">
+              <canvas id="icon-adjust-canvas" width="384" height="384"></canvas>
             </div>
           </div>
-        </section>
-          <!-- The address an icon came from is kept with the bookmark, and so
-               are the last few it used, each shown by the picture it gave. -->
-          <section class="custom-source" id="icon-url-source">
-            <h4 data-i18n="modal.customUrl">From a web address</h4>
-          <label for="icon-url-input" class="custom-source-note" data-i18n="picker.urlLabel">The address of an image: SVG, PNG, JPG, WebP or GIF</label>
-          <div class="icon-url-row">
-            <input id="icon-url-input" type="url" class="glass-input" placeholder="https://example.com/icon.png" autocomplete="off" spellcheck="false">
-            <button id="icon-url-check-btn" type="button" class="glass-btn accent" data-i18n="picker.urlPreview">Preview</button>
+          <div class="icon-adjust-controls">
+            <input id="icon-adjust-zoom" type="range" class="ipt" min="0" max="1000" step="1" value="0" aria-label="Size" data-i18n-aria="adjust.zoom">
+            <button id="icon-adjust-fit" type="button" class="icon-quiet" data-i18n="adjust.fit">Fit</button>
+            <button id="icon-adjust-fill" type="button" class="icon-quiet" data-i18n="adjust.fill">Fill</button>
           </div>
-          <div id="icon-url-editing" class="icon-url-editing" hidden>
-            <span data-i18n="picker.urlEditing">Changing an address you used. Preview the new one and use it: it takes the old one's place.</span>
-            <button id="icon-url-editing-cancel" type="button" class="icon-url-link" data-i18n="picker.urlEditCancel">Keep the old one</button>
-          </div>
-          <div class="url-preview-box">
-            <div id="icon-url-preview-img-box" class="url-preview-square" title="Click to open Cropper" data-i18n-title="modal.openCropper">
-              <span style="font-size: var(--nl-text-2xs); color: var(--dim);" data-i18n="modal.noImage">No image</span>
-            </div>
-            <div style="flex: 1;">
-              <span id="icon-url-status" style="font-size: var(--nl-text-xs); color: var(--dim);" role="status" data-i18n="modal.urlHint">Enter an image address above to try it</span>
-              <div id="icon-url-actions" style="display: none; gap: 8px; margin-top: 8px;">
-                <button id="icon-url-crop-btn" type="button" class="glass-btn accent" style="flex: 1.2;"><svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg><span data-i18n="picker.cropAdjust">Crop &amp; adjust</span></button>
-                <button id="icon-url-apply-btn" type="button" class="glass-btn" style="flex: 1;" data-i18n="picker.useFull">Use full image</button>
-              </div>
-            </div>
-          </div>
-          <div id="icon-url-history" class="icon-url-history" hidden>
-            <span id="icon-url-history-label" class="custom-source-note" data-i18n="picker.urlHistory">Addresses this icon has come from</span>
-            <ul class="icon-url-strip" aria-labelledby="icon-url-history-label"></ul>
-          </div>
-        </section>
-          <section class="custom-source">
-            <h4 data-i18n="modal.customMonogram">Or just a letter</h4>
-          <div style="display: flex; gap: 14px; align-items: center;">
-            <div style="flex: 1;">
-              <label style="font-size: var(--nl-text-xs); color: var(--dim); display: block; margin-bottom: 4px;" for="monogram-input" data-i18n="picker.monogramLabel">One to three letters</label>
-              <input id="monogram-input" type="text" class="glass-input" maxlength="3" value="A">
-            </div>
-            <div class="tile monogram-preview-tile" aria-hidden="true"><div id="monogram-preview-box" class="box"><span class="mono">A</span></div></div>
-          </div>
-          <button id="icon-monogram-apply-btn" type="button" class="glass-btn accent" style="margin-top: 14px; width: 100%;" data-i18n="picker.useMonogram">Use these letters</button>
-        </section>
-        </div>
-
-        <!-- Dedicated Interactive Icon Cropper Studio Pane -->
-        <div id="modal-pane-cropper" class="modal-tab-pane">
-          <div class="cropper-top-bar">
-            <div class="cropper-title-wrap">
-              <b style="font-size: var(--nl-text-md); color: var(--ink); display: flex; align-items: center; gap: 6px;">
-                <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg><span data-i18n="cropper.title">Crop the icon</span>
-              </b>
-              <span style="font-size: var(--nl-text-2xs); color: var(--dim);" data-i18n="cropper.hint">Drag to frame the icon · scroll or use the slider to zoom</span>
-            </div>
-            <button id="cropper-back-btn" type="button" class="glass-btn" style="padding: 4px 10px; font-size: var(--nl-text-xs);" data-i18n="cropper.back">← Back</button>
-          </div>
-
-          <div class="cropper-workspace">
-            <!-- Left: Interactive Canvas Viewport -->
-            <div class="cropper-viewport-wrap">
-              <canvas id="cropper-canvas" width="260" height="260"></canvas>
-              <!-- Framing Overlay -->
-              <div class="cropper-overlay-guide">
-                <div class="cropper-corner tl"></div>
-                <div class="cropper-corner tr"></div>
-                <div class="cropper-corner bl"></div>
-                <div class="cropper-corner br"></div>
-              </div>
-            </div>
-
-            <!-- Right: Controls & Live Glass Tile Preview -->
-            <div class="cropper-side-controls">
-              <div class="cropper-preview-card">
-                <span class="cropper-label" data-i18n="cropper.preview">On the tile</span>
-                <div class="cropper-tile-mockup">
-                  <div id="cropper-tile-box" class="cropper-tile-box">
-                    <canvas id="cropper-tile-preview-canvas" width="60" height="60"></canvas>
-                  </div>
-                  <span id="cropper-tile-name" class="cropper-tile-lbl">Bookmark</span>
-                </div>
-              </div>
-
-              <div class="cropper-slider-block">
-                <div class="cropper-slider-head">
-                  <span class="cropper-label" data-i18n="cropper.zoom">Zoom</span>
-                  <b id="cropper-zoom-val" style="font-size: var(--nl-text-xs); color: var(--nl-accent-text);">100%</b>
-                </div>
-                <div style="display: flex; gap: 6px; align-items: center;">
-                  <button id="cropper-zoom-out" type="button" class="crop-tool-btn" title="Zoom Out" data-i18n-title="cropper.zoomOut">−</button>
-                  <input id="cropper-zoom-slider" type="range" class="ipt" min="0.3" max="5.0" step="0.05" value="1.0" style="flex: 1;">
-                  <button id="cropper-zoom-in" type="button" class="crop-tool-btn" title="Zoom In" data-i18n-title="cropper.zoomIn">+</button>
-                </div>
-              </div>
-
-              <div class="cropper-tools-row">
-                <button id="cropper-tool-fit" type="button" class="crop-pill-btn" title="Fit Entire Image" data-i18n-title="cropper.fit" data-i18n="cropper.fitShort">Fit</button>
-                <button id="cropper-tool-center" type="button" class="crop-pill-btn" title="Center Image" data-i18n-title="cropper.center" data-i18n="cropper.centerShort">Centre</button>
-                <button id="cropper-tool-rotate" type="button" class="crop-pill-btn" title="Rotate 90 Degrees" data-i18n-title="cropper.rotate" data-i18n="cropper.rotateShort">Rotate</button>
-                <button id="cropper-tool-reset" type="button" class="crop-pill-btn" title="Reset all transforms" data-i18n-title="cropper.reset" data-i18n="cropper.resetShort">Reset</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="cropper-actions-footer">
-            <button id="cropper-apply-btn" type="button" class="glass-btn accent" style="flex: 1.4; font-weight: 650;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-              <span data-i18n="cropper.apply">Use the cropped icon</span>
-            </button>
-            <button id="cropper-use-original-btn" type="button" class="glass-btn" style="flex: 1;" data-i18n="picker.useFull">Use full image</button>
+          <div class="icon-dialog-actions">
+            <button id="icon-adjust-back" type="button" class="glass-btn" data-i18n="adjust.back">Back</button>
+            <button id="icon-adjust-done" type="button" class="glass-btn accent" data-i18n="adjust.done">Done</button>
           </div>
         </div>
-
       </div>
     </div>
   </div>

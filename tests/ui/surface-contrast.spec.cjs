@@ -73,17 +73,13 @@ test('text on every overlay stays readable in the hardest themes', async ({ nord
   for (const theme of THEMES) {
     await page.evaluate(name => window.Nordlys.setTheme(name), theme);
     await page.evaluate(() => {
-      const link = window.Nordlys.config.groups[0].links[0];
-      link.iconUrls = [{ url: 'https://cdn.example.com/a.png', thumb: '', at: 2 }, { url: 'https://cdn.example.com/b.png', thumb: '', at: 1 }];
-      link.iconUrl = 'https://cdn.example.com/a.png';
       window.Nordlys.settings.openIconModal(0, 0);
     });
-    for (const tab of ['search', 'favicon', 'custom']) {
-      await page.locator(`.icon-tab-btn[data-tab="${tab}"]`).click();
-      await record(theme, `icon picker, ${tab}`);
-    }
-    await page.evaluate(() => window.Nordlys.settings.openCropper(`data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>')}`, 'url'));
-    await record(theme, 'cropper');
+    await page.locator('#icon-find').fill('https://example.org');
+    await record(theme, 'icon dialog');
+    await page.locator('#icon-file-input').setInputFiles({ name: 'icon.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAHUlEQVR42mNkYPhfz0AEYBxVSF+FjKMKRxWSrhAAhm0f8Uq+1cQAAAAASUVORK5CYII=', 'base64') });
+    await page.locator('#icon-adjust:not([disabled])').click();
+    await record(theme, 'adjust');
     await page.keyboard.press('Escape');
     await page.evaluate(() => window.Nordlys.grid.openQuickEditModal(0, 0));
     await record(theme, 'quick edit');
