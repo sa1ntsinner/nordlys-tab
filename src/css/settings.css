@@ -896,6 +896,10 @@ input[type="range"].ipt:focus-visible {
   width: 1px;
   height: 1px;
   opacity: 0;
+  /* WebKit draws the input's own button outside the 1px box, where it takes
+     the clicks meant for the buttons beside it. */
+  overflow: hidden;
+  pointer-events: none;
 }
 .glass-file-btn {
   display: flex;
