@@ -25,6 +25,7 @@
   class NordlysIconPicker {
     constructor({ dialogRoot, target, changed, closed }) {
       this.root = dialogRoot; this.target = target; this.changed = changed;
+      this.held = new Set();
       const $ = (id) => dialogRoot.querySelector(`#${id}`);
       this.el = {
         title: $("icon-picker-title"), find: $("icon-view-find"), adjust: $("icon-view-adjust"), preview: $("icon-live-preview"),
@@ -68,6 +69,8 @@
       this.show("find");
       this.paint();
       this.dialog.open(opener, this.el.field);
+      const own = window.NordlysIconDiscovery.parseQuery(/^https?:\/\//i.test(link.url || "") ? link.url : "");
+      this.hold(window.NordlysIconDiscovery.originsFor(own));
       queueMicrotask(() => this.el.field.select());
     }
 
@@ -138,22 +141,42 @@
       const finder = window.NordlysIconDiscovery;
       const query = finder.parseQuery(text);
       if (query.kind === "empty") { this.el.field.focus(); return; }
-      const origins = finder.originsFor(query);
-      // A site is asked about now, while the press still counts; a picture only if its host will not hand it over.
-      const access = query.kind === "image" ? () => this.access(origins) : this.access(origins);
+      const link = this.target();
+      // The bookmark's own site is a second place to look for a name.
+      const own = finder.parseQuery(/^https?:\/\//i.test(link?.url || "") ? link.url : "");
+      const page = query.kind === "name" && own.kind === "site" ? own.url : "";
+      const host = own.kind === "site" ? own.host : "";
+      const origins = finder.originsFor(page ? own : query);
+      /* A site typed into the field is asked about now, while the press still
+         counts. A picture is asked about only if its host will not hand it
+         over, and the bookmark's own site only if the catalogues had nothing
+         good — unless leave for it was given before, when it is read at once. */
+      const lazy = query.kind === "image" || (page && !this.held.has(origins[0]));
+      const access = lazy ? () => this.access(origins) : query.kind === "site" ? this.access(origins) : true;
       this.stop();
       const controller = this.searching = new AbortController();
       this.el.button.setAttribute("aria-busy", "true");
       this.el.site.hidden = true;
       this.say(say("picker.looking", "Looking…"));
-      const link = this.target();
-      let host = "";
-      try { host = new URL(link?.url || "").hostname; } catch { /* a bookmark without a web address */ }
+      /* The first good icon is put on the tile the moment it arrives. After
+         that the tile is left alone: what comes later joins the row. */
+      let applied = null;
+      const progress = (choices) => {
+        if (this.searching !== controller || !choices.length) return;
+        if (!applied && choices[0].score < finder.GOOD) return;
+        const first = !applied;
+        if (first) applied = choices[0];
+        // What the person picked from the row meanwhile stays picked.
+        const pinned = !first && this.current?.src ? this.current : applied;
+        this.offer(choices, pinned);
+        if (first) this.apply(this.shown.find(choice => choice.src === applied.src)); else this.paint();
+      };
       let result;
-      try { result = await finder.find(text, { access, signal: controller.signal, host }); }
+      try { result = await finder.find(text, { access, signal: controller.signal, host, page, ground: this.ground(), onProgress: progress }); }
       catch { result = { query, choices: [], offline: false }; }
       if (this.searching !== controller) return;
       this.stop();
+      if (lazy && !result.declined && origins[0]) this.hold(origins);
       if (!result.choices.length) {
         this.say(result.offline ? say("picker.offline", "No connection. The icon stays as it is.")
           : result.declined ? say("picker.declined", "Without leave to read {host}, Nordlys cannot look there.", { host: query.host || "" })
@@ -167,13 +190,30 @@
         return;
       }
       this.say(result.declined ? say("picker.declinedSome", "Not from {host} itself: Nordlys was not given leave to read it.", { host: query.host || "" }) : "");
-      this.offer(result.choices);
-      await this.apply(result.choices[0]);
+      this.offer(result.choices, applied && this.current?.src ? this.current : applied);
+      if (!applied) await this.apply(this.shown[0]); else this.paint();
     }
 
-    /* The row under the field: what was found, then the icon from before. */
-    offer(choices) {
-      this.shown = [...choices, { before: true }];
+    /* How light the tile is that the icon is going to: what cannot be seen on it does not come first. */
+    ground() {
+      try { return NordlysIcons.plateLuminance(this.el.preview.querySelector(".box")); } catch { return undefined; }
+    }
+
+    /* Which sites the browser already lets Nordlys read, learnt before the
+       press: asking the browser takes a moment the press does not have. */
+    hold(origins) {
+      const permissions = typeof chrome !== "undefined" ? chrome.permissions : null;
+      if (!origins.length || !permissions?.contains) return;
+      try { permissions.contains({ origins }, (held) => { void chrome.runtime?.lastError; if (held) this.held.add(origins[0]); else this.held.delete(origins[0]); }); } catch { /* not held */ }
+    }
+
+    /* The row under the field: what was found, then the icon from before.
+       The one already on the tile keeps its place in the row's selection
+       when better-ranked ones arrive after it. */
+    offer(choices, pinned = null) {
+      const kept = pinned && !choices.some(choice => choice.src === pinned.src) ? [pinned, ...choices].slice(0, Math.max(1, choices.length)) : choices;
+      this.shown = [...kept, { before: true }];
+      if (pinned) this.current = this.shown.find(choice => choice.src === pinned.src) || this.current;
       this.el.choices.replaceChildren(...this.shown.map((choice, at) => {
         const button = document.createElement("button");
         button.type = "button"; button.className = "icon-choice"; button.dataset.at = String(at);

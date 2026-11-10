@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { vectorDataUrl, markupDataUrl, titleFromSlug, parseQuery, originsFor, brandFromHost, rank, find, fromIconify, context } = require('../../src/js/icon-discovery.js');
+const { vectorDataUrl, markupDataUrl, titleFromSlug, parseQuery, originsFor, brandFromHost, namesFor, rank, find, fromIconify, context } = require('../../src/js/icon-discovery.js');
 
 test('brand vectors become inert path-only data URLs', () => {
   const url = vectorDataUrl({ width: 24, height: 24, body: '<path fill="currentColor" d="M2 2H22V22H2Z"/>' }, '#35d6c0');
@@ -43,7 +43,9 @@ test('what is typed is a name, a site or a picture', () => {
 
 test('only a link asks for a site, and only for that site', () => {
   assert.deepEqual(originsFor(parseQuery('Spotify')), []);
-  assert.deepEqual(originsFor(parseQuery('https://open.spotify.com/x')), ['https://open.spotify.com/*']);
+  // A page inside a larger site is looked for on that site's front page too.
+  assert.deepEqual(originsFor(parseQuery('https://open.spotify.com/x')), ['https://open.spotify.com/*', 'https://www.spotify.com/*']);
+  assert.deepEqual(originsFor(parseQuery('https://www.youtube.com/watch')), ['https://www.youtube.com/*']);
   assert.deepEqual(originsFor(parseQuery('https://cdn.example.org/a/logo.svg')), ['https://cdn.example.org/*']);
   assert.deepEqual(originsFor(parseQuery('data:image/png;base64,AAAA')), []);
 });
@@ -169,4 +171,94 @@ test('search results are named the way the brands name themselves', () => {
     adobephotoshop: 'Adobe Photoshop', 'hacker-news': 'Hacker News', app: 'App', npm: 'npm', googletv: 'Google TV'
   };
   for (const [slug, title] of Object.entries(expectations)) assert.equal(titleFromSlug(slug), title, slug);
+});
+
+/* ── What cannot be seen on the tile does not come first ─────────── */
+
+const mark = (id, from, extra = {}) => ({ id, src: id, from, vector: true, width: 256, height: 256, measured: true, ...extra });
+const DARK_TILE = 0.002, LIGHT_TILE = 0.93;
+
+test('of two one-colour marks, the one that reads on this tile as it stands goes first', () => {
+  const black = mark('black', 'logos-icon', { mono: true, flat: true, luminance: 0.01 });
+  const white = mark('white', 'logos-icon', { mono: true, flat: true, luminance: 0.95 });
+  assert.deepEqual(rank([black, white], { ground: DARK_TILE }).map(choice => choice.id), ['white', 'black']);
+  assert.deepEqual(rank([white, black], { ground: LIGHT_TILE }).map(choice => choice.id), ['black', 'white']);
+  // With no tile to judge by, neither is preferred.
+  assert.equal(rank([black, white])[0].score, rank([black, white])[1].score);
+});
+
+test('a shaded mark that reads goes before a better-ranked one that would have to be re-toned', () => {
+  const letter = mark('letter', 'wikimedia-icon', { mono: true, flat: true, luminance: 0.01 });
+  const globe = mark('globe', 'wikimedia-logo', { mono: true, flat: false, luminance: 0.6 });
+  assert.deepEqual(rank([letter, globe], { ground: DARK_TILE }).map(choice => choice.id), ['globe', 'letter']);
+  assert.deepEqual(rank([letter, globe], { ground: LIGHT_TILE }).map(choice => choice.id), ['letter', 'globe']);
+});
+
+test('art in several dark colours is lost on a dark tile and falls behind; a one-colour mark only a little', () => {
+  const art = mark('art', 'logos-icon', { luminance: 0.01 });
+  const navy = mark('navy', 'simple-icons', { flat: true, luminance: 0.02 });
+  const [first, second] = rank([art, navy], { ground: DARK_TILE });
+  assert.deepEqual([first.id, second.id], ['navy', 'art']);
+  assert.ok(first.score - second.score >= 10);
+});
+
+/* ── Wordmarks, and the same drawing twice ───────────────────────── */
+
+test('a wordmark in a square box is a wordmark: any square mark goes before it, and alone it is the last resort', () => {
+  const wordmark = mark('wordmark', 'simple-icons', { inkAspect: 5.2, flat: true });
+  const favicon = { id: 'favicon', src: 'f', from: 'site-icon', width: 32, height: 32, measured: true, inkAspect: 1 };
+  assert.deepEqual(rank([wordmark, favicon]).map(choice => choice.id), ['favicon']);
+  assert.deepEqual(rank([wordmark]).map(choice => choice.id), ['wordmark']);
+});
+
+test('the same drawing from two places is offered once, the better of the two', () => {
+  const look = Array.from({ length: 64 }, (_, at) => (at % 9 === 0 ? 1 : 0.2));
+  const other = Array.from({ length: 64 }, (_, at) => (at % 2 ? 1 : 0));
+  const choices = rank([
+    mark('catalogue', 'simple-icons', { look }),
+    mark('site', 'site-icon', { look: look.map(cell => Math.min(1, cell + 0.02)) }),
+    mark('different', 'wikimedia-logo', { look: other })
+  ]);
+  assert.deepEqual(choices.map(choice => choice.id), ['site', 'different']);
+});
+
+/* ── Names ───────────────────────────────────────────────────────── */
+
+test('a name is also looked up as the words of the address it is for, and as its own words', () => {
+  assert.deepEqual(namesFor('Gemini', 'gemini.google.com').map(name => name.slug), ['gemini', 'google']);
+  assert.deepEqual(namesFor('Courses', 'moodle.example.edu').map(name => [name.slug, name.distance]), [['courses', 0], ['moodle', 6], ['example', 16]]);
+  assert.deepEqual(namesFor('RST GitLab', 'git.rst.example.de').map(name => name.slug), ['rstgitlab', 'example', 'gitlab']);
+  assert.deepEqual(namesFor('Steam', '').map(name => name.slug), ['steam']);
+});
+
+test('a brand filed under the name of its maker is found by its own name', async () => {
+  const fetchImpl = async (url) => {
+    if (url.includes('/search?')) return reply({ icons: ['logos:google-gemini-icon', 'simple-icons:googlegemini', 'logos:google-icon', 'simple-icons:geminiprotocol'] });
+    if (url.includes('cdn.simpleicons.org')) return new Response('<svg fill="#8E75B2"/>');
+    if (url.includes('/logos.json')) return reply({ prefix: 'logos', icons: { 'google-gemini-icon': { body: '<path fill="#48f" d="M0 0h9v9z"/>', width: 256, height: 256 } } });
+    return reply({ prefix: 'simple-icons', width: 24, height: 24, icons: { googlegemini: { body: '<path d="M0 0h9v9z"/>' } } });
+  };
+  const found = await fromIconify('Gemini', context({ fetchImpl }));
+  assert.deepEqual(found.map(icon => icon.id).sort(), ['logos:google-gemini-icon', 'simple-icons:googlegemini']);
+  assert.ok(found.every(icon => icon.distance === 4), 'a little behind an entry under the very name');
+});
+
+/* ── Time ────────────────────────────────────────────────────────── */
+
+test('a source that never answers does not hold the others: the search ends on its budget with what it has', async () => {
+  const fetchImpl = async (url, { signal } = {}) => {
+    if (url.includes('iconify.design/search')) return reply({ icons: ['logos:spotify-icon'] });
+    if (url.includes('logos.json')) return reply({ prefix: 'logos', icons: { 'spotify-icon': { body: '<path fill="#1ed760" d="M0 0h9v9z"/>', width: 256, height: 256 } } });
+    // Wikidata hangs until it is told to stop.
+    return new Promise((resolve, reject) => signal.addEventListener('abort', () => reject(new Error('stopped'))));
+  };
+  const measureImpl = async (candidate) => ({ ...candidate, src: candidate.src || candidate.url, measured: true });
+  const heard = [];
+  const started = Date.now();
+  const result = await find('Spotify', { fetchImpl, measureImpl, budget: 150, onProgress: choices => heard.push([Date.now() - started, choices[0].id]) });
+  assert.equal(result.late, true);
+  assert.deepEqual(result.choices.map(choice => choice.id), ['logos:spotify-icon']);
+  assert.equal(heard[0][1], 'logos:spotify-icon');
+  assert.ok(heard[0][0] < 120, 'the good icon was announced before the budget ran out');
+  assert.ok(Date.now() - started < 1000);
 });

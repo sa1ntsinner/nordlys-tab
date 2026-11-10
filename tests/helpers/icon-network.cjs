@@ -24,12 +24,12 @@ function png(side, [r, g, b] = [220, 40, 40], { plate = false } = {}) {
 
 const svg = (fill = '#1ed760') => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="${fill}"/></svg>`;
 
-/* routes: { 'substring of the address': body | { status, body, type } | 'offline' }.
+/* routes: { 'substring of the address': body | { status, body, type, delay } | 'offline' }.
    The longest matching key answers; anything unmatched gets a 404. */
 async function pretendInternet(page, origin, routes = {}) {
   const asked = [];
   const keys = Object.keys(routes).sort((a, b) => b.length - a.length);
-  await page.route(url => !url.href.startsWith(origin) && /^https?:$/.test(url.protocol), route => {
+  await page.route(url => !url.href.startsWith(origin) && /^https?:$/.test(url.protocol), async route => {
     const url = route.request().url();
     asked.push(url);
     // A key that is a whole page address answers only that page, not everything under it.
@@ -38,8 +38,9 @@ async function pretendInternet(page, origin, routes = {}) {
     if (answer === 'offline') return route.abort('internetdisconnected');
     const shaped = Buffer.isBuffer(answer) || typeof answer === 'string' ? { body: answer } : answer.body === undefined && answer.status === undefined ? { body: JSON.stringify(answer) } : answer;
     const body = shaped.body ?? '';
+    if (shaped.delay) await new Promise(resolve => setTimeout(resolve, shaped.delay));
     const type = shaped.type || (Buffer.isBuffer(body) ? 'image/png' : /^\s*<svg/.test(body) ? 'image/svg+xml' : /^\s*<(!doctype|html)/i.test(body) ? 'text/html' : 'application/json');
-    return route.fulfill({ status: shaped.status || 200, contentType: type, headers: { 'access-control-allow-origin': '*' }, body });
+    return route.fulfill({ status: shaped.status || 200, contentType: type, headers: { 'access-control-allow-origin': '*' }, body }).catch(() => {});
   });
   return asked;
 }
@@ -55,7 +56,8 @@ function catalogues({ slug = 'spotify', colour = true, wikimedia = true } = {}) 
       { item: { value: 'http://www.wikidata.org/entity/Q1' }, p: { value: 'http://www.wikidata.org/prop/direct/P8972' }, v: { value: 'http://commons.wikimedia.org/wiki/Special:FilePath/Brand%20icon.svg' } }
     ] } },
     'commons.wikimedia.org/w/api.php': { query: { pages: { 1: { title: 'File:Brand icon.svg', imageinfo: [{ url: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Brand_icon.svg', width: 512, height: 512, mime: 'image/svg+xml' }] } } } },
-    'upload.wikimedia.org/': svg('#ff5500'),
+    // A drawing of its own: the same circle as the colour set's would be offered once, not twice.
+    'upload.wikimedia.org/': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M32 4 60 60H4Z" fill="#ff5500"/></svg>',
     'cdn.simpleicons.org/': '<svg xmlns="http://www.w3.org/2000/svg" fill="#1DB954" viewBox="0 0 24 24"><path d="M2 2H22V22H2Z"/></svg>'
   };
   return routes;

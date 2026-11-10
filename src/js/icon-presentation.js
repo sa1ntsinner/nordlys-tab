@@ -147,16 +147,27 @@
           context.clearRect(0, 0, 16, 16); context.drawImage(probe, 0, 0, 16, 16);
           const { data } = context.getImageData(0, 0, 16, 16);
           let total = 0, weight = 0, colourful = 0;
+          const sum = [0, 0, 0];
           for (let at = 0; at < data.length; at += 4) {
             const alpha = data[at + 3] / 255;
             if (alpha < .1) continue;
             const [r, g, b] = [data[at], data[at + 1], data[at + 2]];
             total += luminanceOf(r, g, b) * alpha; weight += alpha;
+            sum[0] += r * alpha; sum[1] += g * alpha; sum[2] += b * alpha;
             // Distance between the channels is what makes a mark "coloured".
             // A grey, black or white logo has almost none.
             if (Math.max(r, g, b) - Math.min(r, g, b) > 28) colourful += alpha;
           }
-          resolve(weight ? { luminance: total / weight, colourRatio: colourful / weight } : null);
+          /* One colour throughout, whatever the colour: a navy mark is as much a
+             single-colour mark as a black one. Nearly every pixel sits by the
+             average of them all, and the corners are clear (a plate is not a mark). */
+          let near = 0;
+          for (let at = 0; weight && at < data.length; at += 4) {
+            if (data[at + 3] / 255 < .1) continue;
+            if (Math.abs(data[at] - sum[0] / weight) + Math.abs(data[at + 1] - sum[1] / weight) + Math.abs(data[at + 2] - sum[2] / weight) < 72) near += data[at + 3] / 255;
+          }
+          const clear = [3, 63, 963, 1023].filter(at => data[at] < 26).length >= 3;
+          resolve(weight ? { luminance: total / weight, colourRatio: colourful / weight, flat: clear && near / weight > 0.9 } : null);
         } catch { resolve(null); }
       };
       probe.onerror = () => resolve(null);
@@ -216,8 +227,9 @@
     return null;
   }
 
-  function wearTone(wrapper, tone) {
+  function wearTone(wrapper, tone, flatten = false) {
     if (tone) wrapper.dataset.iconTone = tone; else delete wrapper.dataset.iconTone;
+    if (tone && flatten) wrapper.dataset.iconFlat = ''; else delete wrapper.dataset.iconFlat;
   }
 
   async function applyIconContrast(plate, wrapper = plate?.querySelector('.nl-icon')) {
@@ -258,8 +270,12 @@
     if (contrast(icon.luminance, surface) >= MIN_ICON_CONTRAST) { wearTone(wrapper, null); return; }
     // It is hard to see — but re-toning a coloured logo would destroy it, so that
     // case is left to the per-bookmark control rather than guessed at.
-    if (icon.colourRatio > COLOURFUL_ENOUGH) { wearTone(wrapper, null); return; }
-    wearTone(wrapper, surface > 0.5 ? 'dark' : 'light');
+    /* A mark drawn in one colour throughout is the exception: dark navy on a
+       dark tile is as lost as black, and its shape is the mark. It is shown in
+       the tile's own light or dark instead, and goes back to its colour on a
+       theme where that colour reads. */
+    if (icon.colourRatio > COLOURFUL_ENOUGH && !icon.flat) { wearTone(wrapper, null); return; }
+    wearTone(wrapper, surface > 0.5 ? 'dark' : 'light', icon.colourRatio > COLOURFUL_ENOUGH);
   }
 
   /* A tone is only correct for the surface it was measured against, so every
@@ -277,5 +293,5 @@
   }
   const toned = () => toning;
 
-  window.NordlysIcons = { classifyIcon, resolvePresentation, renderIcon, applyIconContrast, refreshIconContrast, toned, readableAgainst, gradientAverage, MIN_ICON_CONTRAST };
+  window.NordlysIcons = { classifyIcon, resolvePresentation, renderIcon, plateLuminance, applyIconContrast, refreshIconContrast, toned, readableAgainst, gradientAverage, MIN_ICON_CONTRAST };
 })();

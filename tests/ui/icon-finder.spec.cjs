@@ -2,7 +2,8 @@ const { test, expect } = require('../helpers/nordlys-fixture.cjs');
 const { png, svg, pretendInternet, catalogues, SILENT } = require('../helpers/icon-network.cjs');
 
 /* The icon dialog is one field. A name or a link goes in; the finder looks
-   in the open brand sets, in Wikidata and, for a link, on the site itself,
+   in the open brand sets, in Wikidata and on the site itself (the one in the
+   field, or the bookmark's own when the catalogues have nothing good),
    and puts the best mark on the tile. Every test here runs against a pretend
    internet, so what is asked of whom is part of what is asserted. */
 
@@ -53,13 +54,20 @@ test('a name finds the brand mark, puts it on the tile and offers the others', a
   await expect(choices).toHaveCount(4);
   await expect(choices.nth(0)).toHaveAttribute('aria-checked', 'true');
   await choices.nth(1).click();
+  await expect.poll(async () => (await link(page)).iconSource).toBe('simple-icons:spotify');
+  // Wikidata's entry does not name the bookmark's site as its own, so its mark stands a step back.
+  await choices.nth(2).click();
   await expect.poll(async () => (await link(page)).iconSource).toBe('wikimedia:Brand icon.svg');
   await choices.last().click();
   expect(await link(page)).toEqual(before);
 
-  // A name is sent to the two catalogues and to nobody else; the bookmark's own site is not touched.
+  // A name the catalogues know is sent to them and to nobody else: the bookmark's own site is not asked about, nor touched.
+  expect(await page.evaluate(() => window.__origins?.asked || [])).toEqual([]);
   expect(hostsOf(asked)).toEqual(['api.iconify.design', 'cdn.simpleicons.org', 'commons.wikimedia.org', 'query.wikidata.org', 'upload.wikimedia.org', 'www.wikidata.org']);
-  expect(asked.some(url => /user|bookmark|youtube/i.test(url))).toBe(false);
+  /* Of the bookmark, the one word its site is known by goes to the brand set,
+     as a second name to look under. Its address, its path and its folder do not. */
+  const ofBookmark = asked.filter(url => /youtube|watch|user|bookmark/i.test(url));
+  expect(ofBookmark.map(url => new URL(url).host + new URL(url).pathname + '?query=' + new URL(url).searchParams.get('query'))).toEqual(['api.iconify.design/search?query=youtube']);
 });
 
 test('the choices are walked with the arrows', async ({ nordlysPage }) => {
@@ -183,7 +191,7 @@ test('offline: the icon stays and the dialog says there is no connection', async
   await expect(page.locator('#icon-find-btn')).not.toHaveAttribute('aria-busy', 'true');
 });
 
-test('a name nobody knows offers the bookmark\'s own site as the next place to look', async ({ nordlysPage }) => {
+test('a name no catalogue knows is looked for on the bookmark\'s own site, without its address being pasted', async ({ nordlysPage }) => {
   const { page, origin } = nordlysPage;
   await pretendInternet(page, origin, {
     ...SILENT,
@@ -192,12 +200,102 @@ test('a name nobody knows offers the bookmark\'s own site as the next place to l
   });
   await openDialog(page);
   await find(page, 'My videos');
-  await expect(page.locator('#icon-find-status')).toContainText('Nothing found for “My videos”');
-  const next = page.locator('#icon-find-site');
-  await expect(next).toHaveText('Look on youtube.com');
-  await next.click();
   await expect.poll(async () => (await link(page)).iconUrl).toBe('https://www.youtube.com/yt.svg');
+  // The browser was asked about that one site, once the catalogues had nothing good.
+  expect(await page.evaluate(() => window.__origins.asked)).toEqual(['https://www.youtube.com/*']);
 });
+
+test('leave for the bookmark\'s own site refused: nothing is found, and the site stays one press away', async ({ nordlysPage }) => {
+  const { page, origin } = nordlysPage;
+  await page.evaluate(() => { window.__origins = { grant: false }; });
+  const asked = await pretendInternet(page, origin, { ...SILENT, 'https://www.youtube.com/': '<html></html>' });
+  const before = await link(page);
+  await openDialog(page);
+  await find(page, 'My videos');
+  await expect(page.locator('#icon-find-status')).toContainText('Nothing found for “My videos”');
+  await expect(page.locator('#icon-find-site')).toHaveText('Look on youtube.com');
+  expect(asked.some(url => url.includes('youtube.com'))).toBe(false);
+  expect(await link(page)).toEqual(before);
+});
+
+test('a site whose page will not be read still gives the icon it keeps in the usual place', async ({ nordlysPage }) => {
+  const { page, origin } = nordlysPage;
+  await pretendInternet(page, origin, {
+    ...SILENT,
+    'https://walled.test/': { status: 403, body: 'Checking your browser' },
+    'walled.test/apple-touch-icon.png': png(180, [20, 140, 90])
+  });
+  await openDialog(page);
+  await find(page, 'https://walled.test/');
+  await expect.poll(async () => (await link(page)).iconUrl).toBe('https://walled.test/apple-touch-icon.png');
+  await expect(page.locator('#icon-find-status')).toBeHidden();
+});
+
+test('a page inside a larger site with no icon of its own takes the larger site\'s', async ({ nordlysPage }) => {
+  const { page, origin } = nordlysPage;
+  await pretendInternet(page, origin, {
+    ...SILENT,
+    'https://portal.campus.test/': '<!doctype html><html><head><title>Sign in</title></head><body></body></html>',
+    'https://www.campus.test/': '<!doctype html><html><head><link rel="icon" type="image/svg+xml" href="/mark.svg"></head><body></body></html>',
+    'www.campus.test/mark.svg': svg('#2255aa')
+  });
+  await openDialog(page);
+  await find(page, 'https://portal.campus.test/');
+  await expect.poll(async () => (await link(page)).iconUrl).toBe('https://www.campus.test/mark.svg');
+});
+
+test('a slow source does not hold the first good icon, and the search ends by itself', async ({ nordlysPage }) => {
+  const { page, origin } = nordlysPage;
+  await pretendInternet(page, origin, { ...catalogues(), 'www.wikidata.org/w/api.php': { delay: 9000, body: '{"search":[]}' } });
+  await openDialog(page);
+  const started = Date.now();
+  await find(page, 'Spotify');
+  // On the tile well before the slow catalogue has said anything.
+  await expect.poll(async () => (await link(page)).iconSource, { timeout: 2000 }).toBe('logos:spotify-icon');
+  expect(Date.now() - started).toBeLessThan(2500);
+  await expect(page.locator('#icon-find-btn')).toHaveAttribute('aria-busy', 'true');
+  // Four seconds is the whole search; then the button is free and what was found stays.
+  await expect(page.locator('#icon-find-btn')).not.toHaveAttribute('aria-busy', 'true', { timeout: 6000 });
+  expect(Date.now() - started).toBeLessThan(7000);
+  expect((await link(page)).iconSource).toBe('logos:spotify-icon');
+  await expect(page.locator('#icon-choices [role="radio"]').first()).toHaveAttribute('aria-checked', 'true');
+});
+
+test('the same mark from two catalogues is offered once', async ({ nordlysPage }) => {
+  const { page, origin } = nordlysPage;
+  // Wikimedia's file is the very circle the colour set has.
+  await pretendInternet(page, origin, { ...catalogues(), 'upload.wikimedia.org/': svg('#1ed760') });
+  await openDialog(page);
+  await find(page, 'Spotify');
+  await expect.poll(async () => (await link(page)).iconSource).toBe('logos:spotify-icon');
+  await expect(page.locator('#icon-find-btn')).not.toHaveAttribute('aria-busy', 'true');
+  // The colour mark, the one-colour mark, the icon from before: not the circle twice.
+  await expect(page.locator('#icon-choices [role="radio"]')).toHaveCount(3);
+});
+
+test('a mark in one dark colour is drawn light on a dark tile and in its own colour on a light one', async ({ nordlysPage }) => {
+  const { page, origin } = nordlysPage;
+  await pretendInternet(page, origin, {
+    ...SILENT,
+    'api.iconify.design/search': { icons: ['simple-icons:deepnavy'] },
+    'api.iconify.design/simple-icons.json': { prefix: 'simple-icons', width: 24, height: 24, icons: { deepnavy: { body: '<path d="M12 2A10 10 0 1 0 12 22A10 10 0 1 0 12 2Z"/>' } } },
+    'cdn.simpleicons.org/': '<svg xmlns="http://www.w3.org/2000/svg" fill="#0F2B46" viewBox="0 0 24 24"><path d="M12 2A10 10 0 1 0 12 22A10 10 0 1 0 12 2Z"/></svg>'
+  });
+  await page.evaluate(() => window.Nordlys.setTheme('oled-obsidian'));
+  await openDialog(page);
+  await find(page, 'Deepnavy');
+  await expect.poll(async () => (await link(page)).iconSource).toBe('simple-icons:deepnavy');
+  // What is kept is the mark in the brand's own navy; only how it is drawn changes with the tile.
+  await page.keyboard.press('Escape');
+  const icon = page.locator('#board .tile').first().locator('.nl-icon');
+  await expect(icon).toHaveAttribute('data-icon-tone', 'light');
+  await expect(icon).toHaveAttribute('data-icon-flat', '');
+  expect(await icon.locator('img').evaluate(node => getComputedStyle(node).filter)).toContain('brightness(0)');
+  await page.evaluate(() => window.Nordlys.setTheme('porcelain-light'));
+  await expect(icon).not.toHaveAttribute('data-icon-tone', /./);
+  expect(await icon.locator('img').evaluate(node => getComputedStyle(node).filter)).not.toContain('brightness(0)');
+});
+
 
 test('an icon chosen from the old library keeps drawing, and comes back with one press', async ({ nordlysPage }) => {
   const { page, origin } = nordlysPage;

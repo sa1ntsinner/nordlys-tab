@@ -66,8 +66,14 @@ test('custom theme studio handles dark and light luminance inputs', async ({ nor
   const { page } = nordlysPage;
   await page.locator('#gear').click(); await page.locator('#btn-create-custom-theme').click();
   await page.locator('.theme-advanced summary').click();
+  /* Filling a field scrolls the drawer to it, smoothly, and where that had got
+     to when the picture was taken varied from run to run. The drawer is put
+     in one place first. */
+  const settle = () => page.locator('#thm-text-hex').evaluate(node => node.scrollIntoView({ block: 'end', behavior: 'instant' }));
   await page.locator('#thm-bg-hex').fill('#080b14'); await page.locator('#thm-text-hex').fill('#f4f7ff');
+  await settle();
   await snapshot(page, 'custom-theme-dark-1440.png');
   await page.locator('#thm-bg-hex').fill('#f4f7fb'); await page.locator('#thm-card-hex').fill('#ffffff'); await page.locator('#thm-text-hex').fill('#172033');
+  await settle();
   await snapshot(page, 'custom-theme-light-1440.png');
 });
