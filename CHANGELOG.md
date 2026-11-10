@@ -6,6 +6,34 @@ Chrome Web Store's rule that they only ever go up.
 
 ## [Unreleased]
 
+## [2.6.1] — 2026-11-10
+
+Choosing an icon is one field now, and the menus wear the theme you chose. Your folders, bookmarks and the icons they have stay as they are.
+
+### Changed
+
+- The icon dialog is one field. Type a name ("Spotify") or paste a link, press Find, and Nordlys puts the best icon it finds on the tile: the brand's mark as a vector first, then a large picture with a clear background, a favicon only when there is nothing else. The others it found sit in a row underneath, with the icon the tile had before, so a wrong guess is one click to change.
+- A name is looked up in two open catalogues: Iconify's SVG Logos, Simple Icons in each brand's own colour, and Wikidata's icon for the brand on Wikimedia Commons. A link is also read itself, once, for the icons its page declares; the browser asks for that one site first. Say no and the catalogues still answer. Nothing is asked of anyone until you press Find.
+- Icons are stored with their clear margins cut away, so a mark fills its tile instead of floating in the middle of it.
+- Adjust, which was Crop: the picture on the tile's own plate, large. Drag it to move it, scroll or pinch to scale it, or use the one slider. Fit and Fill frame it; the arrow keys, + and - do the same from the keyboard.
+- Menus, dialogs and the fields in Settings take their colours from the theme in use, in all of them and in the ones you made. They were the same dark blue in every dark theme and the same slate ink in every light one.
+- Custom CSS is at the foot of Settings → Appearance instead of a panel of its own.
+- Settings → Backup: save, export and import are three buttons in one row, and Reset sits last, by itself.
+- Rows in Settings sit closer together.
+
+### Removed
+
+- The Find online, Website icon and Custom tabs of the icon dialog, with their lists of sources, the list of addresses an icon had come from, and the Rotate and Centre buttons. A file is "From a file"; letters are "As letters", and take what is in the field when it is one to three characters.
+- Requests to `images.weserv.nl`, to Google's favicon service and to DuckDuckGo's. Nordlys no longer contacts any of them.
+
+### Fixed
+
+- Settings → Background: every photo subject now shows what it gives. The cards were empty until a subject had been the sky once; each now carries a small picture that ships with Nordlys, and nothing is fetched to show it.
+
+### Kept
+
+- Every icon a bookmark already has: one chosen from the old built-in set, one found online, a favicon, a picture or letters all draw as they did. A site Nordlys recognises still gets its built-in mark until you choose another.
+
 ## [2.6.0] — 2026-11-10
 
 This release takes things off the screen. Your folders, bookmarks, spaces and look stay as they are.
