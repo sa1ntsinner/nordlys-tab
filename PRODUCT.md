@@ -26,7 +26,7 @@ Nordlys replaces the browser's new tab page: the person's favourite sites in fol
 
 ## Capabilities and Constraints
 
-What ships in 2.5.3:
+What ships in 2.6.0:
 - Favourite sites in folders; move folders, change tile size and spacing, tidy them in one click, undo. Save any page from the toolbar button or the right-click menu, or drop a link onto the board.
 - Page layouts: the board, Columns, Dock, Today (the dashboard beside the folders), Prompt (only the search box) and Poster (a large clock).
 - Skies in kinds: the nine Nordlys skies drawn live, photographs by subject from Wikimedia Commons' featured pictures in the colours of the mood or their own, a picture of the day (Wikimedia Commons, the Met, NASA EPIC), or your own picture, looping video or colour. Shuffle, saved skies, a sky that changes by itself, colours from the picture, a night light. 21 colour themes (11 dark, 10 light, including pure black for OLED) and eleven colour moods.

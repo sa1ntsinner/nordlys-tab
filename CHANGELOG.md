@@ -6,6 +6,24 @@ Chrome Web Store's rule that they only ever go up.
 
 ## [Unreleased]
 
+## [2.6.0] — 2026-11-10
+
+This release takes things off the screen. Your folders, bookmarks, spaces and look stay as they are.
+
+### Changed
+
+- Settings → Appearance shows the themes of the mode you are in: Dark the dark ones, Light the light ones, Auto both. The lists lost their counts and the cards got smaller, so the choice fits on one screen.
+- A page layout is its drawing and its name. The sentence that sat under each one is its tooltip now, and so are the notes that sat under switches in General, Background and Bookmarks. The ones about what stays on this device are still on the page.
+- A new board says one thing, "Nordlys starts empty", with one button under it and the other ways in as plain words.
+- Folder names lost the dot in front of them, and line up with the folder's icons.
+- Settings → Support lists its links without a line of explanation under each.
+- Settings → Appearance: "Advanced glass & geometry" is "Cards and bookmarks", and holds only what changes them: legibility, glass, corners, sizes and icon shape.
+
+### Removed
+
+- The Glow slider and the Hover effect choice. Every bookmark lifts a little under the pointer, as it did by default. A setup that had another hover, or a backup that names one, opens without complaint.
+- The headings over the groups in the Settings rail, and the second preview inside Cards and bookmarks.
+
 ## [2.5.3] — 2026-10-23
 
 ### Added

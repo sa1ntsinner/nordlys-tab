@@ -24,7 +24,7 @@ I wanted a new tab page with my bookmarks and something nice to look at, so I ma
 
 - Bookmarks in folders. Drag the folders around, set tile size and spacing, undo a change. Save the page you're on from the toolbar button or the right-click menu.
 - The page as a board, columns, a dock, the dashboard beside your folders, only the search box, or a large clock.
-- Nine skies drawn live in the browser, among them the real stars over you and a black hole, photographs in the colours of your mood, a picture of the day, or your own picture or looping video. 21 colour themes.
+- Skies drawn live in the browser, among them the real stars over you and a black hole, photographs in the colours of your mood, a picture of the day, or your own picture or looping video. Dark and light colour themes, or your own.
 - A search box that uses your browser's engine, finds your sites, open tabs and places in Settings, works out units, times and money, and takes your own keywords and commands after `>`.
 - Brand icons by name, a site's favicon, an image link or a letter.
 - A dashboard if you want one: tasks, a focus timer that can keep sites shut, notes, weather, world clocks, feeds, calendars with a Join button, plus tasks from Todoist and GitHub.

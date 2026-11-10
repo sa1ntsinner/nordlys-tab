@@ -2,7 +2,7 @@
 
 Effective date: August 16, 2026
 Last updated: October 23, 2026
-Version: 2.5.3
+Version: 2.6.0
 
 Nordlys runs as a new tab page in your browser. It has no server or account.
 

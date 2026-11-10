@@ -43,7 +43,7 @@ Folders and bookmarks
 
 Skies and pages
 • The northern lights, the real stars over you tonight, a black hole, photographs in your mood's colours, or a picture of the day. Your own picture or video too.
-• 21 colour themes. The page can be a board, columns, a dock or only the search box.
+• Colour themes. The page can be a board, columns, a dock or only the search box.
 
 Search
 • Your browser's search engine, your sites, open tabs and your own keywords. Units, time zones and money are answered on the spot.
@@ -57,7 +57,7 @@ Before every update, a copy of your whole setup is kept in Settings → Backup.
 In English, Russian, Spanish, German, French, Japanese, Chinese and Turkish. Open source (MIT): https://github.com/sa1ntsinner/nordlys-tab
 ```
 
-The description is 1498 characters, under the 1,500 the store shows
+The description is 1495 characters, under the 1,500 the store shows
 before "More". Privacy and the price come first: they are why people leave
 other new-tab extensions.
 
