@@ -86,8 +86,8 @@ test('shadows come from the elevation ladder', () => {
       }
     }
   }
-  // Drag affordances and the user's own card-glow slider still draw with colour
-  // on purpose; everything else is on the ladder.
+  // Drag affordances still draw with colour on purpose; everything else is on
+  // the ladder.
   const budget = 30;
   assert.ok(offenders.length <= budget,
     `${offenders.length} shadows outside the ladder (budget ${budget}):\n${offenders.slice(0, 12).join('\n')}`);
@@ -187,14 +187,9 @@ test('no shadow is tinted with the accent', () => {
      layer has a blur: a ring is colour without one, a bloom is colour with. */
   const TINT = /var\(--accent|var\(--c\b|var\(--glow|color-mix|#[0-9a-fA-F]{3,8}|\brgb\(|\bhsl\(|\boklch\(/;
 
-  /* Three places may bloom in colour, and only these three. Two are settings
-     the user turned on deliberately — the ambient glow slider and the neon
-     hover style — and forbidding those would be overruling a choice rather
-     than enforcing a doctrine. The third marks where a dragged tile will land,
+  /* One place may bloom in colour: the mark where a dragged tile will land,
      where the colour is the message and lasts only while dragging. */
   const ALLOWED = [
-    /--card-glow-intensity/,
-    /body\.hover-glow/,
     /\.drop-before|\.drop-after|\.group-before|\.group-after/
   ];
   const offenders = [];

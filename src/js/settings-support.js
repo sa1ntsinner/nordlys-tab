@@ -266,22 +266,16 @@
        only where there is a store to write it in (review-ask.js). */
     renderActions() {
       const entries = [
-        { url: window.NordlysReviewAsk?.storeUrl(), mark: 'review', key: 'support.review', fallback: 'Write a review', hintKey: 'support.reviewHint', hint: 'In the store you got it from. It is how others find it.' },
-        { url: SUPPORT_CONFIG.repositoryUrl, mark: 'star', key: 'support.star', fallback: 'Star it on GitHub', hintKey: 'support.starHint', hint: 'Stars are how people find it.' },
-        { url: SUPPORT_CONFIG.issuesUrl, mark: 'idea', key: 'support.report', fallback: 'Report a bug or suggest an idea', hintKey: 'support.reportHint', hint: 'Bugs and ideas go to the same place.' },
-        { url: SUPPORT_CONFIG.privacyUrl, mark: 'shield', key: 'support.privacy', fallback: 'Read the privacy promise', hintKey: 'support.privacyHint', hint: 'What stays on your machine, and what never leaves it.' }
+        { url: window.NordlysReviewAsk?.storeUrl(), mark: 'review', key: 'support.review', fallback: 'Write a review' },
+        { url: SUPPORT_CONFIG.repositoryUrl, mark: 'star', key: 'support.star', fallback: 'Star it on GitHub' },
+        { url: SUPPORT_CONFIG.issuesUrl, mark: 'idea', key: 'support.report', fallback: 'Report a bug or suggest an idea' },
+        { url: SUPPORT_CONFIG.privacyUrl, mark: 'shield', key: 'support.privacy', fallback: 'Read the privacy promise' }
       ];
       for (const entry of entries) {
         const url = this.httpsOnly(entry.url);
         if (!url) continue;
         const link = this.externalLink(url, 'support-action');
-        const text = document.createElement('span');
-        text.className = 'support-action-text';
-        text.append(
-          this.label(entry.key, entry.fallback, 'support-action-label'),
-          this.label(entry.hintKey, entry.hint, 'support-action-hint')
-        );
-        link.append(icon(entry.mark, 'support-action-icon'), text, this.newTabNote(), icon('external', 'support-action-out'));
+        link.append(icon(entry.mark, 'support-action-icon'), this.label(entry.key, entry.fallback, 'support-action-label'), this.newTabNote(), icon('external', 'support-action-out'));
         this.actions.append(link);
       }
     }

@@ -552,87 +552,6 @@ input[type="range"].ipt:focus-visible {
   font-weight: 600;
 }
 
-.card-live-preview-box,
-.liquid-live-preview-box {
-  position: relative;
-  width: 100%;
-  padding: 18px 14px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #1e1b4b, #3b82f6 40%, #ec4899 80%);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
-}
-.light-ui .card-live-preview-box,
-.light-ui .liquid-live-preview-box {
-  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 50%, #fbcfe8 100%);
-  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.06);
-}
-
-.preview-interactive-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  border-radius: var(--card-radius, 24px);
-  background: linear-gradient(
-    160deg,
-    rgb(from var(--card-tint, #141c34) r g b / calc(var(--glass-opacity, 0.7) * 0.75)),
-    rgb(from var(--card-tint-deep, #090e1c) r g b / calc(var(--glass-opacity, 0.7) * 0.65))
-  );
-  border: 1px solid rgba(255, 255, 255, calc(var(--glass-border-sheen, 0.45) * 0.8));
-  backdrop-filter: blur(var(--glass-blur, 28px)) saturate(var(--glass-saturate, 190%));
-  -webkit-backdrop-filter: blur(var(--glass-blur, 28px)) saturate(var(--glass-saturate, 190%));
-  box-shadow: var(--nl-shadow-2);
-  color: var(--ink);
-  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), border-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-transition-control);
-  cursor: pointer;
-  user-select: none;
-}
-.light-ui .preview-interactive-card {
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: var(--nl-shadow-2);
-  color: #0f172a;
-}
-.preview-interactive-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--nl-shadow-2);
-}
-.preview-icon-box {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--tile-radius, 9px);
-  background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.2), transparent 70%), var(--accent);
-  display: grid;
-  place-items: center;
-  color: #ffffff;
-  box-shadow: var(--nl-shadow-1);
-  transition: color var(--nl-motion-control), background-color var(--nl-motion-control), box-shadow var(--nl-motion-control), transform var(--nl-motion-control);
-}
-.preview-card-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.preview-card-title {
-  font-size: var(--nl-text-sm);
-  font-weight: 650;
-  color: var(--nl-text-primary);
-}
-.light-ui .preview-card-title {
-  color: #0f172a;
-}
-.preview-card-sub {
-  font-size: var(--nl-text-2xs);
-  color: var(--nl-text-secondary);
-}
-.light-ui .preview-card-sub {
-  color: #64748b;
-}
-
 /* ── Custom Theme Creator Styles ──────────────────────────────── */
 .theme-card.add-custom-theme .add-custom-preview {
   display: flex;
@@ -1693,7 +1612,6 @@ input[type="range"].ipt:focus-visible {
   overflow: auto; mask-image: none; border: 0; border-right: 1px solid var(--nl-border); background: transparent;
 }
 .settings-nav-group { display: flex; flex-direction: column; gap: 4px; }
-.settings-nav-label { padding: 0 10px 5px; color: var(--nl-text-tertiary); font-size: var(--nl-text-2xs); font-weight: 650; letter-spacing: var(--nl-track-label); text-transform: uppercase; }
 .ctab { position: relative; min-height: 42px; padding: 0 12px; border-radius: var(--nl-radius-sm); text-align: left; display: flex; align-items: center; gap: 10px; }
 .settings-tab-icon { width: 17px; height: 17px; flex: 0 0 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; opacity: .82; }
 .ctab.active { color: var(--nl-text-primary); background: color-mix(in srgb, var(--nl-text-primary) 8%, transparent); box-shadow: none; }
@@ -1727,7 +1645,6 @@ input[type="range"].ipt:focus-visible {
   .settings-layout { display: flex; flex-direction: column; }
   .ctabs { flex: none; flex-direction: row; gap: 8px; padding: 8px 14px 10px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--nl-border); mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 28px), transparent); }
   .settings-nav-group { flex-direction: row; gap: 6px; }
-  .settings-nav-label { display: none; }
   .ctab { flex: none; min-width: max-content; text-align: center; padding-inline: 14px; }
   .ctab.active::before { inset-inline: 12px; top: auto; bottom: 0; width: auto; height: 3px; }
   .cbody { padding: 16px 14px 28px; }
@@ -2087,7 +2004,7 @@ input[type="range"].ipt:focus-visible {
 }
 .support-give { display: flex; flex-direction: column; gap: 10px; }
 /* The same primary button every other section uses, at the same weight. */
-.support-coffee { width: 100%; min-height: var(--nl-target-min); text-decoration: none; }
+.support-coffee { align-self: flex-start; padding-inline: var(--nl-space-6); min-height: var(--nl-target-min); text-decoration: none; }
 /* Secondary, not tertiary: the faint token measures 4.05:1 at 12px, and a hint
    nobody can read is decoration with a word count. */
 /* The Backup panel's note about what the export file can and cannot carry is
@@ -2187,7 +2104,7 @@ input[type="range"].ipt:focus-visible {
   grid-template-columns: 18px minmax(0, 1fr) 14px;
   align-items: center;
   gap: 12px;
-  min-height: 56px;
+  min-height: 44px;
   padding: 10px 12px;
   border: 1px solid transparent;
   border-radius: var(--nl-radius-md);
@@ -2209,14 +2126,7 @@ input[type="range"].ipt:focus-visible {
 }
 .support-action-icon { width: 18px; height: 18px; flex: none; opacity: .82; }
 .support-action-out { width: 14px; height: 14px; flex: none; color: var(--nl-text-tertiary); }
-.support-action-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.support-action-label { font-size: var(--nl-text-md); font-weight: 500; }
-.support-action-hint {
-  color: var(--nl-text-secondary);
-  font-size: var(--nl-text-xs);
-  line-height: 1.45;
-}
-
+.support-action-label { flex: 1; min-width: 0; font-size: var(--nl-text-md); font-weight: 500; }
 /* ── About ──────────────────────────────────────────────────────────────
    Secondary to the ask above it and drawn that way: one line of text, one
    collapsed list, no surface of its own. */
@@ -2333,7 +2243,6 @@ input[type="range"].ipt:focus-visible {
 }
 .board-layout-option[aria-checked="true"] .layout-glyph { color: var(--nl-accent-text); }
 .board-layout-name { font-size: var(--nl-text-sm); font-weight: 650; color: var(--nl-text-primary); }
-.board-layout-note { font-size: var(--nl-text-xs); line-height: 1.4; color: var(--nl-text-secondary); }
 .board-layout-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 /* The sentence about the rows takes its own line; the ways in sit under it,
    the one that starts arranging last and brightest. */

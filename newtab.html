@@ -150,11 +150,11 @@
       <div class="arrange-controls">
         <span id="arrange-title" class="arrange-title" data-i18n="arrange.title">Arrange folders</span>
         <div class="arrange-layouts" role="radiogroup" aria-label="Layout" data-i18n-aria="arrange.layout">
-          <button type="button" role="radio" class="arrange-layout" data-layout="natural" aria-checked="true" aria-describedby="arrange-natural-desc">
+          <button type="button" role="radio" class="arrange-layout" data-layout="natural" data-i18n-title="bookmarks.naturalNote" aria-checked="true" aria-describedby="arrange-natural-desc">
             <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="2" y="1" width="6" height="7" rx="1.2"/><rect x="9" y="1" width="5" height="5" rx="1.2"/><rect x="15" y="1" width="7" height="7" rx="1.2"/><rect x="5" y="10" width="6" height="5" rx="1.2"/><rect x="12" y="10" width="8" height="5" rx="1.2"/></svg>
             <span data-i18n="arrange.natural">Natural</span>
           </button>
-          <button type="button" role="radio" class="arrange-layout" data-layout="fitted" aria-checked="false" aria-describedby="arrange-fitted-desc">
+          <button type="button" role="radio" class="arrange-layout" data-layout="fitted" data-i18n-title="bookmarks.fittedNote" aria-checked="false" aria-describedby="arrange-fitted-desc">
             <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="1" y="1" width="7" height="7" rx="1.2"/><rect x="9" y="1" width="6" height="7" rx="1.2"/><rect x="16" y="1" width="7" height="7" rx="1.2"/><rect x="1" y="10" width="10" height="5" rx="1.2"/><rect x="12" y="10" width="11" height="5" rx="1.2"/></svg>
             <span data-i18n="arrange.fitted">Fitted</span>
           </button>
@@ -282,53 +282,46 @@
              and folders, drawn six ways. -->
         <h3 id="page-layout-title" data-i18n="page.title">Page</h3>
         <div class="board-layout-options page-layout-options" role="radiogroup" aria-labelledby="page-layout-title">
-          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="board" aria-checked="true">
+          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="board" data-i18n-title="page.boardNote" aria-checked="true">
             <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="9" y="1" width="6" height="2" rx="1"/><rect x="5" y="4.5" width="14" height="2" rx="1"/><rect x="2" y="9" width="6" height="6" rx="1.2"/><rect x="9" y="9" width="6" height="6" rx="1.2"/><rect x="16" y="9" width="6" height="6" rx="1.2"/></svg>
             <span class="board-layout-name" data-i18n="page.board">Board</span>
-            <span class="board-layout-note" data-i18n="page.boardNote">The clock and the search, with your folders of icons under them.</span>
           </button>
-          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="columns" aria-checked="false">
+          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="columns" data-i18n-title="page.columnsNote" aria-checked="false">
             <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="9" y="1" width="6" height="2" rx="1"/><rect x="5" y="4.5" width="14" height="2" rx="1"/><rect x="2" y="9" width="5.5" height="1.5" rx=".75"/><rect x="2" y="11.5" width="5.5" height="1.5" rx=".75"/><rect x="2" y="14" width="5.5" height="1.5" rx=".75"/><rect x="9.25" y="9" width="5.5" height="1.5" rx=".75"/><rect x="9.25" y="11.5" width="5.5" height="1.5" rx=".75"/><rect x="9.25" y="14" width="5.5" height="1.5" rx=".75"/><rect x="16.5" y="9" width="5.5" height="1.5" rx=".75"/><rect x="16.5" y="11.5" width="5.5" height="1.5" rx=".75"/><rect x="16.5" y="14" width="5.5" height="1.5" rx=".75"/></svg>
             <span class="board-layout-name" data-i18n="page.columns">Columns</span>
-            <span class="board-layout-note" data-i18n="page.columnsNote">Folders as columns of names, so more fits on one screen.</span>
           </button>
-          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="dock" aria-checked="false">
+          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="dock" data-i18n-title="page.dockNote" aria-checked="false">
             <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="9" y="3" width="6" height="2" rx="1"/><rect x="5" y="6.5" width="14" height="2" rx="1"/><rect x="3" y="12" width="18" height="3.5" rx="1.75"/></svg>
             <span class="board-layout-name" data-i18n="page.dock">Dock</span>
-            <span class="board-layout-note" data-i18n="page.dockNote">The clock and the search in the middle, and every bookmark on a shelf along the bottom.</span>
           </button>
-          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="today" aria-checked="false">
+          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="today" data-i18n-title="page.todayNote" aria-checked="false">
             <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="9" y="1" width="6" height="2" rx="1"/><rect x="5" y="4.5" width="14" height="2" rx="1"/><rect x="2" y="9" width="13" height="6.5" rx="1.2"/><rect x="17" y="9" width="5" height="1.5" rx=".75"/><rect x="17" y="11.5" width="5" height="1.5" rx=".75"/><rect x="17" y="14" width="5" height="1.5" rx=".75"/></svg>
             <span class="board-layout-name" data-i18n="page.today">Today</span>
-            <span class="board-layout-note" data-i18n="page.todayNote">The dashboard first, with your folders as lists beside it. Turns the dashboard on.</span>
           </button>
-          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="prompt" aria-checked="false">
+          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="prompt" data-i18n-title="page.promptNote" aria-checked="false">
             <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="10" y="3" width="4" height="1.6" rx=".8"/><rect x="2" y="6.5" width="20" height="4.5" rx="2.25"/></svg>
             <span class="board-layout-name" data-i18n="page.prompt">Prompt</span>
-            <span class="board-layout-note" data-i18n="page.promptNote">One line to type in: bookmarks, sums and commands come up as you type.</span>
           </button>
-          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="poster" aria-checked="false">
+          <button type="button" role="radio" class="board-layout-option page-layout-option" data-page-layout="poster" data-i18n-title="page.posterNote" aria-checked="false">
             <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="5" y="2.5" width="14" height="7" rx="1.6"/><rect x="8" y="11.5" width="8" height="1.5" rx=".75"/></svg>
             <span class="board-layout-name" data-i18n="page.poster">Poster</span>
-            <span class="board-layout-note" data-i18n="page.posterNote">The time, large, over the sky. Press / to search.</span>
           </button>
         </div>
 
         <h3 data-i18n="appearance.themePresets">Themes</h3>
         <!-- Dark Themes Subsection -->
-        <div class="theme-section-header">
+        <div class="theme-section-header" data-themes="dark">
           <span class="theme-section-title">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.85;">
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
             </svg>
             <span data-i18n="appearance.darkThemes">Dark themes</span>
           </span>
-          <span class="theme-section-badge">9</span>
         </div>
         <div class="theme-grid" id="theme-dark-grid"></div>
 
         <!-- Light Themes Subsection -->
-        <div class="theme-section-header" style="margin-top: 18px;">
+        <div class="theme-section-header" data-themes="light" style="margin-top: 18px;">
           <span class="theme-section-title">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.85;">
               <circle cx="12" cy="12" r="5"></circle>
@@ -343,7 +336,6 @@
             </svg>
             <span data-i18n="appearance.lightThemes">Light themes</span>
           </span>
-          <span class="theme-section-badge">3</span>
         </div>
         <div class="theme-grid" id="theme-light-grid"></div>
 
@@ -473,17 +465,11 @@
         </details>
 
         <details id="advanced-glass-settings" class="advanced-settings">
-          <summary data-i18n="appearance.advancedGlass">Advanced glass &amp; geometry</summary>
+          <summary data-i18n="appearance.cardStudioTitle">Cards and bookmarks</summary>
         <!-- Bookmark & Card Aesthetics Studio -->
         <div id="card-customizer-controls" class="card-customizer-card" style="margin-top: 16px;">
-          <h4 style="margin: 0; color: var(--nl-accent-text); font-size: var(--nl-text-md); font-weight: 650; display: flex; align-items: center; gap: 6px;">
-            <span data-i18n="appearance.cardStudioTitle">Cards and bookmarks</span>
-          </h4>
-
-          <!-- 1. Surface & Glass Section -->
-          <div class="settings-group-label" data-i18n="appearance.surfaceGlass">Glass</div>
           <div class="row">
-            <span><span data-i18n="appearance.highLegibility">High legibility</span><small class="setting-note-inline" data-i18n="appearance.highLegibilityNote">Solid glass, a quieter sky and stronger text. On by itself when your system asks for more contrast.</small></span>
+            <span data-i18n="appearance.highLegibility" data-i18n-title="appearance.highLegibilityNote">High legibility</span>
             <label class="tg"><input id="cfg-high-legibility" type="checkbox"><i></i></label>
           </div>
           <div class="row">
@@ -495,9 +481,6 @@
             </select>
           </div>
           <p class="settings-note glass-solid-note" data-i18n="glass.solidNote">While less motion or less transparency is asked for, or high legibility is on, the glass is solid, so this changes nothing.</p>
-
-          <!-- 2. Geometry & Spacing Section -->
-          <div class="settings-group-label" data-i18n="appearance.geometry">Geometry</div>
           <div class="row">
             <span><span data-i18n="appearance.cardRadius">Corner radius</span> <b id="lbl-radius">18px</b></span>
             <input id="cfg-card-radius" type="range" class="ipt" min="6" max="48" value="18">
@@ -526,39 +509,6 @@
             </select>
           </div>
 
-          <!-- 3. Glow & Hover Effects Section -->
-          <div style="font-size: var(--nl-text-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-top: 6px;" data-i18n="appearance.cardGlow">Glow</div>
-          <div class="row">
-            <span><span data-i18n="appearance.cardGlow">Glow</span> <b id="lbl-glow">40%</b></span>
-            <input id="cfg-card-glow" type="range" class="ipt" min="0" max="100" value="40">
-          </div>
-          <div class="row">
-            <span data-i18n="appearance.hoverEffect">Hover effect</span>
-            <select id="cfg-hover-effect" class="ipt">
-              <option value="lift" data-i18n="appearance.hoverLift">Smooth Elevation Lift</option>
-              <option value="glow" data-i18n="appearance.hoverGlow">Neon Edge Glow</option>
-              <option value="scale" data-i18n="appearance.hoverScale">Scale Zoom</option>
-              <option value="none" data-i18n="appearance.hoverNone">Subtle / Static</option>
-            </select>
-          </div>
-
-          <!-- Live Interactive Bookmark Card Preview Widget -->
-          <div style="margin-top: 6px;">
-            <span style="font-size: var(--nl-text-xs); color: var(--dim); display: block; margin-bottom: 6px; font-weight: 500;" data-i18n="appearance.livePreviewCard">Preview</span>
-            <div class="card-live-preview-box">
-              <div id="preview-interactive-card" class="preview-interactive-card">
-                <div id="preview-icon-box" class="preview-icon-box">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                  </svg>
-                </div>
-                <div class="preview-card-info">
-                  <span class="preview-card-title" data-i18n="appearance.previewBookmark">Nordlys Studio</span>
-                  <span class="preview-card-sub">nordlys.app</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
         </details>
 
@@ -635,11 +585,11 @@
           <label class="tg"><input id="cfg-open-newtab" type="checkbox"><i></i></label>
         </div>
         <div class="row setting-row">
-          <span id="cfg-show-search-label"><span data-i18n="general.showSearch">Show the search box</span><small class="row-hint" data-i18n="general.showSearchHint">Hidden, it still opens with Ctrl+K or /.</small></span>
+          <span id="cfg-show-search-label" data-i18n="general.showSearch" data-i18n-title="general.showSearchHint" title="Hidden, it still opens with Ctrl+K or /.">Show the search box</span>
           <label class="tg"><input id="cfg-show-search" type="checkbox" aria-labelledby="cfg-show-search-label" checked><i></i></label>
         </div>
         <div class="row setting-row">
-          <span id="cfg-shortcut-hints-label"><span data-i18n="general.shortcutHints">Show shortcuts on hover</span><small class="row-hint" data-i18n="general.shortcutHintsHint">Rest the mouse on a control to see the keys that do the same. Press ? for all of them.</small></span>
+          <span id="cfg-shortcut-hints-label" data-i18n="general.shortcutHints" data-i18n-title="general.shortcutHintsHint" title="Rest the mouse on a control to see the keys that do the same. Press ? for all of them.">Show shortcuts on hover</span>
           <label class="tg"><input id="cfg-shortcut-hints" type="checkbox" aria-labelledby="cfg-shortcut-hints-label" checked><i></i></label>
         </div>
         <div class="row setting-row">
@@ -656,11 +606,11 @@
         <div id="search-from" class="search-from-block">
           <span class="settings-block-label" data-i18n="general.searchFrom">The search box also finds</span>
           <div class="row setting-row" data-source-row="tabs">
-            <span id="cfg-search-tabs-label"><span data-i18n="general.searchTabs">Open tabs</span><small class="row-hint" data-i18n="general.searchTabsHint">Go to a tab that is already open instead of opening it twice.</small></span>
+            <span id="cfg-search-tabs-label" data-i18n="general.searchTabs" data-i18n-title="general.searchTabsHint" title="Go to a tab that is already open instead of opening it twice.">Open tabs</span>
             <label class="tg"><input id="cfg-search-tabs" type="checkbox" data-source="tabs" aria-labelledby="cfg-search-tabs-label"><i></i></label>
           </div>
           <div class="row setting-row" data-source-row="bookmarks">
-            <span id="cfg-search-bookmarks-label"><span data-i18n="general.searchBookmarks">Your browser's bookmarks</span><small class="row-hint" data-i18n="general.searchBookmarksHint">The ones that are not on the board.</small></span>
+            <span id="cfg-search-bookmarks-label" data-i18n="general.searchBookmarks" data-i18n-title="general.searchBookmarksHint" title="The ones that are not on the board.">Your browser's bookmarks</span>
             <label class="tg"><input id="cfg-search-bookmarks" type="checkbox" data-source="bookmarks" aria-labelledby="cfg-search-bookmarks-label"><i></i></label>
           </div>
           <div class="row setting-row" data-source-row="history">
@@ -727,7 +677,7 @@
         </div>
         <!-- A photograph in the colours of the mood, or in its own (app.js applyPictureTone). -->
         <div class="row setting-row" data-scene-only="toned">
-          <span><span id="bg-photo-tone-label" data-i18n="background.photoTone">In the colours of the mood</span><small class="setting-note-inline" data-i18n="background.photoToneNote">Off, the photograph keeps its own colours.</small></span>
+          <span id="bg-photo-tone-label" data-i18n="background.photoTone" data-i18n-title="background.photoToneNote" title="Off, the photograph keeps its own colours.">In the colours of the mood</span>
           <label class="tg"><input id="cfg-photo-tone" type="checkbox" checked aria-labelledby="bg-photo-tone-label"><i></i></label>
         </div>
         <!-- The mood chips are built in settings.js so the five that ship and the
@@ -810,7 +760,7 @@
         </div>
         <!-- Only a picture whose pixels the page may read: the person's own, and Commons'. -->
         <div class="row setting-row" data-scene-only="readable">
-          <span><span id="bg-picture-colours-label" data-i18n="background.pictureColours">Colours from the picture</span><small class="setting-note-inline" data-i18n="background.pictureColoursNote">The accent takes the picture's strongest colour.</small></span>
+          <span id="bg-picture-colours-label" data-i18n="background.pictureColours" data-i18n-title="background.pictureColoursNote" title="The accent takes the picture's strongest colour.">Colours from the picture</span>
           <label class="tg"><input id="cfg-picture-colours" type="checkbox" aria-labelledby="bg-picture-colours-label"><i></i></label>
         </div>
 
@@ -836,7 +786,7 @@
           </select>
         </div>
         <div class="row setting-row">
-          <span><span id="bg-night-label" data-i18n="background.night">Night light</span><small class="setting-note-inline" data-i18n="background.nightNote">A warm red over the whole page, and the sky held still.</small></span>
+          <span id="bg-night-label" data-i18n="background.night" data-i18n-title="background.nightNote" title="A warm red over the whole page, and the sky held still.">Night light</span>
           <select id="cfg-night-mode" class="ipt" aria-labelledby="bg-night-label">
             <option value="off" data-i18n="background.nightOff">Off</option>
             <option value="auto" data-i18n="background.nightAuto">From sunset to sunrise</option>
@@ -854,15 +804,13 @@
         <div class="board-layout-block">
           <span class="settings-block-label" data-i18n="bookmarks.boardLayout">On the board</span>
           <div class="board-layout-options" role="radiogroup" aria-label="Layout" data-i18n-aria="arrange.layout">
-            <button type="button" role="radio" class="board-layout-option" data-layout="natural" aria-checked="true">
+            <button type="button" role="radio" class="board-layout-option" data-layout="natural" data-i18n-title="bookmarks.naturalNote" aria-checked="true">
               <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="2" y="1" width="6" height="7" rx="1.2"/><rect x="9" y="1" width="5" height="5" rx="1.2"/><rect x="15" y="1" width="7" height="7" rx="1.2"/><rect x="5" y="10" width="6" height="5" rx="1.2"/><rect x="12" y="10" width="8" height="5" rx="1.2"/></svg>
               <span class="board-layout-name" data-i18n="arrange.natural">Natural</span>
-              <span class="board-layout-note" data-i18n="bookmarks.naturalNote">Each folder keeps its own size; rows wrap like words.</span>
             </button>
-            <button type="button" role="radio" class="board-layout-option" data-layout="fitted" aria-checked="false">
+            <button type="button" role="radio" class="board-layout-option" data-layout="fitted" data-i18n-title="bookmarks.fittedNote" aria-checked="false">
               <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="1" y="1" width="7" height="7" rx="1.2"/><rect x="9" y="1" width="6" height="7" rx="1.2"/><rect x="16" y="1" width="7" height="7" rx="1.2"/><rect x="1" y="10" width="10" height="5" rx="1.2"/><rect x="12" y="10" width="11" height="5" rx="1.2"/></svg>
               <span class="board-layout-name" data-i18n="arrange.fitted">Fitted</span>
-              <span class="board-layout-note" data-i18n="bookmarks.fittedNote">Rows run edge to edge; folders in a row share one height.</span>
             </button>
           </div>
           <div class="board-layout-foot">
@@ -877,10 +825,10 @@
                window the whole page may take. -->
           <div class="page-fit-block">
             <div class="row setting-row page-fit-row">
-              <span><span id="page-fit-label" data-i18n="bookmarks.onePageFit">One page fit</span><small id="page-fit-state" class="setting-note-inline" hidden></small></span>
+              <span><span id="page-fit-label" data-i18n="bookmarks.onePageFit" data-i18n-title="bookmarks.onePageFitNote">One page fit</span><small id="page-fit-state" class="setting-note-inline" hidden></small></span>
               <label class="tg"><input id="cfg-one-page-fit" type="checkbox" aria-labelledby="page-fit-label" aria-describedby="page-fit-state page-fit-note"><i></i></label>
             </div>
-            <p id="page-fit-note" class="page-fit-note" data-i18n="bookmarks.onePageFitNote">Keeps the clock, the search and every folder in the window, with nothing to scroll. Spacing closes up first, then the bookmarks get smaller, and only then is the whole board shown smaller. Your sizes stay as you set them. Not the same as Fitted, which only decides how folders share a row.</p>
+            <p id="page-fit-note" class="page-fit-note nl-visually-hidden" data-i18n="bookmarks.onePageFitNote">Keeps the clock, the search and every folder in the window, with nothing to scroll. Spacing closes up first, then the bookmarks get smaller, and only then is the whole board shown smaller. Your sizes stay as you set them. Not the same as Fitted, which only decides how folders share a row.</p>
           </div>
         </div>
         <div id="cfg-groups-editor"></div>

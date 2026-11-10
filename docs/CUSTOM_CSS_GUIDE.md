@@ -19,7 +19,7 @@ Nordlys provides an embedded, real-time Custom CSS injector that allows you to c
 | `#sugg` | Autocomplete suggestions dropdown |
 | `#board` | Main Bento card container |
 | `.card` | Glassmorphic folder card |
-| `.cat` | Folder category header (`.cat b`, `.cat s`) |
+| `.cat` | Folder category header (`.cat b`) |
 | `.grid` | CSS grid containing bookmark tiles |
 | `.tile` | Bookmark tile anchor container |
 | `.box` | Glassmorphic icon container tile box |

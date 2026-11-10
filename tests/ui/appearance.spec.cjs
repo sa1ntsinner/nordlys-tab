@@ -5,13 +5,22 @@ function contrastRatio(foreground, background) {
   const [light, dark] = [luminance(foreground), luminance(background)].sort((a, b) => b - a); return (light + .05) / (dark + .05);
 }
 
-test('Appearance uses selectable two-column theme cards and a shared live tile preview', async ({ nordlysPage }) => {
+test('Appearance shows the themes of the mode in use, as selectable cards, and a shared live tile preview', async ({ nordlysPage }) => {
   const { page } = nordlysPage; await page.locator('#gear').click();
   const cards = page.locator('.theme-card[data-theme]'); await expect(cards).toHaveCount(21);
   await expect(cards.filter({ has: page.locator('[aria-hidden="true"]') })).toHaveCount(0);
   await expect(page.locator('.theme-card[aria-pressed="true"]')).toHaveCount(1);
   const columns = await page.locator('#theme-dark-grid').evaluate(node => getComputedStyle(node).gridTemplateColumns.split(' ').length);
-  expect(columns).toBe(2);
+  expect(columns).toBe(3);
+  // Dark shows the dark themes, Light the light ones, Auto both: the switch is the heading.
+  await expect(page.locator('#theme-dark-grid')).toBeVisible();
+  await expect(page.locator('#theme-light-grid')).toBeHidden();
+  await page.locator('.mode-btn[data-mode="light"]').click();
+  await expect(page.locator('#theme-light-grid')).toBeVisible();
+  await expect(page.locator('#theme-dark-grid')).toBeHidden();
+  await page.locator('.mode-btn[data-mode="auto"]').click();
+  await expect(page.locator('#theme-dark-grid')).toBeVisible();
+  await expect(page.locator('#theme-light-grid')).toBeVisible();
   await expect(page.locator('#advanced-glass-settings')).not.toHaveAttribute('open', '');
   // The preview is the person's own first bookmarks, inert, not an invented one.
   await expect(page.locator('#appearance-shared-preview .card .tile .box').first()).toBeVisible();

@@ -452,11 +452,8 @@ body.minimal #board {
   );
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate, 190%));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate, 190%));
-  /* Depth + accent halo both scale with the Ambient Glow slider;
-     specular top line scales with the Border Sheen slider */
   box-shadow:
-    0 22px 60px rgba(0, 0, 0, calc(0.18 + 0.35 * var(--card-glow-intensity, 0.4))),
-    0 0 34px color-mix(in srgb, var(--accent) calc(var(--card-glow-intensity, 0.4) * 22%), transparent),
+    0 22px 60px rgba(0, 0, 0, 0.32),
     inset 0 1px 0 rgba(255, 255, 255, calc(0.02 + var(--glass-border-sheen, 0.45) * 0.16));
   contain: layout style;
   transition: box-shadow var(--nl-transition-control), border-color var(--nl-transition-control);
@@ -492,16 +489,6 @@ body.minimal #board {
 }
 .cat:hover {
   background: rgba(255, 255, 255, 0.03);
-}
-.cat s {
-  /* A dot, not a word. The empty alt text keeps it out of the accessibility
-     tree without hiding the element from the paint. */
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: var(--nl-shadow-1);
-  text-decoration: none;
 }
 .cat b {
   font-size: var(--nl-text-2xs);
@@ -1180,20 +1167,6 @@ body.alt-held .tile[data-shortcut]::after {
 body.hover-lift .tile:hover .box {
   transform: translateY(-6px) scale(1.04);
 }
-body.hover-glow .tile:hover .box {
-  transform: translateY(-2px);
-  border-color: var(--accent);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    0 0 26px var(--accent-glow),
-    0 12px 30px rgba(0, 0, 0, 0.35);
-}
-body.hover-scale .tile:hover .box {
-  transform: scale(1.10);
-}
-body.hover-none .tile:hover .box {
-  transform: none;
-}
-
 .tile:hover .box::after {
   transform: translateX(170%);
 }
@@ -2102,7 +2075,7 @@ body.arranging .fit-toggle { display: none; }
 .tile-status[data-state="up"] { background: var(--nl-status-success); }
 .tile-status[data-state="slow"] { background: var(--nl-status-warning); }
 .tile-status[data-state="down"] { background: var(--nl-status-danger); }
-.tile:hover .box, .tile:focus-visible .box, body.hover-lift .tile:hover .box, body.hover-scale .tile:hover .box, body.hover-glow .tile:hover .box {
+.tile:hover .box, .tile:focus-visible .box, body.hover-lift .tile:hover .box {
   transform: translateY(-2px) scale(1.02);
   background: color-mix(in srgb, var(--nl-surface-card) 84%, transparent);
   border-color: color-mix(in srgb, var(--nl-accent) 34%, var(--nl-border));
@@ -2222,41 +2195,48 @@ body.arranging .fit-toggle { display: none; }
 .board-empty {
   display: grid;
   justify-items: center;
-  gap: var(--nl-space-3);
-  max-width: min(46ch, 100%);
-  padding: var(--nl-space-10) var(--nl-space-6);
+  gap: var(--nl-space-6);
+  max-width: min(34rem, 100%);
+  padding: var(--nl-space-8) var(--nl-space-4);
   margin: 0 auto;
   text-align: center;
-  border-radius: var(--nl-radius-xl);
-  border: 1px solid var(--nl-border);
-  background: color-mix(in srgb, var(--nl-surface-card) 26%, transparent);
-  backdrop-filter: blur(14px);
 }
+/* The one sentence on the page, so it gets the display face and the room. */
 .board-empty-title {
   margin: 0;
+  max-width: 26ch;
   font-family: var(--font-display);
   font-size: var(--nl-text-2xl);
-  font-weight: 600;
+  font-weight: 500;
+  line-height: 1.25;
   letter-spacing: var(--nl-track-tight);
+  text-wrap: balance;
   color: var(--nl-text-primary);
 }
-.board-empty-text {
-  margin: 0;
-  max-width: 40ch;
-  color: var(--nl-text-secondary);
-  font-size: var(--nl-text-md);
-  line-height: 1.55;
-}
-/* Wrapping rather than shrinking: at 320px two buttons stack, and each keeps
-   the 40px the rest of the product keeps. */
+/* One filled way in on its own line, the others as plain words under it.
+   Wrapping rather than shrinking: at 320px they stack, and each keeps the
+   40px the rest of the product keeps. */
 .board-empty-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--nl-space-2);
-  margin-top: var(--nl-space-1);
+  gap: var(--nl-space-1) var(--nl-space-2);
 }
-.board-empty-actions .glass-btn { padding-inline: var(--nl-space-5); }
+.board-empty-actions .glass-btn { padding-inline: var(--nl-space-3); }
+.board-empty-actions .glass-btn.accent { padding-inline: var(--nl-space-5); }
+.board-empty-actions::after { content: ""; flex-basis: 100%; order: 1; }
+.board-empty-actions .glass-btn:not(.accent) { order: 2; }
+.board-empty-actions .glass-btn:not(.accent) {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  color: var(--nl-text-secondary);
+}
+.board-empty-actions .glass-btn:not(.accent):is(:hover, :focus-visible) {
+  background: color-mix(in srgb, var(--nl-surface-card) 46%, transparent);
+  color: var(--nl-text-primary);
+}
 
 /* A folder title may widen its card — that is how "GAMING & SIM" fits above two
    columns — but only so far. Without a ceiling a 90-character name stretched the

@@ -5,7 +5,7 @@
 /* The widths the board may run to. Standard is the width it always had. */
 const BOARD_WIDTHS = { narrow: 1080, standard: 1400, wide: 1760 };
 const DEFAULT_CONFIG = {
-  version: "2.5.3",
+  version: "2.6.0",
   theme: "aurora-void",
   colorMode: "dark",
   bgMode: "aurora",
@@ -1763,7 +1763,6 @@ class NordlysApp {
     else root.removeProperty("--board-gap-set");
     root.setProperty("--board-max", `${BOARD_WIDTHS[cfg.boardWidth] || BOARD_WIDTHS.standard}px`);
     document.body.classList.toggle("tile-names-hidden", cfg.tileLabels === false);
-    if (cfg.cardGlow != null) root.setProperty("--card-glow-intensity", `${cfg.cardGlow / 100}`);
 
     // Icon Shape
     if (cfg.iconShape === "circle") {
@@ -1774,11 +1773,10 @@ class NordlysApp {
       root.setProperty("--tile-radius", "calc(var(--tw) * 0.25)");
     }
 
-    // Dynamic Hover Class on document.body
-    const body = document.body;
-    body.classList.remove("hover-lift", "hover-glow", "hover-scale", "hover-none");
-    // A class is a word: "lift scale" from a hand-edited file threw here, before the board was drawn.
-    body.classList.add(`hover-${["lift", "glow", "scale", "none"].includes(cfg.hoverEffect) ? cfg.hoverEffect : "lift"}`);
+    /* One hover for every tile. Glow and the choice of hover effect went in
+       2.6; cardGlow and hoverEffect are still read from old backups and other
+       devices, and nothing draws from them. */
+    document.body.classList.add("hover-lift");
 
     document.body.classList.toggle("seconds", !!cfg.showSeconds);
     this.applyWallpaperEffects();

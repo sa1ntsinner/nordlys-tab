@@ -36,8 +36,9 @@ test('the empty board is an invitation, and says what to do with it', async ({ n
   const empty = page.locator(EMPTY);
   await expect(empty).toBeVisible();
 
-  await expect(empty.locator('h2')).toHaveText('Make this space yours');
-  await expect(empty.locator('.board-empty-text')).not.toBeEmpty();
+  // One sentence, and it is the heading: why the page is empty and what to do.
+  await expect(empty.locator('h2')).toHaveText('Nordlys starts empty. Add a folder, or bring the bookmarks you already have.');
+  await expect(empty.locator('p')).toHaveCount(0);
 
   // A way to start clean and ways to arrive with what you already have: the
   // browser's own bookmarks where it can hand them over — first, because that
@@ -135,13 +136,12 @@ test('the first open reaches for nothing: no network, no permission, no bookmark
 
 test('every locale gets the invitation in its own words', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  const keys = ['board.emptyTitle', 'board.empty', 'board.emptyCreate', 'board.emptyImport'];
+  const keys = ['board.empty', 'board.emptyCreate', 'board.emptyImport'];
 
   for (const locale of ['en', 'ru', 'es', 'de', 'fr', 'ja', 'zh', 'tr']) {
     await page.evaluate(code => window.I18N.setLanguage(code), locale);
     const rendered = await page.evaluate(() => ({
       title: document.querySelector('#board .board-empty h2')?.textContent.trim(),
-      line: document.querySelector('#board .board-empty-text')?.textContent.trim(),
       create: document.getElementById('board-empty-create')?.textContent.trim(),
       restore: document.getElementById('board-empty-import')?.textContent.trim()
     }));
@@ -150,7 +150,7 @@ test('every locale gets the invitation in its own words', async ({ nordlysPage }
 
     expect(expected.every(text => typeof text === 'string' && text.trim()),
       `${locale} is missing one of ${keys.join(', ')}`).toBe(true);
-    expect([rendered.title, rendered.line, rendered.create, rendered.restore],
+    expect([rendered.title, rendered.create, rendered.restore],
       `${locale} renders something other than its own strings`).toEqual(expected);
     expect(keys.includes(rendered.title), `${locale} leaked a raw key`).toBe(false);
   }

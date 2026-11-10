@@ -1,9 +1,9 @@
 /* Responsive settings shell. Configuration remains owned by SettingsController/NordlysApp. */
 (function () {
   const groups = [
-    { label: 'Customize', key: 'nav.groupCustomize', ids: ['appearance', 'background', 'bookmarks', 'dashboard'] },
-    { label: 'App', key: 'nav.groupApp', ids: ['general', 'sync', 'support'] },
-    { label: 'Advanced', key: 'nav.groupAdvanced', ids: ['custom-css', 'backup'] }
+    { ids: ['appearance', 'background', 'bookmarks', 'dashboard'] },
+    { ids: ['general', 'sync', 'support'] },
+    { ids: ['custom-css', 'backup'] }
   ];
   const iconPaths = {
     appearance: 'M12 3a9 9 0 1 0 0 18h1.2a1.8 1.8 0 0 0 0-3.6h-1a1.4 1.4 0 0 1 0-2.8H15a6 6 0 0 0-3-11.6ZM7.5 10h.01M10 7h.01M14 7.5h.01',
@@ -40,13 +40,6 @@
       const tabs = [...this.nav.querySelectorAll('.ctab')];
       groups.forEach(group => {
         const section = document.createElement('div'); section.className = 'settings-nav-group'; section.setAttribute('role', 'presentation');
-        const label = document.createElement('span'); label.className = 'settings-nav-label';
-        // Carrying the key lets I18N.applyDOM retranslate it on a language switch,
-        // rather than freezing whatever language the rail was built in.
-        if (group.key) label.dataset.i18n = group.key;
-        label.textContent = window.I18N ? window.I18N.t(group.key, {}) : group.label;
-        if (label.textContent === group.key) label.textContent = group.label;
-        label.setAttribute('aria-hidden', 'true'); section.append(label);
         group.ids.forEach(id => { const tab = tabs.find(item => item.dataset.tab === id); if (tab) section.append(tab); }); this.nav.append(section);
       });
       tabs.forEach(tab => {

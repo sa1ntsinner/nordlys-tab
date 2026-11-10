@@ -1,19 +1,19 @@
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
 
 /* The rail's group headings were built once, in English, and never retranslated —
-   so a Russian panel carried English section titles above Russian items. */
+   so a Russian panel carried English section titles above Russian items. The
+   headings are gone since 2.6; the title and the items still have to follow. */
 test('switching language translates the whole settings chrome, not just the items', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.locator('#gear').click();
 
   const chrome = () => page.evaluate(() => ({
-    groups: [...document.querySelectorAll('.settings-nav-label')].map(node => node.textContent.trim()),
     title: document.querySelector('.chead b')?.textContent.trim(),
     items: [...document.querySelectorAll('#cfg [role="tab"]')].map(node => node.textContent.trim())
   }));
 
   const english = await chrome();
-  expect(english.groups).toEqual(['Customize', 'App', 'Advanced']);
+  await expect(page.locator('.settings-nav-label')).toHaveCount(0);
 
   await page.locator('#cfg-language-select').evaluate(select => {
     select.value = 'ru'; select.dispatchEvent(new Event('change', { bubbles: true }));
@@ -22,7 +22,7 @@ test('switching language translates the whole settings chrome, not just the item
 
   const russian = await chrome();
   const cyrillic = /[а-яА-Я]/;
-  expect(russian.groups.every(label => cyrillic.test(label)), `group headings stayed English: ${russian.groups.join(', ')}`).toBe(true);
+  expect(russian.items.every(label => cyrillic.test(label) || label === 'Custom CSS'), `items stayed English: ${russian.items.join(', ')}`).toBe(true);
   expect(cyrillic.test(russian.title || ''), `panel title stayed English: ${russian.title}`).toBe(true);
 });
 

@@ -982,8 +982,6 @@ class SettingsController {
     const cardRadius = document.getElementById("cfg-card-radius");
     const tileSize = document.getElementById("cfg-tile-size");
     const cardGap = document.getElementById("cfg-card-gap");
-    const cardGlow = document.getElementById("cfg-card-glow");
-    const hoverEffect = document.getElementById("cfg-hover-effect");
     const iconShape = document.getElementById("cfg-icon-shape");
 
     if (glassLevel) glassLevel.value = cfg.glassLevel || "full";
@@ -992,8 +990,6 @@ class SettingsController {
     if (cardRadius) cardRadius.value = cfg.cardRadius != null ? cfg.cardRadius : 18;
     if (tileSize) tileSize.value = cfg.tileSize != null ? cfg.tileSize : 78;
     if (cardGap) cardGap.value = cfg.cardGap != null ? cfg.cardGap : 12;
-    if (cardGlow) cardGlow.value = cfg.cardGlow != null ? cfg.cardGlow : 40;
-    if (hoverEffect) hoverEffect.value = cfg.hoverEffect || "lift";
     if (iconShape) iconShape.value = cfg.iconShape || "squircle";
     const cornerShape = document.getElementById("cfg-corner-shape");
     if (cornerShape) cornerShape.value = cfg.cornerShape === "smooth" ? "smooth" : "round";
@@ -1002,7 +998,6 @@ class SettingsController {
     if (cornerShape && typeof CSS !== "undefined" && !CSS.supports("corner-shape: squircle")) cornerShape.closest(".row")?.setAttribute("hidden", "");
 
     this.updateSliderLabels();
-    this.updateMiniPreview();
     this.syncBackgroundControls?.();
     // syncFormValues writes select.value directly, which fires no event.
     window.NordlysUI?.refreshSelects();
@@ -1023,41 +1018,14 @@ class SettingsController {
     const lblRadius = document.getElementById("lbl-radius");
     const lblTile = document.getElementById("lbl-tile");
     const lblGap = document.getElementById("lbl-gap");
-    const lblGlow = document.getElementById("lbl-glow");
     const lblBgBlur = document.getElementById("lbl-bgblur");
     const lblBgDim = document.getElementById("lbl-bgdim");
 
     if (lblRadius) lblRadius.textContent = `${cfg.cardRadius != null ? cfg.cardRadius : 18}px`;
     if (lblTile) lblTile.textContent = `${cfg.tileSize != null ? cfg.tileSize : 78}px`;
     if (lblGap) lblGap.textContent = `${cfg.cardGap != null ? cfg.cardGap : 12}px`;
-    if (lblGlow) lblGlow.textContent = `${cfg.cardGlow != null ? cfg.cardGlow : 40}%`;
     if (lblBgBlur) lblBgBlur.textContent = `${cfg.bgBlur != null ? cfg.bgBlur : 0}px`;
     if (lblBgDim) lblBgDim.textContent = `${cfg.bgDim != null ? cfg.bgDim : 0}%`;
-  }
-
-  updateMiniPreview() {
-    const previewCard = document.getElementById("preview-interactive-card") || document.getElementById("liquid-preview-pill");
-    const iconBox = document.getElementById("preview-icon-box");
-    if (!previewCard) return;
-
-    const cfg = this.app.config;
-    const radiusVal = `${cfg.cardRadius != null ? cfg.cardRadius : 18}px`;
-
-    /* The preview reads the same tokens the real surface does, so it cannot
-       drift from it and cannot invent a fifth filter function of its own. */
-    previewCard.style.removeProperty("backdrop-filter");
-    previewCard.style.removeProperty("-webkit-backdrop-filter");
-    previewCard.style.borderRadius = radiusVal;
-
-    if (iconBox) {
-      if (cfg.iconShape === "circle") {
-        iconBox.style.borderRadius = "50%";
-      } else if (cfg.iconShape === "rounded") {
-        iconBox.style.borderRadius = "6px";
-      } else {
-        iconBox.style.borderRadius = "10px";
-      }
-    }
   }
 
   /* ── 3. Appearance & Authentic Frosted Glass ────── */
@@ -1103,8 +1071,7 @@ class SettingsController {
       this.app.config.glassLevel = e.target.value;
       this.app.applyGlassLevel();
       this.app.saveConfig();
-      this.updateMiniPreview();
-    });
+      });
 
     document.getElementById("cfg-high-legibility")?.addEventListener("change", (e) => {
       this.app.config.highLegibility = e.target.checked;
@@ -1118,8 +1085,7 @@ class SettingsController {
       document.documentElement.style.setProperty("--card-radius", val);
       this.app.config.cardRadius = parseInt(e.target.value, 10);
       this.updateSliderLabels();
-      this.updateMiniPreview();
-    });
+      });
     /* A slider is drawn on every step and saved once, when it is let go: the
        config is written whole — megabytes, with icons in it — and every other
        open tab takes each write. */
@@ -1157,28 +1123,7 @@ class SettingsController {
       } else {
         document.documentElement.style.setProperty("--tile-radius", "calc(var(--tw) * 0.25)");
       }
-      this.updateMiniPreview();
-      this.app.saveConfig();
-    });
-
-    // Glow & Hover Effect controls
-    const cardGlow = document.getElementById("cfg-card-glow");
-    const hoverEffect = document.getElementById("cfg-hover-effect");
-
-    cardGlow?.addEventListener("input", (e) => {
-      const val = parseInt(e.target.value, 10);
-      document.documentElement.style.setProperty("--card-glow-intensity", `${val / 100}`);
-      this.app.config.cardGlow = val;
-      this.updateSliderLabels();
-    });
-    cardGlow?.addEventListener("change", () => this.app.saveConfig());
-
-    hoverEffect?.addEventListener("change", (e) => {
-      const val = e.target.value;
-      this.app.config.hoverEffect = val;
-      document.body.classList.remove("hover-lift", "hover-glow", "hover-scale", "hover-none");
-      document.body.classList.add(`hover-${val}`);
-      this.app.saveConfig();
+        this.app.saveConfig();
     });
   }
 
@@ -1218,11 +1163,6 @@ class SettingsController {
       { key: "peach-sunset", name: "Peach Sunset", i18nKey: "theme.peachSunset", bg: "linear-gradient(135deg, #fffcf7 0%, #ffe2cc 62%, #f43f5e 145%)" },
       { key: "mint-breeze", name: "Mint Breeze", i18nKey: "theme.mintBreeze", bg: "linear-gradient(135deg, #f7fdf9 0%, #cdf2e5 62%, #0d9488 145%)" }
     ];
-
-    // Section badges reflect the real counts
-    const badges = document.querySelectorAll(".theme-section-header .theme-section-badge");
-    if (badges[0]) badges[0].textContent = String(darkThemes.length);
-    if (badges[1]) badges[1].textContent = String(lightThemes.length);
 
     const activeTheme = this.app.config.theme;
     const activeCustomId = this.app.config.customTheme?.id;

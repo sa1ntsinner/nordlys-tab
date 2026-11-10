@@ -186,13 +186,10 @@ body.searching #search {
 .cat {
   min-height: 28px;
   gap: 9px;
-  padding-inline: 4px 0;
-}
-
-.cat s {
-  width: 5px;
-  height: 5px;
-  box-shadow: none;
+  /* The name starts where the folder's first icon does; the hover ground
+     reaches a little past it. */
+  margin-inline-start: -6px;
+  padding-inline: 6px 0;
 }
 
 .cat b {
@@ -233,9 +230,7 @@ body.searching #search {
 
 .tile:hover .box,
 .tile:focus-visible .box,
-body.hover-lift .tile:hover .box,
-body.hover-scale .tile:hover .box,
-body.hover-glow .tile:hover .box {
+body.hover-lift .tile:hover .box {
   border-color: color-mix(in srgb, var(--icon-accent, var(--nl-accent)) 40%, var(--nl-polish-hairline));
   background: color-mix(in srgb, var(--nl-surface-elevated) 72%, transparent);
   box-shadow: var(--nl-shadow-2), 0 0 0 3px color-mix(in srgb, var(--icon-accent, var(--nl-accent)) 9%, transparent);
@@ -320,14 +315,6 @@ body.hover-glow .tile:hover .box {
 
 .settings-nav-group {
   gap: 5px;
-}
-
-.settings-nav-label {
-  padding: 0 12px 6px;
-  font-size: var(--nl-text-2xs);
-  letter-spacing: var(--nl-track-none);
-  color: var(--nl-text-secondary);
-  text-transform: none;
 }
 
 .ctab {
@@ -434,7 +421,7 @@ body.hover-glow .tile:hover .box {
 }
 
 .setting-row {
-  min-height: 60px;
+  min-height: 48px;
   border-color: color-mix(in srgb, var(--nl-border) 64%, transparent);
 }
 
@@ -555,4 +542,37 @@ html[data-corners="smooth"] :is(.card, .dash-card, .dash-ghost, .dash-add, .dash
 }
 html[data-corners="smooth"] :is(.card, .dash-card, .dash-ghost) {
   border-radius: var(--card-radius-smooth);
+}
+
+/* ── 2.6: fewer things in the drawer ──────────────────────────────
+   The rail's three captions, the note under every layout and the count beside
+   every theme list said what the page already showed. The rail keeps its three
+   groups as space; a layout is its drawing and its name, and the sentence
+   about it is its tooltip. */
+.settings-nav-group + .settings-nav-group { margin-top: var(--nl-space-4); }
+
+.page-layout-options { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--nl-space-2); }
+.board-layout-option {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  row-gap: var(--nl-space-2);
+  padding: var(--nl-space-3) var(--nl-space-2);
+  text-align: center;
+}
+.board-layout-option .layout-glyph { grid-row: auto; }
+.board-layout-option .board-layout-name { font-weight: 600; }
+
+/* Dark shows the dark themes and Light the light ones: the switch above is
+   the heading. Auto keeps both lists, because it uses one of each. */
+:root[data-color-mode="dark"] :is(.theme-section-header[data-themes], #theme-light-grid),
+:root[data-color-mode="light"] :is(.theme-section-header[data-themes], #theme-dark-grid) { display: none; }
+
+.theme-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--nl-space-2); }
+.theme-card { min-height: 0; padding: var(--nl-space-2); gap: var(--nl-space-2); }
+.theme-card:hover { transform: none; }
+.theme-preview { height: 40px; }
+.theme-card b { font-weight: 600; }
+
+@media (max-width: 420px) {
+  .theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

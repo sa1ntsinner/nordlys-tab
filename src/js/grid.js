@@ -468,13 +468,10 @@ class GridController {
     const empty = document.createElement("div");
     empty.className = "board-empty";
 
+    /* One line says why the page is empty; the ways in are under it. */
     const title = document.createElement("h2");
     title.className = "board-empty-title";
-    title.textContent = t("board.emptyTitle", "Make this space yours");
-
-    const line = document.createElement("p");
-    line.className = "board-empty-text";
-    line.textContent = t("board.empty", "Nordlys starts empty. Add a folder, or bring the bookmarks you already have.");
+    title.textContent = t("board.empty", "Nordlys starts empty. Add a folder, or bring the bookmarks you already have.");
 
     const actions = document.createElement("div");
     actions.className = "board-empty-actions";
@@ -528,7 +525,7 @@ class GridController {
       actions.append(bring);
     }
 
-    empty.append(title, line, actions);
+    empty.append(title, actions);
     return empty;
   }
 
@@ -631,7 +628,6 @@ class GridController {
     cat.className = "cat";
     cat.title = window.I18N ? window.I18N.t('hint.dragReorderFolder') : "Drag to move the folder, or right-click to edit it";
     cat.innerHTML = `
-      <s></s>
       <b>${esc(group.label || this.say("bookmarks.newFolder", "New folder"))}</b>
       <i></i>
       <button type="button" class="groupGrip">⋮⋮</button>
