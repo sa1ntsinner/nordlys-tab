@@ -1,20 +1,21 @@
 The pictures on the photo subject cards in Settings → Background.
 
 Each is a featured picture from Wikimedia Commons, cropped to the card and
-reduced to 320 × 200. They stay under their own licences, given here; the
-MIT licence of Nordlys covers the code, not these pictures.
+reduced to 320 × 200. All seven were given to the public domain by their
+makers (CC0 1.0) or are public domain as works of NASA and ESA; none asks
+for credit, and it is given here all the same.
 
-nature.webp   Agnes Monkelbaan, "Bergtocht van Prasüras, door het Val Trupchun naar Alp Purcher 18-09-2019. (actm.) 07"
-              CC BY-SA 4.0, https://creativecommons.org/licenses/by-sa/4.0
-              https://commons.wikimedia.org/wiki/File:Bergtocht_van_Pras%C3%BCras,_door_het_Val_Trupchun_naar_Alp_Purcher_18-09-2019._(actm.)_07.jpg
+nature.webp   David Marcu, "Alone in the unspoilt wilderness (Unsplash)"
+              CC0 1.0, https://creativecommons.org/publicdomain/zero/1.0/
+              https://commons.wikimedia.org/wiki/File:Alone_in_the_unspoilt_wilderness_(Unsplash).jpg
 
 weather.webp  Agnes Monkelbaan, "Scuol-Motta Naluns, 15-09-2023. (actm.) 09"
               CC0 1.0, https://creativecommons.org/publicdomain/zero/1.0/
               https://commons.wikimedia.org/wiki/File:Scuol-Motta_Naluns,_15-09-2023._(actm.)_09.jpg
 
-horizon.webp  Herbythyme, "Early light heron fishing"
-              CC BY-SA 4.0, https://creativecommons.org/licenses/by-sa/4.0
-              https://commons.wikimedia.org/wiki/File:Early_light_heron_fishing.jpg
+horizon.webp  Mgimelfarb, "Grand Canyon South Rim at Sunset"
+              CC0 1.0, https://creativecommons.org/publicdomain/zero/1.0/
+              https://commons.wikimedia.org/wiki/File:Grand_Canyon_South_Rim_at_Sunset.jpg
 
 space.webp    NASA/ESA and The Hubble Heritage Team (STScI), "NGC 2207 and IC 2163"
               Public domain
@@ -24,10 +25,10 @@ scifi.webp    ESA, NASA and L. Calçada (ESO for STScI), "Fomalhaut planet" (art
               Public domain
               https://commons.wikimedia.org/wiki/File:Fomalhaut_planet.jpg
 
-tech.webp     Dietmar Rabich, "Dülmen, Heilig-Kreuz-Kirche, Uhrwerk -- 2019 -- 3056"
-              CC BY-SA 4.0, https://creativecommons.org/licenses/by-sa/4.0
-              https://commons.wikimedia.org/wiki/File:D%C3%BClmen,_Heilig-Kreuz-Kirche,_Uhrwerk_--_2019_--_3056.jpg
+tech.webp     SpaceX, "CRS-8 (26239020092)"
+              CC0 1.0, https://creativecommons.org/publicdomain/zero/1.0/
+              https://commons.wikimedia.org/wiki/File:CRS-8_(26239020092).jpg
 
-cities.webp   Martin Falbisoner, "Kranhäuser Cologne, April 2018 -01"
-              CC BY-SA 4.0, https://creativecommons.org/licenses/by-sa/4.0
-              https://commons.wikimedia.org/wiki/File:Kranh%C3%A4user_Cologne,_April_2018_-01.jpg
+cities.webp   Wilfredor, "Victoria Harbour skyscrapers"
+              CC0 1.0, https://creativecommons.org/publicdomain/zero/1.0/
+              https://commons.wikimedia.org/wiki/File:Victoria_Harbour_skyscrapers.jpg
