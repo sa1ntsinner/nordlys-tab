@@ -152,9 +152,12 @@
 
     /* A picture card shows the picture kept from the last time that sky was
        on screen, from the browser's cache, toned as the sky would be; one
-       never shown has nothing to show and asks for nothing. */
+       never shown asks for nothing. A subject of photographs not yet seen
+       shows one that ships with Nordlys (src/img/subjects), so each card
+       says what it gives without anything being fetched. */
     showKeptPicture(preview, sky) {
-      const picture = window.NordlysWorldPicture?.today(sky.source, null, { ask: false, lang: window.I18N?.currentLang || "en" });
+      const picture = window.NordlysWorldPicture?.today(sky.source, null, { ask: false, lang: window.I18N?.currentLang || "en" })
+        || (sky.category === "photos" ? { url: `src/img/subjects/${sky.id.slice(6)}.webp` } : null);
       let image = preview.querySelector("img");
       if (!picture) { image?.remove(); return; }
       if (!image) {

@@ -39,6 +39,26 @@ async function offline(page, answers = {}) {
 }
 const json = (route, body) => route.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
 
+/* The cards were empty frames until a subject had been the sky once. Each
+   now carries a picture that ships with Nordlys, and showing it asks nobody. */
+test('every photo subject shows a picture of its kind without asking the network', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const origin = new URL(page.url()).origin;
+  const asked = [];
+  page.on('request', request => { if (!request.url().startsWith(origin) && /^https?:/.test(request.url())) asked.push(request.url()); });
+  await openBackground(page);
+  await page.locator('.sky-kind[data-kind="photos"]').click();
+  const cards = page.locator('.scene-card[data-scene^="photo-"]');
+  await expect(cards).toHaveCount(7);
+  for (const card of await cards.all()) {
+    const image = card.locator('.scene-preview img');
+    await image.scrollIntoViewIfNeeded();
+    await expect.poll(() => image.evaluate(node => node.complete && node.naturalWidth), await card.getAttribute('data-scene')).toBe(320);
+    expect(await image.getAttribute('src')).toMatch(/^src\/img\/subjects\/[a-z]+\.webp$/);
+  }
+  expect(asked).toEqual([]);
+});
+
 test('a photograph of a subject comes in the colours of the mood, or in its own', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   const searched = [];
