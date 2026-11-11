@@ -132,12 +132,21 @@
         event.preventDefault();
         this.toggle();
       } else if (event.key === "Tab") {
-        // Focus stays inside, as in any dialog.
+        /* Focus stays inside, as in any dialog. Every Tab is moved here rather
+           than left to the browser between the two ends: Safari does not Tab
+           to buttons, so its own order inside left the dialog from a button
+           that was not the last, and a control the timer's arrival disables
+           (the volume, with no sound) drops focus to the page, from where
+           the browser's next stop is the page's first. */
         const stops = [...this.root.querySelectorAll("button, input, [tabindex]")].filter((node) => !node.disabled && node.tabIndex >= 0 && node.getClientRects().length);
         if (!stops.length) return;
-        const at = stops.indexOf(document.activeElement);
-        if (event.shiftKey && at <= 0) { event.preventDefault(); stops[stops.length - 1].focus(); }
-        else if (!event.shiftKey && at === stops.length - 1) { event.preventDefault(); stops[0].focus(); }
+        event.preventDefault();
+        const from = document.activeElement;
+        const inside = from && from !== this.root && this.root.contains(from);
+        const next = !inside ? (event.shiftKey ? stops[stops.length - 1] : stops[0])
+          : event.shiftKey ? [...stops].reverse().find((node) => from.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_PRECEDING) || stops[stops.length - 1]
+            : stops.find((node) => from.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING) || stops[0];
+        next.focus();
       }
     }
 

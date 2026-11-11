@@ -133,8 +133,17 @@ test('tasks from the dashboard are there to tick off', async ({ nordlysPage }) =
   await expect(page.locator('#dash .dash-card[data-type="tasks"] .dash-task.is-done')).toHaveText('Send the invoice');
 });
 
+/* The timer is read from storage after the dialog opens, and its first
+   drawing changes what can take focus (the volume is disabled with no sound
+   on). On a slow runner that lands between Tabs, so it is made to here: the
+   read is held back until the Tabs are under way. */
 test('focus stays inside while it is open', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
+  await page.evaluate(() => {
+    const local = window.chrome.storage.local;
+    const get = local.get.bind(local);
+    local.get = (keys, callback) => setTimeout(() => get(keys, callback), 300);
+  });
   await command(page, 'focus');
   for (let i = 0; i < 20; i++) {
     await page.keyboard.press('Tab');
