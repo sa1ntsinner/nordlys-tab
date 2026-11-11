@@ -53,8 +53,10 @@ test('menus, dialogs and fields take their colour from every theme', async ({ no
   const wrong = [];
   const seen = new Map();
   for (const theme of THEMES) {
+    /* The theme is put on inside a view transition, after the old page is
+       captured; on a slow runner a fixed 150 ms sometimes read the theme
+       before, so two themes counted as one dialog colour. */
     await page.evaluate(name => window.Nordlys.setTheme(name), theme);
-    await page.waitForTimeout(150);
     await openEverything(page);
     await page.keyboard.press('Tab'); await page.keyboard.press('Shift+Tab');
     const read = await page.evaluate(READ);
@@ -76,7 +78,6 @@ test('menus, dialogs and fields take their colour from every theme', async ({ no
 test('a black theme has neutral menus: no blue in them', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.evaluate(() => window.Nordlys.setTheme('oled-obsidian'));
-  await page.waitForTimeout(150);
   await openEverything(page);
   const { surfaces } = await page.evaluate(READ);
   for (const [name, [r, g, b]] of Object.entries(surfaces)) {

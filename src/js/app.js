@@ -1589,9 +1589,14 @@ class NordlysApp {
          The abort is the correct outcome here, not a failure. */
       transition.ready?.catch(() => {});
       transition.finished?.catch(() => {}).finally(() => root.classList.remove("theme-reveal"));
-    } else {
-      apply();
+      /* The new tokens land only once the old page has been captured, a frame
+         or more from now, and later still on a busy computer. Whoever needs
+         the theme in place (a reading of its colours, say) waits on this
+         rather than guessing how long that takes. */
+      return Promise.resolve(transition.updateCallbackDone).catch(() => {});
     }
+    apply();
+    return Promise.resolve();
   }
 
   /* Dark / Light / Auto segmented control. Dark and Light swap to the last
