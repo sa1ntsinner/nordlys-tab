@@ -156,8 +156,11 @@
         };
         card.update = render;
         card.reload = () => refresh(true);
-        // "5 min ago" moves on each minute, unless someone is going through the list.
-        card.tick = () => { if (Date.now() - (card.data.at || 0) > feedsPeriod(card)) refresh(); else if (Date.now() % 60000 < 1000 && !card.root.contains(document.activeElement)) render(); };
+        /* "5 min ago" moves on each minute, unless someone is going through the list.
+           With no feeds, or a look already under way, a tick has nothing to do: it
+           used to draw the card again every second, and a press on Add feeds that
+           spanned the redraw lost its click. */
+        card.tick = () => { if (!feedsOf(card.settings.feeds).length || card.loading) return; if (Date.now() - (card.data.at || 0) > feedsPeriod(card)) refresh(); else if (Date.now() % 60000 < 1000 && !card.root.contains(document.activeElement)) render(); };
         card.body.replaceChildren(chips, list, foot);
         refresh();
       }
@@ -243,7 +246,8 @@
         };
         card.update = render;
         card.reload = () => refresh(true);
-        card.tick = () => { if (Date.now() - (card.data.at || 0) > valuePeriod(card)) refresh(); };
+        // Nothing to look at, or a look under way: no redraw (see the feeds' tick).
+        card.tick = () => { if (web(card.settings.url) && !card.loading && Date.now() - (card.data.at || 0) > valuePeriod(card)) refresh(); };
         refresh();
       }
     });

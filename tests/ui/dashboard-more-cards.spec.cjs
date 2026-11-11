@@ -89,6 +89,26 @@ test('a value that is not there says where it looked', async ({ nordlysPage }) =
   await expect(card(page, 'value').locator('.dash-inbox-error')).toHaveText('api.test: The answer has nothing at data.price.');
 });
 
+/* A card with nothing to look at yet used to be drawn again on every tick of
+   the dashboard's second hand, and a press on its button that spanned the
+   redraw sent no click: on a slow Safari runner, Choose the address did not
+   open. The buttons stay the same ones from tick to tick. */
+test('a card with nothing to look at is not drawn again every second', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const kept = await page.evaluate(async () => {
+    const d = window.Nordlys.dashboard;
+    d.setOn(true);
+    for (const type of ['feeds', 'value', 'inbox', 'agenda']) d.add(type);
+    await d.render();
+    const buttons = () => [...document.querySelectorAll('#dash .dash-card button')].filter(button => /feeds|value|inbox|agenda/.test(button.closest('.dash-card').dataset.type));
+    const before = buttons();
+    await new Promise(resolve => setTimeout(resolve, 2200));
+    return { count: before.length, kept: before.filter(button => button.isConnected).length };
+  });
+  expect(kept.count).toBeGreaterThan(3);
+  expect(kept.kept).toBe(kept.count);
+});
+
 test('open tabs: the copies closed in one go, and tabs left for days closed with a way back', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.evaluate((origin) => {

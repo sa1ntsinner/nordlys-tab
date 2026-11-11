@@ -631,7 +631,10 @@
           card.root.classList.toggle("is-loading", Boolean(card.loading));
         };
         card.update = () => { render(); refresh(); };
-        card.tick = () => { if (Date.now() - (card.data.at || 0) > 10 * 60e3) refresh(); };
+        /* With no app connected, or a pull under way, a tick has nothing to do. It
+           used to draw the card again every second, and a press on its button
+           that spanned the redraw lost its click. */
+        card.tick = () => { if (sources().length && !card.loading && Date.now() - (card.data.at || 0) > 10 * 60e3) refresh(); };
         card.body.replaceChildren(chips, list, foot);
         render();
         refresh();
@@ -706,7 +709,8 @@
           ]);
         };
         card.update = () => { render(); refresh(); };
-        card.tick = () => { if (Date.now() - (card.data.at || 0) > 15 * 60e3) refresh(); else if (Date.now() % 60000 < 1000) render(); };
+        // As the inbox's tick: nothing connected, or a pull under way, is no reason to redraw.
+        card.tick = () => { if (!sources().length || card.loading) return; if (Date.now() - (card.data.at || 0) > 15 * 60e3) refresh(); else if (Date.now() % 60000 < 1000) render(); };
         card.body.replaceChildren(list, foot);
         render();
         refresh();
