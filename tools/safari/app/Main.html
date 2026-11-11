@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="../Style.css">
+    <script src="../Script.js" defer></script>
+</head>
+<body>
+    <img class="mark" src="../Icon.png" width="56" height="56" alt="">
+    <h1 data-t="title">Two steps in Safari</h1>
+
+    <ol>
+        <li class="one">
+            <span class="number">1</span>
+            <span class="what" data-t="one">Turn Nordlys on</span>
+            <button class="plain" data-do="extensions" data-t="extensions">Open Extensions</button>
+            <span class="on" aria-live="polite">
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>
+                <span data-t="on">On</span>
+            </span>
+        </li>
+        <li class="two">
+            <span class="number">2</span>
+            <span class="what" data-t="two">Press ⌘, in Safari. Under General, choose Nordlys for new tabs.</span>
+            <div class="settings" aria-hidden="true">
+                <div class="bar">
+                    <i></i><i></i><i></i>
+                </div>
+                <div class="panes">
+                    <b data-t="general">General</b><u></u><u></u><u></u><u></u><u></u>
+                </div>
+                <div class="rows">
+                    <p><span class="t" style="width: 96px"></span><em style="width: 132px"></em></p>
+                    <p class="ours">
+                        <span data-t="label">New tabs open with:</span>
+                        <span class="popup">
+                            <span class="values"><span data-t="before">Homepage</span><span>Nordlys</span></span>
+                            <svg viewBox="0 0 8 12"><path d="M1.5 4.5L4 2l2.5 2.5M1.5 7.5L4 10l2.5-2.5"/></svg>
+                        </span>
+                    </p>
+                    <p><span class="t" style="width: 118px"></span><em style="width: 132px"></em></p>
+                </div>
+            </div>
+        </li>
+    </ol>
+
+    <button class="main" data-do="safari" data-t="safari">Open Safari</button>
+</body>
+</html>

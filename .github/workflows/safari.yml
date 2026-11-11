@@ -61,9 +61,10 @@ jobs:
             --project-location build --app-name Nordlys --bundle-identifier "$BUNDLE_ID" \
             --macos-only --swift --copy-resources --no-open --no-prompt --force
           find build -maxdepth 3 -name "*.xcodeproj"
-      - name: App icon, category, export compliance and the extension's id
+      - name: App icon, window, category, export compliance and the extension's id
         run: |
           sh tools/safari/app-icon.sh build
+          sh tools/safari/app.sh build
           # The converter takes the case of the ids from the app name
           # (io.github.sa1ntsinner.Nordlys, …Nordlys.Extension); the registered
           # ids are lower case, and the extension must sit under the app's.

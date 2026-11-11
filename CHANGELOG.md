@@ -7,6 +7,7 @@ Chrome Web Store's rule that they only ever go up.
 ## [Unreleased]
 
 ### Added
+- Safari: the Mac app opens on the two steps Safari leaves to the person (turn the extension on, choose Nordlys for new tabs), in Safari's own words in eight languages, and shows when the first is done.
 
 - Invert, in the icon dialog. It turns the icon over, black for white, and back; whichever you leave it on stays on every theme. The bookmark's own form has the same choice under Icon tone, as Inverted.
 
