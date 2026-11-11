@@ -4,7 +4,7 @@ Effective date: August 16, 2026
 Last updated: November 10, 2026
 Version: 2.6.1
 
-Nordlys runs as a new tab page in your browser. It has no server or account.
+Nordlys runs as a new tab page in your browser. It has no account. Its one server is a small relay, used only if you turn on sync with a code (section 3), and it holds nothing it can read.
 
 Your bookmarks, themes and settings stay in your browser.
 
@@ -13,7 +13,7 @@ Your bookmarks, themes and settings stay in your browser.
 ## 1. What Nordlys doesn't do
 
 - It has no analytics or tracking, including Google Analytics, Mixpanel, Sentry and PostHog.
-- It has no server, database or logging endpoint.
+- It has no database it can read and no logging endpoint. The sync relay of section 3 is its only server, and is used only when you choose sync with a code.
 - It has no ads, tracking pixels, cookies or ad SDKs.
 - It doesn't log what you type, and your bookmarks, themes and settings stay on your machine.
 
@@ -48,6 +48,8 @@ Everything is saved on your device. Settings and bookmarks use Chrome's extensio
 ## 3. Sync, if you turn it on
 
 Sync is off until you turn it on in Settings. Then your setup (folders, bookmarks, profiles, look and layout) is saved in the browser's own sync storage, `storage.sync`, and the browser carries it to your other devices where you're signed in to it: Chrome with your Google account, Edge with your Microsoft account, Firefox with your Mozilla account. Nordlys has no server in between and never sees it. What the browser does with its sync data is covered by that browser's privacy policy.
+
+Some browsers carry nothing between devices (Safari, or a Chromium without an account), and two different browsers do not share a sync. For those you can sync with a code instead. Nordlys makes the code on your device, and you enter it on your other devices. The same setup is then locked on your device (AES-256-GCM, with a key made from the code) and sent to the Nordlys relay, `nordlys-sync.imslide.workers.dev`, a Cloudflare Worker whose code is in this repository under `relay/`. Your other devices fetch it from there and unlock it with the code. The code and the key never leave your devices, so the relay cannot read your folders, bookmarks, device names or anything else. It keeps: a name for your group of devices and one for each device (both derived from the code, and meaningless without it), the locked data, its size and when it last changed. It keeps no log of requests and no IP addresses; Cloudflare, which runs it, handles each request under its own privacy policy. A device's data is deleted from the relay when you forget that device in Settings, and by itself 400 days after it last changed. Anyone who has your code can read and change your synced setup, so treat it like a password.
 
 The place you set for the sky travels with your setup. The pictures fetched for the sky never do. These never go to sync: uploaded or cropped icon images, wallpapers and video loops, custom CSS, folders that follow your browser's bookmarks, recent searches, what you open at which hour, whether watched sites answered, One page fit sizes, and what dashboard cards hold (tasks, notes, habits, stashed tabs). A folder that follows a list at an address does travel with your setup, address and all; each device reads the list itself, and only with leave to reach that site. A deleted bookmark is kept in sync only as the fact that it was deleted, and is dropped from sync 30 days later. Turning sync off stops sending; it doesn't delete what the browser already holds.
 

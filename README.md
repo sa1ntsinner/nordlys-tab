@@ -48,7 +48,7 @@ To run it from source, clone the repo, open `chrome://extensions`, turn on Devel
 
 ## Privacy
 
-There's no account, no server and no tracking. A new tab without dashboard cards, under a sky drawn on your computer, makes no network request at all. Your setup stays in your browser, and leaves it only through the browser's own sync, if you turn that on. Searches, icon lookups, weather, photos and the picture of the day, feeds and connected apps go online when you use them, each straight to its own service. [PRIVACY.md](PRIVACY.md) lists every request.
+There's no account and no tracking. A new tab without dashboard cards, under a sky drawn on your computer, makes no network request at all. Your setup stays in your browser, and leaves it only if you turn sync on: through the browser's own sync, or, with a code, through a small relay that holds it locked and cannot read it (its code is in [relay/](relay/)). Searches, icon lookups, weather, photos and the picture of the day, feeds and connected apps go online when you use them, each straight to its own service. [PRIVACY.md](PRIVACY.md) lists every request.
 
 ## Development
 

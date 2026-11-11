@@ -13,3 +13,4 @@ test-screenshots/
 test-theme-previews/
 sweeps.config.cjs
 
+.wrangler/

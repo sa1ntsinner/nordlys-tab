@@ -387,9 +387,13 @@
       const used = Math.min(100, Math.round((status.bytes || 0) / 1024));
       return el("div", { class: "sync-block" }, [
         el("div", { class: "row setting-row" }, [
-          el("span", { id: "cfg-sync-on-label" }, [el("span", { text: say("sync.toggle", "Sync between my devices") }), el("small", { class: "row-hint", text: say("sync.toggleHint", "Through your browser's own sync, on every device where you're signed in to it. Off by default.") })]),
+          el("span", { id: "cfg-sync-on-label" }, [el("span", { text: say("sync.toggle", "Sync between my devices") }), el("small", { class: "row-hint", text: this.wayHint(status) })]),
           el("label", { class: "tg" }, [input, el("i")])
         ]),
+        status.enabled && status.code ? el("div", { class: "row setting-row sync-code-row" }, [
+          el("span", {}, [el("span", { text: say("sync.code", "Code for your other devices") }), el("code", { class: "sync-code", text: this.client.showCode(status.code) })]),
+          this.button(say("sync.codeCopy", "Copy"), () => this.copyCode(status.code), { key: "copy-code", small: true })
+        ]) : null,
         status.enabled ? el("div", { class: "sync-status", role: "status" }, [
           el("span", { class: `sync-state is-${status.state}`, text: state }),
           status.error ? el("span", { class: "sync-error", title: status.error, text: this.reason(status) }) : null,
@@ -399,6 +403,56 @@
         ]) : null,
         el("p", { class: "backup-note", text: say("sync.stays", "What stays on each device: uploaded icon images, wallpapers and videos, custom CSS, folders that follow your browser's bookmarks, recent searches, and what dashboard cards hold (tasks, notes, habits, stashed tabs).") })
       ]);
+    }
+
+    // Under the switch: how it travels now, or how it can.
+    wayHint(status) {
+      if (status.enabled && status.code) return say("sync.hintCodeOn", "With a code. Your setup is locked on this device before it is sent; the relay cannot read it.");
+      if (status.enabled) return say("sync.hintBrowserOn", "Through your browser's own sync, on every device where you're signed in to it.");
+      if (!this.client.browserSync()) return say("sync.hintCodeOnly", "With a code you enter on each device. Off by default.");
+      if (!this.client.codeSync()) return say("sync.toggleHint", "Through your browser's own sync, on every device where you're signed in to it. Off by default.");
+      return say("sync.hintBoth", "Through your browser's own sync, or with a code between any browsers. Off by default.");
+    }
+
+    async copyCode(code) {
+      try {
+        await navigator.clipboard.writeText(this.client.showCode(code));
+        if (typeof toast === "function") toast(say("sync.codeCopied", "Code copied"), "success", 2500);
+      } catch (error) {
+        if (typeof toast === "function") toast(say("sync.codeCopyFailed", "Couldn't copy. Select the code and copy it by hand."), "error");
+      }
+    }
+
+    /* Which way to sync, asked when it is turned on. Answers { code } (null
+       for the browser's own sync), or nothing when the person backed out. */
+    async chooseWay() {
+      const browser = this.client.browserSync();
+      if (!this.client.codeSync()) return { code: null };
+      const options = [
+        browser ? ["browser", say("sync.wayBrowser", "Through this browser"), say("sync.wayBrowserHint", "Needs the same browser, signed in to its own sync, on every device")] : null,
+        ["new", say("sync.wayNew", "With a new code"), say("sync.wayNewHint", "For the first device. Works between any browsers, with no account")],
+        ["join", say("sync.wayJoin", "With a code I already have"), say("sync.wayJoinHint", "This device joins the others")]
+      ].filter(Boolean);
+      const way = await this.ask({
+        title: say("sync.wayTitle", "Sync between my devices"), ok: say("sync.wayOk", "Continue"),
+        fields: [{ name: "way", label: say("sync.wayQuestion", "How should your devices find each other?"), type: "choice", value: options[0][0], options }]
+      });
+      if (!way) return null;
+      if (way.way === "browser") return { code: null };
+      if (way.way === "new") return { code: this.client.newCode() };
+      for (let typed = ""; ;) {
+        const values = await this.ask({
+          title: say("sync.joinTitle", "Enter the code"), ok: say("sync.firstOk", "Turn on sync"),
+          note: say("sync.joinNote", "It is in Settings → Sync on a device that already syncs."),
+          fields: [{ name: "code", label: say("sync.joinLabel", "Code"), value: typed, required: true, max: 40 }]
+        });
+        if (!values) return null;
+        typed = values.code;
+        const code = this.client.readCode(typed);
+        if (!code) { if (typeof toast === "function") toast(say("sync.joinBad", "That is not a code: it has 20 letters and digits."), "error"); continue; }
+        if (await this.client.cloudHasData(code)) return { code, joined: true };
+        if (typeof toast === "function") toast(say("sync.joinEmpty", "No device syncs with this code. Check it against the other device."), "error", 6000);
+      }
     }
 
     // Why sync stopped, in the person's language; the raw text is its title.
@@ -414,8 +468,10 @@
       input.disabled = true;
       try {
         if (!input.checked) { await this.client.disable(); return; }
+        const way = await this.chooseWay();
+        if (!way) { input.checked = false; return; }
         let mode = "merge";
-        if (await this.client.cloudHasData()) {
+        if (way.joined || (!way.code && await this.client.cloudHasData())) {
           const values = await this.ask({
             title: say("sync.firstTitle", "Your setup is already in sync"),
             ok: say("sync.firstOk", "Turn on sync"),
@@ -429,7 +485,10 @@
           if (!values) { input.checked = false; return; }
           mode = values.mode;
         }
-        await this.client.enable(mode);
+        await this.client.enable(mode, way.code);
+      } catch (error) {
+        input.checked = false;
+        if (typeof toast === "function") toast(say("sync.whyOther", "Sync didn't answer. Nordlys tries again with your next change, and your changes are saved here."), "error", 6000);
       } finally {
         input.disabled = false;
         this.refresh();

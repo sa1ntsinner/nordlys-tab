@@ -45,7 +45,7 @@ const pageGlobals = {
 export default [
   {
     ignores: [
-      "node_modules/**", "dist/**", "playwright-report/**", "test-results/**", ".playwright-artifacts/**",
+      "node_modules/**", "dist/**", "build/**", "relay/node_modules/**", "relay/.wrangler/**", "playwright-report/**", "test-results/**", ".playwright-artifacts/**",
       ".*/**", "docs/**",
       "**/*.sweep.cjs", "sweeps.config.cjs", "scratch-*"
     ]
@@ -91,6 +91,12 @@ export default [
       "no-var": "error",
       "prefer-const": ["error", { destructuring: "all" }]
     }
+  },
+  {
+    // The sync relay: a Cloudflare Worker, written as modules.
+    files: ["relay/src/**/*.js"],
+    languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { ...globals.serviceworker } },
+    rules: { "no-unused-vars": ["error", { args: "none", caughtErrors: "none" }] }
   },
   {
     files: ["eslint.config.mjs"],

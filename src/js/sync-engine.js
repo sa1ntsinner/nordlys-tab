@@ -1,6 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════
-   NORDLYS - KEEPING THE MODEL, AND TRADING IT WITH CHROME SYNC
+   NORDLYS - KEEPING THE MODEL, AND TRADING IT WITH THE OTHER DEVICES
    ═══════════════════════════════════════════════════════════════════
+
+   The items travel one of two ways: through the browser's own sync, or,
+   with a code, through the relay (sync-relay.js). Both are a storage area
+   to this file, and which one is in use is part of the stored state.
 
    The model (sync-model.js) lives here in chrome.storage.local together with
    what belongs to this device alone: its id and name, and its overrides, the
@@ -24,9 +28,11 @@
   const clone = (value) => value === undefined ? undefined : JSON.parse(JSON.stringify(value));
 
   class NordlysSyncEngine {
-    constructor({ local, sync, deviceName = "This device", now = () => Date.now() }) {
+    constructor({ local, sync, relay, deviceName = "This device", now = () => Date.now() }) {
       this.local = local;
       this.sync = sync;
+      // code => a storage area over the relay; absent where there is none.
+      this.relay = relay;
       this.deviceName = deviceName;
       this.now = now;
       this.queue = Promise.resolve();
@@ -74,12 +80,27 @@
 
     async save() { await this.local.set({ [KEY]: this.state }); }
 
+    /* Where the items travel: the relay when this device joined with a code,
+       the browser's sync otherwise. One relay area per code, so what it
+       remembers of the last answer is kept between calls. */
+    cloud() {
+      const code = this.state?.relay?.code;
+      if (!code) {
+        if (!this.sync) throw new Error("This browser has no sync of its own.");
+        return this.sync;
+      }
+      if (!this.relay) throw new Error("Sync with a code is not available here.");
+      if (this.relayArea?.code !== code) this.relayArea = { code, area: this.relay(code) };
+      return this.relayArea.area;
+    }
+
     enabled() { return Boolean(this.state?.enabled); }
 
     status() {
       return this.run(async () => ({
         enabled: this.state.enabled,
         ...clone(this.state.status),
+        code: this.state.enabled ? this.state.relay?.code || null : null,
         device: clone(this.state.device),
         devices: M().devices(this.state.model)
       }));
@@ -164,10 +185,14 @@
          use-sync       this device takes what sync has
          merge          both are kept, field by field
          replace-sync   this board wins everywhere */
-    enable({ snapshot, mode = "merge" }) {
+    enable({ snapshot, mode = "merge", code = null }) {
       return this.run(async () => {
         await this.backup(snapshot, "enable");
-        const remote = await this.sync.get(null);
+        const before = this.state.relay;
+        this.state.relay = code ? { code } : null;
+        let remote;
+        // Nothing is on yet, so a relay that does not answer leaves it off.
+        try { remote = await this.cloud().get(null); } catch (error) { this.state.relay = before; throw error; }
         const has = Object.keys(remote).some((key) => key.startsWith(M().PREFIX));
         this.state.model = M().create(this.state.device.id);
         this.state.overrides = {};
@@ -191,6 +216,7 @@
     disable() {
       return this.run(async () => {
         this.state.enabled = false;
+        this.state.relay = null;
         this.state.status = { ...this.state.status, state: "off", error: null, reason: null };
         await this.save();
       });
@@ -213,7 +239,7 @@
         const before = JSON.stringify(this.compose().view);
         try {
           const draft = clone(this.state.model);
-          changed = M().merge(draft, await this.sync.get(null));
+          changed = M().merge(draft, await this.cloud().get(null));
           if (changed) this.state.model = draft;
         } catch (error) {
           this.fail("error", error, "damaged");
@@ -259,9 +285,9 @@
     forget(deviceId) {
       return this.run(async () => {
         if (deviceId === this.state.device.id) throw new Error("This device cannot forget itself.");
-        const remote = await this.sync.get(null);
+        const remote = await this.cloud().get(null);
         const keys = Object.keys(remote).filter((key) => key.startsWith(`${M().PREFIX}${deviceId}.`));
-        if (keys.length) await this.sync.remove(keys);
+        if (keys.length) await this.cloud().remove(keys);
         M().apply(this.state.model, [[`d/${deviceId}`, "_alive", false]]);
         await this.save();
       });
@@ -279,7 +305,7 @@
       this.state.status = { ...this.state.status, state: "syncing" };
       await this.save();
       try {
-        const remote = await this.sync.get(null);
+        const remote = await this.cloud().get(null);
         const ownPrefix = `${M().PREFIX}${this.state.device.id}.`;
         const chunks = M().exportChunks(this.state.model);
         const writes = {};
@@ -297,8 +323,8 @@
           await this.save();
           return;
         }
-        if (Object.keys(writes).length) await this.sync.set(writes);
-        if (removals.length) await this.sync.remove(removals);
+        if (Object.keys(writes).length) await this.cloud().set(writes);
+        if (removals.length) await this.cloud().remove(removals);
         this.state.status = { ...this.state.status, state: "ready", error: null, reason: null, lastSync: this.now() };
       } catch (error) {
         this.fail("error", error);

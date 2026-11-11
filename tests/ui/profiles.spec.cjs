@@ -81,6 +81,9 @@ test('turning sync on sends the board, and a change from another device arrives'
   await page.locator('#gear').click();
   await page.locator('#settings-tab-sync').click();
   await page.locator('label.tg:has(#cfg-sync-on)').click();
+  // Asked how the devices find each other: the browser's own sync comes first.
+  await expect(page.locator('#nl-form-modal input[name="way"]:checked')).toHaveValue('browser');
+  await page.locator('#nl-form-ok').click();
   await expect(page.locator('#sec-sync .sync-state')).toHaveClass(/is-ready/);
   const keys = await page.evaluate(() => Object.keys(window.__syncState()));
   expect(keys.some(key => key.startsWith('nl.sync.2.'))).toBe(true);
@@ -109,6 +112,9 @@ test('with sync on, a bookmark can be kept on this device or read differently he
   await page.locator('#gear').click();
   await page.locator('#settings-tab-sync').click();
   await page.locator('label.tg:has(#cfg-sync-on)').click();
+  // Asked how the devices find each other: the browser's own sync comes first.
+  await expect(page.locator('#nl-form-modal input[name="way"]:checked')).toHaveValue('browser');
+  await page.locator('#nl-form-ok').click();
   await expect(page.locator('#sec-sync .sync-state')).toHaveClass(/is-ready/);
   await closeSettings(page);
 
@@ -144,6 +150,9 @@ test('turning sync on where sync already has a setup asks what to do', async ({ 
   await page.locator('#gear').click();
   await page.locator('#settings-tab-sync').click();
   await page.locator('label.tg:has(#cfg-sync-on)').click();
+  // Asked how the devices find each other: the browser's own sync comes first.
+  await expect(page.locator('#nl-form-modal input[name="way"]:checked')).toHaveValue('browser');
+  await page.locator('#nl-form-ok').click();
   const form = page.locator('#nl-form-modal');
   await expect(form).toBeVisible();
   await expect(form.locator('input[name="mode"]')).toHaveCount(3);
@@ -161,6 +170,9 @@ test('a synced profile that names a retired sky arrives with its successor', asy
   await page.locator('#gear').click();
   await page.locator('#settings-tab-sync').click();
   await page.locator('label.tg:has(#cfg-sync-on)').click();
+  // Asked how the devices find each other: the browser's own sync comes first.
+  await expect(page.locator('#nl-form-modal input[name="way"]:checked')).toHaveValue('browser');
+  await page.locator('#nl-form-ok').click();
   await expect(page.locator('#sec-sync .sync-state')).toHaveClass(/is-ready/);
   await page.evaluate(async () => {
     const M = window.NordlysSyncModel;

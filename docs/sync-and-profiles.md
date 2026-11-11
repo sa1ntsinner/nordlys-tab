@@ -2,6 +2,36 @@
 
 Status: built 2026-09-25, shipped in 2.5.1. 2.5.2 adds compaction of deletions (below) and names the browser's own sync rather than Chrome's. 2.5.3 calls profiles spaces on screen; the code and the stored keys (`nordlys_profiles`) keep the old name. A two-browser manual check is still worth doing before each release.
 
+## Sync with a code (built 2026-11-11)
+
+`chrome.storage.sync` goes nowhere in Safari (the area exists and stays on the
+device) and in a Chromium without an account (Helium, ungoogled builds), and
+two different browsers never share it. For those the same sync items travel
+through a relay instead.
+
+- `src/js/sync-relay.js` is a storage area to the engine: `get(null)`, `set`,
+  `remove`, like `chrome.storage.sync`. `sync-engine.js` picks the area from
+  the stored state (`state.relay.code`); everything above it is unchanged:
+  the model, merging, overrides, limits, the device list.
+- The code is 20 characters of Crockford base 32 (100 bits), made on the
+  device. HKDF-SHA-256 over it gives the room name (128 bits), an HMAC key
+  for device names, and the AES-256-GCM key. The code is kept in
+  `chrome.storage.local` with the rest of the sync state.
+- Each device's items go up as one sealed piece: `PUT /v1/r/<room>/<device>`.
+  `GET /v1/r/<room>` answers every piece with an ETag, and 304 when nothing
+  changed. A piece the code does not open is passed over.
+- The relay (`relay/`, a Cloudflare Worker with D1) cannot tell a device that
+  something changed, so the page asks: when a tab opens or comes back into
+  view, and every two minutes while it stays in view, with every tab sharing
+  one clock (`nordlys_relay_asked`, at most one question in 20 seconds).
+- Joining needs a code some device already syncs with: an empty room is
+  refused, so a mistyped code is noticed at once.
+- Safari is not offered the browser's own sync at all.
+
+Tests: `tests/unit/sync-relay.test.cjs` (engine, client and the relay's rules
+over a store in memory), `tests/ui/sync-code.spec.cjs`. `relay/README.md` has
+the deployment.
+
 ## What it is for
 
 Your setup should follow you to every Chrome you're signed in to, with no

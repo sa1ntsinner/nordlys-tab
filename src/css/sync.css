@@ -139,6 +139,8 @@ body.arranging :is(.is-here-only, .is-different-here) > .device-mark { opacity: 
 .sync-error { color: var(--nl-text-secondary); font-size: var(--nl-text-sm, 0.85rem); }
 .sync-meter { width: 100%; height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--nl-text-primary) 12%, transparent); overflow: hidden; }
 .sync-meter i { display: block; height: 100%; border-radius: inherit; background: var(--nl-accent, #35d6c0); }
+/* The code is read aloud to another device or copied: one size up, evenly spaced, selected whole by a click. */
+.sync-code { display: block; margin-top: 2px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: var(--nl-text-md, 0.95rem); letter-spacing: var(--nl-track-wide); color: var(--nl-text-primary); user-select: all; -webkit-user-select: all; }
 
 @media (forced-colors: active) {
   #profile-chip, .nl-choice-option, .sync-profile, .sync-deleted, .sync-device { border: 1px solid ButtonText; }

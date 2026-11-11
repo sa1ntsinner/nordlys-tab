@@ -6,6 +6,16 @@ Chrome Web Store's rule that they only ever go up.
 
 ## [Unreleased]
 
+### Added
+
+- Sync with a code. Turning sync on now asks how your devices should find each other: through the browser's own sync, as before, or with a code. The first device makes the code; you enter it on the others (Settings → Sync shows it, with a Copy button). It works between any browsers, with no account: Safari and a Chromium without sync, which carry nothing between devices by themselves, and two different browsers. Your setup is locked on your device with a key made from the code and passes through a small relay that cannot read it; [PRIVACY.md](PRIVACY.md) says what the relay keeps. Everything else about sync is the same: what travels, what stays, "Only on this device", the list of devices.
+- A new tab asks for what your other devices changed when it opens, when sync is by code.
+
+### Changed
+
+- Safari no longer offers sync through the browser. Safari keeps that storage on the device, so the switch did nothing there; a setup that had it on is switched off, and nothing is lost.
+- A device's name says Safari, Firefox or Helium where it said Chrome.
+
 ## [2.6.1] — 2026-11-10
 
 Choosing an icon is one field now, and the menus wear the theme you chose. Your folders, bookmarks and the icons they have stay as they are.

@@ -2,17 +2,24 @@
    NORDLYS - PROFILES AND SYNC, WIRED INTO THE PAGE
    ═══════════════════════════════════════════════════════════════════
 
-   profiles.js keeps the setups, sync-engine.js trades them with Chrome sync;
+   profiles.js keeps the setups, sync-engine.js trades them with the other
+   devices (through the browser's sync, or with a code through the relay);
    this is where the page meets both. The page keeps saving one config as it
    always has. After a save the client waits a moment (a slider drag saves
    on every step) and hands every profile to the engine; when another device
    writes, the engine answers with the new boards and the client puts them on
-   the page. Nothing here runs against Chrome sync until sync is turned on. */
+   the page. Nothing here runs against either until sync is turned on. */
 (function () {
   "use strict";
 
   const PUSH_DELAY = 2500;
   const PULL_DELAY = 800;
+  /* The relay cannot say that something changed, so it is asked: when a tab
+     opens or comes back into view, and now and then while it stays in view.
+     Every tab shares one clock, so ten open tabs ask as often as one. */
+  const RELAY_EVERY = 120000;
+  const RELAY_REST = 20000;
+  const RELAY_ASKED = "nordlys_relay_asked";
   // The look and layout, for "keep this look on this device only".
   const LOOK = ["theme", "colorMode", "lastLightTheme", "lastDarkTheme", "customTheme", "bgMode", "bgPalette", "bgSeed", "bgMotion",
     "bgIntensity", "glassLevel", "headerStyle", "typography", "hoverEffect", "iconShape", "cardRadius", "cardGlow", "bgBlur", "bgDim",
@@ -51,7 +58,8 @@
     const ua = navigator.userAgent || "";
     const platform = navigator.userAgentData?.platform || (/Windows/.test(ua) ? "Windows" : /Mac OS X/.test(ua) ? "macOS" : /CrOS/.test(ua) ? "ChromeOS" : /Android/.test(ua) ? "Android" : /Linux/.test(ua) ? "Linux" : "");
     const brands = (navigator.userAgentData?.brands || []).map((entry) => entry.brand);
-    const browser = brands.find((brand) => /Edge|Opera|Brave|Vivaldi/.test(brand)) || (/Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera" : "Chrome");
+    const browser = brands.find((brand) => /Edge|Opera|Brave|Vivaldi|Helium/.test(brand))
+      || (/Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera" : /Firefox\//.test(ua) ? "Firefox" : /Chrom(e|ium)\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "Chrome");
     const name = [platform, browser.replace("Microsoft ", "")].filter(Boolean).join(" · ");
     return name || say("sync.thisDevice", "This device");
   }
@@ -66,8 +74,20 @@
       this.overrideCache = {};
       this.applying = false;
       this.profiles = new window.NordlysProfiles({ meta: localStorage, local: this.local }).init(say("profiles.firstName", "Main"));
-      this.engine = this.cloud && window.NordlysSyncEngine ? new window.NordlysSyncEngine({ local: this.local, sync: this.cloud, deviceName: deviceName() }) : null;
+      /* Safari has the storage.sync area and keeps it on the device, so it is
+         not offered there. The relay needs a place to keep its code, which a
+         plain page (the demo) does not have. */
+      if (window.NordlysPlatform?.name === "safari") this.cloud = null;
+      const relay = window.NordlysSyncRelay && storage?.local && window.crypto?.subtle ? window.NordlysSyncRelay : null;
+      this.relay = relay ? (code) => relay.create(code) : null;
+      this.engine = (this.cloud || this.relay) && window.NordlysSyncEngine
+        ? new window.NordlysSyncEngine({ local: this.local, sync: this.cloud, relay: this.relay, deviceName: deviceName() }) : null;
       this.ready = (this.engine ? this.engine.load().then(() => this.refreshOverrides()) : Promise.resolve()).catch(() => {});
+      this.ready.then(() => {
+        // Left on from a build that offered a sync this browser never carried anywhere.
+        if (this.syncing() && !this.withCode() && !this.cloud) return this.engine.disable().then(() => this.emit());
+        this.askRelay();
+      }).catch(() => {});
       this.wrapSave();
       this.watch();
     }
@@ -75,6 +95,10 @@
     // ── What the rest of the page asks ────────────────────────────
     available() { return Boolean(this.engine); }
     syncing() { return Boolean(this.engine?.enabled()); }
+    // The two ways there are, and the one in use.
+    browserSync() { return Boolean(this.engine && this.cloud); }
+    codeSync() { return Boolean(this.engine && this.relay); }
+    withCode() { return Boolean(this.syncing() && this.engine.state?.relay?.code); }
     list() { return this.profiles.list(); }
     active() { return this.profiles.active(); }
     deleted() { return this.profiles.deleted(); }
@@ -150,7 +174,18 @@
       window.addEventListener("storage", (event) => {
         if (event.key === "nordlys_profiles") { this.profiles.reload(); this.emit(); }
       });
-      document.addEventListener("visibilitychange", () => { if (!document.hidden) this.schedulePull(); });
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) { if (this.withCode()) this.askRelay(); else this.schedulePull(); } });
+      setInterval(() => this.askRelay(), RELAY_EVERY);
+    }
+
+    // A pull from the relay, unless a tab asked a moment ago.
+    askRelay() {
+      if (!this.withCode() || document.hidden) return;
+      try {
+        if (Date.now() - Number(localStorage.getItem(RELAY_ASKED) || 0) < RELAY_REST) return;
+        localStorage.setItem(RELAY_ASKED, String(Date.now()));
+      } catch (error) { /* no clock to share: ask */ }
+      this.schedulePull();
     }
 
     /* Puts a board that came from elsewhere on the page, through the same
@@ -297,20 +332,27 @@
       return { available: true, ...(await this.engine.status()) };
     }
 
-    async cloudHasData() {
-      if (!this.cloud) return false;
+    /* Whether other devices already keep a setup there: in the browser's
+       sync, or under a code. A relay that does not answer is the caller's to
+       report, so with a code this throws. */
+    async cloudHasData(code) {
+      if (code ? !this.relay : !this.cloud) return false;
       try {
-        const all = await this.cloud.get(null);
+        const all = await (code ? this.relay(code) : this.cloud).get(null);
         const own = `${window.NordlysSyncModel.PREFIX}${this.engine?.state?.device?.id}.`;
         return Object.keys(all).some((key) => key.startsWith(window.NordlysSyncModel.PREFIX) && !key.startsWith(own));
-      } catch (error) { return false; }
+      } catch (error) { if (code) throw error; return false; }
     }
 
-    async enable(mode) {
+    newCode() { return window.NordlysSyncRelay.newCode(); }
+    readCode(text) { return window.NordlysSyncRelay.readCode(text); }
+    showCode(code) { return window.NordlysSyncRelay.showCode(code); }
+
+    async enable(mode, code) {
       if (!this.engine) return;
       await this.ready;
       if (window.NordlysSyncModel.normalize(this.app.config)) this.saveQuietly();
-      const view = await this.engine.enable({ snapshot: await this.profiles.snapshot(this.app.config), mode });
+      const view = await this.engine.enable({ snapshot: await this.profiles.snapshot(this.app.config), mode, code: code || null });
       await this.adoptView(view);
     }
 

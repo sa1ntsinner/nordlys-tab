@@ -50,7 +50,7 @@ Search
 
 When you want more
 • A dashboard: tasks, a focus timer that can keep distracting sites shut, notes, calendars with a Join button, feeds, weather.
-• Spaces such as Work and Home, and sync through your browser's own sync.
+• Spaces such as Work and Home, and sync through your browser or with a code.
 
 Before every update, a copy of your whole setup is kept in Settings → Backup.
 
@@ -155,10 +155,10 @@ Adds "Save to Nordlys" to the right-click menu of pages and links. The page or l
 Nothing is granted at install. Sites are asked for from the click that needs them: Todoist (api.todoist.com) and GitHub (api.github.com) for the user's own tasks; the address of a calendar link; the feeds and sites the user lists on the Feeds card; the JSON address on a Value card; a site whose link the user types into the icon dialog; a list of links a folder follows; an address the user reads settings from; and, for "Check the bookmarks", the sites on the user's board, handed back with permissions.remove() when the check ends. Because these can be at any address, the list includes https://*/*, but Nordlys only ever requests the origins of addresses the user has given. Cards refresh only while they are on the dashboard, and a followed list at most once an hour, as PRIVACY.md says.
 ```
 
-### `storage` — 233 chars
+### `storage` — 244 chars
 
 ```
-Stores the user's own configuration on the device: their bookmark folders and tiles, and the theme, fonts, layout and background they chose. The extension has no account and no server, so this is the only place a user's setup exists.
+Stores the user's own configuration on the device: their bookmark folders and tiles, and the theme, fonts, layout and background they chose. The extension has no account. Unless the user turns sync on, this is the only place their setup exists.
 ```
 
 ### `unlimitedStorage` — 336 chars
@@ -249,7 +249,8 @@ d. Main features: add sites to folders, drag tiles and folders to arrange them, 
 No login or sample files are needed.
 
 4. External services
-Nordlys has no server of its own, and no analytics or ads. It makes a request only when the user uses a feature that needs one:
+Nordlys has no analytics or ads. Its only server is the sync relay below. It makes a request only when the user uses a feature that needs one:
+- Sync with a code (optional, off by default): the user's setup, encrypted on the device with a key made from the code, goes to the Nordlys relay (nordlys-sync.imslide.workers.dev, a Cloudflare Worker, source in the repository under relay/). The relay cannot read it and keeps no log.
 - Search: the search engine the user picks in Settings > General.
 - Weather card, and the place search for the sky: Open-Meteo (api.open-meteo.com and geocoding-api.open-meteo.com), for the place the user chooses. No key or account.
 - Photos and picture of the day skies, only while one is shown: Wikimedia Commons (api.wikimedia.org, commons.wikimedia.org, upload.wikimedia.org), the Metropolitan Museum (collectionapi.metmuseum.org, images.metmuseum.org) or NASA EPIC (epic.gsfc.nasa.gov).
