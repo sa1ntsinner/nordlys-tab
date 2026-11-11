@@ -29,10 +29,13 @@ class ViewController: NSViewController, WKNavigationDelegate, WKScriptMessageHan
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.isMovableByWindowBackground = true
-        window.backgroundColor = NSColor(name: nil) { appearance in
-            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                ? NSColor(srgbRed: 0.106, green: 0.110, blue: 0.118, alpha: 1)
-                : NSColor(srgbRed: 0.965, green: 0.965, blue: 0.961, alpha: 1)
+        // The converter's project still runs on macOS 10.14.
+        if #available(macOS 10.15, *) {
+            window.backgroundColor = NSColor(name: nil) { appearance in
+                appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                    ? NSColor(srgbRed: 0.106, green: 0.110, blue: 0.118, alpha: 1)
+                    : NSColor(srgbRed: 0.965, green: 0.965, blue: 0.961, alpha: 1)
+            }
         }
         window.setContentSize(NSSize(width: 480, height: 624))
         window.center()
@@ -60,9 +63,12 @@ class ViewController: NSViewController, WKNavigationDelegate, WKScriptMessageHan
         case "extensions":
             SFSafariApplication.showPreferencesForExtension(withIdentifier: extensionBundleIdentifier) { _ in }
         case "safari":
-            guard let safari = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Safari") else { return }
-            NSWorkspace.shared.openApplication(at: safari, configuration: NSWorkspace.OpenConfiguration()) { _, _ in
-                DispatchQueue.main.async { NSApplication.shared.terminate(nil) }
+            let quit = { DispatchQueue.main.async { NSApplication.shared.terminate(nil) } }
+            if #available(macOS 10.15, *), let safari = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Safari") {
+                NSWorkspace.shared.openApplication(at: safari, configuration: NSWorkspace.OpenConfiguration()) { _, _ in quit() }
+            } else {
+                NSWorkspace.shared.launchApplication("Safari")
+                quit()
             }
         default:
             return
