@@ -146,7 +146,7 @@
           const context = surface.getContext('2d', { willReadFrequently: true });
           context.clearRect(0, 0, 16, 16); context.drawImage(probe, 0, 0, 16, 16);
           const { data } = context.getImageData(0, 0, 16, 16);
-          let total = 0, weight = 0, colourful = 0, covered = 0;
+          let total = 0, weight = 0, colourful = 0, covered = 0, grey = 0, greyLight = 0;
           const sum = [0, 0, 0];
           for (let at = 0; at < data.length; at += 4) {
             const alpha = data[at + 3] / 255;
@@ -158,6 +158,8 @@
             // Distance between the channels is what makes a mark "coloured".
             // A grey, black or white logo has almost none.
             if (Math.max(r, g, b) - Math.min(r, g, b) > 28) colourful += alpha;
+            // The rest is black, white or grey: the part of a mark that may change sides.
+            else { grey += alpha; greyLight += luminanceOf(r, g, b) * alpha; }
           }
           /* One colour throughout, whatever the colour: a navy mark is as much a
              single-colour mark as a black one. Nearly every pixel sits by the
@@ -170,7 +172,14 @@
             if (Math.abs(data[at] - sum[0] / weight) + Math.abs(data[at + 1] - sum[1] / weight) + Math.abs(data[at + 2] - sum[2] / weight) < 72) near += data[at + 3] / 255;
           }
           const clear = [3, 63, 963, 1023].filter(at => data[at] < 26).length >= 3;
-          resolve(weight ? { luminance: total / weight, colourRatio: colourful / weight, flat: clear && covered / 256 < 0.86 && near / weight > 0.9 } : null);
+          const mark = clear && covered / 256 < 0.86;
+          resolve(weight ? {
+            luminance: total / weight, colourRatio: colourful / weight, flat: mark && near / weight > 0.9,
+            /* A mark in black or white with a colour of its own beside it (a black
+               letter over an orange stroke): how much of it is the black or white,
+               and how light that part is. */
+            mark, greyShare: grey / weight, greyLuminance: grey ? greyLight / grey : 0
+          } : null);
         } catch { resolve(null); }
       };
       probe.onerror = () => resolve(null);
@@ -186,7 +195,8 @@
      a coloured logo never may, because the colour is the mark. */
   function iconAppearance(wrapper) {
     const image = wrapper.querySelector('img');
-    if (image) return sampleImage(image.currentSrc || image.src);
+    // The picture as it was given, not the redrawn one a tone may have put in its place.
+    if (image) return sampleImage(image.dataset.iconArt || image.currentSrc || image.src);
     const vector = wrapper.querySelector('svg path, svg circle, svg rect');
     const declared = wrapper.dataset.iconSource;
     const painted = declared && declared !== 'var(--nl-text-primary)'
@@ -206,7 +216,8 @@
      guidance does it; YouTube's red is never touched, because the red is the mark.
 
      `tone` on the bookmark overrides the decision entirely: 'original' leaves the
-     art alone, 'light'/'dark' force a direction, anything else re-decides. */
+     art alone, 'light'/'dark' force a direction, 'inverted' turns it to the
+     other side from the one it was found on, anything else re-decides. */
   const COLOURFUL_ENOUGH = 0.25;
   /* Inverting is only right for a picture with no colour in it at all: black
      becomes white and nothing else moves. With any colour in it (a white
@@ -235,21 +246,95 @@
     return null;
   }
 
-  function wearTone(wrapper, tone, flatten = false) {
+  /* The black, white or grey is the mark itself, with a colour beside it, when
+     it is most of what is drawn. Less than that and it is a sign on a coloured
+     ground (the white in Steam's blue circle), which reads wherever the
+     ground does and is never turned over. */
+  const GREY_PART = 0.5;
+  const inParts = (art) => Boolean(art && art.mark && art.colourRatio > GREY_ENOUGH && art.greyShare >= GREY_PART);
+
+  /* The picture with its black, white and grey turned over and every colour
+     left as it is: Amazon's black letter becomes white, its orange stays
+     orange. No filter can do that to one part of a picture, so it is drawn
+     once and kept. Null when the picture cannot be read. */
+  const turned = new Map();
+  function turnedOver(src) {
+    if (turned.has(src)) return turned.get(src);
+    if (turned.size > 120) turned.clear();
+    const pending = new Promise(resolve => {
+      const probe = new Image();
+      probe.crossOrigin = 'anonymous';
+      probe.onload = () => {
+        try {
+          const wide = probe.naturalWidth || 256, high = probe.naturalHeight || 256;
+          // A vector has no size of its own worth keeping; a raster keeps its own, up to what a tile shows.
+          const scale = /^data:image\/svg\+xml/i.test(src) ? 256 / Math.max(wide, high) : Math.min(1, 256 / Math.max(wide, high));
+          const surface = document.createElement('canvas');
+          surface.width = Math.max(1, Math.round(wide * scale)); surface.height = Math.max(1, Math.round(high * scale));
+          const context = surface.getContext('2d', { willReadFrequently: true });
+          context.drawImage(probe, 0, 0, surface.width, surface.height);
+          const pixels = context.getImageData(0, 0, surface.width, surface.height);
+          const { data } = pixels;
+          for (let at = 0; at < data.length; at += 4) {
+            if (!data[at + 3] || Math.max(data[at], data[at + 1], data[at + 2]) - Math.min(data[at], data[at + 1], data[at + 2]) > 28) continue;
+            data[at] = 255 - data[at]; data[at + 1] = 255 - data[at + 1]; data[at + 2] = 255 - data[at + 2];
+          }
+          context.putImageData(pixels, 0, 0);
+          resolve(surface.toDataURL('image/png'));
+        } catch { resolve(null); }
+      };
+      probe.onerror = () => resolve(null);
+      probe.src = src;
+    });
+    turned.set(src, pending);
+    return pending;
+  }
+
+  /* How a tone is worn. `how` is 'flat' for a mark drawn as its shape, 'parts'
+     for one whose black or white is turned over beside a colour that stays,
+     and nothing for a plain inversion. */
+  function wearTone(wrapper, tone, how = null) {
     if (tone) wrapper.dataset.iconTone = tone; else delete wrapper.dataset.iconTone;
-    if (tone && flatten) wrapper.dataset.iconFlat = ''; else delete wrapper.dataset.iconFlat;
+    if (tone && (how === 'flat' || how === true)) wrapper.dataset.iconFlat = ''; else delete wrapper.dataset.iconFlat;
+    const image = wrapper.querySelector('img');
+    if (tone && how === 'parts' && image) {
+      const art = image.dataset.iconArt || image.currentSrc || image.src;
+      wrapper.dataset.iconParts = '';
+      turnedOver(art).then((drawn) => {
+        // Decided again since, or the picture could not be read: nothing to put in.
+        if (!drawn || !('iconParts' in wrapper.dataset)) { if (!drawn) { delete wrapper.dataset.iconParts; delete wrapper.dataset.iconTone; } return; }
+        image.dataset.iconArt = art;
+        if (image.src !== drawn) image.src = drawn;
+      });
+      return;
+    }
+    delete wrapper.dataset.iconParts;
+    if (image?.dataset.iconArt) { image.src = image.dataset.iconArt; delete image.dataset.iconArt; }
   }
 
   async function applyIconContrast(plate, wrapper = plate?.querySelector('.nl-icon')) {
     if (!plate || !wrapper) return;
     const forced = wrapper.dataset.iconToneChoice;
     if (forced === 'original') { wearTone(wrapper, null); return; }
-    if (forced === 'light' || forced === 'dark') {
-      /* Asked for by hand, for a mark in one colour. A picture in several
-         colours has no light or dark version to give, and is left as it is. */
+    if (forced === 'light' || forced === 'dark' || forced === 'inverted') {
+      /* Asked for by hand. Light and Dark name the side the mark should be on;
+         Inverted is the other side from the one it was found on. A picture in
+         several colours with no black or white in it has no other side, and
+         is left as it is. */
       const art = wrapper.querySelector('img') ? await iconAppearance(wrapper) : null;
-      if (art && art.colourRatio > COLOURFUL_ENOUGH && !art.flat) wearTone(wrapper, null);
-      else wearTone(wrapper, forced, Boolean(art && art.colourRatio > GREY_ENOUGH));
+      if (!art) {
+        // A library mark or letters: drawn in a colour, which a tone replaces.
+        const own = forced === 'inverted' ? await iconAppearance(wrapper) : null;
+        wearTone(wrapper, forced === 'inverted' ? (own && own.luminance > 0.4 ? 'dark' : 'light') : forced);
+        return;
+      }
+      const side = (light) => (light > 0.4 ? 'dark' : 'light');
+      if (inParts(art)) {
+        const want = forced === 'inverted' ? side(art.greyLuminance) : forced;
+        // Already on the side asked for: the picture as it is.
+        if (want === side(art.greyLuminance)) wearTone(wrapper, want, 'parts'); else wearTone(wrapper, null);
+      } else if (art.colourRatio > COLOURFUL_ENOUGH && !art.flat) wearTone(wrapper, null);
+      else wearTone(wrapper, forced === 'inverted' ? side(art.luminance) : forced, art.colourRatio > GREY_ENOUGH ? 'flat' : null);
       return;
     }
 
@@ -282,6 +367,14 @@
     if (!plate.isConnected) return;
     if (!icon) { wearTone(wrapper, null); return; }
 
+    /* Black or white beside a colour: the two are judged apart. The orange
+       stroke carries the average over the line while the black letter above
+       it is lost on a dark tile; only the letter changes sides. */
+    if (inParts(icon)) {
+      if (contrast(icon.greyLuminance, surface) >= MIN_ICON_CONTRAST) wearTone(wrapper, null);
+      else wearTone(wrapper, surface > 0.5 ? 'dark' : 'light', 'parts');
+      return;
+    }
     if (contrast(icon.luminance, surface) >= MIN_ICON_CONTRAST) { wearTone(wrapper, null); return; }
     // It is hard to see — but re-toning a coloured logo would destroy it, so that
     // case is left to the per-bookmark control rather than guessed at.
@@ -290,7 +383,7 @@
        the tile's own light or dark instead, and goes back to its colour on a
        theme where that colour reads. */
     if (icon.colourRatio > COLOURFUL_ENOUGH && !icon.flat) { wearTone(wrapper, null); return; }
-    wearTone(wrapper, surface > 0.5 ? 'dark' : 'light', icon.colourRatio > GREY_ENOUGH);
+    wearTone(wrapper, surface > 0.5 ? 'dark' : 'light', icon.colourRatio > GREY_ENOUGH ? 'flat' : null);
   }
 
   /* A tone is only correct for the surface it was measured against, so every
@@ -308,5 +401,14 @@
   }
   const toned = () => toning;
 
-  window.NordlysIcons = { classifyIcon, resolvePresentation, renderIcon, plateLuminance, applyIconContrast, refreshIconContrast, toned, readableAgainst, gradientAverage, MIN_ICON_CONTRAST };
+  /* Whether turning the icon over would change anything: a picture in several
+     colours with no black or white in it has no other side. */
+  async function invertible(wrapper) {
+    if (!wrapper) return false;
+    if (!wrapper.querySelector('img')) return true;
+    const art = await iconAppearance(wrapper);
+    return Boolean(art && (inParts(art) || !(art.colourRatio > COLOURFUL_ENOUGH && !art.flat)));
+  }
+
+  window.NordlysIcons = { classifyIcon, resolvePresentation, renderIcon, plateLuminance, applyIconContrast, refreshIconContrast, toned, invertible, readableAgainst, gradientAverage, MIN_ICON_CONTRAST };
 })();

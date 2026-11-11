@@ -2116,6 +2116,9 @@ body.arranging .fit-toggle { display: none; }
    of the tile. */
 .nl-icon[data-icon-tone="light"][data-icon-flat] > img { filter: brightness(0) invert(.96) !important; }
 .nl-icon[data-icon-tone="dark"][data-icon-flat] > img { filter: brightness(0) invert(.07) !important; }
+/* Black or white beside a colour: the picture was redrawn with only that part
+   turned over (icon-presentation.js), so there is nothing left for a filter to do. */
+.nl-icon[data-icon-tone][data-icon-parts] > img { filter: none !important; }
 
 /* ── Themed select ──────────────────────────────────────────────────
    Replaces the operating system's dropdown. The native element stays in the

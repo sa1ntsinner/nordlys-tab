@@ -32,7 +32,7 @@
       this.el = {
         title: $("icon-picker-title"), find: $("icon-view-find"), adjust: $("icon-view-adjust"), preview: $("icon-live-preview"),
         form: $("icon-find-form"), field: $("icon-find"), button: $("icon-find-btn"), status: $("icon-find-status"), site: $("icon-find-site"),
-        choices: $("icon-choices"), adjustBtn: $("icon-adjust"), file: $("icon-file-input"), fileBtn: $("icon-file-btn"), letters: $("icon-letters"),
+        choices: $("icon-choices"), adjustBtn: $("icon-adjust"), invertBtn: $("icon-invert"), file: $("icon-file-input"), fileBtn: $("icon-file-btn"), letters: $("icon-letters"),
         box: $("icon-adjust-box"), canvas: $("icon-adjust-canvas"), zoom: $("icon-adjust-zoom"), fit: $("icon-adjust-fit"), fill: $("icon-adjust-fill"),
         back: $("icon-adjust-back"), done: $("icon-adjust-done")
       };
@@ -49,6 +49,7 @@
       this.el.file.addEventListener("change", () => { this.takeFile(this.el.file.files?.[0]); this.el.file.value = ""; });
       this.el.letters.addEventListener("click", () => this.useLetters());
       this.el.adjustBtn.addEventListener("click", () => this.openAdjust());
+      this.el.invertBtn.addEventListener("click", () => this.invert());
       // A picture pasted into the field, or dropped anywhere on the dialog, is a file like any other.
       this.el.field.addEventListener("paste", (event) => { const file = [...(event.clipboardData?.files || [])].find(item => item.type.startsWith("image/")); if (file) { event.preventDefault(); this.takeFile(file); } });
       dialogRoot.addEventListener("dragover", (event) => { if (event.dataTransfer?.types?.includes("Files")) event.preventDefault(); });
@@ -97,7 +98,13 @@
       const presentation = NordlysIcons.resolvePresentation({ source: link, metadata, isLight: document.documentElement.classList.contains("light-ui") });
       box.replaceChildren(NordlysIcons.renderIcon(presentation));
       box.style.setProperty("--c", link.color || "var(--nl-accent)");
-      NordlysIcons.applyIconContrast(box);
+      const icon = box.querySelector(".nl-icon");
+      // Pressed while the icon is shown turned over, by Nordlys or by hand; dead for a picture with no other side.
+      Promise.resolve(NordlysIcons.applyIconContrast(box)).then(() => NordlysIcons.invertible(icon)).then((can) => {
+        if (!icon.isConnected) return;
+        this.el.invertBtn.disabled = !can;
+        this.el.invertBtn.setAttribute("aria-pressed", String(Boolean(icon.dataset.iconTone)));
+      });
       this.el.adjustBtn.disabled = !link.customImg;
       for (const button of this.el.choices.querySelectorAll("button")) {
         const chosen = this.shown[Number(button.dataset.at)] === this.current;
@@ -300,6 +307,20 @@
       // The bookmark's own form may be open under this dialog, and saves what its field says.
       const toneField = document.getElementById("quick-tone-select");
       if (toneField) toneField.value = link.tone || "auto";
+      this.changed();
+      this.paint();
+    }
+
+    /* The icon as it was found, or turned over: black for white, with any
+       colour beside it left alone. Whichever it is showing now, the press
+       asks for the other, and it then stays so on every theme. */
+    invert() {
+      const link = this.target();
+      if (!link) return;
+      const shown = this.el.preview.querySelector(".nl-icon");
+      link.tone = shown?.dataset.iconTone ? "original" : "inverted";
+      const toneField = document.getElementById("quick-tone-select");
+      if (toneField) toneField.value = link.tone;
       this.changed();
       this.paint();
     }

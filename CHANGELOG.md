@@ -6,6 +6,19 @@ Chrome Web Store's rule that they only ever go up.
 
 ## [Unreleased]
 
+### Added
+
+- Invert, in the icon dialog. It turns the icon over, black for white, and back; whichever you leave it on stays on every theme. The bookmark's own form has the same choice under Icon tone, as Inverted.
+
+### Changed
+
+- A mark in black or white with a colour of its own beside it keeps the colour when it is re-toned. Amazon's black letter turns white on a dark tile and its orange stroke stays orange; it used to stay black and unreadable, or be drawn as one flat shape. A white sign inside a coloured shape (Steam) is left as it is.
+
+### Fixed
+
+- In Safari, Tab no longer leaves the focus timer from one of its buttons, and a control switched off while it has focus no longer sends the next Tab to the page behind.
+- Start on the focus timer and its card could miss a click that landed as the second ticked over, and so could a button on a dashboard card that had nothing set up yet. Those buttons are no longer redrawn every second.
+
 ## [2.6.2] — 2026-11-11
 
 Sync now works between any browsers, with a code, and icons keep their colours. Your folders, bookmarks and settings stay as they are.
