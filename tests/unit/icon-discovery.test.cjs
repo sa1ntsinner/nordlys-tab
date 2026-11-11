@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { vectorDataUrl, markupDataUrl, titleFromSlug, parseQuery, originsFor, brandFromHost, namesFor, rank, find, fromIconify, context } = require('../../src/js/icon-discovery.js');
+const { vectorDataUrl, markupDataUrl, titleFromSlug, parseQuery, originsFor, brandFromHost, namesFor, rank, find, fromIconify, fromCommons, context } = require('../../src/js/icon-discovery.js');
 
 test('brand vectors become inert path-only data URLs', () => {
   const url = vectorDataUrl({ width: 24, height: 24, body: '<path fill="currentColor" d="M2 2H22V22H2Z"/>' }, '#35d6c0');
@@ -106,6 +106,53 @@ test('the brand sets answer with the brand itself, not its neighbours', async ()
   assert.ok(asked.every(url => ['api.iconify.design', 'cdn.simpleicons.org'].includes(new URL(url).host)));
   // The wide wordmark is dropped by the ranking, the square mark leads, the single-colour one follows.
   assert.deepEqual(pick(found), ['logos:steam-icon', 'simple-icons:steam']);
+});
+
+/* Simple Icons and SVG Logos do not have every brand (Amazon is in neither).
+   The other sets fill the gap with a vector, so a 48 px favicon is not the answer. */
+test('a brand missing from the first two sets is found in the others, in colour and in one colour', async () => {
+  const asked = [];
+  const fetchImpl = async (url) => {
+    asked.push(url);
+    if (url.includes('/search?')) return reply({ icons: ['selfhst:amazon', 'selfhst:amazon-light', 'selfhst:amazon-dark', 'selfhst:amazon-s3', 'thesvg-color:amazon', 'thesvg-color:amazon-q', 'cib:amazon', 'cib:amazon-pay', 'fa7-brands:amazon', 'ri:amazon-fill'] });
+    const prefix = /\/([a-z0-9-]+)\.json/.exec(url)?.[1];
+    const colour = { body: '<path fill="#f90" d="M0 0h9v9z"/><path fill="#fff" d="M1 1h3v3z"/>' };
+    if (prefix === 'selfhst') return reply({ prefix, width: 512, height: 512, icons: { amazon: colour, 'amazon-light': colour, 'amazon-dark': colour } });
+    if (prefix === 'thesvg-color') return reply({ prefix, width: 256, height: 256, icons: { amazon: colour } });
+    if (prefix === 'cib') return reply({ prefix, width: 32, height: 32, icons: { amazon: { body: '<path fill="currentColor" d="M0 0h9v9z"/>' } } });
+    if (prefix === 'fa7-brands') return reply({ prefix, icons: { amazon: { body: '<path fill="currentColor" d="M0 0h9v9z"/>', width: 448, height: 512 } } });
+    throw new Error(`unexpected ${url}`);
+  };
+  const found = await fromIconify('Amazon', context({ fetchImpl }));
+  assert.deepEqual(found.map(icon => icon.id).sort(), ['cib:amazon', 'fa7-brands:amazon', 'selfhst:amazon', 'selfhst:amazon-dark', 'selfhst:amazon-light', 'thesvg-color:amazon']);
+  assert.ok(found.every(icon => icon.vector && icon.src.startsWith('data:image/svg+xml')));
+  assert.match(asked[0], /prefixes=logos,selfhst,thesvg-color,simple-icons,cib,fa7-brands/);
+  assert.ok(asked.every(url => new URL(url).host === 'api.iconify.design'));
+  // A one-colour set draws in a colour of ours, never in what the catalogue sent.
+  assert.match(decodeURIComponent(found.find(icon => icon.id === 'cib:amazon').src), /fill="#10151f"/);
+  // The colour marks lead; the one-colour ones are there to fall back on.
+  assert.deepEqual(pick(found).slice(0, 1).map(id => id.split(':')[0]), ['selfhst']);
+  assert.ok(pick(found).indexOf('cib:amazon') > pick(found).indexOf('thesvg-color:amazon'));
+});
+
+test('Commons gives the file named "<Brand> icon" and nothing that merely mentions the brand', async () => {
+  const pages = (titles) => ({ query: { pages: Object.fromEntries(titles.map((title, at) => [at + 1, { index: at + 1, title, imageinfo: [{ url: `https://upload.wikimedia.org/a/${at}.svg`, width: 512, height: 512, mime: 'image/svg+xml' }] }])) } });
+  const asked = [];
+  const fetchImpl = async (url) => {
+    asked.push(url);
+    return reply(pages(['File:Tabler-icons brand-amazon.svg', 'File:AWS Simple Icons Storage Amazon S3.svg', 'File:Amazon icon.svg', 'File:Amazon Prime icon.svg', 'File:Amazon app icon 2021.svg']));
+  };
+  const found = await fromCommons('Amazon', context({ fetchImpl }));
+  assert.deepEqual(found.map(icon => icon.id), ['wikimedia:Amazon icon.svg', 'wikimedia:Amazon app icon 2021.svg']);
+  assert.ok(found.every(icon => icon.from === 'wikimedia-icon' && icon.vector && icon.distance > 0));
+  assert.equal(new URL(asked[0]).host, 'commons.wikimedia.org');
+  assert.match(decodeURIComponent(asked[0]), /intitle:"Amazon" intitle:icon filemime:image\/svg\+xml/);
+  // Too short to be told from anything, or nothing typed: not asked at all.
+  assert.deepEqual(await fromCommons('X', context({ fetchImpl })), []);
+  assert.equal(asked.length, 1);
+  // A file elsewhere, or not a vector, is not taken.
+  const odd = async () => reply({ query: { pages: { 1: { title: 'File:Amazon icon.svg', imageinfo: [{ url: 'https://example.org/a.svg', width: 9, height: 9, mime: 'image/svg+xml' }] }, 2: { title: 'File:Amazon icon.svg', imageinfo: [{ url: 'https://upload.wikimedia.org/a.png', width: 9, height: 9, mime: 'image/png' }] } } } });
+  assert.deepEqual(await fromCommons('Amazon', context({ fetchImpl: odd })), []);
 });
 
 test('oversized provider responses are rejected before parsing', async () => {

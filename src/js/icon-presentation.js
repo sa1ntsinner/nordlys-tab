@@ -146,11 +146,12 @@
           const context = surface.getContext('2d', { willReadFrequently: true });
           context.clearRect(0, 0, 16, 16); context.drawImage(probe, 0, 0, 16, 16);
           const { data } = context.getImageData(0, 0, 16, 16);
-          let total = 0, weight = 0, colourful = 0;
+          let total = 0, weight = 0, colourful = 0, covered = 0;
           const sum = [0, 0, 0];
           for (let at = 0; at < data.length; at += 4) {
             const alpha = data[at + 3] / 255;
             if (alpha < .1) continue;
+            covered++;
             const [r, g, b] = [data[at], data[at + 1], data[at + 2]];
             total += luminanceOf(r, g, b) * alpha; weight += alpha;
             sum[0] += r * alpha; sum[1] += g * alpha; sum[2] += b * alpha;
@@ -160,14 +161,16 @@
           }
           /* One colour throughout, whatever the colour: a navy mark is as much a
              single-colour mark as a black one. Nearly every pixel sits by the
-             average of them all, and the corners are clear (a plate is not a mark). */
+             average of them all, and the corners are clear. A plate is not a mark,
+             and a rounded one has clear corners too: it is told by how much of the
+             box it fills, more than a full circle does (0.79). */
           let near = 0;
           for (let at = 0; weight && at < data.length; at += 4) {
             if (data[at + 3] / 255 < .1) continue;
             if (Math.abs(data[at] - sum[0] / weight) + Math.abs(data[at + 1] - sum[1] / weight) + Math.abs(data[at + 2] - sum[2] / weight) < 72) near += data[at + 3] / 255;
           }
           const clear = [3, 63, 963, 1023].filter(at => data[at] < 26).length >= 3;
-          resolve(weight ? { luminance: total / weight, colourRatio: colourful / weight, flat: clear && near / weight > 0.9 } : null);
+          resolve(weight ? { luminance: total / weight, colourRatio: colourful / weight, flat: clear && covered / 256 < 0.86 && near / weight > 0.9 } : null);
         } catch { resolve(null); }
       };
       probe.onerror = () => resolve(null);
@@ -205,6 +208,11 @@
      `tone` on the bookmark overrides the decision entirely: 'original' leaves the
      art alone, 'light'/'dark' force a direction, anything else re-decides. */
   const COLOURFUL_ENOUGH = 0.25;
+  /* Inverting is only right for a picture with no colour in it at all: black
+     becomes white and nothing else moves. With any colour in it (a white
+     letter over an orange stroke) inversion would paint the orange blue, so
+     such a mark is drawn as its shape instead. */
+  const GREY_ENOUGH = 0.02;
 
   // Glyphs from the library, which carry the bookmark's own colour.
   const GENERIC_GLYPHS = new Set(['school', 'keyboard', 'terminal', 'globe', 'brain', 'tag', 'crosshair', 'flag', 'steering', 'bag']);
@@ -236,7 +244,14 @@
     if (!plate || !wrapper) return;
     const forced = wrapper.dataset.iconToneChoice;
     if (forced === 'original') { wearTone(wrapper, null); return; }
-    if (forced === 'light' || forced === 'dark') { wearTone(wrapper, forced); return; }
+    if (forced === 'light' || forced === 'dark') {
+      /* Asked for by hand, for a mark in one colour. A picture in several
+         colours has no light or dark version to give, and is left as it is. */
+      const art = wrapper.querySelector('img') ? await iconAppearance(wrapper) : null;
+      if (art && art.colourRatio > COLOURFUL_ENOUGH && !art.flat) wearTone(wrapper, null);
+      else wearTone(wrapper, forced, Boolean(art && art.colourRatio > GREY_ENOUGH));
+      return;
+    }
 
     // Always measure on a settled frame. Callers build tiles detached and attach
     // them afterwards — getComputedStyle reports nothing for a detached element —
@@ -275,7 +290,7 @@
        the tile's own light or dark instead, and goes back to its colour on a
        theme where that colour reads. */
     if (icon.colourRatio > COLOURFUL_ENOUGH && !icon.flat) { wearTone(wrapper, null); return; }
-    wearTone(wrapper, surface > 0.5 ? 'dark' : 'light', icon.colourRatio > COLOURFUL_ENOUGH);
+    wearTone(wrapper, surface > 0.5 ? 'dark' : 'light', icon.colourRatio > GREY_ENOUGH);
   }
 
   /* A tone is only correct for the surface it was measured against, so every

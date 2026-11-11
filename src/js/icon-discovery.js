@@ -7,8 +7,10 @@
    favicon only when nothing better exists.
 
    Nothing here runs until the person asks. A name goes to two public
-   catalogues: Iconify (the SVG Logos and Simple Icons sets, both CC0) and
-   Wikidata, whose entry for a brand names its icon on Wikimedia Commons. A
+   catalogues: Iconify (brand marks in colour from SVG Logos, selfh.st icons
+   and theSVG; in one colour from Simple Icons, CoreUI Brands and Font
+   Awesome) and Wikimedia, where Wikidata's entry for a brand names its icon
+   on Commons and Commons files a square mark as "<Brand> icon". A
    link is also read itself, once, for the icons its page declares; the
    browser asks leave for that site first. Whatever is chosen is kept as
    picture data inside the bookmark, so the tile never loads it again. */
@@ -158,7 +160,7 @@
        a vector first, then a large picture with a clear background;
        an opaque background, a wide wordmark and a tiny favicon last. */
   const SOURCE_SCORE = {
-    address: 40, "logos-icon": 14, logos: 12, "wikimedia-icon": 14, "wikimedia-logo": 6, "simple-icons": 6,
+    address: 40, "logos-icon": 14, logos: 12, selfhst: 13, thesvg: 10, "wikimedia-icon": 14, "wikimedia-logo": 6, "simple-icons": 6, "brand-glyph": 2,
     "site-icon": 10, "site-touch": 10, "site-manifest": 10, "site-mask": 4, "site-logo": 2, "site-inline": -4, "site-og": -30, "site-title": -60, browser: -10
   };
   const contrast = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
@@ -301,6 +303,19 @@
     return [...names].slice(0, 5).map(([slug, entry]) => ({ slug, ...entry }));
   }
 
+  /* The sets a brand is looked for in. Each names its marks its own way:
+     SVG Logos adds -icon to the square one, selfh.st keeps a -light and a
+     -dark drawing beside the plain one (for dark and light tiles). The ones
+     in one colour hand back paths only, drawn here in a colour of ours. */
+  const ICON_SETS = {
+    logos: { label: "SVG Logos", size: 256, stem: slug => slug.replace(/-icon$/, ""), from: slug => (slug.endsWith("-icon") ? "logos-icon" : "logos") },
+    selfhst: { label: "selfh.st icons", size: 512, stem: slug => slug.replace(/-(light|dark)$/, ""), from: () => "selfhst" },
+    "thesvg-color": { label: "theSVG", size: 256, stem: slug => slug, from: () => "thesvg" },
+    "simple-icons": { label: "Simple Icons", size: 24, mono: true, stem: slug => slug, from: () => "simple-icons" },
+    cib: { label: "CoreUI Brands", size: 32, mono: true, stem: slug => slug, from: () => "brand-glyph" },
+    "fa7-brands": { label: "Font Awesome", size: 512, mono: true, stem: slug => slug, from: () => "brand-glyph" }
+  };
+
   async function fromIconify(name, ctx, { host = "" } = {}) {
     const names = namesFor(name, host);
     if (!names.length) return [];
@@ -308,16 +323,16 @@
        what it answers only the brand itself is taken, or the brand under its
        maker's name (Gemini is filed as Google Gemini): "steam" must not
        bring Steam Deck or SteamDB. */
-    const answers = await Promise.all(names.map(entry => json(ctx, `${ICONIFY}/search?query=${encodeURIComponent(entry.text)}&prefixes=logos,simple-icons&limit=32`).catch(error => ({ error }))));
+    const answers = await Promise.all(names.map(entry => json(ctx, `${ICONIFY}/search?query=${encodeURIComponent(entry.text)}&prefixes=${Object.keys(ICON_SETS).join(",")}&limit=64`).catch(error => ({ error }))));
     if (answers.every(answer => answer.error)) throw answers[0].error;
-    const exact = { logos: [], "simple-icons": [] };
+    const exact = Object.fromEntries(Object.keys(ICON_SETS).map(prefix => [prefix, []]));
     const distances = new Map();
     answers.forEach((found, at) => {
       const { slug: wanted, distance } = names[at];
       for (const id of found?.icons || []) {
         const [prefix, slug] = String(id).split(":");
         if (!exact[prefix] || !/^[a-z0-9-]+$/.test(slug || "")) continue;
-        const stem = slugOf(prefix === "logos" ? slug.replace(/-icon$/, "") : slug);
+        const stem = slugOf(ICON_SETS[prefix].stem(slug));
         const family = stem !== wanted && FAMILIES.some(maker => stem === maker + wanted);
         if (stem !== wanted && !family) continue;
         const key = `${prefix}:${slug}`, far = distance + (family ? 4 : 0);
@@ -340,13 +355,13 @@
       for (const slug of slugs) {
         const icon = set?.icons?.[slug];
         if (!icon) continue;
-        const width = icon.width || set.width || (prefix === "logos" ? 256 : 24), height = icon.height || set.height || (prefix === "logos" ? 256 : 24);
+        const kind = ICON_SETS[prefix];
+        const width = icon.width || set.width || kind.size, height = icon.height || set.height || kind.size;
         const distance = distances.get(`${prefix}:${slug}`) || 0;
         try {
-          out.push(prefix === "logos"
-            ? { id: `logos:${slug}`, src: markupDataUrl({ ...icon, width, height }), from: slug.endsWith("-icon") ? "logos-icon" : "logos", label: "SVG Logos", vector: true, width, height, distance }
-            // In the brand's colour; a black or grey one is re-toned against its tile, in either direction.
-            : { id: `simple-icons:${slug}`, src: vectorDataUrl({ ...icon, width, height }, colours.get(slug)), from: "simple-icons", label: "Simple Icons", vector: true, width, height, distance });
+          // One colour: the brand's own where Simple Icons knows it; a black or grey one is re-toned against its tile, in either direction.
+          const src = kind.mono ? vectorDataUrl({ ...icon, width, height }, colours.get(slug) || "#10151f") : markupDataUrl({ ...icon, width, height });
+          out.push({ id: `${prefix}:${slug}`, src, from: kind.from(slug), label: kind.label, vector: true, width, height, distance });
         } catch { /* a mark this code will not embed */ }
       }
     }
@@ -402,6 +417,28 @@
       const image = page?.imageinfo?.[0];
       if (!image?.url || !/^https:\/\/upload\.wikimedia\.org\//.test(image.url)) continue;
       out.push({ id: `wikimedia:${file}`, url: image.url, from, label: "Wikimedia Commons", vector: image.mime === "image/svg+xml", width: image.width, height: image.height, distance });
+    }
+    return out;
+  }
+
+  /* Commons files a brand's square mark as "<Brand> icon.svg" whether or not
+     Wikidata points at it ("Amazon icon.svg", "Twitch icon 2012.svg"). Only a
+     file named exactly so is taken, and it stays behind a mark found for the
+     brand itself: a name alone cannot tell two brands apart. */
+  async function fromCommons(name, ctx) {
+    const term = String(name || "").trim().replace(/["\\]/g, "").slice(0, 60);
+    if (term.length < 3) return [];
+    const search = `intitle:"${term}" intitle:icon filemime:image/svg+xml`;
+    const found = await json(ctx, `${COMMONS}?action=query&generator=search&gsrnamespace=6&gsrlimit=12&gsrsearch=${encodeURIComponent(search)}&prop=imageinfo&iiprop=url%7Csize%7Cmime&format=json&origin=*`);
+    const wanted = slugOf(term);
+    const out = [];
+    for (const page of Object.values(found.query?.pages || {}).sort((a, b) => (a.index || 0) - (b.index || 0))) {
+      const file = String(page.title || "").replace(/^File:/, "");
+      const named = /^(.+?)[ _-]+(?:app[ _-]+)?icon(?:[ _-]+\d{4})?\.svg$/i.exec(file);
+      const image = page.imageinfo?.[0];
+      if (!named || slugOf(named[1]) !== wanted || image?.mime !== "image/svg+xml" || !/^https:\/\/upload\.wikimedia\.org\//.test(image.url || "")) continue;
+      out.push({ id: `wikimedia:${file}`, url: image.url, from: "wikimedia-icon", label: "Wikimedia Commons", vector: true, width: image.width, height: image.height, distance: 26 });
+      if (out.length === 2) break;
     }
     return out;
   }
@@ -691,7 +728,8 @@
       const near = query.kind === "site" ? query.host : (site?.host || host);
       const catalogues = [
         gather(fromIconify(query.name, ctx, { host: near })),
-        gather(fromWikimedia(query.name, ctx, query.kind === "site" ? { host: query.host, strict: true } : { host: near }))
+        gather(fromWikimedia(query.name, ctx, query.kind === "site" ? { host: query.host, strict: true } : { host: near })),
+        gather(fromCommons(query.name, ctx))
       ];
       if (!site) { await Promise.all(catalogues); return; }
       const read = () => gather(fromSite(site, ctx));
@@ -715,7 +753,7 @@
     return { query, choices, offline: !choices.length && ctx.asked > 0 && ctx.failed >= ctx.asked, declined, late };
   }
 
-  const api = { find, parseQuery, originsFor, brandFromHost, namesFor, score, rank, siteReferences, measure, vectorDataUrl, markupDataUrl, titleFromSlug, fromIconify, fromWikimedia, fromSite, context, GOOD, BUDGET_MS };
+  const api = { find, parseQuery, originsFor, brandFromHost, namesFor, score, rank, siteReferences, measure, vectorDataUrl, markupDataUrl, titleFromSlug, fromIconify, fromWikimedia, fromCommons, fromSite, context, GOOD, BUDGET_MS };
   if (typeof window !== "undefined") window.NordlysIconDiscovery = api;
   if (typeof module === "object" && module.exports) module.exports = api;
 })();

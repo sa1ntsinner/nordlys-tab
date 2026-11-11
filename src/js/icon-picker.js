@@ -11,7 +11,9 @@
 (function () {
   "use strict";
 
-  const ICON_FIELDS = ["customImg", "iconSource", "icon", "monogram", "iconUrl"];
+  /* What an icon is on a bookmark. The tone is part of it: "always light" was
+     said of one picture, and said of the next one it would repaint it. */
+  const ICON_FIELDS = ["customImg", "iconSource", "icon", "monogram", "iconUrl", "tone"];
   const FILE_LIMIT = 5 * 1024 * 1024;
   const EXPORT = 384;
 
@@ -280,7 +282,7 @@
         for (const field of ICON_FIELDS) { if (this.before[field] === undefined) delete link[field]; else link[field] = this.before[field]; }
         this.source = null;
       } else if (choice.letters) {
-        for (const field of ["customImg", "iconSource", "icon"]) delete link[field];
+        for (const field of ["customImg", "iconSource", "icon", "tone"]) delete link[field];
         link.monogram = choice.letters;
         addresses?.leave(link);
         this.source = null;
@@ -289,12 +291,15 @@
         try { kept = await this.stored(choice); } catch { this.say(say("picker.unreadable", "That picture could not be read.")); return; }
         link.customImg = kept;
         link.iconSource = String(choice.id || choice.from || "").slice(0, 120);
-        delete link.icon; delete link.monogram;
+        delete link.icon; delete link.monogram; delete link.tone;
         if (choice.address && addresses?.isAddress(choice.address)) addresses.remember(link, choice.address); else addresses?.leave(link);
         // Adjust starts from the picture as it was found, not from the trimmed copy.
         this.source = choice.src;
       }
       this.current = choice;
+      // The bookmark's own form may be open under this dialog, and saves what its field says.
+      const toneField = document.getElementById("quick-tone-select");
+      if (toneField) toneField.value = link.tone || "auto";
       this.changed();
       this.paint();
     }

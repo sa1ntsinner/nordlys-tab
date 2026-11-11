@@ -13,8 +13,15 @@ Chrome Web Store's rule that they only ever go up.
 
 ### Changed
 
+- Find looks for a brand in more places, so it comes back with a sharp mark where it used to settle for a small site icon (Amazon, for one). Four more sets are asked on Iconify (selfh.st icons and theSVG in colour, CoreUI Brands and Font Awesome in one colour), and Wikimedia Commons is asked for the file named after the brand and "icon". The same services as before are contacted, no new ones.
 - Safari no longer offers sync through the browser. Safari keeps that storage on the device, so the switch did nothing there; a setup that had it on is switched off, and nothing is lost.
 - A device's name says Safari, Firefox or Helium where it said Chrome.
+
+### Fixed
+
+- A picture in several colours is never repainted in other colours. An "Icon tone" of Light or Dark, set by hand for one icon, stayed on the bookmark when another icon was chosen and inverted it: orange became blue, white became black. Choosing an icon now clears the tone, and a tone only ever applies to a mark of one colour.
+- A mark that is white or black with a little colour in it (a white letter over an orange stroke) is drawn as its shape when it has to be re-toned, where it was inverted into other colours.
+- An app-style icon, a rounded plate with a sign on it, is no longer taken for a one-colour mark and flattened into a blank shape on a tile where it is hard to see.
 
 ## [2.6.1] — 2026-11-10
 
