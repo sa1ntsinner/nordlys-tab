@@ -154,7 +154,10 @@ test('the order is changed by dragging a task, and by Alt and an arrow', async (
 
 test('Russian dates are understood in the Russian page', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
-  await page.evaluate(() => window.I18N.setLanguage('ru'));
+  /* Not awaited through page.evaluate: Russian is fetched as a script, and
+     handing that promise back once failed on CI as garbage collected (see
+     one-page-fit). The field by its Russian name is what is waited for. */
+  await page.evaluate(() => { window.I18N.setLanguage('ru'); });
   const input = tasks(page).getByRole('textbox', { name: 'Добавить задачу' });
   await input.fill('Позвонить маме завтра');
   await input.press('Enter');

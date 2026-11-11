@@ -378,7 +378,12 @@ test.describe('the switch in Settings', () => {
     const zoom = await page.evaluate(() => window.Nordlys.pageFit.state.zoom);
     expect(zoom).toBeLessThan(1);
     await expect(page.locator('#page-fit-state')).toHaveText(`Shown at ${Math.round(zoom * 100)}% to fit this window.`);
-    await page.evaluate(() => window.I18N.setLanguage('de'));
+    /* German is fetched as a script and setLanguage answers with a promise.
+       Handing that promise back through page.evaluate failed once on CI as
+       "Resulting promise was garbage collected"; the lines below wait for the
+       German words themselves, which is what this asks about, so nothing waits
+       on the promise. */
+    await page.evaluate(() => { window.I18N.setLanguage('de'); });
     await expect(page.locator('#page-fit-state')).toHaveText(`Auf ${Math.round(zoom * 100)} % verkleinert, damit alles in dieses Fenster passt.`);
     await expect(page.locator('#page-fit-label')).toHaveText('Alles auf einer Seite');
   });
