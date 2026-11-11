@@ -16,7 +16,7 @@ Nordlys replaces the browser's new tab page: the person's favourite sites in fol
 ## Positioning
 
 - The skies are drawn live in the browser: nine scenes of its own, among them the real stars over the person and a black hole drawn from the way light bends near one. Photographs in the colours of the mood, a picture of the day, or the person's own picture or video, when they want one.
-- Nothing leaves the device: there is no Nordlys account and nothing is tracked. Sync, when turned on, goes through the browser's own sync.
+- Nothing leaves the device: there is no Nordlys account and nothing is tracked. Sync, when turned on, goes through the browser's own sync, or with a code through a relay that holds the setup locked and cannot read it.
 - It is free and open source, and one extension covers Chrome, Edge, Firefox and Safari.
 
 ## Operating Context
@@ -26,13 +26,13 @@ Nordlys replaces the browser's new tab page: the person's favourite sites in fol
 
 ## Capabilities and Constraints
 
-What ships in 2.6.1:
+What ships in 2.6.2:
 - Favourite sites in folders; move folders, change tile size and spacing, tidy them in one click, undo. Save any page from the toolbar button or the right-click menu, or drop a link onto the board.
 - Page layouts: the board, Columns, Dock, Today (the dashboard beside the folders), Prompt (only the search box) and Poster (a large clock).
 - Skies in kinds: the nine Nordlys skies drawn live, photographs by subject from Wikimedia Commons' featured pictures in the colours of the mood or their own, a picture of the day (Wikimedia Commons, the Met, NASA EPIC), or your own picture, looping video or colour. Shuffle, saved skies, a sky that changes by itself, colours from the picture, a night light. 21 colour themes (11 dark, 10 light, including pure black for OLED) and eleven colour moods.
 - The search box uses the browser's search engine, finds your sites, open tabs, the browser's bookmarks and history and places in Settings, answers units, times and money, takes your own keywords (also `nl` in the address bar), adds a task after `+`, takes commands after `>`, and offers what you usually open at this hour.
-- An icon found from a name or a link (Iconify's SVG Logos and Simple Icons, Wikidata's icon for the brand, the site's own icons), a file, or letters; moved and scaled on the tile.
-- Spaces such as Work and Home, each with its own folders, look and keywords, opening by themselves at set hours if wanted; optional sync through the browser's own sync.
+- An icon found from a name or a link (brand sets on Iconify, Wikidata's and Commons' icon for the brand, the site's own icons), a file, or letters; moved and scaled on the tile.
+- Spaces such as Work and Home, each with its own folders, look and keywords, opening by themselves at set hours if wanted; optional sync through the browser's own sync or, with a code, between any browsers.
 - A dashboard when wanted: tasks with dates and steps, a focus timer and a full-page focus mode with sounds and sites kept shut while focusing, notes, weather, world clocks, a countdown, a tab stash, feeds, a value from any JSON address, tabs open twice or idle, recently closed tabs; habits and a line for the day under More cards. Cards can be dragged and stretched.
 - Tasks from Todoist and GitHub, and events from any number of calendar links with a Join button for meetings, read straight from the browser with a token that stays on the device.
 - A bookmark can show whether its site is up; Check the bookmarks finds the ones there twice and the pages that are gone.
