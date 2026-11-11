@@ -93,6 +93,12 @@ export default [
     }
   },
   {
+    // The page inside the Mac app's window: the app calls start and show.
+    files: ["tools/safari/app/**/*.js"],
+    languageOptions: { sourceType: "script", globals: { document: "readonly", webkit: "readonly" } },
+    rules: { "no-unused-vars": ["error", { varsIgnorePattern: "^(start|show)$" }] }
+  },
+  {
     // The sync relay: a Cloudflare Worker, written as modules.
     files: ["relay/src/**/*.js"],
     languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { ...globals.serviceworker } },
