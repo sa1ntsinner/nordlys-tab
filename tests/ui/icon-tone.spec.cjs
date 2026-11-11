@@ -8,7 +8,7 @@ const link = (page) => page.evaluate(() => window.Nordlys.config.groups[0].links
 
 /* The first tile wearing a picture drawn here, and what the tile then says of it. */
 async function wear(page, draw, tone) {
-  return page.evaluate(async ([source, tone]) => {
+  await page.evaluate(async ([source, tone]) => {
     const canvas = document.createElement('canvas'); canvas.width = canvas.height = 64;
     const pen = canvas.getContext('2d');
     new Function('pen', source)(pen);
@@ -19,9 +19,16 @@ async function wear(page, draw, tone) {
     window.Nordlys.grid.render();
     await new Promise(resolve => setTimeout(resolve, 60));
     await window.NordlysIcons.refreshIconContrast();
+  }, [draw, tone]);
+  /* The filter arrives through a short transition, so it is read until it
+     rests: halfway there it is neither the old value nor the new one. */
+  const read = () => page.evaluate(() => {
     const icon = document.querySelector('.tile .nl-icon');
     return { tone: icon.dataset.iconTone || null, flat: 'iconFlat' in icon.dataset, filter: getComputedStyle(icon.querySelector('img')).filter };
-  }, [draw, tone]);
+  });
+  let last = await read();
+  await expect.poll(async () => { const now = await read(); const still = JSON.stringify(now) === JSON.stringify(last); last = now; return still; }, { intervals: [250, 250, 400, 400, 600] }).toBe(true);
+  return last;
 }
 const ORANGE_PLATE = "pen.fillStyle = 'rgb(236,110,45)'; pen.beginPath(); pen.roundRect(1, 1, 62, 62, 12); pen.fill(); pen.fillStyle = '#fff'; pen.fillRect(14, 34, 36, 6);";
 const NAVY_PLATE = "pen.fillStyle = 'rgb(8,16,56)'; pen.beginPath(); pen.roundRect(1, 1, 62, 62, 12); pen.fill(); pen.fillStyle = 'rgb(20,34,90)'; pen.fillRect(14, 34, 36, 6);";
