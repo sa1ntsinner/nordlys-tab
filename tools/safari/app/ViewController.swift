@@ -34,7 +34,7 @@ class ViewController: NSViewController, WKNavigationDelegate, WKScriptMessageHan
                 ? NSColor(srgbRed: 0.106, green: 0.110, blue: 0.118, alpha: 1)
                 : NSColor(srgbRed: 0.965, green: 0.965, blue: 0.961, alpha: 1)
         }
-        window.setContentSize(NSSize(width: 480, height: 572))
+        window.setContentSize(NSSize(width: 480, height: 624))
         window.center()
     }
 
