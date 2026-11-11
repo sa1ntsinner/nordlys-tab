@@ -268,7 +268,13 @@
       this.root.classList.toggle("is-running", t.running);
       this.root.classList.toggle("is-rest", !countup && t.phase === "rest");
       this.status.textContent = t.running ? (t.phase === "rest" && !countup ? say("focus.onBreak", "On a break") : say("focus.focusing", "Focusing")) : say("focus.ready", "Ready when you are");
-      this.go.replaceChildren(svg(t.running ? ICON.pause : ICON.play));
+      /* The icon is drawn again only when it changes. Drawn every second, it
+         was taken out from under a press that spanned the redraw, and the
+         browser then sends no click: Start did nothing. */
+      if (this.go.dataset.icon !== String(t.running)) {
+        this.go.dataset.icon = String(t.running);
+        this.go.replaceChildren(svg(t.running ? ICON.pause : ICON.play));
+      }
       this.go.setAttribute("aria-label", t.running ? say("dash.timerPause", "Pause") : say("dash.timerStart", "Start"));
       this.moreButton.hidden = countup;
       this.skipButton.hidden = countup;
@@ -364,7 +370,10 @@
       if (!this.pip || this.pip.closed) return;
       this.pipFace.textContent = this.face.textContent;
       this.pipPhase.textContent = this.phaseText.textContent;
-      this.pipGo.replaceChildren(svg(this.timer.running ? ICON.pause : ICON.play));
+      if (this.pipGo.dataset.icon !== String(this.timer.running)) {
+        this.pipGo.dataset.icon = String(this.timer.running);
+        this.pipGo.replaceChildren(svg(this.timer.running ? ICON.pause : ICON.play));
+      }
       this.pipGo.setAttribute("aria-label", this.go.getAttribute("aria-label"));
     }
   }

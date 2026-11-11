@@ -778,7 +778,11 @@
           phase.textContent = t.phase === "focus" ? say("dash.timerFocus", "Focus") : say("dash.timerRest", "Break");
           card.root.classList.toggle("is-running", t.running);
           card.root.classList.toggle("is-rest", t.phase === "rest");
-          go.replaceChildren(icon(t.running ? ICONS.pause : ICONS.play));
+          // Only when it changes: a press that spans the tick's redraw otherwise loses its click.
+          if (go.dataset.icon !== String(t.running)) {
+            go.dataset.icon = String(t.running);
+            go.replaceChildren(icon(t.running ? ICONS.pause : ICONS.play));
+          }
           go.setAttribute("aria-label", t.running ? say("dash.timerPause", "Pause") : say("dash.timerStart", "Start"));
           const done = K.timer.sessions(t, card.now());
           dots.replaceChildren(...Array.from({ length: Math.max(4, done) }, (x, i) => el("i", { class: i < done ? "on" : "" })));
