@@ -841,6 +841,7 @@
   "sync.whyOther": "La synchro n’a pas répondu. Nordlys réessaie quand vous ouvrez un nouvel onglet ou faites une modification, et vos modifications sont enregistrées ici.",
   "sync.whyLarge": "Un dossier est trop grand pour la synchro. Gardez-le sur cet appareil seulement, ou divisez-le. Vos modifications sont enregistrées ici.",
   "sync.whyDamaged": "Ce qu’un autre appareil a envoyé n’a pas pu être lu, il n’a donc pas été utilisé. Votre tableau ici est resté tel quel.",
+  "sync.whySkipped": "Ce qu’un de vos appareils a envoyé n’a pas pu être lu, il a donc été laissé de côté. Tout le reste est synchronisé.",
   "sync.whyFull": "La synchro est pleine. Les favoris supprimés libèrent leur place 30 jours après. D’ici là, gardez un gros dossier sur cet appareil seulement, prenez des icônes plus petites ou oubliez un appareil que vous n’utilisez plus. Vos modifications sont enregistrées ici.",
   "sync.whyDevices": "Ce code compte déjà 12 appareils, le maximum. Oubliez-en un que vous n’utilisez plus dans la liste Appareils, et cet appareil rejoindra les autres au prochain essai. Vos modifications sont enregistrées ici.",
   "sync.whyBiggest": "Le plus gros dossier est « {folder} ».",

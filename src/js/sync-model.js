@@ -325,33 +325,51 @@
     if (field === "cols" && !(Number.isInteger(value) && value >= 1 && value <= 8)) throw new Error("Invalid column count in sync data.");
   }
 
-  /* The whole batch is checked before anything changes, so damaged data can
-     never leave a board half merged. Chunks of other formats are left alone. */
-  function validateChunks(entries) {
-    const accepted = [];
-    for (const [key, chunk] of Object.entries(entries || {})) {
-      if (!key.startsWith(PREFIX)) continue;
-      if (!chunk || typeof chunk !== "object" || chunk.v !== VERSION || !validId(chunk.a) || !Number.isInteger(chunk.i) || chunk.i < 0
-        || key !== `${PREFIX}${chunk.a}.${chunk.i}` || !chunk.e || typeof chunk.e !== "object" || Array.isArray(chunk.e)) {
-        throw new Error("Damaged sync data. Your board here was kept.");
-      }
-      for (const [entity, fields] of Object.entries(chunk.e)) {
-        if (!validEntity(entity) || !fields || typeof fields !== "object" || Array.isArray(fields)) throw new Error("Invalid sync record. Your board here was kept.");
-        for (const [field, register] of Object.entries(fields)) {
-          if (!safeName(field) || !Array.isArray(register) || register.length < 1 || register.length > 2
-            || !Number.isSafeInteger(register[0]) || register[0] < 1 || register[0] > Number.MAX_SAFE_INTEGER - 1e6) {
-            throw new Error("Invalid sync field. Your board here was kept.");
-          }
-          if (register.length === 2) checkValue(field, register[1]);
-        }
-      }
-      accepted.push(chunk);
+  function checkChunk(key, chunk) {
+    if (!chunk || typeof chunk !== "object" || chunk.v !== VERSION || !validId(chunk.a) || !Number.isInteger(chunk.i) || chunk.i < 0
+      || key !== `${PREFIX}${chunk.a}.${chunk.i}` || !chunk.e || typeof chunk.e !== "object" || Array.isArray(chunk.e)) {
+      throw new Error("Damaged sync data. Your board here was kept.");
     }
-    return accepted;
+    for (const [entity, fields] of Object.entries(chunk.e)) {
+      if (!validEntity(entity) || !fields || typeof fields !== "object" || Array.isArray(fields)) throw new Error("Invalid sync record. Your board here was kept.");
+      for (const [field, register] of Object.entries(fields)) {
+        if (!safeName(field) || !Array.isArray(register) || register.length < 1 || register.length > 2
+          || !Number.isSafeInteger(register[0]) || register[0] < 1 || register[0] > Number.MAX_SAFE_INTEGER - 1e6) {
+          throw new Error("Invalid sync field. Your board here was kept.");
+        }
+        if (register.length === 2) checkValue(field, register[1]);
+      }
+    }
   }
 
-  function merge(state, entries) {
-    const chunks = validateChunks(entries);
+  /* Each device's chunks are checked before anything changes, and a device
+     with one bad chunk is left out whole, so damaged data never leaves a
+     board half merged. One bad device used to stop every other device's
+     changes from coming in. Chunks of other formats are left alone.
+     Answers the chunks to merge and the devices left out. */
+  function validateChunks(entries) {
+    const byDevice = new Map();
+    for (const [key, chunk] of Object.entries(entries || {})) {
+      if (!key.startsWith(PREFIX)) continue;
+      const rest = key.slice(PREFIX.length);
+      const cut = rest.lastIndexOf(".");
+      const device = cut < 0 ? rest : rest.slice(0, cut);
+      if (!byDevice.has(device)) byDevice.set(device, []);
+      byDevice.get(device).push([key, chunk]);
+    }
+    const chunks = [];
+    const refused = [];
+    for (const [device, list] of byDevice) {
+      try { for (const [key, chunk] of list) checkChunk(key, chunk); } catch (error) { refused.push(device); continue; }
+      chunks.push(...list.map(([, chunk]) => chunk));
+    }
+    return { chunks, refused };
+  }
+
+  /* report, when given, is told which devices were left out (refused). */
+  function merge(state, entries, report = null) {
+    const { chunks, refused } = validateChunks(entries);
+    if (report) report.refused = refused;
     let changed = false;
     for (const chunk of chunks) {
       if (chunk.a === state.device) continue;

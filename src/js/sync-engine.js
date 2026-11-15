@@ -196,10 +196,11 @@
         const has = Object.keys(remote).some((key) => key.startsWith(M().PREFIX));
         this.state.model = M().create(this.state.device.id);
         this.state.overrides = {};
+        const report = {};
         try {
-          if (has && mode === "use-sync") M().merge(this.state.model, remote);
-          else if (has && mode === "replace-sync") { M().merge(this.state.model, remote); M().update(this.state.model, this.prepare(snapshot)); }
-          else { M().update(this.state.model, this.prepare(snapshot)); if (has) M().merge(this.state.model, remote); }
+          if (has && mode === "use-sync") M().merge(this.state.model, remote, report);
+          else if (has && mode === "replace-sync") { M().merge(this.state.model, remote, report); M().update(this.state.model, this.prepare(snapshot)); }
+          else { M().update(this.state.model, this.prepare(snapshot)); if (has) M().merge(this.state.model, remote, report); }
         } catch (error) {
           this.state.model = M().create(this.state.device.id);
           M().update(this.state.model, this.prepare(snapshot));
@@ -209,6 +210,7 @@
         }
         this.state.enabled = true;
         await this.send();
+        await this.noteRefused(report.refused);
         return this.compose().view;
       });
     }
@@ -262,9 +264,10 @@
           await this.save();
           return null;
         }
+        const report = {};
         try {
           const draft = clone(this.state.model);
-          changed = M().merge(draft, remote);
+          changed = M().merge(draft, remote, report);
           if (changed) this.state.model = draft;
         } catch (error) {
           this.fail("error", error, "damaged");
@@ -274,6 +277,7 @@
         if (!changed) {
           // Reached again after a failure: what this device holds is sent, and the status says so.
           if (this.state.status.state === "error") await this.send();
+          await this.noteRefused(report.refused);
           return null;
         }
         const { view } = this.compose();
@@ -281,9 +285,21 @@
         /* What came in can make this device's own items smaller (a deletion
            from elsewhere): they are sent again, so the space is freed. */
         await this.send();
+        await this.noteRefused(report.refused);
         // A device saying hello is not a new board.
         return JSON.stringify(view) === before ? null : view;
       });
+    }
+
+    /* A device whose items could not be read was left out, and the rest came
+       in: synced, with a note saying so, until that device is read again. */
+    async noteRefused(refused = []) {
+      const status = this.state.status;
+      if (status.state !== "ready") return;
+      if (refused.length) this.state.status = { ...status, reason: "skipped", error: `Could not read what ${refused.length} device(s) sent.` };
+      else if (status.reason === "skipped") this.state.status = { ...status, reason: null, error: null };
+      else return;
+      await this.save();
     }
 
     override(entity, fields) {

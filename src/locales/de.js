@@ -841,6 +841,7 @@
   "sync.whyOther": "Der Sync hat nicht geantwortet. Nordlys versucht es wieder, wenn du einen neuen Tab öffnest oder etwas änderst, und deine Änderungen sind hier gespeichert.",
   "sync.whyLarge": "Ein Ordner ist zu groß für den Sync. Behalte ihn nur auf diesem Gerät oder teile ihn auf. Deine Änderungen sind hier gespeichert.",
   "sync.whyDamaged": "Was ein anderes Gerät geschickt hat, ließ sich nicht lesen und wurde nicht übernommen. Deine Seite hier bleibt, wie sie war.",
+  "sync.whySkipped": "Was eines deiner Geräte geschickt hat, ließ sich nicht lesen und wurde ausgelassen. Alles andere ist synchronisiert.",
   "sync.whyFull": "Der Sync ist voll. Gelöschte Lesezeichen geben ihren Platz 30 Tage danach frei. Bis dahin: einen großen Ordner nur auf diesem Gerät behalten, kleinere Symbole nehmen oder ein Gerät vergessen, das du nicht mehr nutzt. Deine Änderungen sind hier gespeichert.",
   "sync.whyDevices": "Mit diesem Code synchronisieren schon 12 Geräte, mehr geht nicht. Vergiss in der Liste „Geräte“ eines, das du nicht mehr nutzt, dann kommt dieses Gerät beim nächsten Versuch dazu. Deine Änderungen sind hier gespeichert.",
   "sync.whyBiggest": "Der größte Ordner ist „{folder}“.",

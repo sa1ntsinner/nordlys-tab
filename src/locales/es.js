@@ -841,6 +841,7 @@
   "sync.whyOther": "La sincronización no respondió. Nordlys lo intenta de nuevo cuando abres una pestaña nueva o haces un cambio, y tus cambios están guardados aquí.",
   "sync.whyLarge": "Una carpeta es demasiado grande para sincronizar. Déjala solo en este dispositivo o divídela. Tus cambios están guardados aquí.",
   "sync.whyDamaged": "Lo que envió otro dispositivo no se pudo leer, así que no se usó. Tu tablero aquí se mantuvo.",
+  "sync.whySkipped": "Lo que envió uno de tus dispositivos no se pudo leer, así que se dejó fuera. Todo lo demás está sincronizado.",
   "sync.whyFull": "La sincronización está llena. Los marcadores borrados liberan su espacio 30 días después. Mientras tanto, deja una carpeta grande solo en este dispositivo, usa iconos más pequeños u olvida un dispositivo que ya no uses. Tus cambios están guardados aquí.",
   "sync.whyDevices": "Este código ya tiene 12 dispositivos, el máximo posible. Olvida uno que ya no uses en la lista Dispositivos y este se unirá en el próximo intento. Tus cambios están guardados aquí.",
   "sync.whyBiggest": "La carpeta más grande es «{folder}».",

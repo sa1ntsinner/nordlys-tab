@@ -841,6 +841,7 @@
   "sync.whyOther": "Eşitleme yanıt vermedi. Nordlys yeni bir sekme açtığınızda ya da bir değişiklik yaptığınızda yeniden dener; değişiklikleriniz burada kayıtlı.",
   "sync.whyLarge": "Bir klasör eşitlemek için fazla büyük. Yalnızca bu cihazda tutun ya da bölün. Değişiklikleriniz burada kayıtlı.",
   "sync.whyDamaged": "Başka bir cihazın gönderdiği veri okunamadı, bu yüzden kullanılmadı. Buradaki panonuz olduğu gibi kaldı.",
+  "sync.whySkipped": "Cihazlarınızdan birinin gönderdiği veri okunamadı, bu yüzden dışarıda bırakıldı. Geri kalan her şey eşitlendi.",
   "sync.whyFull": "Eşitleme dolu. Silinen yer imleri yerlerini 30 gün sonra boşaltır. O zamana kadar büyük bir klasörü yalnızca bu cihazda tutun, daha küçük simgeler kullanın ya da artık kullanmadığınız bir cihazı unutun. Değişiklikleriniz burada kayıtlı.",
   "sync.whyDevices": "Bu kodda zaten en fazla olan 12 cihaz var. Cihazlar listesinden artık kullanmadığınız birini unutun; bu cihaz bir sonraki denemede katılır. Değişiklikleriniz burada kayıtlı.",
   "sync.whyBiggest": "En büyük klasör: “{folder}”.",

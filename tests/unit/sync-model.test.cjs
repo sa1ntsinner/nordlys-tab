@@ -153,7 +153,9 @@ test('names in Russian or Japanese still pack into chunks under 8 KB', () => {
   }
 });
 
-test('damaged or foreign chunks are refused as a whole and change nothing', () => {
+/* A device is merged whole or not at all. One bad chunk used to refuse the
+   whole batch, so every pull failed and no device's changes came in. */
+test('a device with a damaged chunk is left out whole; the other devices still merge', () => {
   const snap = snapshot([profile('work', 'Work', [board('Daily', ['Gmail'])])]);
   M.normalizeSnapshot(snap);
   const a = device('a', snap);
@@ -161,8 +163,17 @@ test('damaged or foreign chunks are refused as a whole and change nothing', () =
   const good = M.exportChunks(device('b', snap));
   const [key] = Object.keys(good);
   const bad = { ...good, [key]: { ...good[key], e: { 'l/x': { url: [5, 'javascript:alert(1)'] } } } };
-  assert.throws(() => M.merge(a, bad), /unsafe|invalid|damaged/i);
+  const report = {};
+  assert.strictEqual(M.merge(a, bad, report), false);
+  assert.deepStrictEqual(report.refused, ['b']);
   assert.strictEqual(JSON.stringify(a.records), before);
+  // A second chunk of the bad device, itself fine, is left out with it; another device comes in.
+  const extra = M.exportChunks(device('c', snapshot([profile('home', 'Home', [board('Fun', ['Games'])])])));
+  const both = { ...bad, [`nl.sync.2.b.9`]: { v: 2, a: 'b', i: 9, e: { 'l/y': { name: [7, 'Fine'] } } }, ...extra };
+  assert.strictEqual(M.merge(a, both, report), true);
+  assert.deepStrictEqual(report.refused, ['b']);
+  assert.ok(!a.records['l/y'], 'nothing of the bad device was taken');
+  assert.ok(M.materialize(a).profiles.some(p => p.name === 'Home'), 'the good device came in');
   assert.strictEqual(M.merge(a, { 'nl.sync.1.old.c': { v: 1 }, unrelated: 1 }), false, 'other formats are ignored');
 });
 

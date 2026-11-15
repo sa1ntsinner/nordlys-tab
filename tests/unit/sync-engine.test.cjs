@@ -139,9 +139,21 @@ test('damaged data in sync is skipped and the board here is kept', async () => {
   await a.enable({ snapshot: snapshot([folder('g1', 'Daily', [['l1', 'Gmail']])]), mode: 'merge' });
   await sync.set({ 'nl.sync.2.intruder.0': { v: 2, a: 'intruder', i: 0, e: { 'l/l1': { url: [99, 'javascript:alert(1)'] } } } });
   assert.strictEqual(await a.pull(), null);
-  const status = await a.status();
-  assert.strictEqual(status.state, 'error');
+  let status = await a.status();
+  assert.deepStrictEqual([status.state, status.reason], ['ready', 'skipped'], 'synced, with a note that one device was left out');
   assert.deepStrictEqual(names(await a.view()), ['Gmail']);
+  // Another device's edit still comes in beside it.
+  const b = await engine(sync, 'B');
+  const onB = await b.enable({ snapshot: snapshot([]), mode: 'use-sync' });
+  onB.profiles[0].config.groups[0].links.push({ id: 'l2', name: 'Drive', url: 'https://drive.example/' });
+  await b.push(onB);
+  assert.deepStrictEqual(names(await a.pull()), ['Gmail', 'Drive']);
+  assert.strictEqual((await a.status()).reason, 'skipped');
+  // Once that device is gone, the note goes too.
+  await sync.remove('nl.sync.2.intruder.0');
+  await a.pull();
+  status = await a.status();
+  assert.deepStrictEqual([status.state, status.reason], ['ready', null]);
 });
 
 test('turning sync on keeps a backup of the board as it was', async () => {
