@@ -180,6 +180,25 @@ test('nothing changed is answered without the pieces, and the browser way still 
   assert.strictEqual(w.store.rows.size, 1);
 });
 
+test('the relay reads the pieces only to send them: not to say nothing changed, not to count devices', async () => {
+  const w = await world();
+  const room = 'c'.repeat(32);
+  let read = 0;
+  const store = { ...w.store, list: async r => { read++; return w.store.list(r); } };
+  assert.strictEqual((await w.handle(new Request(`https://relay.test/v1/r/${room}/${'d'.repeat(32)}`, { method: 'PUT', body: 'QUJD' }), store)).status, 204);
+  assert.strictEqual((await w.handle(new Request(`https://relay.test/v1/r/${room}/${'e'.repeat(32)}`, { method: 'PUT', body: 'QUJE' }), store)).status, 204);
+  assert.strictEqual(read, 0);
+  const first = await w.handle(new Request(`https://relay.test/v1/r/${room}`), store);
+  assert.deepStrictEqual(Object.keys((await first.json()).items).length, 2);
+  assert.strictEqual(read, 1);
+  const again = await w.handle(new Request(`https://relay.test/v1/r/${room}`, { headers: { 'If-None-Match': first.headers.get('ETag') } }), store);
+  assert.deepStrictEqual([again.status, again.headers.get('ETag'), read], [304, first.headers.get('ETag'), 1]);
+  await w.handle(new Request(`https://relay.test/v1/r/${room}/${'d'.repeat(32)}`, { method: 'PUT', body: 'QUJG' }), store);
+  const changed = await w.handle(new Request(`https://relay.test/v1/r/${room}`, { headers: { 'If-None-Match': first.headers.get('ETag') } }), store);
+  assert.strictEqual(changed.status, 200);
+  assert.notStrictEqual(changed.headers.get('ETag'), first.headers.get('ETag'));
+});
+
 test('the relay refuses what is not a piece, a thirteenth device, and names that are not names', async () => {
   const w = await world();
   const room = 'a'.repeat(32);

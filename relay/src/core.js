@@ -67,10 +67,13 @@ export async function handle(request, store, now = Date.now(), allow = null) {
   const [, room, device] = match;
   if (!NAME.test(room) || (device !== undefined && !NAME.test(device))) return answer(400, { error: "bad name" });
 
+  /* Who wrote and when is enough to answer "nothing changed" and to count the
+     devices; the pieces themselves are read only to be sent. */
   if (request.method === "GET" && device === undefined) {
+    const asked = request.headers.get("If-None-Match");
+    if (asked && asked === await etagOf(await store.stamps(room))) return answer(304, undefined, { ETag: asked });
     const rows = await store.list(room);
     const etag = await etagOf(rows);
-    if (request.headers.get("If-None-Match") === etag) return answer(304, undefined, { ETag: etag });
     return answer(200, { v: 1, items: Object.fromEntries(rows.map((row) => [row.device, row.piece])) }, { ETag: etag });
   }
 
@@ -78,7 +81,7 @@ export async function handle(request, store, now = Date.now(), allow = null) {
     if (allow && !(await allow(request.headers.get("CF-Connecting-IP") || ""))) return answer(429, { error: "later" }, { "Retry-After": "60" });
     const piece = await readPiece(request);
     if (!piece || piece.length > LIMITS.piece || !PIECE.test(piece)) return answer(413, { error: "bad piece" });
-    const rows = await store.list(room);
+    const rows = await store.stamps(room);
     if (!rows.some((row) => row.device === device) && rows.length >= LIMITS.devices) return answer(409, { error: "room full" });
     await store.put(room, device, piece, now);
     return answer(204);
@@ -101,6 +104,7 @@ export function memoryStore() {
   return {
     rows,
     list: async (room) => [...rows.values()].filter((row) => row.room === room).map((row) => ({ ...row })),
+    stamps: async (room) => [...rows.values()].filter((row) => row.room === room).map(({ device, updated }) => ({ device, updated })),
     put: async (room, device, piece, updated) => {
       const before = rows.get(id(room, device));
       // Two writes in one millisecond are still two versions.

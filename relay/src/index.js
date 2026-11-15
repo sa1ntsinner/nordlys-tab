@@ -3,6 +3,7 @@ import { handle, prune } from "./core.js";
 
 const d1 = (db) => ({
   list: async (room) => (await db.prepare("SELECT device, piece, updated FROM pieces WHERE room = ?1").bind(room).all()).results,
+  stamps: async (room) => (await db.prepare("SELECT device, updated FROM pieces WHERE room = ?1").bind(room).all()).results,
   put: (room, device, piece, updated) => db.prepare(
     `INSERT INTO pieces (room, device, piece, updated) VALUES (?1, ?2, ?3, ?4)
      ON CONFLICT (room, device) DO UPDATE SET piece = ?3, updated = MAX(?4, pieces.updated + 1)`
