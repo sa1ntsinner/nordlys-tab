@@ -193,6 +193,8 @@ test('the relay reads the pieces only to send them: not to say nothing changed, 
   assert.strictEqual(read, 1);
   const again = await w.handle(new Request(`https://relay.test/v1/r/${room}`, { headers: { 'If-None-Match': first.headers.get('ETag') } }), store);
   assert.deepStrictEqual([again.status, again.headers.get('ETag'), read], [304, first.headers.get('ETag'), 1]);
+  const weak = await w.handle(new Request(`https://relay.test/v1/r/${room}`, { headers: { 'If-None-Match': `W/${first.headers.get('ETag')}` } }), store);
+  assert.deepStrictEqual([weak.status, read], [304, 1]);
   await w.handle(new Request(`https://relay.test/v1/r/${room}/${'d'.repeat(32)}`, { method: 'PUT', body: 'QUJG' }), store);
   const changed = await w.handle(new Request(`https://relay.test/v1/r/${room}`, { headers: { 'If-None-Match': first.headers.get('ETag') } }), store);
   assert.strictEqual(changed.status, 200);

@@ -70,7 +70,9 @@ export async function handle(request, store, now = Date.now(), allow = null) {
   /* Who wrote and when is enough to answer "nothing changed" and to count the
      devices; the pieces themselves are read only to be sent. */
   if (request.method === "GET" && device === undefined) {
-    const asked = request.headers.get("If-None-Match");
+    /* Cloudflare weakens the tag (W/"…") when it compresses the answer, so
+       the browser sends it back weak. */
+    const asked = request.headers.get("If-None-Match")?.replace(/^W\//, "");
     if (asked && asked === await etagOf(await store.stamps(room))) return answer(304, undefined, { ETag: asked });
     const rows = await store.list(room);
     const etag = await etagOf(rows);
