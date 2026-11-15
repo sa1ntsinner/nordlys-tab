@@ -137,7 +137,8 @@
         // Left on from a build that offered a sync this browser never carried anywhere.
         if (this.syncing() && !this.withCode() && !this.cloud) return this.engine.disable().then(() => this.emit());
         if (unsent()) await this.pushNow();
-        this.askRelay();
+        // The browser tells only the tabs open when a change lands, so a new tab looks for itself.
+        if (this.withCode()) this.askRelay(); else this.schedulePull();
         /* Pictures that came in first, then this device's own: a board synced
            before pictures travelled sends them now, without waiting for an edit. */
         this.takePictures();

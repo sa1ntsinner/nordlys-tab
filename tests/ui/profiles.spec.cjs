@@ -102,6 +102,30 @@ test('turning sync on sends the board, and a change from another device arrives'
   await expect.poll(() => labels(page), { timeout: 8000 }).toContain('Renamed on the laptop');
 });
 
+/* The browser announces a change only to the tabs open when it lands, so a
+   new tab has to look for itself. Only the relay used to be asked on open. */
+test('with the browser\'s sync, a new tab takes a change that came in while no tab was open', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.locator('#gear').click();
+  await page.locator('#settings-tab-sync').click();
+  await page.locator('label.tg:has(#cfg-sync-on)').click();
+  await page.locator('#nl-form-ok').click();
+  await expect(page.locator('#sec-sync .sync-state')).toHaveClass(/is-ready/);
+  // Written straight into the stored sync area: no tab hears of it.
+  await page.evaluate(() => {
+    const M = window.NordlysSyncModel;
+    const other = M.create('laptop');
+    const remote = window.__syncState();
+    M.merge(other, remote);
+    const view = M.materialize(other);
+    view.profiles[0].config.groups[0].label = 'Renamed while no tab was open';
+    M.update(other, view);
+    localStorage.setItem('__nordlys_test_sync', JSON.stringify({ ...remote, ...M.exportChunks(other) }));
+  });
+  await page.reload();
+  await expect.poll(() => labels(page), { timeout: 8000 }).toContain('Renamed while no tab was open');
+});
+
 test('with sync on, a bookmark can be kept on this device or read differently here', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   // Off: the menu has nothing about devices.
