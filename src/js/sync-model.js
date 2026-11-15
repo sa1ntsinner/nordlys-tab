@@ -46,6 +46,9 @@
   const LOCAL_LOOK = new Set(["version", "customCss"]);
 
   const clone = (value) => value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+  // The browser's sync and the engine count bytes, and a letter outside Latin is two or three.
+  const encoder = new TextEncoder();
+  const bytes = (value) => encoder.encode(JSON.stringify(value)).length;
   const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
   const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const validId = (id) => typeof id === "string" && /^[a-zA-Z0-9_-]{1,80}$/.test(id);
@@ -238,7 +241,7 @@
     if (value === undefined) return true;
     if (entity.startsWith("c/") && field === "bgMode" && /^custom-/.test(String(value))) return false;
     const text = JSON.stringify(value);
-    if (text.length > VALUE_LIMIT) return false;
+    if (bytes(value) > VALUE_LIMIT) return false;
     if (/(data:|blob:|chrome-extension:)/i.test(text)) return false;
     return true;
   }
@@ -284,7 +287,7 @@
     const open = () => { chunk = { v: VERSION, a: state.device, i: index, e: {} }; size = 64; };
     open();
     for (const [entity, field, register] of pairs) {
-      const cost = JSON.stringify(entity).length + JSON.stringify(field).length + JSON.stringify(register).length + 8;
+      const cost = bytes(entity) + bytes(field) + bytes(register) + 8;
       if (size + cost > CHUNK_BUDGET && Object.keys(chunk.e).length) {
         out[`${PREFIX}${state.device}.${index}`] = chunk;
         index++;

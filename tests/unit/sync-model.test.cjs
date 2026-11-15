@@ -136,6 +136,23 @@ test('a big board is packed into chunks under 8 KB, not one item per record', ()
   assert.strictEqual(M.materialize(copy).profiles.reduce((n, p) => n + p.config.groups.reduce((m, g) => m + g.links.length, 0), 0), 300);
 });
 
+/* The item limit is in bytes, and a letter outside Latin takes two (Cyrillic)
+   or three (Japanese). Chunks measured in characters came out over 8 KB, and
+   one such item stopped the whole send. */
+test('names in Russian or Japanese still pack into chunks under 8 KB', () => {
+  for (const [script, letter] of [['Russian', 'ж'], ['Japanese', '日']]) {
+    const names = Array.from({ length: 100 }, (_, i) => `${letter.repeat(116)}${String(i).padStart(4, '0')}`);
+    const snap = snapshot([profile('work', 'Work', [board('Folder', names)])]);
+    // One name too long for a value of its own: it stays on this device rather than stopping the send.
+    snap.profiles[0].config.groups.push(board('Long', [letter.repeat(2000)]));
+    M.normalizeSnapshot(snap);
+    const chunks = M.exportChunks(device('a', snap));
+    for (const [key, value] of Object.entries(chunks)) assert.ok(Buffer.byteLength(key) + bytes(value) <= 8192, `${script}: ${key} is ${Buffer.byteLength(key) + bytes(value)} bytes`);
+    const copy = M.create('b'); M.merge(copy, chunks);
+    assert.strictEqual(M.materialize(copy).profiles[0].config.groups[0].links.length, 100, script);
+  }
+});
+
 test('damaged or foreign chunks are refused as a whole and change nothing', () => {
   const snap = snapshot([profile('work', 'Work', [board('Daily', ['Gmail'])])]);
   M.normalizeSnapshot(snap);
