@@ -14,7 +14,9 @@ const d1 = (db) => ({
 export default {
   async fetch(request, env) {
     try {
-      return await handle(request, d1(env.DB));
+      // Writes per address, counted at each Cloudflare location (wrangler.jsonc).
+      const allow = env.WRITES ? async (key) => (await env.WRITES.limit({ key })).success : null;
+      return await handle(request, d1(env.DB), Date.now(), allow);
     } catch (error) {
       return new Response(JSON.stringify({ error: "relay failed" }), { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
     }

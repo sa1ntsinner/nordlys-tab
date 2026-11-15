@@ -12,13 +12,14 @@ async function world() {
   const { handle, memoryStore, LIMITS } = await core;
   const store = memoryStore();
   const calls = [];
-  let down = false;
+  let down = false, limited = false;
   const fetchImpl = async (url, options = {}) => {
     if (down) throw new TypeError('Failed to fetch');
     calls.push(`${options.method || 'GET'} ${new URL(url).pathname}`);
+    if (limited) return new Response('{"error":"later"}', { status: 429 });
     return handle(new Request(url, { method: options.method, headers: options.headers, body: options.body }), store);
   };
-  return { store, calls, LIMITS, handle, fetchImpl, relay: code => Relay.create(code, { fetchImpl, url: 'https://relay.test' }), down: value => { down = value; } };
+  return { store, calls, LIMITS, handle, fetchImpl, relay: code => Relay.create(code, { fetchImpl, url: 'https://relay.test' }), down: value => { down = value; }, limit: value => { limited = value; } };
 }
 function area() {
   const data = new Map();
@@ -176,6 +177,51 @@ test('the relay refuses what is not a piece, a thirteenth device, and names that
   const { prune } = await core;
   await prune(w.store, Date.now() + (w.LIMITS.idleDays + 1) * 86400000);
   assert.strictEqual(w.store.rows.size, 0);
+});
+
+/* Anyone can write to the relay, so a write is counted per address, and a
+   body too large is refused before it is read. */
+test('the relay refuses writes past the rate limit, and a body too large before reading it', async () => {
+  const w = await world();
+  const room = 'a'.repeat(32), device = 'b'.repeat(32);
+  const url = `https://relay.test/v1/r/${room}/${device}`;
+  const asked = [];
+  const allow = ok => async key => { asked.push(key); return ok; };
+  const put = (headers, ok = true) => w.handle(new Request(url, { method: 'PUT', headers: { 'CF-Connecting-IP': '203.0.113.7', ...headers }, body: 'QUJD' }), w.store, Date.now(), allow(ok));
+  const refused = await put({}, false);
+  assert.strictEqual(refused.status, 429);
+  assert.ok(refused.headers.get('Retry-After'));
+  assert.deepStrictEqual(asked, ['203.0.113.7']);
+  assert.strictEqual(w.store.rows.size, 0);
+  assert.strictEqual((await put({})).status, 204);
+  // Said to be too large: refused unread.
+  const big = new Request(url, { method: 'PUT', headers: { 'Content-Length': String(w.LIMITS.piece + 1) }, body: 'QUJD' });
+  assert.strictEqual((await w.handle(big, w.store)).status, 413);
+  assert.strictEqual(big.bodyUsed, false);
+  // Not said at all: read only up to the limit.
+  const endless = new ReadableStream({ pull: c => c.enqueue(new TextEncoder().encode('A'.repeat(65536))) });
+  const streamed = new Request(url, { method: 'PUT', body: endless, duplex: 'half' });
+  assert.strictEqual((await w.handle(streamed, w.store)).status, 413);
+  // Reading is not counted.
+  asked.length = 0;
+  assert.strictEqual((await w.handle(new Request(`https://relay.test/v1/r/${room}`), w.store, Date.now(), allow(false))).status, 200);
+  assert.deepStrictEqual(asked, []);
+});
+
+test('a relay that says "later" is an error to try again, never damage', async () => {
+  const w = await world();
+  const code = Relay.newCode();
+  const a = await device(w, 'A');
+  await a.enable({ snapshot: snapshot([folder('g1', 'Daily', [['l1', 'Gmail']])]), mode: 'merge', code });
+  w.limit(true);
+  assert.strictEqual(await a.pull(), null);
+  const status = await a.status();
+  assert.strictEqual(status.state, 'error');
+  assert.notStrictEqual(status.reason, 'damaged');
+  await assert.rejects(w.relay(code).putPicture('f3a9c1d2e4b5a6f7c8d9e0a1b2c3d4e5', 'data:image/png;base64,AAAA'), error => error.status === 429);
+  w.limit(false);
+  await a.pull();
+  assert.strictEqual((await a.status()).state, 'ready');
 });
 
 test('an icon picture travels on its own, sealed, and only the code opens it', async () => {

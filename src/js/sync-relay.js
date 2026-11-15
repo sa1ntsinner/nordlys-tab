@@ -102,7 +102,8 @@
         ...options, credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer",
         signal: root.AbortSignal?.timeout ? root.AbortSignal.timeout(TIMEOUT) : undefined
       });
-      if (!answer.ok && answer.status !== 304) throw new Error(`The sync relay answered ${answer.status}.`);
+      // 429 is the relay's rate limit: try later, nothing is wrong with what it holds.
+      if (!answer.ok && answer.status !== 304) throw Object.assign(new Error(`The sync relay answered ${answer.status}.`), { status: answer.status });
       return answer;
     }
 

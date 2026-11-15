@@ -237,16 +237,28 @@
         if (!this.state.enabled) return null;
         let changed;
         const before = JSON.stringify(this.compose().view);
+        /* Not reached, or asked to wait (the relay's rate limit): tried again
+           later. Only what came in and could not be read is damage. */
+        let remote;
+        try { remote = await this.cloud().get(null); } catch (error) {
+          this.fail("error", error);
+          await this.save();
+          return null;
+        }
         try {
           const draft = clone(this.state.model);
-          changed = M().merge(draft, await this.cloud().get(null));
+          changed = M().merge(draft, remote);
           if (changed) this.state.model = draft;
         } catch (error) {
           this.fail("error", error, "damaged");
           await this.save();
           return null;
         }
-        if (!changed) return null;
+        if (!changed) {
+          // Reached again after a failure: what this device holds is sent, and the status says so.
+          if (this.state.status.state === "error") await this.send();
+          return null;
+        }
         const { view } = this.compose();
         this.state.status = { ...this.state.status, state: "ready", error: null, reason: null, lastSync: this.now() };
         /* What came in can make this device's own items smaller (a deletion

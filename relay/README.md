@@ -10,7 +10,15 @@ What it keeps, per device in a room: the room's name and the device's name
 last changed. A piece nobody rewrote in 400 days is deleted by the nightly
 cron. Logging is off (`observability.enabled: false`).
 
-Limits: 12 devices in a room, 200,000 characters in a piece.
+Limits: 12 devices in a room, 200,000 characters in a piece (a larger body
+is refused by its `Content-Length` before it is read, or as soon as it goes
+past the limit when it has none), and 240 writes a minute from one address
+(`CF-Connecting-IP`), through the Workers rate limit binding `WRITES` in
+`wrangler.jsonc`. That count is kept per Cloudflare location and is
+approximate; a device's first sync sends its piece and up to ~100 icon
+pictures in a burst, which stays well under it. Past it the relay answers 429
+with `Retry-After`, and the extension tries again later. The binding's
+`namespace_id` must be unique in the Cloudflare account.
 
 ## Run it here
 

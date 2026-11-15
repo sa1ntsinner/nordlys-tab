@@ -38,7 +38,29 @@ async function etagOf(rows) {
   return `"${[...new Uint8Array(digest)].slice(0, 12).map((byte) => byte.toString(16).padStart(2, "0")).join("")}"`;
 }
 
-export async function handle(request, store, now = Date.now()) {
+/* The body, unless it is larger than a piece can be: refused by what it says
+   it is before anything is read, and read no further than the limit when it
+   says nothing. A piece is base64, so its bytes are its characters. */
+async function readPiece(request) {
+  const said = request.headers.get("Content-Length");
+  if (said !== null && !(Number(said) <= LIMITS.piece)) return null;
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const parts = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > LIMITS.piece) { await reader.cancel(); return null; }
+    parts.push(value);
+  }
+  return new Blob(parts).text();
+}
+
+/* allow(key) answers whether this address may write now (the rate limit
+   binding on Cloudflare); without one, every write is allowed. */
+export async function handle(request, store, now = Date.now(), allow = null) {
   if (request.method === "OPTIONS") return answer(204);
   const match = /^\/v1\/r\/([^/]+)(?:\/([^/]+))?$/.exec(new URL(request.url).pathname);
   if (!match) return answer(404, { error: "not found" });
@@ -53,7 +75,8 @@ export async function handle(request, store, now = Date.now()) {
   }
 
   if (request.method === "PUT" && device !== undefined) {
-    const piece = await request.text();
+    if (allow && !(await allow(request.headers.get("CF-Connecting-IP") || ""))) return answer(429, { error: "later" }, { "Retry-After": "60" });
+    const piece = await readPiece(request);
     if (!piece || piece.length > LIMITS.piece || !PIECE.test(piece)) return answer(413, { error: "bad piece" });
     const rows = await store.list(room);
     if (!rows.some((row) => row.device === device) && rows.length >= LIMITS.devices) return answer(409, { error: "room full" });

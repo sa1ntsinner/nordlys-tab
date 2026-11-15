@@ -6,6 +6,12 @@
   "workers_dev": true,
   "observability": { "enabled": false },
   "triggers": { "crons": ["17 3 * * *"] },
+  /* Writes per address a minute. A device's first sync with a code sends its
+     piece and every icon picture at once (up to ~100), so the limit leaves
+     room for two devices behind one address doing that together. */
+  "ratelimits": [
+    { "name": "WRITES", "namespace_id": "1001", "simple": { "limit": 240, "period": 60 } }
+  ],
   "d1_databases": [
     { "binding": "DB", "database_name": "nordlys-sync", "database_id": "1b234d24-2bcb-461d-a4ea-397023d573d5" }
   ]

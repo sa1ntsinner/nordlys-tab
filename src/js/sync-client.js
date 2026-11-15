@@ -311,7 +311,11 @@
             if (picture.length > PICTURE_LIMIT) picture = await smaller(picture);
             ref = await pictureRef(picture);
             if (!(now - (sent[ref] || 0) < PICTURE_RESEND)) { await relay.putPicture(ref, picture); sent[ref] = now; done.push(ref); }
-          } catch (error) { ref = null; }
+          } catch (error) {
+            // Asked to wait: the rest go with a later push, and each bookmark keeps the id it had.
+            if (error?.status === 429) break;
+            ref = null;
+          }
           refs.set(original, { picture, ref });
         }
         await this.markSent(done);
