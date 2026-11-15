@@ -24,6 +24,10 @@ through a relay instead.
   something changed, so the page asks: when a tab opens or comes back into
   view, and every two minutes while it stays in view, with every tab sharing
   one clock (`nordlys_relay_asked`, at most one question in 20 seconds).
+- A push waits 2.5 s after an edit. `nordlys_sync_dirty` (localStorage, set
+  synchronously with the save) stays until a push ends in `ready`; while it is
+  set, a tab pushes when it opens and before every pull, so an edit whose tab
+  closed inside the wait, or whose send failed, is never pulled over.
 - Joining needs a code some device already syncs with: an empty room is
   refused, so a mistyped code is noticed at once.
 - Safari is not offered the browser's own sync at all.

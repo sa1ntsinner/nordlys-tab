@@ -20,6 +20,12 @@
   const RELAY_EVERY = 120000;
   const RELAY_REST = 20000;
   const RELAY_ASKED = "nordlys_relay_asked";
+  /* Set the moment an edit is saved and cleared once it reached the other
+     devices. A tab closed inside the push delay used to drop the edit, and the
+     next tab's pull laid the stored copy, without it, over the board; a send
+     that failed waited for the next edit. Whichever tab opens next sends first. */
+  const UNSENT = "nordlys_sync_dirty";
+  const unsent = () => { try { return localStorage.getItem(UNSENT); } catch (error) { return null; } };
   // The look and layout, for "keep this look on this device only".
   const LOOK = ["theme", "colorMode", "lastLightTheme", "lastDarkTheme", "customTheme", "bgMode", "bgPalette", "bgSeed", "bgMotion",
     "bgIntensity", "glassLevel", "headerStyle", "typography", "hoverEffect", "iconShape", "cardRadius", "cardGlow", "bgBlur", "bgDim",
@@ -127,9 +133,10 @@
       this.engine = (this.cloud || this.relay) && window.NordlysSyncEngine
         ? new window.NordlysSyncEngine({ local: this.local, sync: this.cloud, relay: this.relay, deviceName: deviceName() }) : null;
       this.ready = (this.engine ? this.engine.load().then(() => this.refreshOverrides()) : Promise.resolve()).catch(() => {});
-      this.ready.then(() => {
+      this.ready.then(async () => {
         // Left on from a build that offered a sync this browser never carried anywhere.
         if (this.syncing() && !this.withCode() && !this.cloud) return this.engine.disable().then(() => this.emit());
+        if (unsent()) await this.pushNow();
         this.askRelay();
         /* Pictures that came in first, then this device's own: a board synced
            before pictures travelled sends them now, without waiting for an edit. */
@@ -174,6 +181,7 @@
 
     schedulePush() {
       if (!this.syncing()) return;
+      try { localStorage.setItem(UNSENT, String(Math.random())); } catch (error) { /* the timer still sends it */ }
       clearTimeout(this.pushTimer);
       this.pushTimer = setTimeout(() => this.pushNow(), PUSH_DELAY);
     }
@@ -182,12 +190,15 @@
       clearTimeout(this.pushTimer);
       this.pushTimer = null;
       if (!this.syncing()) return;
+      const mark = unsent();
       // Folders and bookmarks need ids of their own before they can travel.
       if (window.NordlysSyncModel.normalize(this.app.config)) this.saveQuietly();
       await this.sendPictures();
       try {
         await this.engine.push(await this.profiles.snapshot(this.app.config));
       } catch (error) { /* the engine records the failure in its status */ }
+      // Kept when the send failed, or when another edit came in while it was on its way.
+      try { if (this.engine.state?.status?.state === "ready" && unsent() === mark) localStorage.removeItem(UNSENT); } catch (error) { /* sent again next time */ }
       this.emit();
     }
 
@@ -202,7 +213,7 @@
       /* A change made here and still waiting to be sent goes into the model
          first: pulled before it, the board that came back did not have it,
          and the push that followed sent the board without it. */
-      if (this.pushTimer) await this.pushNow();
+      if (this.pushTimer || unsent()) await this.pushNow();
       try {
         const view = await this.engine.pull();
         if (view) await this.adoptView(view);
@@ -226,6 +237,8 @@
       });
       document.addEventListener("visibilitychange", () => { if (!document.hidden) { if (this.withCode()) this.askRelay(); else this.schedulePull(); } });
       setInterval(() => this.askRelay(), RELAY_EVERY);
+      // Started as the tab goes; whatever does not finish, the mark sends from the next tab.
+      window.addEventListener("pagehide", () => { if (this.pushTimer) this.pushNow(); });
     }
 
     // A pull from the relay, unless a tab asked a moment ago.
@@ -518,6 +531,7 @@
     async disable() {
       if (!this.engine) return;
       clearTimeout(this.pushTimer);
+      try { localStorage.removeItem(UNSENT); } catch (error) { /* nothing to send it with anyway */ }
       await this.engine.disable();
       this.app.grid?.render();
       this.emit();

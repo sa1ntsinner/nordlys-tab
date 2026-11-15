@@ -17,6 +17,7 @@ Chrome Web Store's rule that they only ever go up.
 
 ### Fixed
 
+- An edit made just before the tab was closed, or before a bookmark was opened in it, is no longer lost with sync on. It waited a moment to be sent and went with the tab, and the next tab could put the copy from sync, without the edit, over the board. Now the next tab sends it first. An edit that could not be sent (no connection) is sent again when a tab opens, not only after the next edit.
 - Icons now arrive on your other devices when you sync with a code. The picture an icon is made of stayed on the device it was chosen on, so the others showed a letter or a plain glyph in its place. Each picture now travels on its own, locked like the rest of your setup. Devices already syncing send theirs the next time a new tab opens there, and the others fetch them; nothing has to be picked again. With the browser's own sync icon pictures still stay where they were added: they don't fit.
 - In Safari, Tab no longer leaves the focus timer from one of its buttons, and a control switched off while it has focus no longer sends the next Tab to the page behind.
 - Start on the focus timer and its card could miss a click that landed as the second ticked over, and so could a button on a dashboard card that had nothing set up yet. Those buttons are no longer redrawn every second.

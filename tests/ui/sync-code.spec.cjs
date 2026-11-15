@@ -149,6 +149,51 @@ test('a relay that does not answer leaves the switch off and says so', async ({ 
   expect(await page.evaluate(() => window.Nordlys.sync.syncing())).toBe(false);
 });
 
+/* A push waits a moment after an edit. A tab closed or left inside that
+   moment used to drop it, and the next tab's pull put the stored copy,
+   without the edit, over the board. */
+test('an edit left unsent when the tab closes is sent by the next tab, before it pulls', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const relay = await relayFor(page);
+  const code = Relay.newCode();
+  await page.evaluate(code => window.Nordlys.sync.enable('merge', code), code);
+  const laptop = await otherDevice(relay, 'Laptop');
+  let view = await laptop.enable({ snapshot: { person: {}, profiles: [] }, mode: 'use-sync', code });
+  view.profiles[0].config.groups[1].label = 'Changed on the laptop';
+  await laptop.push(view);
+  // An edit here, and the tab goes at once: no time for its push.
+  await page.evaluate(() => {
+    window.Nordlys.config.groups[0].label = 'Edited here';
+    window.Nordlys.saveConfig();
+    localStorage.removeItem('nordlys_relay_asked');
+  });
+  await page.reload();
+  await expect.poll(() => labels(page), { timeout: 8000 }).toContain('Changed on the laptop');
+  expect(await labels(page)).toContain('Edited here');
+  await expect.poll(async () => { view = await laptop.pull() || view; return view.profiles[0].config.groups[0].label; }, { timeout: 8000 }).toBe('Edited here');
+});
+
+test('a send that failed is tried again when the next tab opens, without another edit', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const relay = await relayFor(page);
+  const code = Relay.newCode();
+  await page.evaluate(code => window.Nordlys.sync.enable('merge', code), code);
+  const laptop = await otherDevice(relay, 'Laptop');
+  let view = await laptop.enable({ snapshot: { person: {}, profiles: [] }, mode: 'use-sync', code });
+  // This page has taken all there is, so the next pull brings nothing that would send by itself.
+  await page.evaluate(() => window.Nordlys.sync.pullNow());
+  relay.down(true);
+  await page.evaluate(async () => {
+    window.Nordlys.config.groups[0].label = 'Edited while offline';
+    window.Nordlys.saveConfig();
+    await window.Nordlys.sync.pushNow();
+  });
+  relay.down(false);
+  await page.evaluate(() => localStorage.removeItem('nordlys_relay_asked'));
+  await page.reload();
+  await expect.poll(async () => { view = await laptop.pull() || view; return view.profiles[0].config.groups[0].label; }, { timeout: 8000 }).toBe('Edited while offline');
+});
+
 /* An icon chosen on one device is a picture kept in the bookmark, too large
    for the sync items, so the other device used to fall back to a letter or a
    glyph. Each picture now travels on its own beside the items. */
