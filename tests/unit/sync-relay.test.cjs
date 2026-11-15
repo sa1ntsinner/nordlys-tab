@@ -229,6 +229,24 @@ test('the relay refuses writes past the rate limit, and a body too large before 
   assert.deepStrictEqual(asked, []);
 });
 
+test('a thirteenth device on one code is told the code has all the devices it takes, and joins once one is forgotten', async () => {
+  const w = await world();
+  const code = Relay.newCode();
+  const all = [];
+  for (let n = 0; n < w.LIMITS.devices; n++) {
+    const d = await device(w, `D${n}`);
+    await d.enable({ snapshot: snapshot(n ? [] : [folder('g1', 'Daily', [['l1', 'Gmail']])]), mode: n ? 'use-sync' : 'merge', code });
+    all.push(d);
+  }
+  const late = await device(w, 'Late');
+  assert.deepStrictEqual(names(await late.enable({ snapshot: snapshot([]), mode: 'use-sync', code })), ['Gmail'], 'it still reads the board');
+  const status = await late.status();
+  assert.deepStrictEqual([status.state, status.reason], ['error', 'devices']);
+  await late.forget(all[5].state.device.id);
+  await late.pull();
+  assert.strictEqual((await late.status()).state, 'ready');
+});
+
 test('a relay that says "later" is an error to try again, never damage', async () => {
   const w = await world();
   const code = Relay.newCode();

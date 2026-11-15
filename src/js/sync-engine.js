@@ -323,9 +323,10 @@
     }
 
     /* The reason is what the page says, in the person's language; the
-       error text is kept for a bug report. */
-    fail(state, error, reason = "other") {
-      this.state.status = { ...this.state.status, state, reason, error: String(error?.message || error) };
+       error text is kept for a bug report. folder: the one that takes the
+       most room, named when sync is full. */
+    fail(state, error, reason = "other", folder = null) {
+      this.state.status = { ...this.state.status, state, reason, folder, error: String(error?.message || error) };
     }
 
     async send() {
@@ -339,7 +340,7 @@
         const chunks = M().exportChunks(this.state.model);
         const writes = {};
         for (const [key, value] of Object.entries(chunks)) {
-          if (itemBytes(key, value) > M().ITEM_LIMIT) { this.fail("error", new Error("A sync item came out larger than 8 KB."), "large"); await this.save(); return; }
+          if (itemBytes(key, value) > M().ITEM_LIMIT) { this.fail("error", new Error("A sync item came out larger than 8 KB."), "large", M().biggestFolder(this.state.model)); await this.save(); return; }
           if (JSON.stringify(remote[key]) !== JSON.stringify(value)) writes[key] = value;
         }
         const removals = Object.keys(remote).filter((key) => key.startsWith(ownPrefix) && !chunks[key]);
@@ -348,7 +349,7 @@
         const used = Object.entries(after).reduce((sum, [key, value]) => sum + itemBytes(key, value), 0);
         this.state.status.bytes = used;
         if (used > TOTAL_LIMIT || Object.keys(after).length > ITEMS_LIMIT) {
-          this.fail("full", new Error(`Sync is full: ${used} of ${TOTAL_LIMIT} bytes.`), "full");
+          this.fail("full", new Error(`Sync is full: ${used} of ${TOTAL_LIMIT} bytes.`), "full", M().biggestFolder(this.state.model));
           await this.save();
           return;
         }
@@ -356,7 +357,8 @@
         if (removals.length) await this.cloud().remove(removals);
         this.state.status = { ...this.state.status, state: "ready", error: null, reason: null, lastSync: this.now() };
       } catch (error) {
-        this.fail("error", error);
+        // 409: the code already has as many devices as the relay takes.
+        this.fail("error", error, error?.status === 409 ? "devices" : "other");
       }
       await this.save();
     }

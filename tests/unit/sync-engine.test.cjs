@@ -123,13 +123,14 @@ test('merging keeps what both devices had', async () => {
 test('a full sync area stops sending and keeps every edit here', async () => {
   const sync = area({ limits: true });
   const a = await engine(sync, 'A');
-  const big = snapshot(Array.from({ length: 30 }, (_, g) => folder(`g${g}`, `Folder ${g}`, Array.from({ length: 20 }, (_, l) => [`l${g}x${l}`, `Site ${g}.${l} `.repeat(12)]))));
+  const big = snapshot(Array.from({ length: 30 }, (_, g) => folder(`g${g}`, `Folder ${g}`, Array.from({ length: g === 17 ? 25 : 20 }, (_, l) => [`l${g}x${l}`, `Site ${g}.${l} `.repeat(12)]))));
   await a.enable({ snapshot: big, mode: 'merge' });
   const status = await a.status();
   assert.strictEqual(status.state, 'full');
   assert.strictEqual(status.reason, 'full', 'the page says why in the person\'s language');
+  assert.strictEqual(status.folder, 'Folder 17', 'and names the folder that takes the most room');
   assert.strictEqual(sync.data.size, 0, 'nothing cut down was sent');
-  assert.strictEqual(names(await a.view()).length, 600, 'the board here is whole');
+  assert.strictEqual(names(await a.view()).length, 605, 'the board here is whole');
 });
 
 test('damaged data in sync is skipped and the board here is kept', async () => {

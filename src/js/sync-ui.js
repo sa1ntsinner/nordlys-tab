@@ -457,11 +457,14 @@
 
     // Why sync stopped, in the person's language; the raw text is its title.
     reason(status) {
-      return {
+      const why = {
         full: say("sync.whyFull", "Sync is full. Deleted bookmarks free their space 30 days after they go. Until then, keep a big folder only on this device, use smaller icons, or forget a device you no longer use. Your changes are saved here."),
         damaged: say("sync.whyDamaged", "What another device sent could not be read, so it was not used. Your board here was kept."),
-        large: say("sync.whyLarge", "One folder is too big to sync. Keep it only on this device, or split it. Your changes are saved here.")
-      }[status.reason] || say("sync.whyOther", "Sync didn't answer. Nordlys tries again with your next change, and your changes are saved here.");
+        large: say("sync.whyLarge", "One folder is too big to sync. Keep it only on this device, or split it. Your changes are saved here."),
+        devices: say("sync.whyDevices", "This code already has 12 devices, the most it can take. Forget one you no longer use in the Devices list, and this device joins on the next try. Your changes are saved here.")
+      }[status.reason] || say("sync.whyOther", "Sync didn't answer. Nordlys tries again when you open a new tab or make a change, and your changes are saved here.");
+      const named = (status.reason === "full" || status.reason === "large") && status.folder;
+      return named ? `${why} ${say("sync.whyBiggest", `The biggest folder is “${status.folder}”.`, { folder: status.folder })}` : why;
     }
 
     async toggleSync(input) {
@@ -488,7 +491,7 @@
         await this.client.enable(mode, way.code);
       } catch (error) {
         input.checked = false;
-        if (typeof toast === "function") toast(say("sync.whyOther", "Sync didn't answer. Nordlys tries again with your next change, and your changes are saved here."), "error", 6000);
+        if (typeof toast === "function") toast(say("sync.turnOnFailed", "Sync didn't answer, so it stays off. Try again in a moment."), "error", 6000);
       } finally {
         input.disabled = false;
         this.refresh();

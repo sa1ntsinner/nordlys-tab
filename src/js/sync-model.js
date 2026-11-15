@@ -233,6 +233,20 @@
       .sort((a, b) => (b.seenAt || 0) - (a.seenAt || 0));
   }
 
+  /* The name of the folder that takes the most room, with its bookmarks, so
+     a full sync can say which one to keep on this device. Null with none. */
+  function biggestFolder(state) {
+    const all = values(state);
+    const size = {};
+    for (const [entity, fields] of Object.entries(all)) {
+      if (fields._alive !== true) continue;
+      const folder = entity.startsWith("g/") ? entity.slice(2) : entity.startsWith("l/") ? fields._parent : null;
+      if (folder && all[`g/${folder}`]?._alive === true) size[folder] = (size[folder] || 0) + bytes(fields);
+    }
+    const [top] = Object.entries(size).sort((a, b) => b[1] - a[1])[0] || [];
+    return top ? String(all[`g/${top}`].label || "") || null : null;
+  }
+
   function portable(entity, field, value) {
     if (field === "local") return false;
     if (entity === "c" && !PERSON.has(field)) return false;
@@ -406,7 +420,7 @@
   const api = {
     PREFIX, VERSION, ITEM_LIMIT, PERSON, DEAD_DAYS,
     clone, normalize, normalizeSnapshot, create, update, apply, materialize,
-    deletedProfiles, restoreProfile, devices, values, portable, exportChunks, validateChunks, merge, compact
+    deletedProfiles, restoreProfile, devices, biggestFolder, values, portable, exportChunks, validateChunks, merge, compact
   };
   root.NordlysSyncModel = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
