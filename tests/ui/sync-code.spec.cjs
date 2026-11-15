@@ -148,3 +148,112 @@ test('a relay that does not answer leaves the switch off and says so', async ({ 
   await expect(page.locator('.toast, [role="alert"], [role="status"]').filter({ hasText: /didn't answer/ }).first()).toBeVisible();
   expect(await page.evaluate(() => window.Nordlys.sync.syncing())).toBe(false);
 });
+
+/* An icon chosen on one device is a picture kept in the bookmark, too large
+   for the sync items, so the other device used to fall back to a letter or a
+   glyph. Each picture now travels on its own beside the items. */
+const RED = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==';
+test('an icon picture chosen here reaches the device that enters the code', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const relay = await relayFor(page);
+  await page.evaluate(picture => { const link = window.Nordlys.config.groups[0].links[0]; link.customImg = picture; window.Nordlys.saveConfig(); }, RED);
+  const code = Relay.newCode();
+  await page.evaluate(code => window.Nordlys.sync.enable('merge', code), code);
+  const laptop = await otherDevice(relay, 'Laptop');
+  const view = await laptop.enable({ snapshot: { person: {}, profiles: [] }, mode: 'use-sync', code });
+  const link = view.profiles[0].config.groups[0].links[0];
+  expect(link.customImg).toBeUndefined();
+  expect(link.iconRef).toMatch(/^[0-9a-f]{32}$/);
+  expect(await Relay.create(code, { fetchImpl: relay.answer }).getPicture(link.iconRef)).toBe(RED);
+});
+
+test('an icon picture chosen on another device is fetched and shown here', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const relay = await relayFor(page);
+  const code = Relay.newCode();
+  const desktop = await otherDevice(relay, 'Desktop');
+  const ref = require('node:crypto').createHash('sha256').update(RED).digest('hex').slice(0, 32);
+  await Relay.create(code, { fetchImpl: relay.answer }).putPicture(ref, RED);
+  await desktop.enable({
+    snapshot: { person: {}, profiles: [{ id: 'main', name: 'Main', color: 'teal', config: { theme: 'aurora-void', groups: [{ id: 'g-far', label: 'From the desktop', cols: 2, links: [{ id: 'l-far', name: 'Far', url: 'https://far.example/', iconRef: ref }] }] } }] },
+    mode: 'merge', code
+  });
+  await page.evaluate(code => window.Nordlys.sync.enable('use-sync', code), code);
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0].links[0].customImg)).toBe(RED);
+  await expect(page.locator('.nl-icon[data-icon-kind="raster"] img').first()).toHaveAttribute('src', RED);
+  expect(await page.evaluate(() => window.Nordlys.config.groups[0].links[0].iconRef)).toBe(ref);
+});
+
+const BLUE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPj/HwADBwIAMCbHYQAAAABJRU5ErkJggg==';
+test('a board synced before pictures travelled sends them on its next load', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const relay = await relayFor(page);
+  const code = Relay.newCode();
+  await page.evaluate(code => window.Nordlys.sync.enable('merge', code), code);
+  const laptop = await otherDevice(relay, 'Laptop');
+  let view = await laptop.enable({ snapshot: { person: {}, profiles: [] }, mode: 'use-sync', code });
+  const id = view.profiles[0].config.groups[0].links[0].id;
+  // The laptop holds an older picture of its own for the same bookmark, as the earlier build left it.
+  view.profiles[0].config.groups[0].links[0].customImg = BLUE;
+  await laptop.push(view);
+  // Here the picture is put on the bookmark by a build that did not send pictures.
+  await page.evaluate(picture => { const link = window.Nordlys.config.groups[0].links[0]; link.customImg = picture; delete link.iconRef; window.Nordlys.sync.saveQuietly(); }, RED);
+  await page.evaluate(() => localStorage.removeItem('nordlys_relay_asked'));
+  await page.reload();
+  const sent = async () => { view = await laptop.pull() || view; return view.profiles[0].config.groups[0].links.find(link => link.id === id).iconRef; };
+  await expect.poll(sent, { timeout: 10000 }).toMatch(/^[0-9a-f]{32}$/);
+  const ref = await sent();
+  expect(await Relay.create(code, { fetchImpl: relay.answer }).getPicture(ref)).toBe(RED);
+  // The page kept its own picture and the id stayed the one the laptop got.
+  expect(await page.evaluate(() => window.Nordlys.config.groups[0].links[0].customImg)).toBe(RED);
+});
+
+test('a newer picture from another device replaces the one here and is not sent back over', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const relay = await relayFor(page);
+  const code = Relay.newCode();
+  await page.evaluate(picture => { const link = window.Nordlys.config.groups[0].links[0]; link.customImg = picture; window.Nordlys.saveConfig(); }, BLUE);
+  await page.evaluate(code => window.Nordlys.sync.enable('merge', code), code);
+  const laptop = await otherDevice(relay, 'Laptop');
+  const view = await laptop.enable({ snapshot: { person: {}, profiles: [] }, mode: 'use-sync', code });
+  const link = view.profiles[0].config.groups[0].links[0];
+  const ref = require('node:crypto').createHash('sha256').update(RED).digest('hex').slice(0, 32);
+  await Relay.create(code, { fetchImpl: relay.answer }).putPicture(ref, RED);
+  link.iconRef = ref;
+  await laptop.push(view);
+  await page.evaluate(() => window.Nordlys.sync.pullNow());
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0].links[0].customImg)).toBe(RED);
+  await page.evaluate(() => window.Nordlys.sync.syncNow());
+  const after = (await laptop.pull()) || view;
+  expect(after.profiles[0].config.groups[0].links[0].iconRef).toBe(ref);
+});
+
+test('a picture too large to send travels drawn at the size a tile shows', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const relay = await relayFor(page);
+  const big = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 300;
+    const pen = canvas.getContext('2d');
+    // Noise, which no format can make small.
+    const noise = pen.createImageData(300, 300);
+    let seed = 2463534242;
+    for (let i = 0; i < noise.data.length; i++) {
+      seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5;
+      noise.data[i] = i % 4 === 3 ? 255 : seed & 255;
+    }
+    pen.putImageData(noise, 0, 0);
+    const picture = canvas.toDataURL('image/png');
+    const link = window.Nordlys.config.groups[0].links[0];
+    link.customImg = picture; window.Nordlys.saveConfig();
+    return picture;
+  });
+  expect(big.length).toBeGreaterThan(120000);
+  const code = Relay.newCode();
+  await page.evaluate(code => window.Nordlys.sync.enable('merge', code), code);
+  const laptop = await otherDevice(relay, 'Laptop');
+  const view = await laptop.enable({ snapshot: { person: {}, profiles: [] }, mode: 'use-sync', code });
+  const picture = await Relay.create(code, { fetchImpl: relay.answer }).getPicture(view.profiles[0].config.groups[0].links[0].iconRef);
+  expect(picture.length).toBeLessThanOrEqual(120000);
+  expect(await page.evaluate(() => window.Nordlys.config.groups[0].links[0].customImg)).toBe(picture);
+});

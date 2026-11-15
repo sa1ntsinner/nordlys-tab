@@ -401,7 +401,7 @@
           el("small", { text: say("sync.meter", `${used} of 100 KB`, { used }) }),
           this.button(say("sync.now", "Sync now"), () => this.client.syncNow(), { key: "sync-now", small: true })
         ]) : null,
-        el("p", { class: "backup-note", text: say("sync.stays", "What stays on each device: uploaded icon images, wallpapers and videos, custom CSS, folders that follow your browser's bookmarks, recent searches, and what dashboard cards hold (tasks, notes, habits, stashed tabs).") })
+        el("p", { class: "backup-note", text: say("sync.stays", "What stays on each device: icon images (unless you sync with a code), wallpapers and videos, custom CSS, folders that follow your browser's bookmarks, recent searches, and what dashboard cards hold (tasks, notes, habits, stashed tabs).") })
       ]);
     }
 

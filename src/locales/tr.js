@@ -808,7 +808,7 @@
   "sync.stateReady": "{when} eşitlendi",
   "sync.stateReadyNow": "Eşitlendi",
   "sync.stateSyncing": "Eşitleniyor…",
-  "sync.stays": "Her cihazda kalanlar: yüklenen simge görselleri, duvar kâğıtları ve videolar, özel CSS, tarayıcı yer imlerini izleyen klasörler, son aramalar ve pano kartlarının içeriği (görevler, notlar, alışkanlıklar, saklanan sekmeler).",
+  "sync.stays": "Her cihazda kalanlar: simge görselleri (kodla eşitleme hariç), duvar kâğıtları ve videolar, özel CSS, tarayıcı yer imlerini izleyen klasörler, son aramalar ve pano kartlarının içeriği (görevler, notlar, alışkanlıklar, saklanan sekmeler).",
   "sync.thisDevice": "Bu cihaz",
   "sync.thisOne": "Bu cihaz",
   "sync.title": "Eşitleme",

@@ -50,7 +50,7 @@
   const NUMERIC_FIELDS = Object.entries(FIELDS)
     .filter(([, type]) => type === "number")
     .map(([field]) => field);
-  const LINK_TEXT_FIELDS = ["name", "url", "icon", "iconSource", "color", "customImg", "monogram", "tone", "iconUrl", "browserId"];
+  const LINK_TEXT_FIELDS = ["name", "url", "icon", "iconSource", "color", "customImg", "iconRef", "monogram", "tone", "iconUrl", "browserId"];
   // What else the search box may look through (search-sources.js).
   const SEARCH_SOURCES = ["tabs", "bookmarks", "history"];
   /* A keyword for the search box (search-sources.js): one word, and a web

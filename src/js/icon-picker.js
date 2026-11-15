@@ -13,7 +13,7 @@
 
   /* What an icon is on a bookmark. The tone is part of it: "always light" was
      said of one picture, and said of the next one it would repaint it. */
-  const ICON_FIELDS = ["customImg", "iconSource", "icon", "monogram", "iconUrl", "tone"];
+  const ICON_FIELDS = ["customImg", "iconRef", "iconSource", "icon", "monogram", "iconUrl", "tone"];
   const FILE_LIMIT = 5 * 1024 * 1024;
   const EXPORT = 384;
 
@@ -289,14 +289,15 @@
         for (const field of ICON_FIELDS) { if (this.before[field] === undefined) delete link[field]; else link[field] = this.before[field]; }
         this.source = null;
       } else if (choice.letters) {
-        for (const field of ["customImg", "iconSource", "icon", "tone"]) delete link[field];
+        for (const field of ["customImg", "iconRef", "iconSource", "icon", "tone"]) delete link[field];
         link.monogram = choice.letters;
         addresses?.leave(link);
         this.source = null;
       } else {
         let kept;
         try { kept = await this.stored(choice); } catch { this.say(say("picker.unreadable", "That picture could not be read.")); return; }
-        link.customImg = kept;
+        // The id of the picture that travels with a code names the old one until sync gives the new one its own.
+        link.customImg = kept; delete link.iconRef;
         link.iconSource = String(choice.id || choice.from || "").slice(0, 120);
         delete link.icon; delete link.monogram; delete link.tone;
         if (choice.address && addresses?.isAddress(choice.address)) addresses.remember(link, choice.address); else addresses?.leave(link);
@@ -456,7 +457,7 @@
       // A picture from an address that would not let itself be read cannot be redrawn.
       try { picture = webp(this.el.canvas); } catch { this.show("find"); this.say(say("picker.unreadable", "That picture could not be read.")); return; }
       link.customImg = picture;
-      delete link.icon; delete link.monogram;
+      delete link.iconRef; delete link.icon; delete link.monogram;
       this.current = null;
       this.changed();
       this.show("find");

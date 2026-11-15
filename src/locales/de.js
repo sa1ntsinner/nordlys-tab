@@ -808,7 +808,7 @@
   "sync.stateReady": "Synchronisiert {when}",
   "sync.stateReadyNow": "Synchronisiert",
   "sync.stateSyncing": "Wird synchronisiert…",
-  "sync.stays": "Was auf jedem Gerät bleibt: hochgeladene Symbolbilder, Hintergründe und Videos, eigenes CSS, Ordner, die den Lesezeichen des Browsers folgen, letzte Suchen und was die Dashboard-Karten enthalten (Aufgaben, Notizen, Gewohnheiten, abgelegte Tabs).",
+  "sync.stays": "Was auf jedem Gerät bleibt: Symbolbilder (außer bei Sync mit einem Code), Hintergründe und Videos, eigenes CSS, Ordner, die den Lesezeichen des Browsers folgen, letzte Suchen und was die Dashboard-Karten enthalten (Aufgaben, Notizen, Gewohnheiten, abgelegte Tabs).",
   "sync.thisDevice": "Dieses Gerät",
   "sync.thisOne": "Dieses Gerät",
   "sync.title": "Sync",

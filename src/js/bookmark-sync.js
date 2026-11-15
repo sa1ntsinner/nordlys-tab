@@ -63,7 +63,7 @@
      bookmark was gone by the next new tab. Each link now takes its look back
      from the one it was before — matched by address, in order, so two
      bookmarks to one page keep one look each. */
-  const LOOK = ["icon", "iconSource", "customImg", "monogram", "color", "tone", "iconUrl", "iconUrls"];
+  const LOOK = ["icon", "iconSource", "customImg", "iconRef", "monogram", "color", "tone", "iconUrl", "iconUrls"];
   function keepLooks(fresh, previous) {
     const byUrl = new Map();
     const byId = new Map();

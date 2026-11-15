@@ -177,3 +177,18 @@ test('the relay refuses what is not a piece, a thirteenth device, and names that
   await prune(w.store, Date.now() + (w.LIMITS.idleDays + 1) * 86400000);
   assert.strictEqual(w.store.rows.size, 0);
 });
+
+test('an icon picture travels on its own, sealed, and only the code opens it', async () => {
+  const w = await world();
+  const code = Relay.newCode();
+  const picture = `data:image/png;base64,${'iVBORw0K'.repeat(11000)}`;
+  await w.relay(code).putPicture('f3a9c1d2e4b5a6f7c8d9e0a1b2c3d4e5', picture);
+  assert.strictEqual(await w.relay(code).getPicture('f3a9c1d2e4b5a6f7c8d9e0a1b2c3d4e5'), picture);
+  assert.strictEqual(await w.relay(code).getPicture('00000000000000000000000000000000'), null);
+  assert.strictEqual(await w.relay(Relay.newCode()).getPicture('f3a9c1d2e4b5a6f7c8d9e0a1b2c3d4e5'), null);
+  // Sending it again files it in the same place; the relay sees neither the id nor the picture.
+  await w.relay(code).putPicture('f3a9c1d2e4b5a6f7c8d9e0a1b2c3d4e5', picture);
+  assert.strictEqual(w.store.rows.size, 1);
+  const kept = JSON.stringify([...w.store.rows.values()]) + w.calls.join(' ');
+  assert.ok(!kept.includes('f3a9c1d2') && !kept.includes('iVBORw0K'));
+});

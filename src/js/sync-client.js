@@ -25,6 +25,48 @@
     "bgIntensity", "glassLevel", "headerStyle", "typography", "hoverEffect", "iconShape", "cardRadius", "cardGlow", "bgBlur", "bgDim",
     "skyRotate", "skyPool", "photoTone", "pictureColours", "pageLayout"];
 
+  /* An icon picture is kept inside the bookmark (customImg) and is far too
+     large for the sync items, which stopped it at the door: the other device
+     got the bookmark without it and fell back to a letter or a glyph. With a
+     code, each picture travels on its own through the relay (sync-relay.js),
+     and the bookmark carries only its id (iconRef): the SHA-256 of the
+     picture, so any device can tell whether the picture it holds is that one. */
+  const PICTURE = /^data:image\/(png|webp|jpeg|gif|svg\+xml)[;,]/i;
+  const PICTURE_LIMIT = 120000;
+  const PICTURE_SIDE = 384;
+  const PICTURES_KEY = "nordlys_sync_pictures";
+  // The relay forgets what nobody has written for 400 days; a picture is sent again well before.
+  const PICTURE_RESEND = 180 * 86400000;
+  const PICTURE_RETRY = 600000;
+  const isPicture = (value) => typeof value === "string" && PICTURE.test(value);
+  const isRef = (value) => typeof value === "string" && /^[0-9a-f]{32}$/.test(value);
+  async function pictureRef(picture) {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(picture));
+    return [...new Uint8Array(digest)].slice(0, 16).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+  /* A picture kept from before the icon dialog held pictures to the size a
+     tile shows can be a megabyte; it is drawn again at that size to travel. */
+  async function smaller(picture) {
+    const image = new Image();
+    image.src = picture;
+    await image.decode();
+    const width = image.naturalWidth || PICTURE_SIDE, height = image.naturalHeight || PICTURE_SIDE;
+    for (const side of [PICTURE_SIDE, 256, 160]) {
+      const scale = Math.min(1, side / Math.max(width, height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
+      const pen = canvas.getContext("2d");
+      pen.imageSmoothingQuality = "high";
+      pen.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const webp = canvas.toDataURL("image/webp", 0.92);
+      const out = webp.startsWith("data:image/webp") ? webp : canvas.toDataURL("image/png");
+      if (out.length <= PICTURE_LIMIT) return out;
+    }
+    throw new Error("The picture is too large to send.");
+  }
+  const linksOf = (config) => (Array.isArray(config?.groups) ? config.groups : []).flatMap((group) => (Array.isArray(group?.links) ? group.links : [])).filter((link) => link && typeof link === "object");
+
   const say = (key, fallback, params) => {
     const value = window.I18N?.t(key, params || {});
     return value && value !== key ? value : fallback;
@@ -80,6 +122,8 @@
       if (window.NordlysPlatform?.name === "safari") this.cloud = null;
       const relay = window.NordlysSyncRelay && storage?.local && window.crypto?.subtle ? window.NordlysSyncRelay : null;
       this.relay = relay ? (code) => relay.create(code) : null;
+      this.pictureQueue = Promise.resolve();
+      this.pictureMisses = new Map();
       this.engine = (this.cloud || this.relay) && window.NordlysSyncEngine
         ? new window.NordlysSyncEngine({ local: this.local, sync: this.cloud, relay: this.relay, deviceName: deviceName() }) : null;
       this.ready = (this.engine ? this.engine.load().then(() => this.refreshOverrides()) : Promise.resolve()).catch(() => {});
@@ -87,6 +131,10 @@
         // Left on from a build that offered a sync this browser never carried anywhere.
         if (this.syncing() && !this.withCode() && !this.cloud) return this.engine.disable().then(() => this.emit());
         this.askRelay();
+        /* Pictures that came in first, then this device's own: a board synced
+           before pictures travelled sends them now, without waiting for an edit. */
+        this.takePictures();
+        this.sendPictures().then((changed) => { if (changed) this.schedulePush(); });
       }).catch(() => {});
       this.wrapSave();
       this.watch();
@@ -136,6 +184,7 @@
       if (!this.syncing()) return;
       // Folders and bookmarks need ids of their own before they can travel.
       if (window.NordlysSyncModel.normalize(this.app.config)) this.saveQuietly();
+      await this.sendPictures();
       try {
         await this.engine.push(await this.profiles.snapshot(this.app.config));
       } catch (error) { /* the engine records the failure in its status */ }
@@ -158,6 +207,7 @@
         const view = await this.engine.pull();
         if (view) await this.adoptView(view);
       } catch (error) { /* recorded in the status */ }
+      this.takePictures();
       this.emit();
     }
 
@@ -201,6 +251,113 @@
       try { this.saveQuietly(); } finally { this.applying = false; }
       if (next.language && window.I18N && window.I18N.currentLang !== next.language) window.I18N.setLanguage(next.language);
       this.app.applyLoadedConfig();
+      this.takePictures();
+    }
+
+    // ── Icon pictures, beside the items ───────────────────────────
+    /* One picture job at a time, so a picture being fetched is never taken
+       for this device's own while it is on its way. */
+    pictures(task) {
+      const next = this.pictureQueue.then(() => (this.withCode() ? task(this.pictureRelay()) : null)).catch(() => null);
+      this.pictureQueue = next;
+      return next;
+    }
+
+    pictureRelay() {
+      const code = this.engine.state.relay.code;
+      if (this.relayForPictures?.code !== code) this.relayForPictures = { code, relay: this.relay(code) };
+      return this.relayForPictures.relay;
+    }
+
+    async picturesSent() { return (await this.local.get(PICTURES_KEY))[PICTURES_KEY] || {}; }
+
+    async markSent(refs) {
+      if (!refs.length) return;
+      const sent = await this.picturesSent();
+      const now = Date.now();
+      for (const ref of refs) sent[ref] = now;
+      await this.local.set({ [PICTURES_KEY]: sent });
+    }
+
+    /* Before the items leave: every picture on the board is sent, once, and
+       its bookmark is given the picture's id. A bookmark whose picture could
+       not be sent loses an id that named an earlier picture, so no device
+       fetches that one back over it. */
+    sendPictures() {
+      return this.pictures(async (relay) => {
+        const sent = await this.picturesSent();
+        const now = Date.now();
+        const refs = new Map();
+        const done = [];
+        for (const link of linksOf(this.app.config)) {
+          const original = link.customImg;
+          if (!isPicture(original) || refs.has(original)) continue;
+          let picture = original, ref;
+          try {
+            if (picture.length > PICTURE_LIMIT) picture = await smaller(picture);
+            ref = await pictureRef(picture);
+            if (!(now - (sent[ref] || 0) < PICTURE_RESEND)) { await relay.putPicture(ref, picture); sent[ref] = now; done.push(ref); }
+          } catch (error) { ref = null; }
+          refs.set(original, { picture, ref });
+        }
+        await this.markSent(done);
+        // Applied to the board as it is now: it may have changed while the pictures were on their way.
+        let changed = false;
+        for (const link of linksOf(this.app.config)) {
+          const found = refs.get(link.customImg);
+          if (!found) continue;
+          if (found.ref && found.picture !== link.customImg) { link.customImg = found.picture; changed = true; }
+          if (found.ref && link.iconRef !== found.ref) { link.iconRef = found.ref; changed = true; }
+          if (!found.ref && link.iconRef !== undefined) { delete link.iconRef; changed = true; }
+        }
+        if (changed) this.saveQuietly();
+        return changed;
+      });
+    }
+
+    /* After a board came in: a bookmark that names a picture this device does
+       not hold gets it from the relay. One it holds an older picture for
+       shows its fallback until the new one is here, so the old one is never
+       sent back as if it were this device's own choice. */
+    takePictures() {
+      return this.pictures(async (relay) => {
+        const wanted = new Set();
+        for (const link of linksOf(this.app.config)) {
+          if (!isRef(link.iconRef)) continue;
+          if (isPicture(link.customImg) && await pictureRef(link.customImg) === link.iconRef) continue;
+          wanted.add(link.iconRef);
+        }
+        if (!wanted.size) return;
+        let changed = false;
+        for (const link of linksOf(this.app.config)) {
+          if (wanted.has(link.iconRef) && link.customImg !== undefined) { delete link.customImg; changed = true; }
+        }
+        if (changed) this.keepPictures();
+        const now = Date.now();
+        const got = new Map();
+        for (const ref of wanted) {
+          if (now - (this.pictureMisses.get(ref) || 0) < PICTURE_RETRY) continue;
+          let picture = null;
+          try { picture = await relay.getPicture(ref); } catch (error) { /* asked again later */ }
+          if (isPicture(picture) && picture.length <= PICTURE_LIMIT && await pictureRef(picture) === ref) got.set(ref, picture);
+          else this.pictureMisses.set(ref, now);
+        }
+        if (!got.size) return;
+        await this.markSent([...got.keys()]);
+        changed = false;
+        for (const link of linksOf(this.app.config)) {
+          const picture = got.get(link.iconRef);
+          if (picture && link.customImg !== picture) { link.customImg = picture; changed = true; }
+        }
+        if (changed) this.keepPictures();
+      });
+    }
+
+    /* Saved like an edit, so the model holds the picture as this device's
+       own reading (it never leaves) and the next board that comes in keeps it. */
+    keepPictures() {
+      this.app.saveConfig();
+      this.app.grid?.render();
     }
 
     async adoptView(view) {
@@ -354,6 +511,8 @@
       if (window.NordlysSyncModel.normalize(this.app.config)) this.saveQuietly();
       const view = await this.engine.enable({ snapshot: await this.profiles.snapshot(this.app.config), mode, code: code || null });
       await this.adoptView(view);
+      // The pictures can only travel once there is a code to seal them with.
+      await this.pushNow();
     }
 
     async disable() {

@@ -72,8 +72,9 @@
       return hex(await root.crypto.subtle.sign("HMAC", names, encoder.encode(device))).slice(0, 32);
     }
 
-    async lock(device, items) {
-      const { key, room } = await this.secrets();
+    async lock(device, items, room) {
+      const { key, room: own } = await this.secrets();
+      room ||= own;
       const iv = root.crypto.getRandomValues(new Uint8Array(12));
       const text = encoder.encode(JSON.stringify({ v: 1, d: device, e: items }));
       const sealed = new Uint8Array(await root.crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: encoder.encode(room) }, key, text));
@@ -84,9 +85,10 @@
     }
 
     // Null for anything this code does not open: it is not ours to read.
-    async open(blob) {
+    async open(blob, room) {
       try {
-        const { key, room } = await this.secrets();
+        const { key, room: own } = await this.secrets();
+        room ||= own;
         const bytes = fromBase64(blob);
         const text = await root.crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes.slice(0, 12), additionalData: encoder.encode(room) }, key, bytes.slice(12));
         const value = JSON.parse(decoder.decode(text));
@@ -94,8 +96,8 @@
       } catch (error) { return null; }
     }
 
-    async ask(path, options = {}) {
-      const { room } = await this.secrets();
+    async ask(path, options = {}, room) {
+      room ||= (await this.secrets()).room;
       const answer = await this.fetch(`${this.url}/v1/r/${room}${path}`, {
         ...options, credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer",
         signal: root.AbortSignal?.timeout ? root.AbortSignal.timeout(TIMEOUT) : undefined
@@ -129,6 +131,29 @@
         if (Object.keys(items).length) await this.ask(path, { method: "PUT", headers: { "Content-Type": "text/plain" }, body: await this.lock(device, items) });
         else { await this.ask(path, { method: "DELETE" }); delete this.devices[device]; }
       }
+    }
+
+    /* An icon picture is too large for the sync items, so each one travels
+       on its own: sealed like them, under a room of its own named from the
+       code and the picture's id, so the relay can tell neither the picture
+       nor which board it belongs to. The same picture is filed once, however
+       many devices send it. */
+    async pictureRoom(id) { return this.tag(`picture:${id}`); }
+
+    async putPicture(id, picture) {
+      const room = await this.pictureRoom(id);
+      await this.ask(`/${room}`, { method: "PUT", headers: { "Content-Type": "text/plain" }, body: await this.lock(id, { picture }, room) }, room);
+    }
+
+    // The picture filed under this id, or null when there is none to open.
+    async getPicture(id) {
+      const room = await this.pictureRoom(id);
+      const body = await (await this.ask("", {}, room)).json();
+      for (const blob of Object.values(body?.items || {})) {
+        const value = await this.open(blob, room);
+        if (value?.d === id && typeof value.e.picture === "string") return value.e.picture;
+      }
+      return null;
     }
 
     async set(items) {

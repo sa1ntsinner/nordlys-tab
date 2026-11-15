@@ -54,8 +54,9 @@ The limits shape everything below:
 
 - about 100 KB in total, 8 KB per item, 512 items;
 - about 120 writes a minute and 1,800 an hour;
-- nothing large fits: uploaded or cropped icon images, wallpapers, video
-  loops and custom CSS stay on the device they were added on.
+- nothing large fits: icon images, wallpapers, video loops and custom CSS
+  stay on the device they were added on (icon images travel with a code, see
+  below).
 
 ## Starting point
 
@@ -144,6 +145,16 @@ video loops, custom CSS, folders linked to Chrome bookmark folders (their
 folder ids mean nothing in another profile), recent searches and One page fit
 sizes. On other devices an image icon falls back to the site's favicon or its
 letter. Settings lists what stayed behind on this device.
+
+With a code, icon images do travel, outside the items: each picture is sealed
+like a piece and sent to a relay room of its own, named from the code and the
+picture's id (the first 128 bits of its SHA-256). The bookmark carries only
+that id (`iconRef`). A device that holds a bookmark whose id names a picture
+it does not have fetches it, and until it has it shows the fallback, so an
+older picture is never sent back as its own. Pictures over 120,000 characters
+are drawn again at 384 px first. A picture is sent again after 180 days, well
+inside the relay's 400. Only the board on the page is looked at, so a picture
+in another space travels when that space is opened.
 
 ## Interface
 
