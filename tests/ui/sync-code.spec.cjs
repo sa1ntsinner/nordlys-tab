@@ -10,12 +10,13 @@ async function relayFor(page) {
   const { handle, memoryStore } = await import('../../relay/src/core.js');
   const store = memoryStore();
   const asked = [];
-  let down = false;
+  let down = false, slow = 0;
   const answer = (url, options = {}) => handle(new Request(url, { method: options.method, headers: options.headers, body: options.body }), store);
   await page.route(`${Relay.URL}/**`, async route => {
     const request = route.request();
     asked.push(`${request.method()} ${new URL(request.url()).pathname}`);
     if (down) return route.abort('connectionrefused');
+    if (slow) await new Promise(resolve => setTimeout(resolve, slow));
     /* Asked afresh every time: Playwright's WebKit cannot hand a page a 304.
        The unit tests cover the answer without the pieces. */
     const headers = { ...request.headers() };
@@ -23,7 +24,7 @@ async function relayFor(page) {
     const response = await answer(request.url(), { method: request.method(), headers, body: request.postData() ?? undefined });
     await route.fulfill({ status: response.status, headers: Object.fromEntries(response.headers), body: await response.text() });
   });
-  return { store, asked, answer, down: value => { down = value; } };
+  return { store, asked, answer, down: value => { down = value; }, slow: ms => { slow = ms; } };
 }
 function area() {
   const data = new Map();
@@ -323,4 +324,44 @@ test('a picture too large to send travels drawn at the size a tile shows', async
   const picture = await Relay.create(code, { fetchImpl: relay.answer }).getPicture(view.profiles[0].config.groups[0].links[0].iconRef);
   expect(picture.length).toBeLessThanOrEqual(120000);
   expect(await page.evaluate(() => window.Nordlys.config.groups[0].links[0].customImg)).toBe(picture);
+});
+
+/* The board is synced before its pictures are, and the line under the switch
+   said "Synced" while they were still on their way. */
+test('the status says icons are still being sent, then synced', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const relay = await relayFor(page);
+  await page.evaluate(([red, blue]) => {
+    const [a, b] = window.Nordlys.config.groups[0].links;
+    a.customImg = red; b.customImg = blue; window.Nordlys.saveConfig();
+  }, [RED, BLUE]);
+  await openSync(page);
+  relay.slow(400);
+  await choose(page, 'new');
+  const state = page.locator('#sec-sync .sync-state');
+  await expect(state).toHaveText(/^Sending icons… [01] of 2$/);
+  await expect(state).toHaveClass(/is-syncing/);
+  await expect(state).toHaveClass(/is-ready/, { timeout: 10000 });
+  await expect(state).not.toContainText('icons');
+});
+
+test('a device that joins says it is getting the icons until they are here', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const relay = await relayFor(page);
+  const code = Relay.newCode();
+  const desktop = await otherDevice(relay, 'Desktop');
+  const ref = require('node:crypto').createHash('sha256').update(RED).digest('hex').slice(0, 32);
+  await Relay.create(code, { fetchImpl: relay.answer }).putPicture(ref, RED);
+  await desktop.enable({
+    snapshot: { person: {}, profiles: [{ id: 'main', name: 'Main', color: 'teal', config: { theme: 'aurora-void', groups: [{ id: 'g-far', label: 'From the desktop', cols: 2, links: [{ id: 'l-far', name: 'Far', url: 'https://far.example/', iconRef: ref }] }] } }] },
+    mode: 'merge', code
+  });
+  await openSync(page);
+  relay.slow(600);
+  const joined = page.evaluate(code => window.Nordlys.sync.enable('use-sync', code), code);
+  const state = page.locator('#sec-sync .sync-state');
+  await expect(state).toHaveText('Getting icons… 0 of 1');
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0].links[0].customImg), { timeout: 10000 }).toBe(RED);
+  await joined;
+  await expect(state).toHaveClass(/is-ready/, { timeout: 10000 });
 });

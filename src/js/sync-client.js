@@ -272,9 +272,19 @@
     /* One picture job at a time, so a picture being fetched is never taken
        for this device's own while it is on its way. */
     pictures(task) {
-      const next = this.pictureQueue.then(() => (this.withCode() ? task(this.pictureRelay()) : null)).catch(() => null);
+      const next = this.pictureQueue.then(() => (this.withCode() ? task(this.pictureRelay()) : null)).catch(() => null).finally(() => this.working(null));
       this.pictureQueue = next;
       return next;
+    }
+
+    /* Pictures on their way, for the status line under the switch: a board
+       is "Synced" before its pictures are, and saying so while thirty are
+       still uploading was not true. Null when none are. */
+    working(kind, done = 0, total = 0) {
+      const next = kind && total ? { kind, done, total } : null;
+      if (JSON.stringify(next) === JSON.stringify(this.pictureWork || null)) return;
+      this.pictureWork = next;
+      this.emit();
     }
 
     pictureRelay() {
@@ -303,20 +313,27 @@
         const now = Date.now();
         const refs = new Map();
         const done = [];
+        const due = [];
         for (const link of linksOf(this.app.config)) {
           const original = link.customImg;
-          if (!isPicture(original) || refs.has(original)) continue;
-          let picture = original, ref;
+          if (!isPicture(original) || refs.has(original) || due.some((item) => item.original === original)) continue;
+          const item = { original, picture: original, ref: null };
           try {
-            if (picture.length > PICTURE_LIMIT) picture = await smaller(picture);
-            ref = await pictureRef(picture);
-            if (!(now - (sent[ref] || 0) < PICTURE_RESEND)) { await relay.putPicture(ref, picture); sent[ref] = now; done.push(ref); }
-          } catch (error) {
+            if (item.picture.length > PICTURE_LIMIT) item.picture = await smaller(item.picture);
+            item.ref = await pictureRef(item.picture);
+          } catch (error) { /* not sendable: its bookmark loses an old id below */ }
+          if (item.ref && !(now - (sent[item.ref] || 0) < PICTURE_RESEND)) due.push(item);
+          else refs.set(original, item);
+        }
+        for (const [index, item] of due.entries()) {
+          this.working("send", index, due.length);
+          try { await relay.putPicture(item.ref, item.picture); sent[item.ref] = now; done.push(item.ref); }
+          catch (error) {
             // Asked to wait: the rest go with a later push, and each bookmark keeps the id it had.
             if (error?.status === 429) break;
-            ref = null;
+            item.ref = null;
           }
-          refs.set(original, { picture, ref });
+          refs.set(item.original, item);
         }
         await this.markSent(done);
         // Applied to the board as it is now: it may have changed while the pictures were on their way.
@@ -353,8 +370,9 @@
         if (changed) this.keepPictures();
         const now = Date.now();
         const got = new Map();
-        for (const ref of wanted) {
-          if (now - (this.pictureMisses.get(ref) || 0) < PICTURE_RETRY) continue;
+        const asking = [...wanted].filter((ref) => !(now - (this.pictureMisses.get(ref) || 0) < PICTURE_RETRY));
+        for (const [index, ref] of asking.entries()) {
+          this.working("get", index, asking.length);
           let picture = null;
           try { picture = await relay.getPicture(ref); } catch (error) { /* asked again later */ }
           if (isPicture(picture) && picture.length <= PICTURE_LIMIT && await pictureRef(picture) === ref) got.set(ref, picture);

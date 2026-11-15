@@ -808,6 +808,8 @@
   "sync.stateReady": "{when} に同期済み",
   "sync.stateReadyNow": "同期済み",
   "sync.stateSyncing": "同期中…",
+  "sync.gettingIcons": "アイコンを取得中… {done}/{total}",
+  "sync.sendingIcons": "アイコンを送信中… {done}/{total}",
   "sync.stays": "各デバイスに残るもの: アイコン画像 (コードで同期する場合を除く)、壁紙と動画、カスタム CSS、ブラウザーのブックマークに連動するフォルダー、最近の検索、ダッシュボードのカードの中身 (タスク、メモ、習慣、保管したタブ)。",
   "sync.thisDevice": "このデバイス",
   "sync.thisOne": "このデバイス",

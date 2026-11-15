@@ -808,6 +808,8 @@
   "sync.stateReady": "{when}已同步",
   "sync.stateReadyNow": "已同步",
   "sync.stateSyncing": "正在同步…",
+  "sync.gettingIcons": "正在获取图标… {done}/{total}",
+  "sync.sendingIcons": "正在发送图标… {done}/{total}",
   "sync.stays": "保留在各设备上的内容：图标图片（用代码同步时除外）、壁纸和视频、自定义 CSS、跟随浏览器书签的文件夹、最近的搜索，以及仪表板卡片里的内容（任务、笔记、习惯、暂存的标签页）。",
   "sync.thisDevice": "此设备",
   "sync.thisOne": "此设备",

@@ -808,6 +808,8 @@
   "sync.stateReady": "Synchronisé {when}",
   "sync.stateReadyNow": "Synchronisé",
   "sync.stateSyncing": "Synchronisation…",
+  "sync.gettingIcons": "Réception des icônes… {done} sur {total}",
+  "sync.sendingIcons": "Envoi des icônes… {done} sur {total}",
   "sync.stays": "Ce qui reste sur chaque appareil : images d’icônes (sauf en synchronisant avec un code), fonds d’écran et vidéos, CSS personnalisé, dossiers qui suivent les favoris du navigateur, recherches récentes et le contenu des cartes du tableau de bord (tâches, notes, habitudes, onglets rangés).",
   "sync.thisDevice": "Cet appareil",
   "sync.thisOne": "Cet appareil",

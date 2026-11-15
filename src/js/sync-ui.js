@@ -377,7 +377,10 @@
       }
       const input = el("input", { type: "checkbox", id: "cfg-sync-on", checked: status.enabled ? true : null, "aria-labelledby": "cfg-sync-on-label" });
       input.addEventListener("change", () => this.toggleSync(input));
-      const state = {
+      // Pictures still on their way are what is happening now, whatever the last send said.
+      const work = status.enabled ? this.client.pictureWork : null;
+      const stateClass = work ? "syncing" : status.state;
+      const state = work ? say(work.kind === "send" ? "sync.sendingIcons" : "sync.gettingIcons", `${work.kind === "send" ? "Sending" : "Getting"} icons… ${work.done} of ${work.total}`, { done: work.done, total: work.total }) : {
         off: say("sync.stateOff", "Off"),
         syncing: say("sync.stateSyncing", "Syncing…"),
         ready: status.lastSync ? say("sync.stateReady", `Synced ${ago(status.lastSync)}`, { when: ago(status.lastSync) }) : say("sync.stateReadyNow", "Synced"),
@@ -395,7 +398,7 @@
           this.button(say("sync.codeCopy", "Copy"), () => this.copyCode(status.code), { key: "copy-code", small: true })
         ]) : null,
         status.enabled ? el("div", { class: "sync-status", role: "status" }, [
-          el("span", { class: `sync-state is-${status.state}`, text: state }),
+          el("span", { class: `sync-state is-${stateClass}`, text: state }),
           status.error ? el("span", { class: "sync-error", title: status.error, text: this.reason(status) }) : null,
           el("div", { class: "sync-meter", role: "meter", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(used), "aria-label": say("sync.meterLabel", "Space used in sync") }, el("i", { style: `width:${used}%` })),
           el("small", { text: say("sync.meter", `${used} of 100 KB`, { used }) }),

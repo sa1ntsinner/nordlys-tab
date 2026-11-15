@@ -17,6 +17,7 @@ Chrome Web Store's rule that they only ever go up.
 
 ### Fixed
 
+- With sync by code, the status under the switch says "Sending icons… 12 of 30" or "Getting icons… 3 of 30" while pictures are on their way. It used to say "Synced" as soon as the bookmarks were, while the pictures were still travelling.
 - Sync says why it stopped instead of "Sync didn't answer" when the reason is known. A code takes at most 12 devices; a device past that now says so and points to the Devices list, where forgetting one you no longer use lets it join. When sync is full, it names the folder that takes the most room. "Sync didn't answer" now says that Nordlys tries again when you open a new tab, not only with your next change, and turning sync on when the relay does not answer says that sync stays off.
 - One device sending something that cannot be read no longer stops sync for all the others. Every new tab used to end on "What another device sent could not be read", and no change from any device came in. Now that device is left out, everything else comes in, and the status says that one device's data could not be read.
 - A deleted space now frees its storage once it can no longer be restored, 30 days after it was deleted. Its folders and icon pictures used to stay on the device for good.

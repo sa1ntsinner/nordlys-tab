@@ -808,6 +808,8 @@
   "sync.stateReady": "Sincronizado {when}",
   "sync.stateReadyNow": "Sincronizado",
   "sync.stateSyncing": "Sincronizando…",
+  "sync.gettingIcons": "Recibiendo iconos… {done} de {total}",
+  "sync.sendingIcons": "Enviando iconos… {done} de {total}",
   "sync.stays": "Lo que se queda en cada dispositivo: imágenes de iconos (salvo si sincronizas con un código), fondos y vídeos, CSS propio, carpetas que siguen los marcadores del navegador, búsquedas recientes y lo que guardan las tarjetas del panel (tareas, notas, hábitos, pestañas guardadas).",
   "sync.thisDevice": "Este dispositivo",
   "sync.thisOne": "Este dispositivo",

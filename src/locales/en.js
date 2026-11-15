@@ -808,6 +808,8 @@
   "sync.stateReady": "Synced {when}",
   "sync.stateReadyNow": "Synced",
   "sync.stateSyncing": "Syncing…",
+  "sync.gettingIcons": "Getting icons… {done} of {total}",
+  "sync.sendingIcons": "Sending icons… {done} of {total}",
   "sync.stays": "What stays on each device: icon images (unless you sync with a code), wallpapers and videos, custom CSS, folders that follow your browser's bookmarks, recent searches, and what dashboard cards hold (tasks, notes, habits, stashed tabs).",
   "sync.thisDevice": "This device",
   "sync.thisOne": "This device",
