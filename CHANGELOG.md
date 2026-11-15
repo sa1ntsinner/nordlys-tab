@@ -6,30 +6,34 @@ Chrome Web Store's rule that they only ever go up.
 
 ## [Unreleased]
 
+## [2.6.3] — 2026-11-15
+
+Icons now travel when you sync with a code, and sync says what it is doing and why it stopped. Your folders, bookmarks and settings stay as they are.
+
 ### Added
-- Safari: the Mac app opens on the two steps Safari leaves to the person (turn the extension on, choose Nordlys for new tabs), in Safari's own words in eight languages, and shows when the first is done.
 
 - Invert, in the icon dialog. It turns the icon over, black for white, and back; whichever you leave it on stays on every theme. The bookmark's own form has the same choice under Icon tone, as Inverted.
+- Safari: the Mac app opens on the two steps Safari leaves to you (turn the extension on, choose Nordlys for new tabs), in Safari's own words in eight languages, and shows when the first is done.
 
 ### Changed
 
 - A mark in black or white with a colour of its own beside it keeps the colour when it is re-toned. Amazon's black letter turns white on a dark tile and its orange stroke stays orange; it used to stay black and unreadable, or be drawn as one flat shape. A white sign inside a coloured shape (Steam) is left as it is.
+- Turning off sync with a code now deletes this device's setup from the relay, instead of leaving it there for 400 days. Icon pictures are shared by every device on the code, so they are deleted too when no other device is left on it.
+- The sync relay limits how often one address can write to it and refuses anything too large, so nobody can fill it. A device asked to wait tries again later.
 
 ### Fixed
 
-- With sync by code, the status under the switch says "Sending icons… 12 of 30" or "Getting icons… 3 of 30" while pictures are on their way. It used to say "Synced" as soon as the bookmarks were, while the pictures were still travelling.
-- Sync says why it stopped instead of "Sync didn't answer" when the reason is known. A code takes at most 12 devices; a device past that now says so and points to the Devices list, where forgetting one you no longer use lets it join. When sync is full, it names the folder that takes the most room. "Sync didn't answer" now says that Nordlys tries again when you open a new tab, not only with your next change, and turning sync on when the relay does not answer says that sync stays off.
+- Icons now arrive on your other devices when you sync with a code. The picture an icon is made of stayed on the device it was chosen on, so the others showed a letter or a plain glyph in its place. Each picture now travels on its own, locked like the rest of your setup. Devices already syncing send theirs the next time a new tab opens there, and the others fetch them; nothing has to be picked again. With the browser's own sync, icon pictures still stay where they were added: they don't fit.
+- While pictures are on their way, the status under the sync switch says "Sending icons… 12 of 30" or "Getting icons… 3 of 30". It used to say "Synced" as soon as the bookmarks were.
+- Sync says why it stopped instead of "Sync didn't answer" when the reason is known. A code takes at most 12 devices; a device past that now says so and points to the Devices list, where forgetting one you no longer use lets it join. When sync is full, it names the folder that takes the most room. "Sync didn't answer" now says that Nordlys tries again when you open a new tab, and turning sync on when the relay does not answer says that sync stays off. When the relay cannot be reached, sync no longer says that what another device sent could not be read.
 - One device sending something that cannot be read no longer stops sync for all the others. Every new tab used to end on "What another device sent could not be read", and no change from any device came in. Now that device is left out, everything else comes in, and the status says that one device's data could not be read.
-- A deleted space now frees its storage once it can no longer be restored, 30 days after it was deleted. Its folders and icon pictures used to stay on the device for good.
-- The clock turns over on the second; it could show a new minute up to a second late. A tab out of sight no longer ticks the clock or follows the sun, and shows the right time the moment it is back. The part of Nordlys that answers "nl" in the address bar no longer rereads your whole setup on every save.
-- An edit made just before the tab was closed, or before a bookmark was opened in it, is no longer lost with sync on. It waited a moment to be sent and went with the tab, and the next tab could put the copy from sync, without the edit, over the board. Now the next tab sends it first. An edit that could not be sent (no connection) is sent again when a tab opens, not only after the next edit.
-- Turning off sync with a code now deletes this device's setup from the relay, instead of leaving it there for 400 days. Icon pictures are shared by every device on the code, so they are deleted too when no other device is left on it.
-- The sync relay limits how often one address can write to it and refuses a body too large before reading it, so nobody can fill it. A device asked to wait tries again later; it no longer says that what another device sent could not be read when the relay simply could not be reached.
+- An edit made just before the tab was closed, or before a bookmark was opened in it, is no longer lost with sync on. The next tab could put the copy from sync, without the edit, over the board. Now the next tab sends the edit first. An edit that could not be sent (no connection) is sent again when a tab opens, not only after the next edit.
 - With the browser's own sync, a new tab now shows what changed on your other devices while no tab was open. It used to wait until something changed again while it was open.
-- Sync no longer stops with "One folder is too big to sync" on a board whose names are in Russian, Japanese or another script outside Latin. Its pieces were measured in letters while the limit counts bytes, and those letters take two or three bytes each.
-- Icons now arrive on your other devices when you sync with a code. The picture an icon is made of stayed on the device it was chosen on, so the others showed a letter or a plain glyph in its place. Each picture now travels on its own, locked like the rest of your setup. Devices already syncing send theirs the next time a new tab opens there, and the others fetch them; nothing has to be picked again. With the browser's own sync icon pictures still stay where they were added: they don't fit.
+- Sync no longer stops with "One folder is too big to sync" on a board whose names are in Russian, Japanese or another script outside Latin.
+- A deleted space now frees its storage once it can no longer be restored, 30 days after it was deleted. Its folders and icon pictures used to stay on the device for good.
+- The clock turns over on the second; it could show a new minute up to a second late. A tab out of sight no longer ticks the clock or follows the sun, and shows the right time the moment it is back.
+- Start on the focus timer and its card could miss a click that landed as the second ticked over, and so could a button on a dashboard card that had nothing set up yet.
 - In Safari, Tab no longer leaves the focus timer from one of its buttons, and a control switched off while it has focus no longer sends the next Tab to the page behind.
-- Start on the focus timer and its card could miss a click that landed as the second ticked over, and so could a button on a dashboard card that had nothing set up yet. Those buttons are no longer redrawn every second.
 
 ## [2.6.2] — 2026-11-11
 

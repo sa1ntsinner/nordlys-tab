@@ -1,8 +1,8 @@
 # Nordlys privacy policy
 
 Effective date: August 16, 2026
-Last updated: November 10, 2026
-Version: 2.6.2
+Last updated: November 15, 2026
+Version: 2.6.3
 
 Nordlys runs as a new tab page in your browser. It has no account. Its one server is a small relay, used only if you turn on sync with a code (section 3), and it holds nothing it can read.
 
