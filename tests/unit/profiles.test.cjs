@@ -79,6 +79,37 @@ test('the last profile and the one in use cannot be deleted; a deleted one can c
   assert.deepStrictEqual((await profiles.configOf(homeId, work)).groups.map(g => g.label), ['Daily']);
 });
 
+/* A deleted space left the restore list after 30 days and its board stayed
+   in storage for ever. */
+test('a space past its 30 days takes its stored board with it; a live or restorable one keeps it', async () => {
+  const s = stores();
+  const profiles = new NordlysProfiles(s);
+  profiles.init('Work');
+  const work = config('aurora-void', ['Daily']);
+  const old = await profiles.create({ name: 'Old', from: 'copy', live: work });
+  const recent = await profiles.create({ name: 'Recent', from: 'copy', live: work });
+  const live = await profiles.create({ name: 'Live', from: 'copy', live: work });
+  await profiles.remove(old, work);
+  await profiles.remove(recent, work);
+  const state = JSON.parse(s.meta.getItem('nordlys_profiles'));
+  const long = Date.now() - 31 * 86400000;
+  state.deleted = state.deleted.map(p => (p.id === old ? { ...p, deletedAt: long } : p));
+  // The same id deleted long ago and back in the list (restored on another device) keeps its board.
+  state.deleted.push({ id: live, name: 'Live', color: 'teal', deletedAt: long });
+  s.meta.setItem('nordlys_profiles', JSON.stringify(state));
+  // A tab opened before the 30 days ran out may still list it: it cannot bring back an empty board.
+  const stale = new NordlysProfiles(s); stale.init('x');
+  stale.state.deleted.push({ id: old, name: 'Old', color: 'teal', deletedAt: long });
+  const reopened = new NordlysProfiles(s); reopened.init('x');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.ok(!s.raw.has(`nordlys_profile.${old}`), 'the old one went');
+  assert.ok(s.raw.has(`nordlys_profile.${recent}`), 'one that can still be restored stays');
+  assert.ok(s.raw.has(`nordlys_profile.${live}`), 'one in the list stays');
+  assert.deepStrictEqual(reopened.deleted().map(p => p.name), ['Recent']);
+  assert.deepStrictEqual(stale.deleted().map(p => p.name), ['Recent']);
+  assert.strictEqual(await stale.restore(old), false);
+});
+
 test('rename, colour and order are kept', async () => {
   const s = stores();
   const profiles = new NordlysProfiles(s);

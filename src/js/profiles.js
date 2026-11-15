@@ -78,10 +78,20 @@
         this.state = { version: 1, active: id, list: [{ id, name: cleanName(firstName), color: COLORS[0] }], deleted: [] };
       }
       if (!this.state.list.some((profile) => profile.id === this.state.active)) this.state.active = this.state.list[0].id;
-      const now = Date.now();
-      this.state.deleted = (this.state.deleted || []).filter((profile) => now - profile.deletedAt < KEEP_DELETED_MS);
+      const all = this.state.deleted || [];
+      this.state.deleted = all.filter((profile) => this.restorable(profile));
+      /* A space past its thirty days takes its board with it. Its slot was
+         kept for ever, every folder and icon picture of it. Never a slot of a
+         space in the list or one that can still be restored. */
+      const kept = new Set([this.state.active, ...this.state.list.map((profile) => profile.id), ...this.state.deleted.map((profile) => profile.id)]);
+      // The list is not written here: a removal that fails is tried again at the next open.
+      for (const id of new Set(all.map((profile) => profile.id))) {
+        if (!kept.has(id)) Promise.resolve(this.local.remove(SLOT + id)).catch(() => {});
+      }
       return this;
     }
+
+    restorable(profile) { return Date.now() - profile.deletedAt < KEEP_DELETED_MS; }
 
     /* Another tab changed the list; this one follows. */
     reload() {
@@ -92,7 +102,7 @@
 
     list() { return clone(this.state.list); }
     active() { return clone(this.state.list.find((profile) => profile.id === this.state.active)); }
-    deleted() { return clone(this.state.deleted); }
+    deleted() { return clone(this.state.deleted.filter((profile) => this.restorable(profile))); }
     has(id) { return this.state.list.some((profile) => profile.id === id); }
     find(query) {
       const wanted = String(query || "").trim().toLowerCase();
@@ -169,7 +179,8 @@
 
     async restore(id) {
       const entry = this.state.deleted.find((profile) => profile.id === id);
-      if (!entry) return false;
+      // A tab left open past the thirty days may still list it; its board may be gone.
+      if (!entry || !this.restorable(entry)) return false;
       this.state.deleted = this.state.deleted.filter((profile) => profile.id !== id);
       const { id: restoredId, name, color, index } = entry;
       this.state.list.splice(Math.min(index ?? this.state.list.length, this.state.list.length), 0, { id: restoredId, name, color });
