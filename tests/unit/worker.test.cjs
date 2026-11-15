@@ -78,7 +78,12 @@ test('while a focus runs, a tab that goes to a site the timer card lists waits o
   store.nordlys_config = { ...store.nordlys_config, dashboard: { widgets: [{ id: 'w1', type: 'timer', settings: { shut: 'youtube.com\nhttps://www.Reddit.com/r/all, news.test' } }, { id: 'w2', type: 'notes', settings: { shut: 'notes.test' } }] } };
   const visit = async (url) => { done.sent.length = 0; await on.updated(7, { url }); return done.sent.map(([tab, to]) => [tab, decodeURIComponent(to.split('?u=')[1] || '')]); };
   store['nordlys_dash.focus-timer'] = { running: true, phase: 'focus', endsAt: Date.now() + 60000 };
-  on.stored();
+  // A write it does not read is not a reason to read the config again.
+  on.stored({ nordlys_sync: {} }, 'local');
+  on.stored({ 'nordlys_dash.focus-timer': {} }, 'sync');
+  await settle();
+  assert.equal(on.listening, false);
+  on.stored({ 'nordlys_dash.focus-timer': {} }, 'local');
   await settle();
   assert.equal(on.listening, true);
   assert.deepEqual(await visit('https://m.youtube.com/watch?v=1'), [[7, 'https://m.youtube.com/watch?v=1']]);
@@ -92,7 +97,7 @@ test('while a focus runs, a tab that goes to a site the timer card lists waits o
   assert.deepEqual(await visit('https://youtube.com/'), [], 'nor a focus whose time is up');
   store['nordlys_dash.focus-timer'] = { running: false, phase: 'focus', endsAt: Date.now() + 60000 };
   assert.deepEqual(await visit('https://youtube.com/'), [], 'nor a paused one');
-  on.stored();
+  on.stored({ 'nordlys_dash.focus-timer': {} }, 'local');
   await settle();
   assert.equal(on.listening, false);
 });

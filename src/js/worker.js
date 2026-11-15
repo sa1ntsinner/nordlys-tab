@@ -93,7 +93,10 @@ if (typeof importScripts === "function") importScripts("commands.js", "search-so
     else chrome.tabs?.onUpdated?.removeListener(shut);
   }
   chrome.tabs?.onUpdated?.addListener(shut);
-  chrome.storage.onChanged?.addListener(() => { listen(); });
+  // Only the two things it reads: every other write (sync, icons, cards) used to read the whole config again.
+  chrome.storage.onChanged?.addListener((changes, area) => {
+    if (area === "local" && changes && ("nordlys_config" in changes || "nordlys_dash.focus-timer" in changes)) listen();
+  });
   listen();
 
   /* ── nl in the address bar ─────────────────────────────────── */

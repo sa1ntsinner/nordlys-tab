@@ -191,7 +191,8 @@ class NordlysBackgroundEngine {
     this.daylight = Boolean(on) && Boolean(window.NordlysSky?.daylight);
     clearInterval(this.skyTimer);
     if (this.daylight) {
-      this.skyTimer = setInterval(() => this.followSun(), 60000);
+      // Out of sight it waits; coming back into view catches up (skyWatch).
+      this.skyTimer = setInterval(() => { if (!document.hidden) this.followSun(); }, 60000);
       if (!this.skyWatch) {
         this.skyWatch = () => { if (!document.hidden && this.daylight) this.followSun(); };
         document.addEventListener("visibilitychange", this.skyWatch);

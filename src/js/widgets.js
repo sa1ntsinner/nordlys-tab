@@ -41,7 +41,24 @@ class ClockWidget {
 
     this.update();
     this.firstPaint = false;
-    setInterval(() => this.update(), 1000);
+    this.tick();
+    /* A tab out of sight does not tick. Back in view it shows the time at
+       once, set like a first paint rather than every figure turning over. */
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) return;
+      this.firstPaint = true;
+      this.update();
+      this.firstPaint = false;
+      this.tick();
+    });
+  }
+
+  /* On the second, not a second after the page happened to open: a clock
+     started 900 ms into a second showed every new second 900 ms late. */
+  tick() {
+    clearTimeout(this.timer);
+    if (document.hidden) return;
+    this.timer = setTimeout(() => { if (document.hidden) return; this.update(); this.tick(); }, 1000 - (Date.now() % 1000) + 5);
   }
 
   get cfg() { return this.app?.config || this.startCfg; }
