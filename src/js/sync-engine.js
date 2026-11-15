@@ -213,12 +213,29 @@
       });
     }
 
+    /* With a code, this device's piece is deleted from the relay first, as far
+       as the relay can be reached; one out of reach is left to expire. Answers
+       the code and whether any other device was left on it, so the caller can
+       decide about what devices share (the icon pictures). */
     disable() {
       return this.run(async () => {
+        let left = null;
+        const code = this.state.enabled ? this.state.relay?.code : null;
+        if (code) {
+          try {
+            const area = this.cloud();
+            const remote = await area.get(null);
+            const own = `${M().PREFIX}${this.state.device.id}.`;
+            const keys = Object.keys(remote).filter((key) => key.startsWith(own));
+            if (keys.length) await area.remove(keys);
+            left = { code, alone: !Object.keys(remote).some((key) => key.startsWith(M().PREFIX) && !key.startsWith(own)) };
+          } catch (error) { /* deleted by the relay itself 400 days after it last changed */ }
+        }
         this.state.enabled = false;
         this.state.relay = null;
         this.state.status = { ...this.state.status, state: "off", error: null, reason: null };
         await this.save();
+        return left;
       });
     }
 

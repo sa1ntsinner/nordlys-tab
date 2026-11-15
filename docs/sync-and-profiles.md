@@ -24,6 +24,12 @@ through a relay instead.
   something changed, so the page asks: when a tab opens or comes back into
   view, and every two minutes while it stays in view, with every tab sharing
   one clock (`nordlys_relay_asked`, at most one question in 20 seconds).
+- Turning sync with a code off deletes this device's piece (best effort: a
+  relay out of reach leaves it to the 400-day prune). Icon pictures are one
+  shared row per picture for every device on the code, so they are deleted
+  (those in `nordlys_sync_pictures`) only when no other readable device piece
+  is left in the room; `nordlys_sync_pictures` is cleared either way. The
+  other devices' boards keep what they already took.
 - A push waits 2.5 s after an edit. `nordlys_sync_dirty` (localStorage, set
   synchronously with the save) stays until a push ends in `ready`; while it is
   set, a tab pushes when it opens and before every pull, so an edit whose tab

@@ -212,6 +212,28 @@ test('an icon picture chosen here reaches the device that enters the code', asyn
   expect(await Relay.create(code, { fetchImpl: relay.answer }).getPicture(link.iconRef)).toBe(RED);
 });
 
+test('turning sync off deletes this device from the relay, and its pictures once no device is left', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const relay = await relayFor(page);
+  await page.evaluate(picture => { const link = window.Nordlys.config.groups[0].links[0]; link.customImg = picture; window.Nordlys.saveConfig(); }, RED);
+  const code = Relay.newCode();
+  await page.evaluate(code => window.Nordlys.sync.enable('merge', code), code);
+  const laptop = await otherDevice(relay, 'Laptop');
+  await laptop.enable({ snapshot: { person: {}, profiles: [] }, mode: 'use-sync', code });
+  const rooms = () => new Set([...relay.store.rows.values()].map(row => row.room)).size;
+  expect(relay.store.rows.size).toBe(3);
+  // The laptop still uses the picture: it stays, and only the laptop's piece and the picture are left.
+  await page.evaluate(() => window.Nordlys.sync.disable());
+  expect(relay.store.rows.size).toBe(2);
+  expect(rooms()).toBe(2);
+  // Back on and off again with no other device left: nothing of this board stays.
+  await laptop.disable();
+  await page.evaluate(code => window.Nordlys.sync.enable('merge', code), code);
+  expect(relay.store.rows.size).toBe(2);
+  await page.evaluate(() => window.Nordlys.sync.disable());
+  expect(relay.store.rows.size).toBe(0);
+});
+
 test('an icon picture chosen on another device is fetched and shown here', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   const relay = await relayFor(page);

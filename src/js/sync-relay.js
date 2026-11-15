@@ -146,6 +146,12 @@
       await this.ask(`/${room}`, { method: "PUT", headers: { "Content-Type": "text/plain" }, body: await this.lock(id, { picture }, room) }, room);
     }
 
+    // Every device that sends this picture files it in the same place, so this deletes it for all of them.
+    async removePicture(id) {
+      const room = await this.pictureRoom(id);
+      await this.ask(`/${room}`, { method: "DELETE" }, room);
+    }
+
     // The picture filed under this id, or null when there is none to open.
     async getPicture(id) {
       const room = await this.pictureRoom(id);

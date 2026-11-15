@@ -18,6 +18,7 @@ Chrome Web Store's rule that they only ever go up.
 ### Fixed
 
 - An edit made just before the tab was closed, or before a bookmark was opened in it, is no longer lost with sync on. It waited a moment to be sent and went with the tab, and the next tab could put the copy from sync, without the edit, over the board. Now the next tab sends it first. An edit that could not be sent (no connection) is sent again when a tab opens, not only after the next edit.
+- Turning off sync with a code now deletes this device's setup from the relay, instead of leaving it there for 400 days. Icon pictures are shared by every device on the code, so they are deleted too when no other device is left on it.
 - The sync relay limits how often one address can write to it and refuses a body too large before reading it, so nobody can fill it. A device asked to wait tries again later; it no longer says that what another device sent could not be read when the relay simply could not be reached.
 - With the browser's own sync, a new tab now shows what changed on your other devices while no tab was open. It used to wait until something changed again while it was open.
 - Sync no longer stops with "One folder is too big to sync" on a board whose names are in Russian, Japanese or another script outside Latin. Its pieces were measured in letters while the limit counts bytes, and those letters take two or three bytes each.

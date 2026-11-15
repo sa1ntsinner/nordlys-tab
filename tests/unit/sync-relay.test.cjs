@@ -141,6 +141,27 @@ test('forgetting a device takes its piece off the relay; turning sync off forget
   assert.strictEqual((await a.status()).code, null);
 });
 
+test('turning sync with a code off deletes this device\'s piece from the relay, and says whether any device is left', async () => {
+  const w = await world();
+  const code = Relay.newCode();
+  const a = await device(w, 'A');
+  const b = await device(w, 'B');
+  await a.enable({ snapshot: snapshot([folder('g1', 'Daily', [['l1', 'Gmail']])]), mode: 'merge', code });
+  await b.enable({ snapshot: snapshot([]), mode: 'use-sync', code });
+  assert.strictEqual(w.store.rows.size, 2);
+  assert.deepStrictEqual(await b.disable(), { code, alone: false });
+  assert.strictEqual(w.store.rows.size, 1);
+  assert.deepStrictEqual(await a.disable(), { code, alone: true });
+  assert.strictEqual(w.store.rows.size, 0);
+  // A relay out of reach does not keep sync on: the piece is left to expire.
+  const c = await device(w, 'C');
+  await c.enable({ snapshot: snapshot([folder('g2', 'Work', [['l2', 'Jira']])]), mode: 'merge', code });
+  w.down(true);
+  assert.strictEqual(await c.disable(), null);
+  assert.strictEqual(c.enabled(), false);
+  assert.strictEqual(w.store.rows.size, 1);
+});
+
 test('nothing changed is answered without the pieces, and the browser way still works beside it', async () => {
   const w = await world();
   const code = Relay.newCode();

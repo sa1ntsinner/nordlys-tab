@@ -537,7 +537,18 @@
       if (!this.engine) return;
       clearTimeout(this.pushTimer);
       try { localStorage.removeItem(UNSENT); } catch (error) { /* nothing to send it with anyway */ }
-      await this.engine.disable();
+      const left = await this.engine.disable();
+      /* The pictures are shared by every device on the code, so they go only
+         when no other device is left; otherwise the relay drops each one 400
+         days after a device last sent it. Best effort, like the piece. */
+      if (left?.alone && this.relay) {
+        const relay = this.relay(left.code);
+        for (const ref of Object.keys(await this.picturesSent())) {
+          try { await relay.removePicture(ref); } catch (error) { break; }
+        }
+      }
+      // Turned on again, with this code or another, every picture is sent afresh.
+      await this.local.remove(PICTURES_KEY);
       this.app.grid?.render();
       this.emit();
     }
