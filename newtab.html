@@ -896,6 +896,15 @@
           <ul class="update-copies-list"></ul>
         </div>
 
+        <!-- The setup as it was after each change, kept by itself with the
+             time (autosave.js). Filled by renderAutosaves; hidden until there
+             is one. -->
+        <details id="autosaves" class="advanced-settings autosaves" hidden>
+          <summary data-i18n="backup.autosaves">Earlier versions</summary>
+          <ul class="update-copies-list autosaves-list"></ul>
+          <button id="autosaves-forget" type="button" class="glass-btn" data-i18n="backup.autosavesForget">Forget them all</button>
+        </details>
+
         <!-- One step back from the last thing that replaced everything — a
              reset, or a restore. Taking it spends the slot, so there is never a
              chain of snapshots and never more than these two rows. -->
@@ -1433,6 +1442,7 @@
   <script src="src/js/settings.js"></script>
   <script src="src/js/shortcut-hints.js"></script>
   <script src="src/js/config-schema.js"></script>
+  <script src="src/js/autosave.js"></script>
   <script src="src/js/review-ask.js"></script>
   <script src="src/js/app.js"></script>
 </body>

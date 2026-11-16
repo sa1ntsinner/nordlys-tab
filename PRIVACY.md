@@ -41,6 +41,7 @@ Everything is saved on your device. Settings and bookmarks use Chrome's extensio
 | What dashboard cards hold | `chrome.storage.local` | Your tasks, notes, habits, stashed tabs and focus sessions, and what a card last read: a calendar's events, a feed's items, a Value card's last 48 readings | No |
 | Whether watched sites answer | `localStorage` | For a bookmark set to show whether its site is up: when it was last asked, whether it answered and how fast. Cleared by Reset | No |
 | Lists your folders follow | `localStorage` | When each list a folder follows was last read, so it is read at most once an hour. Cleared by Reset | No |
+| Earlier versions | IndexedDB | Your setup as it was after each change, with the time: the newest ten, then the last of each day for thirty days. Put one back or delete them all under Settings → Backup. Reset keeps them, as it keeps the copies made before updates | No |
 | What you usually open at this hour | `localStorage` | How often each bookmark on your board was opened in each hour of the day, so the empty search box can offer it at that hour. Older counts fade day by day. Settings → General → Offer what you usually open at this hour turns it off and forgets it; Reset clears it too | No |
 
 ---
@@ -118,7 +119,7 @@ Nordlys uses the strict Manifest V3 content security policy. Its scripts, icons 
 ## 7. Keeping and deleting your data
 
 - You can export your whole setup from Settings at any time as a `.json` backup or a standard `.html` bookmarks file, or read it as text under Settings → Backup → Settings as text.
-- Reset to Defaults in Settings deletes everything, including stored wallpapers and search history. Uninstalling from `chrome://extensions` also deletes it all.
+- Reset to Defaults in Settings deletes everything, including stored wallpapers and search history. It leaves the earlier versions and the copies made before updates, so a reset can be taken back; Forget them all under Settings → Backup deletes the earlier versions. Uninstalling from `chrome://extensions` also deletes it all.
 
 ---
 

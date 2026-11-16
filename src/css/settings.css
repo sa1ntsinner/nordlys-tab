@@ -1975,6 +1975,15 @@ html[data-legibility="high"] .glass-solid-note { display: block; }
 .update-copies-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .update-copy { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .update-copy-actions { display: flex; gap: 8px; }
+.autosaves { margin-bottom: 14px; }
+.autosaves[hidden] { display: none; }
+.autosaves-list { max-height: 320px; overflow-y: auto; margin: 4px 14px 12px; gap: 0; }
+.autosave-copy { padding: 10px 0; }
+.autosave-copy + .autosave-copy { border-top: 1px solid var(--nl-border); }
+.autosaves > .glass-btn { margin: 0 14px 14px; }
+.autosave-what { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.autosave-what time { font-variant-numeric: tabular-nums; }
+.autosave-holds { font-size: var(--nl-text-sm); color: var(--nl-text-secondary); }
 
 /* The shortcuts over the page (? anywhere): the Support list in a dialog. */
 .shortcut-sheet { width: min(92vw, 520px); }

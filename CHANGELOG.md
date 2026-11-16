@@ -6,6 +6,10 @@ Chrome Web Store's rule that they only ever go up.
 
 ## [Unreleased]
 
+### Added
+
+- Earlier versions, under Settings → Backup. Whenever your setup changes, a copy is kept on this device with the time it was made and how many bookmarks and folders it holds. Any of them can be put back or saved as a file. The newest ten are kept, then the last one of each day for thirty days; Forget them all deletes them.
+
 ## [2.6.3] — 2026-11-15
 
 Icons now travel when you sync with a code, and sync says what it is doing and why it stopped. Your folders, bookmarks and settings stay as they are.

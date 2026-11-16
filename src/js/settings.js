@@ -2454,6 +2454,8 @@ class SettingsController {
   initRestorePoint() {
     this.renderRecoveryRows();
     this.renderUpdateCopies();
+    this.renderAutosaves();
+    document.getElementById("autosaves-forget")?.addEventListener("click", () => this.forgetAutosaves());
     document.getElementById("cfg-restore-point")?.addEventListener("click", () => this.useRestorePointWithUndo());
     document.getElementById("cfg-undo-point")?.addEventListener("click", () => this.stepBack());
   }
@@ -2508,6 +2510,61 @@ class SettingsController {
       item.append(what, actions);
       return item;
     }));
+  }
+
+  /* Earlier versions (autosave.js): every copy kept on this device, newest
+     first, each with when it was made and how much it holds. */
+  async renderAutosaves() {
+    const box = document.getElementById("autosaves");
+    const list = box?.querySelector(".autosaves-list");
+    if (!box || !list || !window.NordlysAutosave) return;
+    const copies = await window.NordlysAutosave.list();
+    box.hidden = !copies.length;
+    list.replaceChildren(...copies.map((copy) => {
+      const item = document.createElement("li");
+      item.className = "update-copy autosave-copy";
+      const saved = new Date(copy.savedAt);
+      const when = document.createElement("time");
+      when.dateTime = copy.savedAt;
+      when.textContent = `${saved.toLocaleDateString()} ${saved.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+      const holds = document.createElement("span");
+      holds.className = "autosave-holds";
+      holds.textContent = this.text("backup.autosaveHolds", "Bookmarks: {links}, folders: {folders}", { links: copy.links, folders: copy.folders });
+      const what = document.createElement("span");
+      what.className = "autosave-what";
+      what.append(when, holds);
+      const put = document.createElement("button");
+      put.type = "button";
+      put.className = "glass-btn";
+      put.textContent = this.text("backup.updateCopyUse", "Put it back");
+      put.addEventListener("click", async () => {
+        // What is here now becomes an earlier version too, before it is replaced.
+        await this.app.keepAutosave();
+        await this.useUpdateCopy(copy);
+      });
+      const save = document.createElement("button");
+      save.type = "button";
+      save.className = "glass-btn";
+      save.textContent = this.text("backup.updateCopySave", "Save as file");
+      save.addEventListener("click", () => this.download(JSON.stringify(copy.file, null, 2), `nordlys-${String(copy.savedAt).slice(0, 16).replace(/[:T]/g, "-")}.json`, "application/json"));
+      const actions = document.createElement("span");
+      actions.className = "update-copy-actions";
+      actions.append(put, save);
+      item.append(what, actions);
+      return item;
+    }));
+  }
+
+  async forgetAutosaves() {
+    const ok = await confirmDialog({
+      title: this.text("backup.autosavesForget", "Forget them all"),
+      message: this.text("backup.autosavesForgetAsk", "The earlier versions kept on this device are deleted. Your setup stays as it is."),
+      confirmText: this.text("backup.autosavesForget", "Forget them all"),
+      cancelText: this.text("confirm.cancel", "Cancel")
+    });
+    if (!ok) return;
+    await window.NordlysAutosave.clear();
+    await this.renderAutosaves();
   }
 
   async useUpdateCopy(copy) {

@@ -154,6 +154,8 @@ const UNDO_POINT_KEY = "nordlys_undo_point";
 const UPDATE_COPIES_KEY = "nordlys_update_copies";
 const SEEN_VERSION_KEY = "nordlys_seen_version";
 const UPDATE_COPIES_KEPT = 3;
+// Earlier versions (autosave.js): a copy is kept this long after the last change.
+const AUTOSAVE_AFTER = 15000;
 /* What a reset clears from browser storage (the other profiles, what the
    cards held, sync's own state), kept for its undo beside the update copies,
    which a reset keeps (settings.js keepBrowserStore). */
@@ -319,6 +321,8 @@ class NordlysApp {
     this.defaultConfig = DEFAULT_CONFIG;
     this.config = this.loadConfig();
     this.keepCopyBeforeUpdate();
+    // A change the last tab was closed on is kept by this one.
+    if (this.storedBeforeLoad) setTimeout(() => this.keepAutosave(), 3000);
     this.mediaObjectUrl = null;
     this.init();
     window.NordlysReviewAsk?.run();
@@ -864,6 +868,28 @@ class NordlysApp {
     });
   }
 
+  /* Earlier versions: the setup is kept, with the time, a little after it
+     last changed, so a burst of edits makes one copy and not twenty. */
+  scheduleAutosave() {
+    clearTimeout(this.autosaveTimer);
+    this.autosaveTimer = setTimeout(() => this.keepAutosave(), AUTOSAVE_AFTER);
+  }
+
+  async keepAutosave() {
+    clearTimeout(this.autosaveTimer);
+    const schema = window.NordlysConfigSchema;
+    const autosave = window.NordlysAutosave;
+    if (!schema?.buildBackupFile || !autosave || !this.config) return null;
+    const side = (key, json) => { try { const raw = localStorage.getItem(key); return raw === null ? undefined : json ? JSON.parse(raw) : raw; } catch (error) { return undefined; } };
+    let file;
+    try {
+      file = schema.buildBackupFile(JSON.parse(JSON.stringify(this.config)), { customThemes: side("nordlys_custom_themes", true) || [], drawerWidth: side("nordlys_drawer_width", false) || "" });
+    } catch (error) { return null; }
+    const copy = await autosave.keep(file);
+    if (copy) this.builtSettings?.renderAutosaves?.();
+    return copy;
+  }
+
   updateCopies() {
     const store = typeof chrome !== "undefined" ? chrome.storage?.local : null;
     if (!store) return Promise.resolve([]);
@@ -1019,6 +1045,7 @@ class NordlysApp {
      written anywhere and the caller puts everything back. */
   saveConfig({ strict = false } = {}) {
     const at = Date.now();
+    this.scheduleAutosave();
     const mirror = typeof chrome !== "undefined" && chrome.storage && chrome.storage.local;
     let fast = true;
     try {
