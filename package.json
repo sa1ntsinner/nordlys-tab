@@ -15,7 +15,8 @@
     "qa:visual": "node tools/qa-visual.cjs",
     "qa:contrast": "node tools/qa-contrast.cjs",
     "package": "node tools/package.cjs",
-    "ports": "node tools/build-ports.cjs"
+    "ports": "node tools/build-ports.cjs",
+    "safari:local": "sh tools/safari/local.sh"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
