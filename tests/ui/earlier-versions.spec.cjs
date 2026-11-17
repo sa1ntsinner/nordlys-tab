@@ -501,6 +501,8 @@ test('the list fits at 320px', async ({ nordlysPage }) => {
   await setFolders(page, ['One']);
   await page.evaluate(() => window.Nordlys.keepCopy('restore'));
   await openBackup(page);
+  // The list arrives a moment after the tab is shown.
+  await expect(page.locator('.autosave-copy[data-cause="restore"]')).toBeVisible();
   for (const target of ['#autosaves', '.autosave-copy[data-cause="restore"]', '.autosave-copy[data-cause="restore"] .update-copy-actions', '#autosaves-forget']) {
     const box = await page.locator(target).first().boundingBox();
     expect(box, `${target} is on screen`).not.toBeNull();

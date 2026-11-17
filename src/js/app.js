@@ -148,6 +148,7 @@ const SEEN_VERSION_KEY = "nordlys_seen_version";
 // Earlier versions (autosave.js): a copy is kept this long after the last change.
 const AUTOSAVE_AFTER = 15000;
 // When the setup last changed, and which change the newest copy holds: alike, a new tab has nothing to keep.
+const COPY_WAIT = 10000;
 const CHANGED_AT_KEY = "nordlys_changed_at";
 const COPIED_AT_KEY = "nordlys_copied_at";
 // Which skies this device found too heavy, and which the person keeps moving anyway (judgeSkyLoad).
@@ -890,7 +891,9 @@ class NordlysApp {
       if (!config) return false;
       let changed = null;
       try { changed = localStorage.getItem(CHANGED_AT_KEY); } catch (error) { /* not marked */ }
-      const copy = await window.NordlysAutosave.keep(await this.captureFile(config), { cause, note });
+      // A store that never answers is a store with no copy in it: ten seconds, and the answer is no.
+      const never = new Promise((resolve, reject) => setTimeout(() => reject(new Error("the copy took too long")), COPY_WAIT));
+      const copy = await Promise.race([never, (async () => window.NordlysAutosave.keep(await this.captureFile(config), { cause, note }))()]);
       // The setup in use is in a copy now, as it was when this began.
       if (config === this.config && changed !== null) { try { localStorage.setItem(COPIED_AT_KEY, changed); } catch (error) { /* looked at again next time */ } }
       if (copy) this.builtSettings?.renderCopies?.();

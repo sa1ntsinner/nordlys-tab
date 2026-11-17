@@ -142,7 +142,14 @@
           at.continue();
         };
       };
-      request.onsuccess = () => resolve(request.result);
+      /* A tab still open on the build before this one holds the database at
+         its older version, and this request waits for it. Whoever asked is
+         told at once that there is no copy to be had, and does not wait on a
+         tab that may stay open all day; the database is let go of when it
+         does open. */
+      let refused = false;
+      request.onblocked = () => { refused = true; reject(new Error("the copies are open in an older tab")); };
+      request.onsuccess = () => { if (refused) request.result.close(); else resolve(request.result); };
       request.onerror = () => reject(request.error);
     });
   }

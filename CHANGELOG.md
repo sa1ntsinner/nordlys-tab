@@ -12,7 +12,7 @@ A release about not losing things. There is one place to go back to now, and it 
 
 ### Added
 
-- Earlier versions, under Settings → Backup. Whenever your setup changes, a copy is kept on this device with the time it was made. A copy is also made before every update of Nordlys, every import, every reset and every time an earlier version is put back, and says which. Any of them can be put back or saved as a file. The newest ten are kept, then the last of each day for thirty days, and the newest three made before an update, an import, a reset or a restore; Forget them all deletes them.
+- Earlier versions, under Settings → Backup. Whenever your setup changes, a copy is kept on this device with the time it was made. A copy is also made before every update of Nordlys, every import, every reset and every time an earlier version is put back, and says which. Any of them can be put back or saved as a file. The newest ten are kept, then the last of each day for thirty days, and the newest three made before an update, an import, a reset or a restore, in about 200 MB at most; Forget them all deletes them.
 
 ### Changed
 
