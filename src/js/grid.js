@@ -571,29 +571,15 @@ class GridController {
        inside it, each named by its path; a bar with nothing in it gives way
        to Other bookmarks. Settings → Bookmarks can still make a folder
        follow the browser. */
-    let sets = [];
+    let brought;
     try {
-      const tree = await sync.folders();
-      const below = (root) => root ? [root, ...tree.filter((folder) => folder.path.startsWith(`${root.path} / `))] : [];
-      const bar = tree.find((folder) => folder.id === "1") || tree[0];
-      const other = tree.find((folder) => folder.id === "2") || tree.find((folder) => folder !== bar && !folder.path.includes(" / "));
-      for (const root of [bar, other]) {
-        const found = [];
-        for (const folder of below(root).slice(0, 24)) {
-          let links;
-          try { links = await sync.linksIn(folder.id); } catch { continue; }
-          if (!links.length) continue;
-          const label = folder === root ? folder.title : folder.path.slice(root.path.length + 3);
-          found.push({ label, cols: Math.min(6, Math.max(2, Math.ceil(Math.sqrt(links.length)))), hidden: false,
-            links: links.map(({ name, url }) => ({ name, url, icon: "", color: "" })) });
-        }
-        if (found.length) { sets = found; break; }
-      }
+      brought = await sync.firstBoard();
     } catch {
       toast(say("bookmarks.linkUnavailable", "Browser bookmarks are not available"), "info");
       return;
     }
-    const groups = sets;
+    const groups = brought.groups.map(({ label, links }) => ({ label, cols: Math.min(6, Math.max(2, Math.ceil(Math.sqrt(links.length)))), hidden: false,
+      links: links.map(({ name, url }) => ({ name, url, icon: "", color: "" })) }));
     if (!groups.length) {
       toast(say("board.browserEmpty", "Your browser has no bookmarks to bring."), "info");
       return;
@@ -604,7 +590,10 @@ class GridController {
     this.render();
     const count = groups.reduce((sum, group) => sum + group.links.length, 0);
     NordlysUI.showUndoToast({
-      message: say("board.broughtCopies", `${groups.length} folders and ${count} bookmarks came in, yours to change here.`, { folders: groups.length, count }),
+      // Where they came from, and when the place held more folders than came in.
+      message: brought.more
+        ? say("board.broughtSome", `The first ${groups.length} folders of ${brought.source} came in, with ${count} bookmarks. Settings → Bookmarks can follow the rest.`, { folders: groups.length, count, source: brought.source })
+        : say("board.broughtCopies", `${groups.length} folders and ${count} bookmarks came in from ${brought.source}, yours to change here.`, { folders: groups.length, count, source: brought.source }),
       duration: 9000,
       onAction: () => {
         this.app.config.groups = before;

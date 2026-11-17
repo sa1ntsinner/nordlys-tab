@@ -126,6 +126,43 @@
       return found;
     },
 
+    /* A first board out of the browser's bookmarks: the folders that hold
+       web bookmarks, each with the ones directly inside it, from the first
+       of the browser's own roots that has any. The bookmarks bar is asked
+       first, then every other root there is (Other bookmarks, a phone's, and
+       whatever a browser names its own): looking in two of them only said
+       "no bookmarks" to someone whose bookmarks were in a third.
+
+       The limit counts folders that hold something. It used to count every
+       folder, so twenty-four empty ones in front hid the full one behind
+       them. more says that the root had more than the limit let in. */
+    async firstBoard(limit = 24) {
+      const tree = await call("getTree");
+      const roots = [];
+      for (const top of tree || []) {
+        // Chrome's tree hangs from one unnamed root; its children are the places.
+        if (top.title && top.title.trim()) roots.push(top);
+        else roots.push(...(top.children || []).filter((node) => node.children));
+      }
+      const bar = roots.find((root) => root.id === "1" || root.id === "toolbar_____");
+      const web = (node) => (node.children || []).filter((child) => child.url && /^https?:/i.test(child.url));
+      for (const root of bar ? [bar, ...roots.filter((each) => each !== bar)] : roots) {
+        const groups = [];
+        let more = false;
+        const walk = (node, trail) => {
+          const links = web(node);
+          if (links.length) {
+            if (groups.length < limit) groups.push({ label: trail.join(" / ") || root.title || "", links: links.map((link) => ({ name: link.title || link.url, url: link.url })) });
+            else more = true;
+          }
+          for (const child of node.children || []) if (child.children) walk(child, trail.concat(child.title || ""));
+        };
+        walk(root, []);
+        if (groups.length) return { source: root.title || "", groups, more };
+      }
+      return { source: "", groups: [], more: false };
+    },
+
     /* The bookmarks directly inside one folder, in the browser's own order.
        Nested folders are left alone: a tile grid is one level deep, and
        flattening a tree into it silently invents an order nobody chose. */

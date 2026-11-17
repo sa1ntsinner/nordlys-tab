@@ -336,6 +336,67 @@ test('with an empty bar, Other bookmarks come in instead, nested folders by thei
   expect(groups).toEqual([['Other bookmarks', ['Elsewhere']], ['Reading / Later', ['Essay']]]);
 });
 
+/* Only the bar and Other bookmarks were looked in, and only the first
+   twenty-four folders of each, empty ones counted: bookmarks anywhere else
+   were answered with "Your browser has no bookmarks to bring." */
+async function bringFrom(page, tree) {
+  await page.addInitScript(given => {
+    localStorage.setItem('nordlys_config', JSON.stringify({ groups: [] }));
+    window.chrome.permissions = { contains: (p, done) => done(true), request: (p, done) => done(true) };
+    window.chrome.bookmarks = { getTree: done => done(given) };
+  }, tree);
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  await page.locator('#board-empty-browser').click();
+}
+const folder = (id, title, children = []) => ({ id, title, children });
+const link = (id, title) => ({ id, title, url: `https://${title.toLowerCase()}.example/` });
+
+test('bookmarks kept in a third place of the browser are found, and the toast says where they came from', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await bringFrom(page, [folder('0', '', [
+    folder('1', 'Bookmarks bar'), folder('2', 'Other bookmarks'),
+    folder('3', 'Mobile bookmarks', [link('30', 'Phone')])
+  ])]);
+  await expect(page.locator('#board .card')).toHaveCount(1);
+  expect(await page.evaluate(() => window.Nordlys.config.groups.map(group => [group.label, group.links.map(each => each.name)]))).toEqual([['Mobile bookmarks', ['Phone']]]);
+  await expect(page.locator('#toast-dock .toast')).toContainText('1 folders and 1 bookmarks came in from Mobile bookmarks');
+});
+
+test('empty folders in front do not hide the one that holds bookmarks', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const empties = Array.from({ length: 30 }, (unused, i) => folder(`e${i}`, `Empty ${i}`));
+  await bringFrom(page, [folder('0', '', [folder('1', 'Bookmarks bar', [...empties, folder('90', 'Thirty-first', [link('900', 'Found')])])])]);
+  await expect(page.locator('#board .card')).toHaveCount(1);
+  expect(await page.evaluate(() => window.Nordlys.config.groups.map(group => [group.label, group.links.map(each => each.name)]))).toEqual([['Thirty-first', ['Found']]]);
+});
+
+test('a place with more folders than come in says so, and how to get the rest', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  const full = Array.from({ length: 26 }, (unused, i) => folder(`f${i}`, `Folder ${i}`, [link(`l${i}`, `Site${i}`)]));
+  await bringFrom(page, [folder('0', '', [folder('1', 'Bookmarks bar', full)])]);
+  await expect(page.locator('#board .card')).toHaveCount(24);
+  await expect(page.locator('#toast-dock .toast')).toContainText('The first 24 folders of Bookmarks bar came in, with 24 bookmarks');
+  await expect(page.locator('#toast-dock .toast')).toContainText('Settings → Bookmarks');
+});
+
+test('a browser whose places have other ids (Firefox) is read the same way, the toolbar first', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await bringFrom(page, [folder('root________', '', [
+    folder('menu________', 'Bookmarks Menu', [link('m1', 'Menu')]),
+    folder('toolbar_____', 'Bookmarks Toolbar', [link('t1', 'Toolbar')]),
+    folder('unfiled_____', 'Other Bookmarks', [link('u1', 'Other')])
+  ])]);
+  expect(await page.evaluate(() => window.Nordlys.config.groups.map(group => group.label))).toEqual(['Bookmarks Toolbar']);
+});
+
+test('a browser with no web bookmarks anywhere is told so', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await bringFrom(page, [folder('0', '', [folder('1', 'Bookmarks bar', [{ id: '10', title: 'Not a page', url: 'javascript:void(0)' }]), folder('2', 'Other bookmarks')])]);
+  await expect(page.locator('#toast-dock .toast')).toContainText('Your browser has no bookmarks to bring.');
+  await expect(page.locator('#board .card')).toHaveCount(0);
+});
+
 /* No bookmarks worth bringing: the sites the browser knows are opened most
    become one folder, asked for on the click. */
 test('the empty board can start from the most visited sites', async ({ nordlysPage }) => {
