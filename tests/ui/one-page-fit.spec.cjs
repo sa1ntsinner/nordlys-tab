@@ -328,7 +328,7 @@ test.describe('the switch in Settings', () => {
     await expect(page.locator('#page-fit-label')).toBeVisible();
     await expect(page.locator('label.tg:has(#cfg-one-page-fit)')).toBeVisible();
     await expect(toggle).not.toBeChecked();
-    await expect(toggle).toHaveAccessibleDescription(/nothing to scroll.*Not the same as Fitted/);
+    await expect(toggle).toHaveAccessibleDescription(/nothing to scroll.*Not the same as Fill rows/);
     // In the same block as the Natural and Fitted choices it is easy to mistake it for.
     expect(await page.evaluate(() => Boolean(document.getElementById('cfg-one-page-fit').closest('.board-layout-block')?.querySelector('.board-layout-option[data-layout="fitted"]')))).toBe(true);
     await toggle.focus();

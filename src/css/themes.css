@@ -650,9 +650,11 @@ html[data-theme="oled-obsidian"] #veil {
   background: linear-gradient(90deg, color-mix(in srgb, var(--dim) 25%, transparent), transparent);
 }
 
+/* A shade towards the ink: the dim colour alone gave the handle's dots 2.9:1
+   on Solarized Light as a Mac draws them, under the 3:1 a control needs. */
 .light-ui .groupGrip,
 .light-ui .foldBtn {
-  color: var(--dim);
+  color: color-mix(in srgb, var(--dim) 75%, var(--ink));
 }
 
 .light-ui .groupGrip:hover,

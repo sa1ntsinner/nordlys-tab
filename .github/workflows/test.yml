@@ -29,6 +29,8 @@ jobs:
       - run: npm run test:unit
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test
+      # The specs that measure time, by themselves (tools/alone.playwright.config.cjs).
+      - run: npx playwright test --config=tools/alone.playwright.config.cjs
       - if: failure()
         uses: actions/upload-artifact@v4
         with:

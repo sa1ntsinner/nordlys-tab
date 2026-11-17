@@ -138,6 +138,8 @@ test('important tasks rise to the top; the flag toggles it', async ({ nordlysPag
 test('the order is changed by dragging a task, and by Alt and an arrow', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   for (const t of ['One', 'Two', 'Three']) await add(page, t);
+  // The rows are measured where they come to rest: a row just added is still arriving.
+  await page.evaluate(() => window.NordlysUI.settled());
   const three = await tasks(page).locator('.dash-task', { hasText: 'Three' }).locator('.dash-task-text').boundingBox();
   const one = await tasks(page).locator('.dash-task', { hasText: 'One' }).boundingBox();
   await page.mouse.move(three.x + 20, three.y + 5);

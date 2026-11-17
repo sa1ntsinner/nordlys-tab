@@ -2,7 +2,7 @@ const { test, expect } = require('../helpers/nordlys-fixture.cjs');
 const { openIconPicker } = require('../helpers/flows.cjs');
 
 async function renderedFocusableIds(root) {
-  return root.evaluate(node => [...node.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]
+  return root.evaluate(node => [...node.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"]),details > summary:first-of-type')]
     .filter(item => item.getClientRects().length && !item.closest('[hidden],[aria-hidden="true"],[inert]') && !item.closest('details:not([open]) > :not(summary)'))
     .map((item, index) => { if (!item.id) item.id = `focus-probe-${crypto.randomUUID()}-${index}`; return item.id; }));
 }
@@ -20,7 +20,10 @@ test('every settings section contains forward and backward keyboard focus', asyn
   test.slow();
   const { page } = nordlysPage; await page.locator('#gear').click(); const drawer = page.locator('#cfg');
   for (const id of ['appearance', 'background', 'bookmarks', 'general', 'support', 'backup']) {
-    await page.locator(`#settings-tab-${id}`).click(); await expectCycles(page, drawer);
+    await page.locator(`#settings-tab-${id}`).click();
+    // Backup's list of earlier versions is read once the tab is shown; the stops are counted after it has arrived.
+    if (id === 'backup') await page.evaluate(async () => { await window.NordlysAutosave.list(); await new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done))); });
+    await expectCycles(page, drawer);
     for (let index = 0; index < 35; index++) await page.keyboard.press('Tab');
     expect(await page.evaluate(() => document.activeElement.closest('#cfg') !== null), `${id} leaked focus`).toBe(true);
   }

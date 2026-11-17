@@ -2,7 +2,9 @@
 (function () {
   const focusableSelector = [
     'a[href]', 'button:not([disabled])', 'input:not([disabled])', 'select:not([disabled])',
-    'textarea:not([disabled])', '[tabindex]:not([tabindex="-1"])'
+    'textarea:not([disabled])', '[tabindex]:not([tabindex="-1"])',
+    // The heading of a section that opens: without it, what is folded away could not be reached by Tab.
+    'details > summary:first-of-type'
   ].join(',');
   const layers = [];
   let selectLabels = 0;

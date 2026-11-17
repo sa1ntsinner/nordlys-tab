@@ -31,6 +31,8 @@ jobs:
       # Nothing goes to three stores that the browser tests have not passed.
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test
+      # The specs that measure time, by themselves (tools/alone.playwright.config.cjs).
+      - run: npx playwright test --config=tools/alone.playwright.config.cjs
       - run: npm run ports
       - name: Send to the stores
         env:

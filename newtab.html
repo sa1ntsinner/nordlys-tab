@@ -156,7 +156,7 @@
           </button>
           <button type="button" role="radio" class="arrange-layout" data-layout="fitted" data-i18n-title="bookmarks.fittedNote" aria-checked="false" aria-describedby="arrange-fitted-desc">
             <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="1" y="1" width="7" height="7" rx="1.2"/><rect x="9" y="1" width="6" height="7" rx="1.2"/><rect x="16" y="1" width="7" height="7" rx="1.2"/><rect x="1" y="10" width="10" height="5" rx="1.2"/><rect x="12" y="10" width="11" height="5" rx="1.2"/></svg>
-            <span data-i18n="arrange.fitted">Fitted</span>
+            <span data-i18n="arrange.fitted">Fill rows</span>
           </button>
         </div>
         <span class="arrange-divider" aria-hidden="true"></span>
@@ -181,7 +181,7 @@
       <!-- What each choice does, read out on focus and shown in the hint above
            the bar while the pointer or the focus is on it. -->
       <span id="arrange-natural-desc" class="nl-visually-hidden" data-i18n="arrange.naturalHint">Natural: folders keep their own size and wrap like words.</span>
-      <span id="arrange-fitted-desc" class="nl-visually-hidden" data-i18n="arrange.fittedHint">Fitted: every row runs edge to edge, and folders in a row share one height.</span>
+      <span id="arrange-fitted-desc" class="nl-visually-hidden" data-i18n="arrange.fittedHint">Fill rows: every row runs edge to edge, and folders in a row share one height.</span>
       <span id="arrange-tidy-desc" class="nl-visually-hidden" data-i18n="arrange.tidyHint">Tidy up puts folders of a similar height side by side, so every row comes out even.</span>
       <span id="arrange-size-desc" class="nl-visually-hidden" data-i18n="arrange.sizeHint">How big the bookmarks are, the space around them, and how wide the board runs.</span>
       <span id="arrange-auto-desc" class="nl-visually-hidden" data-i18n="arrange.autoRowsHint">Let the board choose the rows again, keeping the folders in their order.</span>
@@ -832,7 +832,7 @@
             </button>
             <button type="button" role="radio" class="board-layout-option" data-layout="fitted" data-i18n-title="bookmarks.fittedNote" aria-checked="false">
               <svg class="layout-glyph" viewBox="0 0 24 16" aria-hidden="true"><rect x="1" y="1" width="7" height="7" rx="1.2"/><rect x="9" y="1" width="6" height="7" rx="1.2"/><rect x="16" y="1" width="7" height="7" rx="1.2"/><rect x="1" y="10" width="10" height="5" rx="1.2"/><rect x="12" y="10" width="11" height="5" rx="1.2"/></svg>
-              <span class="board-layout-name" data-i18n="arrange.fitted">Fitted</span>
+              <span class="board-layout-name" data-i18n="arrange.fitted">Fill rows</span>
             </button>
           </div>
           <div class="board-layout-foot">
@@ -842,15 +842,15 @@
             <button type="button" id="cfg-arrange" class="glass-btn accent board-arrange-btn" data-i18n="bookmarks.arrange">Arrange on the board</button>
           </div>
           <!-- One page fit (page-fit.js). Beside the layouts because it is
-               easy to mistake for Fitted, and the note says the difference:
-               Fitted is how folders share a row, this is how much of the
+               easy to mistake for Fill rows, and the note says the difference:
+               Fill rows is how folders share a row, this is how much of the
                window the whole page may take. -->
           <div class="page-fit-block">
             <div class="row setting-row page-fit-row">
               <span><span id="page-fit-label" data-i18n="bookmarks.onePageFit" data-i18n-title="bookmarks.onePageFitNote">One page fit</span><small id="page-fit-state" class="setting-note-inline" hidden></small></span>
               <label class="tg"><input id="cfg-one-page-fit" type="checkbox" aria-labelledby="page-fit-label" aria-describedby="page-fit-state page-fit-note"><i></i></label>
             </div>
-            <p id="page-fit-note" class="page-fit-note nl-visually-hidden" data-i18n="bookmarks.onePageFitNote">Keeps the clock, the search and every folder in the window, with nothing to scroll. Spacing closes up first, then the bookmarks get smaller, and only then is the whole board shown smaller. Your sizes stay as you set them. Not the same as Fitted, which only decides how folders share a row.</p>
+            <p id="page-fit-note" class="page-fit-note nl-visually-hidden" data-i18n="bookmarks.onePageFitNote">Keeps the clock, the search and every folder in the window, with nothing to scroll. Spacing closes up first, then the bookmarks get smaller, and only then is the whole board shown smaller. Your sizes stay as you set them. Not the same as Fill rows, which only decides how folders share a row.</p>
           </div>
         </div>
         <div id="cfg-groups-editor"></div>
@@ -879,17 +879,6 @@
       <!-- 7. Data & Backup Section -->
       <section id="sec-backup" class="csec">
         <h3 data-i18n="backup.title">Backup and import</h3>
-
-        <!-- Earlier versions (autosave.js): the whole setup as it was after
-             each change, and before each update, import, reset and restore,
-             with the time. The one place a way back is kept. Filled by
-             renderCopies when Backup is opened; hidden until there is a copy. -->
-        <div id="autosaves" class="autosaves" role="group" aria-labelledby="autosaves-title" hidden>
-          <span id="autosaves-title" class="update-copies-title" data-i18n="backup.autosaves">Earlier versions</span>
-          <p class="autosaves-note" data-i18n="backup.autosavesNote">Kept on this device whenever your setup changes. Each holds every space, your bookmarks, your look and what the cards hold; not wallpapers or videos.</p>
-          <ul class="update-copies-list autosaves-list"></ul>
-          <button id="autosaves-forget" type="button" class="glass-btn" data-i18n="backup.autosavesForget">Forget them all</button>
-        </div>
 
         <div class="backup-actions">
           <button id="cfg-export" class="glass-btn" data-i18n="backup.exportJson">Save a backup file</button>
@@ -921,6 +910,19 @@
 
         <div class="backup-reset">
           <button id="cfg-reset" class="glass-btn danger" data-i18n="backup.resetDefaults">Reset to defaults</button>
+        </div>
+
+        <!-- Earlier versions (autosave.js): the whole setup as it was after
+             each change, and before each update, import, reset and restore,
+             with the time. The one place a way back is kept. Filled by
+             renderCopies when Backup is opened; hidden until there is a copy. Last
+             in the section: it arrives a moment after the rest, and nothing
+             under a pointer may move when it does. -->
+        <div id="autosaves" class="autosaves" role="group" aria-labelledby="autosaves-title" hidden>
+          <span id="autosaves-title" class="update-copies-title" data-i18n="backup.autosaves">Earlier versions</span>
+          <p class="autosaves-note" data-i18n="backup.autosavesNote">Kept on this device whenever your setup changes. Each holds every space, your bookmarks, your look and what the cards hold; not wallpapers or videos.</p>
+          <ul class="update-copies-list autosaves-list"></ul>
+          <button id="autosaves-forget" type="button" class="glass-btn" data-i18n="backup.autosavesForget">Forget them all</button>
         </div>
       </section>
 

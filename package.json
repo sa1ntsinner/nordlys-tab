@@ -10,7 +10,7 @@
     "test": "npm run lint && npm run test:syntax && npm run test:unit && npm run test:ui",
     "test:syntax": "node tests/helpers/check-js-syntax.cjs",
     "test:unit": "node --test tests/unit/*.test.cjs",
-    "test:ui": "playwright test",
+    "test:ui": "playwright test && playwright test --config=tools/alone.playwright.config.cjs",
     "test:ui:update": "playwright test --update-snapshots=all",
     "qa:visual": "node tools/qa-visual.cjs",
     "qa:contrast": "node tools/qa-contrast.cjs",
