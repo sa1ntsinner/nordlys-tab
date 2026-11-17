@@ -22,7 +22,9 @@
     }));
   }
   function locked(change) {
-    return navigator.locks.request(key, async () => {
+    // A browser without locks takes its turn unguarded, as every one did before.
+    const turn = navigator.locks ? (work) => navigator.locks.request(key, work) : (work) => work();
+    return turn(async () => {
       const data = await local("get", key);
       const items = Array.isArray(data?.[key]) ? data[key] : [];
       // Older saves waited here without ids. Keep their order and contents.
