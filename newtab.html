@@ -880,37 +880,15 @@
       <section id="sec-backup" class="csec">
         <h3 data-i18n="backup.title">Backup and import</h3>
 
-        <!-- Shown only when one exists. An upgrade that migrates something
-             wrongly is the most common way people in this category lose their
-             setup, so the state before the last migration is kept. -->
-        <div class="row restore-point" id="restore-point-row" hidden style="flex-direction: column; align-items: stretch; gap: 8px;">
-          <span><span data-i18n="backup.restorePoint">Settings from before the last update</span> <b id="restore-point-when"></b></span>
-          <button id="cfg-restore-point" class="glass-btn" data-i18n="backup.restorePointBtn">Put those back</button>
-        </div>
-
-        <!-- The setup as it was before each of the last three updates, kept
-             by itself on the first new tab after one. Filled by
-             renderUpdateCopies; empty, and so invisible, on a first install. -->
-        <div id="update-copies" class="update-copies" aria-labelledby="update-copies-title" role="group" hidden>
-          <span id="update-copies-title" class="update-copies-title" data-i18n="backup.updateCopies">Copies kept before updates</span>
-          <ul class="update-copies-list"></ul>
-        </div>
-
-        <!-- The setup as it was after each change, kept by itself with the
-             time (autosave.js). Filled by renderAutosaves; hidden until there
-             is one. -->
-        <details id="autosaves" class="advanced-settings autosaves" hidden>
-          <summary data-i18n="backup.autosaves">Earlier versions</summary>
+        <!-- Earlier versions (autosave.js): the whole setup as it was after
+             each change, and before each update, import, reset and restore,
+             with the time. The one place a way back is kept. Filled by
+             renderCopies when Backup is opened; hidden until there is a copy. -->
+        <div id="autosaves" class="autosaves" role="group" aria-labelledby="autosaves-title" hidden>
+          <span id="autosaves-title" class="update-copies-title" data-i18n="backup.autosaves">Earlier versions</span>
+          <p class="autosaves-note" data-i18n="backup.autosavesNote">Kept on this device whenever your setup changes. Each holds every space, your bookmarks, your look and what the cards hold; not wallpapers or videos.</p>
           <ul class="update-copies-list autosaves-list"></ul>
           <button id="autosaves-forget" type="button" class="glass-btn" data-i18n="backup.autosavesForget">Forget them all</button>
-        </details>
-
-        <!-- One step back from the last thing that replaced everything — a
-             reset, or a restore. Taking it spends the slot, so there is never a
-             chain of snapshots and never more than these two rows. -->
-        <div class="row restore-point" id="undo-point-row" hidden style="flex-direction: column; align-items: stretch; gap: 8px;">
-          <span><span id="undo-point-what" data-i18n="backup.undoPointReset">Everything was reset</span> <b id="undo-point-when"></b></span>
-          <button id="cfg-undo-point" class="glass-btn" data-i18n="backup.undoPointBtn">Undo that</button>
         </div>
 
         <div class="backup-actions">

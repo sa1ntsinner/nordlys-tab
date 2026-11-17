@@ -88,19 +88,19 @@ test('the dropdown still offers the calculator and the user\'s own bookmarks', a
 
 /* A stored engine choice has nothing to drive any more, and a config that keeps
    carrying it is a config that will confuse the next reader. */
-test('an old engine choice is dropped on upgrade and the restore point keeps it', async ({ nordlysPage }) => {
+test('an old engine choice is dropped on upgrade and the copy kept before it holds it', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.evaluate(() => {
-    localStorage.removeItem('nordlys_restore_point');
     const config = { ...window.Nordlys.config, defaultEngine: 'duckduckgo', customEngineUrl: 'https://x.test/?q=%s', showSuggestions: false };
     localStorage.setItem('nordlys_config', JSON.stringify(config));
     window.chrome.storage.local.set({ nordlys_config: config }, () => {});
   });
   await page.reload();
   await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
-  const after = await page.evaluate(() => ({
+  await expect.poll(() => page.evaluate(async () => (await window.NordlysAutosave.list()).some(copy => copy.cause === 'update' && copy.file.defaultEngine))).toBe(true);
+  const after = await page.evaluate(async () => ({
     keys: ['defaultEngine', 'customEngineUrl', 'showSuggestions'].filter(key => key in window.Nordlys.config),
-    restored: JSON.parse(localStorage.getItem('nordlys_restore_point') || 'null')?.config?.defaultEngine
+    restored: (await window.NordlysAutosave.list()).find(copy => copy.cause === 'update' && copy.file.defaultEngine)?.file.defaultEngine
   }));
   expect(after.keys, 'nothing about engines survives in the live config').toEqual([]);
   expect(after.restored, 'but the state before the migration is kept').toBe('duckduckgo');

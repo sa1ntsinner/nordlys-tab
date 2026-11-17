@@ -125,6 +125,23 @@ test('a card is added from the adder, removed from its menu, and Undo brings it 
   await expect(card(page, 'notes').locator('textarea')).toHaveValue('Keys are in the blue bowl');
 });
 
+/* A note waits 400 ms before it is written. A bookmark opened in the same tab
+   inside that time took the last words with it. */
+test('the last words of a note are written when the page is left', async ({ nordlysPage }) => {
+  const { page, storageState } = nordlysPage;
+  await turnOn(page);
+  await page.locator('#dash .dash-add').click();
+  await page.locator('.dash-menu').getByRole('menuitem', { name: /Note/ }).click();
+  const note = card(page, 'notes');
+  await note.locator('textarea').fill('Keys are in the blue bowl');
+  // At once, well inside the 400 ms: what leaving the page does.
+  await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+  expect(Object.values(storageState).some(value => value?.text === 'Keys are in the blue bowl')).toBe(true);
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  await expect(card(page, 'notes').locator('textarea')).toHaveValue('Keys are in the blue bowl');
+});
+
 test('the menu moves a card and makes it wider', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await turnOn(page);

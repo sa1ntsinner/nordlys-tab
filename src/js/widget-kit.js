@@ -334,11 +334,12 @@
     MAX_TABS: 100,
     create: () => ({ groups: [] }),
     pick: (tabs, self) => tabs.filter((tab) => /^https?:\/\//i.test(tab.url || "") && !tab.pinned && !(self && String(tab.url).startsWith(self))),
+    // Full: nothing more is taken, so that no window put away earlier is dropped to make room.
+    full: (state) => state.groups.length >= stash.MAX_GROUPS,
     add(state, tabs, now) {
-      if (!tabs.length) return null;
+      if (!tabs.length || stash.full(state)) return null;
       const group = { id: newId(), at: now, tabs: tabs.slice(0, stash.MAX_TABS).map((tab) => ({ url: tab.url, title: clean(tab.title || tab.url, 200) })) };
       state.groups.unshift(group);
-      if (state.groups.length > stash.MAX_GROUPS) state.groups.length = stash.MAX_GROUPS;
       return group;
     },
     remove(state, id) { state.groups = state.groups.filter((g) => g.id !== id); },

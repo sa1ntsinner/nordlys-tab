@@ -1969,18 +1969,16 @@ input[type="range"].ipt:focus-visible {
 html[data-legibility="high"] .glass-solid-note { display: block; }
 
 /* Copies kept before updates: one line each, the date and two buttons. */
-.update-copies { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
-.update-copies[hidden] { display: none; }
 .update-copies-title { font-size: var(--nl-text-sm); color: var(--nl-text-secondary); }
 .update-copies-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .update-copy { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .update-copy-actions { display: flex; gap: 8px; }
-.autosaves { margin-bottom: 14px; }
+.autosaves { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 14px; }
 .autosaves[hidden] { display: none; }
-.autosaves-list { max-height: 320px; overflow-y: auto; margin: 4px 14px 12px; gap: 0; }
+.autosaves-note { margin: 0; font-size: var(--nl-text-sm); color: var(--nl-text-secondary); }
+.autosaves-list { align-self: stretch; max-height: 320px; overflow-y: auto; gap: 0; }
 .autosave-copy { padding: 10px 0; }
 .autosave-copy + .autosave-copy { border-top: 1px solid var(--nl-border); }
-.autosaves > .glass-btn { margin: 0 14px 14px; }
 .autosave-what { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
 .autosave-what time { font-variant-numeric: tabular-nums; }
 .autosave-holds { font-size: var(--nl-text-sm); color: var(--nl-text-secondary); }

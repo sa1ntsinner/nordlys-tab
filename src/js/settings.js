@@ -2443,105 +2443,70 @@ class SettingsController {
   }
 
   /* ── 10. Backup & Browser Bookmarks Migration ─────────────────── */
-  /* Two rows, two questions, and each only visible when there is something
-     behind it. A restore button with nothing behind it is worse than none: it
-     promises a safety net.
-
-       restore point — what was here before Nordlys changed it: a migration on
-                       load, or an import.
-       undo point    — one step back from the last thing you did that replaced
-                       everything: a reset, or a restore. */
+  /* One list, Earlier versions (autosave.js): the copies of the whole setup
+     kept on this device, newest first. A copy made before something replaced
+     the setup says what that was. The list is read when Backup is opened and
+     not before: every copy is a whole backup file. */
   initRestorePoint() {
-    this.renderRecoveryRows();
-    this.renderUpdateCopies();
-    this.renderAutosaves();
     document.getElementById("autosaves-forget")?.addEventListener("click", () => this.forgetAutosaves());
-    document.getElementById("cfg-restore-point")?.addEventListener("click", () => this.useRestorePointWithUndo());
-    document.getElementById("cfg-undo-point")?.addEventListener("click", () => this.stepBack());
+    // However Backup comes to be shown: its tab, a search result, a command.
+    const panel = document.getElementById("sec-backup");
+    if (!panel) return;
+    const shown = () => { if (panel.classList.contains("active")) this.renderCopies({ now: true }); };
+    new MutationObserver(shown).observe(panel, { attributes: true, attributeFilter: ["class"] });
+    shown();
   }
 
-  renderRecoveryRows() {
-    const point = this.app.restorePoint();
-    const row = document.getElementById("restore-point-row");
-    if (row) row.hidden = !point;
-    const when = document.getElementById("restore-point-when");
-    if (when) when.textContent = point ? this.savedAtText(point) : "";
-
-    const undo = this.app.undoPoint();
-    const undoRow = document.getElementById("undo-point-row");
-    if (undoRow) undoRow.hidden = !undo;
-    const undoWhen = document.getElementById("undo-point-when");
-    if (undoWhen) undoWhen.textContent = undo ? this.savedAtText(undo) : "";
-    const what = document.getElementById("undo-point-what");
-    if (what && undo) {
-      what.textContent = undo.cause === "restore"
-        ? this.text("backup.undoPointRestore", "Older settings were put back")
-        : this.text("backup.undoPointReset", "Everything was reset");
-    }
+  // What a copy was made before, in words; nothing for one made after a change.
+  copyCause(copy) {
+    if (copy.cause === "update") return copy.to ? this.text("backup.copyUpdateTo", "Before the update to {version}", { version: copy.to }) : this.text("backup.copyUpdate", "Before an update");
+    if (copy.cause === "import") return this.text("backup.copyImport", "Before an import");
+    if (copy.cause === "reset") return this.text("backup.copyReset", "Before a reset");
+    if (copy.cause === "restore") return this.text("backup.copyRestore", "Before an earlier version was put back");
+    return "";
   }
 
-  /* The copies made before updates, newest first: each can be put back in
-     place of the whole setup, or saved as a backup file. */
-  async renderUpdateCopies() {
-    const box = document.getElementById("update-copies");
-    const list = box?.querySelector(".update-copies-list");
-    if (!box || !list) return;
-    const copies = await this.app.updateCopies();
-    box.hidden = !copies.length;
-    list.replaceChildren(...copies.map((copy, index) => {
-      const item = document.createElement("li");
-      item.className = "update-copy";
-      const what = document.createElement("span");
-      what.textContent = `${this.text("backup.updateCopyFrom", "Before {version}", { version: copy.to || "" })} ${this.savedAtText(copy)}`;
-      const put = document.createElement("button");
-      put.type = "button";
-      put.className = "glass-btn";
-      put.dataset.copy = String(index);
-      put.textContent = this.text("backup.updateCopyUse", "Put it back");
-      put.addEventListener("click", () => this.useUpdateCopy(copy));
-      const save = document.createElement("button");
-      save.type = "button";
-      save.className = "glass-btn";
-      save.textContent = this.text("backup.updateCopySave", "Save as file");
-      save.addEventListener("click", () => this.download(JSON.stringify(copy.file, null, 2), `nordlys-before-${copy.to || "update"}-${String(copy.savedAt || "").slice(0, 10)}.json`, "application/json"));
-      const actions = document.createElement("span");
-      actions.className = "update-copy-actions";
-      actions.append(put, save);
-      item.append(what, actions);
-      return item;
-    }));
-  }
-
-  /* Earlier versions (autosave.js): every copy kept on this device, newest
-     first, each with when it was made and how much it holds. */
-  async renderAutosaves() {
+  /* now: read the copies and draw them. Without it (a copy was just kept)
+     the list is redrawn only if Backup has been opened already. */
+  async renderCopies({ now = false } = {}) {
     const box = document.getElementById("autosaves");
     const list = box?.querySelector(".autosaves-list");
     if (!box || !list || !window.NordlysAutosave) return;
+    if (!now && !this.copiesShown) return;
+    this.copiesShown = true;
     const copies = await window.NordlysAutosave.list();
     box.hidden = !copies.length;
+    // A wallpaper a reset moved aside belongs to the last reset alone (setWallpaperAside).
+    const lastReset = copies.find((copy) => copy.cause === "reset");
     list.replaceChildren(...copies.map((copy) => {
       const item = document.createElement("li");
       item.className = "update-copy autosave-copy";
+      if (copy.cause) item.dataset.cause = copy.cause;
       const saved = new Date(copy.savedAt);
       const when = document.createElement("time");
       when.dateTime = copy.savedAt;
       when.textContent = `${saved.toLocaleDateString()} ${saved.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
-      const holds = document.createElement("span");
-      holds.className = "autosave-holds";
-      holds.textContent = this.text("backup.autosaveHolds", "Bookmarks: {links}, folders: {folders}", { links: copy.links, folders: copy.folders });
       const what = document.createElement("span");
       what.className = "autosave-what";
-      what.append(when, holds);
+      what.append(when);
+      const cause = this.copyCause(copy);
+      if (cause) {
+        const why = document.createElement("span");
+        why.className = "autosave-cause";
+        why.textContent = cause;
+        what.append(why);
+      }
+      const holds = document.createElement("span");
+      holds.className = "autosave-holds";
+      holds.textContent = copy.spaces > 1
+        ? this.text("backup.autosaveHoldsSpaces", "Bookmarks: {links}, folders: {folders}, spaces: {spaces}", { links: copy.links, folders: copy.folders, spaces: copy.spaces })
+        : this.text("backup.autosaveHolds", "Bookmarks: {links}, folders: {folders}", { links: copy.links, folders: copy.folders });
+      what.append(holds);
       const put = document.createElement("button");
       put.type = "button";
       put.className = "glass-btn";
       put.textContent = this.text("backup.updateCopyUse", "Put it back");
-      put.addEventListener("click", async () => {
-        // What is here now becomes an earlier version too, before it is replaced.
-        await this.app.keepAutosave();
-        await this.useUpdateCopy(copy);
-      });
+      put.addEventListener("click", () => this.putCopyBack(copy, { wallpaper: copy === lastReset && Boolean(copy.media) }));
       const save = document.createElement("button");
       save.type = "button";
       save.className = "glass-btn";
@@ -2564,17 +2529,22 @@ class SettingsController {
     });
     if (!ok) return;
     await window.NordlysAutosave.clear();
-    await this.renderAutosaves();
+    await this.renderCopies({ now: true });
   }
 
-  async useUpdateCopy(copy) {
+  /* Putting a copy back replaces the whole setup, so it is itself a
+     destructive act and gets the same treatment as one: what it is about to
+     discard is kept first, as a copy of its own (applyBackupObject), and if
+     that cannot be written nothing is replaced. */
+  async putCopyBack(copy, { wallpaper = false } = {}) {
     const ok = await confirmDialog({
       title: this.text("confirm.restoreTitle", "Put the older settings back?"),
       message: this.text("backup.confirmRestore", "Your folders, bookmarks and appearance are replaced.", { when: this.savedAtText(copy) }),
       confirmText: this.text("backup.updateCopyUse", "Put it back"),
       cancelText: this.text("confirm.cancel", "Cancel")
     });
-    if (ok) await this.applyBackupObject(copy.file, { own: true });
+    if (!ok) return false;
+    return this.applyBackupObject(copy.file, { own: true, cause: "restore", before: wallpaper ? () => this.restoreWallpaperAside() : null });
   }
 
   download(text, name, type) {
@@ -2592,88 +2562,6 @@ class SettingsController {
     return `(${saved.toLocaleDateString()} ${saved.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`;
   }
 
-  /* Restoring replaces the whole setup, so it is itself a destructive act and
-     gets the same treatment as one: what it is about to discard is kept first,
-     and if that cannot be written the restore does not happen. It applies in
-     place rather than reloading — a reload would throw away the moment in which
-     somebody can say "no, that was the wrong one". */
-  async useRestorePointWithUndo() {
-    const point = this.app.restorePoint();
-    if (!point) return;
-    const ok = await confirmDialog({
-      title: this.text("confirm.restoreTitle", "Put the older settings back?"),
-      message: this.text("backup.confirmRestore", "Your folders, bookmarks and appearance are replaced.", { when: this.savedAtText(point) }),
-      confirmText: this.text("backup.restorePointBtn", "Put those back"),
-      cancelText: this.text("confirm.cancel", "Cancel")
-    });
-    if (!ok) return;
-    if (!this.keepAWayBack("restore")) return;
-    if (!this.app.applyRecoveryBundle(point)) { this.sayNoRoom("toast.saveFailed"); return; }
-    this.renderRecoveryRows();
-    const done = this.text("toast.restorePointUsed", "Restored");
-    if (typeof toast === "function") toast(done, "success");
-    NordlysUI.announce(done);
-    /* Focus lands on the way back rather than staying on a button whose row has
-       just changed meaning under it. */
-    document.getElementById("cfg-undo-point")?.focus({ preventScroll: true });
-  }
-
-  /* The one step back. It spends the slot rather than writing a new one, so
-     there is no chain of snapshots behind somebody pressing undo twice. No
-     confirm dialog: this is the direction that gives things back, and a
-     question in front of it would be the nag this product refuses. */
-  async stepBack() {
-    const point = this.app.undoPoint();
-    if (!point) return;
-    if (!this.app.applyRecoveryBundle(point)) { this.sayNoRoom("toast.saveFailed"); return; }
-    if (point.cause === "reset" && point.media) await this.restoreWallpaperAside();
-    if (point.cause === "reset") await this.putBackBrowserStore(point);
-    this.app.clearSnapshot(UNDO_POINT_KEY);
-    this.renderRecoveryRows();
-    const done = this.text(point.cause === "restore" ? "toast.restoreUndone" : "toast.resetUndone", "Put back");
-    if (typeof toast === "function") toast(done, "success");
-    NordlysUI.announce(done);
-    // The row this button sat in has just gone, so focus moves to the other way
-    // back if there is one, and to the tab heading if there is not.
-    const other = document.getElementById("cfg-restore-point");
-    (other?.offsetParent ? other : document.getElementById("settings-tab-backup"))?.focus({ preventScroll: true });
-  }
-
-  /* The half of a reset's way back that lives in browser storage: the other
-     profiles, what the cards held, sync's own state. Not the keys to other
-     services: a reset is also how those are taken off a device. Answers null
-     when the browser will not say what it holds. */
-  async keepBrowserStore(savedAt) {
-    try {
-      const skip = [STORAGE_KEY, SAVED_AT_KEY, UPDATE_COPIES_KEY, RESET_COPY_KEY, "nordlys_connections"];
-      const items = Object.fromEntries(Object.entries(await this.localArea("get", null)).filter(([key]) => !skip.includes(key)));
-      return { savedAt, items };
-    } catch (error) { return null; }
-  }
-
-  async putBackBrowserStore(point) {
-    for (const [field, key] of RESET_LISTS) {
-      try { if (typeof point[field] === "string") localStorage.setItem(key, point[field]); } catch (error) { /* the next tab starts from one profile */ }
-    }
-    try {
-      const copy = (await this.localArea("get", RESET_COPY_KEY))[RESET_COPY_KEY];
-      if (copy?.savedAt !== point.savedAt) return;
-      await this.localArea("set", copy.items);
-      await this.localArea("remove", RESET_COPY_KEY);
-    } catch (error) { /* the settings came back; the rest is best effort */ }
-    this.app.sync?.profiles?.reload();
-    this.app.sync?.emit();
-  }
-
-  /* Writes the way back before the thing that needs one, and answers whether it
-     landed. An irreversible version of a reversible action is not a fallback. */
-  keepAWayBack(cause, extra = {}) {
-    const bundle = Object.assign(this.app.captureRecoveryBundle(cause), extra);
-    if (this.app.writeSnapshot(UNDO_POINT_KEY, bundle)) return true;
-    this.sayNoRoom("toast.recoveryFailed");
-    return false;
-  }
-
   sayNoRoom(key) {
     const message = this.text(key, "There is not enough room in storage, so nothing was changed.");
     if (typeof toast === "function") toast(message, "danger", 7000);
@@ -2682,11 +2570,11 @@ class SettingsController {
 
   /* A wallpaper is tens of megabytes and cannot travel in a snapshot, so on a
      reset it is moved to one slot beside the live one rather than deleted. One
-     slot, overwritten by each reset: no chain, and the undo can honestly say it
-     brings back everything the reset took.
+     slot, overwritten by each reset: the copy kept before the last reset is
+     the one that brings its wallpaper back (renderCopies).
 
-     Until the new snapshot is written, that slot still belongs to the undo
-     point already sitting there. Spending it first — overwriting it, or, with
+     Until the new copy is written, that slot still belongs to the reset
+     before this one. Spending it first — overwriting it, or, with
      no wallpaper to move, emptying it for nothing — and only then finding
      there is no room for the snapshot is how a reset that did not happen left
      the previous way back promising a file that was no longer on disk. So
@@ -2720,18 +2608,6 @@ class SettingsController {
     } catch (error) { /* the settings came back; the wallpaper is best effort */ }
   }
 
-  /* Re-reads the stores that live beside the config after a bundle put them
-     back, so the drawer shows what storage now holds rather than what it was
-     showing a moment ago. */
-  adoptRestoredStores() {
-    this.customThemes = this.loadCustomThemes();
-    this.renderThemeCards();
-    try {
-      const width = localStorage.getItem("nordlys_drawer_width");
-      if (this.drawer) this.drawer.style.width = width || "";
-    } catch (error) { /* the drawer keeps the width it has */ }
-  }
-
   text(key, fallback, params) {
     return (window.I18N ? window.I18N.t(key, params || {}) : null) || fallback;
   }
@@ -2753,10 +2629,19 @@ class SettingsController {
     });
   }
 
+  /* The file Save a backup file writes: the whole setup, every space and
+     what every card holds (app.captureFile), the same thing an earlier
+     version is. */
+  async buildBackupFile() {
+    try { return await this.app.captureFile(); } catch (error) { return this.buildBackupPayload(); }
+  }
+
   /* A backup file put in place of the whole setup: from an imported file,
-     or from a copy kept before an update (own: made here, from this setup).
-     Reloads once it has landed. */
-  async applyBackupObject(parsed, { own = false } = {}) {
+     or from an earlier version (own: made here, from this setup). The setup
+     it replaces is kept first, as an earlier version of its own that says
+     why (cause). Reloads
+     once it has landed; before, when given, runs just ahead of the reload. */
+  async applyBackupObject(parsed, { own = false, cause = "import", before = null } = {}) {
     const file = window.NordlysConfigSchema.readBackupFile(parsed);
     const imported = window.NordlysConfigSchema.normalizeImportConfig(file.config);
     window.NordlysConfigSchema.migrateRaw(imported);
@@ -2799,21 +2684,64 @@ class SettingsController {
     const css = own ? "" : incoming.customCss || "";
     if (!own) incoming.customCss = "";
     const previous = this.app.config;
-    const putBack = this.holdLocalKeys([RESTORE_POINT_KEY, STORAGE_KEY, "nordlys_custom_themes", "nordlys_drawer_width", CSS_WAITING_KEY]);
+    /* The way back, before the first key is written: the setup as it is
+       now, cards and spaces with it. Not kept, nothing is replaced. */
+    if (!(await this.app.keepCopy(cause))) { this.sayNoRoom("toast.recoveryFailed"); return false; }
+    const putBack = this.holdLocalKeys([STORAGE_KEY, "nordlys_custom_themes", "nordlys_drawer_width", CSS_WAITING_KEY, "nordlys_profiles"]);
     const cardsBack = await this.adoptImportedCards(file.extras?.dashboardData);
+    const spacesBack = cardsBack ? await this.adoptImportedSpaces(file.extras?.spaces) : null;
     this.app.config = incoming;
     if (!cardsBack
-      || !this.app.snapshotBeforeMigration(previous, "import")
+      || !spacesBack
       || !this.adoptImportedExtras(file.extras, css)
       || !this.app.saveConfig({ strict: true })) {
       this.app.config = previous;
       putBack();
+      await spacesBack?.();
       await cardsBack?.();
       this.sayNoRoom("toast.saveFailed");
       return false;
     }
+    try { await before?.(); } catch (error) { /* the setup landed; what came before the reload was best effort */ }
     location.reload();
     return true;
+  }
+
+  /* The spaces a file carries, put in place of the ones here: the boards of
+     the others to browser storage, the list to localStorage (held and put
+     back by the caller). A space here that the file does not have goes to
+     the deleted ones, where it can be restored for thirty days. Answers the
+     way back for the boards, or null when the write was refused. A file with
+     one space leaves the other spaces here as they are. */
+  async adoptImportedSpaces(spaces) {
+    if (!spaces) return () => Promise.resolve();
+    const slot = (id) => `nordlys_profile.${id}`;
+    const items = Object.fromEntries(spaces.list.filter((space) => space.config).map((space) => [slot(space.id), space.config]));
+    const keys = Object.keys(items);
+    let before;
+    try { before = await this.localArea("get", keys); } catch (error) { return null; }
+    const back = async () => {
+      try {
+        const kept = Object.fromEntries(Object.entries(before).filter(([, value]) => value !== undefined));
+        if (Object.keys(kept).length) await this.localArea("set", kept);
+        const added = keys.filter((key) => kept[key] === undefined);
+        if (added.length) await this.localArea("remove", added);
+      } catch (error) { /* the boards keep what the file gave them */ }
+    };
+    try {
+      if (keys.length) await this.localArea("set", items);
+      let now = null;
+      try { now = JSON.parse(localStorage.getItem("nordlys_profiles") || "null"); } catch (error) { /* a damaged list is replaced */ }
+      const colors = window.NordlysProfiles?.COLORS || [];
+      const list = spaces.list.map(({ id, name, color }, index) => ({ id, name: name || "Main", color: colors.includes(color) ? color : colors[index % (colors.length || 1)] || "teal" }));
+      const gone = (Array.isArray(now?.list) ? now.list : []).filter((space) => !list.some((entry) => entry.id === space.id)).map((space, index) => ({ ...space, deletedAt: Date.now(), index }));
+      const deleted = [...gone, ...(Array.isArray(now?.deleted) ? now.deleted : []).filter((space) => !list.some((entry) => entry.id === space.id))];
+      // The board in use is about to be replaced; the one it was is in the copy just kept, and here among the deleted.
+      const live = gone.find((space) => space.id === now?.active);
+      if (live) await this.localArea("set", { [slot(live.id)]: JSON.parse(JSON.stringify(this.app.config)) });
+      localStorage.setItem("nordlys_profiles", JSON.stringify({ version: 1, active: spaces.active, list, deleted }));
+      return back;
+    } catch (error) { await back(); return null; }
   }
 
   // chrome.storage.local as a promise, which fails when the browser refuses.
@@ -2853,13 +2781,13 @@ class SettingsController {
 
   /* Folders from another extension's backup, added after the ones here. The
      setup as it was is kept in the restore point first, as an import is. */
-  addImportedFolders({ from, groups }) {
+  async addImportedFolders({ from, groups }) {
     if (!groups.length) {
       if (typeof toast === "function") toast(this.text("toast.importNothing", "No web bookmarks were found in that file."), "danger");
       return false;
     }
     const previous = JSON.parse(JSON.stringify(this.app.config));
-    if (!this.app.snapshotBeforeMigration(previous, "import")) { this.sayNoRoom("toast.recoveryFailed"); return false; }
+    if (!(await this.app.keepCopy("import"))) { this.sayNoRoom("toast.recoveryFailed"); return false; }
     const added = groups.map((group) => ({
       label: group.label,
       cols: Math.min(4, Math.max(2, Math.ceil(Math.sqrt(group.links.length)))),
@@ -2872,7 +2800,6 @@ class SettingsController {
     if (!this.app.saveConfig()) { this.app.config = previous; this.sayNoRoom("toast.saveFailed"); return false; }
     this.app.grid?.render();
     this.renderBookmarksManager?.();
-    this.renderRecoveryRows?.();
     const links = added.reduce((sum, group) => sum + group.links.length, 0);
     const done = this.text("toast.importedFrom", "{links} bookmarks in {folders} folders came over from {app}.", { links, folders: added.length, app: from });
     if (typeof toast === "function") toast(done, "success", 6000);
@@ -2950,7 +2877,7 @@ class SettingsController {
     }
     window.NordlysLists.markRead(url.href);
     const groups = folders.map((folder) => ({ ...folder, source: { type: "list", url: url.href, folder: folder.label } }));
-    if (this.addImportedFolders({ from: url.hostname, groups })) address.value = "";
+    if (await this.addImportedFolders({ from: url.hostname, groups })) address.value = "";
   }
 
   /* A settings file at a web address: leave to reach that one site is asked
@@ -2983,8 +2910,8 @@ class SettingsController {
   initBackupManager() {
     this.initBackupText();
     // Export JSON Backup
-    document.getElementById("cfg-export")?.addEventListener("click", () => {
-      const blob = new Blob([JSON.stringify(this.buildBackupPayload(), null, 2)], { type: "application/json" });
+    document.getElementById("cfg-export")?.addEventListener("click", async () => {
+      const blob = new Blob([JSON.stringify(await this.buildBackupFile(), null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -3032,7 +2959,7 @@ class SettingsController {
             await loadScript("src/js/lists.js");
             const groups = window.NordlysLists?.parse(text, "", file.name.replace(/[.][^.]+$/, "")) || [];
             // Added the way another new tab's folders are: a way back first, and only if the save landed.
-            this.addImportedFolders({ from: file.name, groups });
+            await this.addImportedFolders({ from: file.name, groups });
           } else {
             /* JSON. The envelope beside the config is lifted out first, so it
                is never validated as a setting and never stored as one; a file
@@ -3042,7 +2969,7 @@ class SettingsController {
             // Another new tab's backup adds its folders; a Nordlys one replaces the setup.
             await loadScript("src/js/importers.js");
             const other = window.NordlysImporters?.read(parsed);
-            if (other) this.addImportedFolders(other);
+            if (other) await this.addImportedFolders(other);
             else await this.applyBackupObject(parsed);
           }
         } catch (err) {
@@ -3060,10 +2987,11 @@ class SettingsController {
        it cleared, and it took no snapshot of its own, so "this cannot be undone"
        was simply accurate.
 
-       Now the snapshot comes first and the removal only happens if it landed —
-       everything the reset takes is inside it, including the wallpaper, which is
-       moved aside rather than copied because of its size. The restore point is
-       not in the key list any more: a reset may not spend the other way back. */
+       Now the copy comes first: everything the reset takes is in it (every
+       space, what the cards held), kept in Earlier versions, which a reset
+       leaves alone. The wallpaper is moved aside rather than copied because
+       of its size. When no copy can be kept, that is said, and the reset
+       happens only if it is asked for again. */
     document.getElementById("cfg-reset")?.addEventListener("click", () => {
       confirmDialog({
         title: this.text("confirm.resetTitle", "Reset everything?"),
@@ -3073,30 +3001,27 @@ class SettingsController {
       }).then(async (ok) => {
         if (!ok) return;
         /* Both halves of the way back, or neither. The wallpaper moves first
-           because the vault can be asked to put it back; the snapshot is the
-           commit point, because localStorage cannot. */
+           because the vault can be asked to put it back; the copy is the
+           commit point. */
         let aside;
         try { aside = await this.setWallpaperAside(); }
         catch (error) { this.sayNoRoom("toast.recoveryFailed"); return; }
-        const lists = {};
-        for (const [field, key] of RESET_LISTS) {
-          try { const raw = localStorage.getItem(key); if (raw !== null) lists[field] = raw; } catch (error) { /* not kept */ }
+        if (!(await this.app.keepCopy("reset", { note: aside.media ? { media: true } : {} }))) {
+          const anyway = await confirmDialog({
+            title: this.text("confirm.resetTitle", "Reset everything?"),
+            message: this.text("backup.resetNoCopy", "A copy of your setup could not be kept on this device, so this reset cannot be taken back. Save a backup file first, or reset anyway."),
+            confirmText: this.text("confirm.reset", "Reset"),
+            cancelText: this.text("confirm.cancel", "Cancel")
+          });
+          if (!anyway) { await aside.putBack(); return; }
         }
-        if (!this.keepAWayBack("reset", { media: aside.media, ...lists })) { await aside.putBack(); return; }
-        const kept = await this.keepBrowserStore(this.app.undoPoint()?.savedAt);
         for (const key of OWNED_LOCAL_KEYS) {
           try { localStorage.removeItem(key); } catch (error) { /* already gone */ }
         }
         try { await MediaVault.deleteMedia("custom_bg"); } catch (e) {}
         NordlysUI.announce(this.text("toast.resetDone", "Everything was reset"));
         if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-          // The copies made before updates outlive a reset, as the restore point does.
-          const copies = await this.app.updateCopies();
-          const keep = { ...(copies.length ? { [UPDATE_COPIES_KEY]: copies } : {}), ...(kept ? { [RESET_COPY_KEY]: kept } : {}) };
-          chrome.storage.local.clear(() => {
-            if (Object.keys(keep).length) chrome.storage.local.set(keep, () => location.reload());
-            else location.reload();
-          });
+          chrome.storage.local.clear(() => location.reload());
           setTimeout(() => location.reload(), 400); // fallback if callback never fires
         } else {
           location.reload();

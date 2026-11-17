@@ -48,6 +48,8 @@ const test = base.extend({
       };
       window.__syncRemote = values => new Promise(resolve => syncArea.set(values, resolve));
       window.__syncState = () => JSON.parse(JSON.stringify(syncState));
+      // What chrome.storage.onChanged would say of a write another tab made: window.__storageChanged(changes, 'local').
+      window.__storageChanged = (changes, area) => changeListeners.forEach(fn => fn(changes, area));
       window.chrome = { storage: { onChanged: { addListener(fn) { changeListeners.push(fn); }, removeListener(fn) { const i = changeListeners.indexOf(fn); if (i >= 0) changeListeners.splice(i, 1); } }, sync: syncArea, local: {
         /* Answers on a later tick with what was there when asked, as chrome.storage
            does. A synchronous answer here hid a real ordering bug, and answering

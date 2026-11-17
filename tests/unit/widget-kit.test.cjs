@@ -398,7 +398,12 @@ test('a stash is a group with its time, newest first, and a tab taken out of it 
 
 test('a stash never grows past what storage should hold', () => {
   const s = K.stash.create();
-  for (let i = 0; i < 70; i++) K.stash.add(s, Array.from({ length: 150 }, (v, j) => ({ url: `https://e.com/${i}/${j}`, title: 't' })), i);
-  assert.ok(s.groups.length <= K.stash.MAX_GROUPS);
+  const added = [];
+  for (let i = 0; i < 70; i++) added.push(K.stash.add(s, Array.from({ length: 150 }, (v, j) => ({ url: `https://e.com/${i}/${j}`, title: 't' })), i));
+  assert.strictEqual(s.groups.length, K.stash.MAX_GROUPS);
+  // Full, it takes no more: the first window put away is still there, and the caller is told.
+  assert.ok(K.stash.full(s));
+  assert.ok(s.groups.some(g => g.id === added[0].id));
+  assert.strictEqual(added[K.stash.MAX_GROUPS], null);
   assert.ok(s.groups.every(g => g.tabs.length <= K.stash.MAX_TABS));
 });

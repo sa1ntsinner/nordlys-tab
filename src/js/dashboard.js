@@ -478,6 +478,13 @@
           }
           api().tabs.query({ currentWindow: true }, async (tabs) => {
             const picked = K.stash.pick(tabs || [], self);
+            // Full: the tabs stay open, and no window put away earlier is dropped for them.
+            if (picked.length && K.stash.full(card.data)) {
+              const full = say("dash.stashFull", "The stash is full. Open or remove a saved window, then put these away.");
+              window.NordlysUI?.announce?.(full);
+              if (typeof toast === "function") toast(full, "info", 6000);
+              return;
+            }
             const group = K.stash.add(card.data, picked, card.now());
             if (!group) { if (typeof toast === "function") toast(say("dash.stashNothing", "No other tabs to put away"), "info", 3000); return; }
             render();
@@ -996,6 +1003,8 @@
       this.signature = "";
       this.sounds = window.NordlysSoundscapes ? new window.NordlysSoundscapes() : { play: async () => false, stop() {}, KINDS: [] };
       this.saveTimers = new Map();
+      // Writes that are waiting their 400 ms, by card (persist, flush).
+      this.waiting = new Map();
       this.ticker = 0;
       this.menu = null;
       this.files = new Set();
@@ -1018,7 +1027,8 @@
           if (change.newValue) this.refreshKey(id, change.newValue);
         }
       });
-      document.addEventListener("visibilitychange", () => this.schedule());
+      document.addEventListener("visibilitychange", () => { if (document.hidden) this.flush(); this.schedule(); });
+      window.addEventListener("pagehide", () => this.flush());
       window.addEventListener("nordlys:languagechange", () => { this.signature = ""; this.render(); this.renderSection(); });
       /* The apps a person connected: their tokens, on this device only:
          never in the config, never synced, never in a backup. */
@@ -1401,8 +1411,11 @@
     persist(id, value, { soon = false } = {}) {
       this.data.set(id, value);
       clearTimeout(this.saveTimers.get(id));
+      // What a card holds is part of the setup: an earlier version is kept of it too (autosave.js).
+      this.app?.scheduleAutosave?.();
       return new Promise((resolve) => {
         const write = () => {
+          this.waiting.delete(id);
           const store = storage();
           if (!store?.set) { resolve(false); return; }
           store.set({ [DATA + id]: value }, () => {
@@ -1412,9 +1425,15 @@
             resolve(!failed);
           });
         };
-        if (soon) this.saveTimers.set(id, setTimeout(write, 400));
+        if (soon) { this.waiting.set(id, write); this.saveTimers.set(id, setTimeout(write, 400)); }
         else { this.saveTimers.set(id, 0); write(); }
       });
+    }
+    /* What is still waiting to be written (a note being typed waits 400 ms)
+       is written now: the page is being left, by a bookmark opened in this
+       tab or the tab closed, and the last words went with it. */
+    flush() {
+      for (const [id, write] of [...this.waiting]) { clearTimeout(this.saveTimers.get(id)); write(); }
     }
 
     /* The files the cards on the page need beyond this one, read the first

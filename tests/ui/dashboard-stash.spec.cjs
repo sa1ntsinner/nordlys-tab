@@ -88,3 +88,21 @@ test('when the stash cannot be saved, no tab is closed', async ({ nordlysPage })
   expect(await page.evaluate(() => window.__tabs.removed || [])).toEqual([]);
   await expect(stash(page).locator('.dash-stash-group')).toHaveCount(0);
 });
+
+/* At fifty saved windows the stash dropped the oldest to make room, and the
+   tabs it had held were closed long ago. Full, it now takes no more. */
+test('a full stash takes no more: no saved window is dropped and no tab is closed', async ({ nordlysPage }) => {
+  const { page, storageState } = nordlysPage;
+  await page.evaluate(async () => {
+    const d = window.Nordlys.dashboard;
+    const card = [...d.cards.values()].find(c => c.widget.type === 'stash');
+    card.data.groups = Array.from({ length: 50 }, (v, i) => ({ id: `g${i}`, at: i, tabs: [{ url: `https://kept.example/${i}`, title: `Kept ${i}` }] }));
+    await card.save();
+  });
+  await stash(page).getByRole('button', { name: 'Stash the tabs of this window' }).click();
+  await expect(page.locator('#toast-dock')).toContainText('The stash is full');
+  expect(await page.evaluate(() => window.__tabs.removed || [])).toEqual([]);
+  const kept = Object.entries(storageState).find(([key, value]) => key.startsWith('nordlys_dash.') && Array.isArray(value?.groups))[1];
+  expect(kept.groups).toHaveLength(50);
+  expect(kept.groups.some(group => group.id === 'g0'), 'the first window put away is still there').toBe(true);
+});

@@ -286,12 +286,33 @@
     return out;
   }
 
+  /* The other spaces, when there is more than one: { active, list }, each
+     entry of the list a space's id, name, colour and board. The space in use
+     has no board here: it is the file itself. A list that names no space in
+     use, or only one space, is nothing to carry. */
+  function spaces(value) {
+    if (!isObject(value) || typeof value.active !== "string" || !Array.isArray(value.list)) return null;
+    const list = [];
+    for (const entry of value.list) {
+      if (!isObject(entry) || typeof entry.id !== "string" || !/^[a-zA-Z0-9_-]{1,80}$/.test(entry.id)) continue;
+      const space = { id: entry.id, name: String(entry.name ?? "").slice(0, 40), color: String(entry.color ?? "") };
+      if (entry.id !== value.active) {
+        if (!isObject(entry.config)) continue;
+        space.config = entry.config;
+      }
+      list.push(space);
+    }
+    return list.length > 1 && list.some((space) => space.id === value.active) ? { active: value.active, list } : null;
+  }
+
   function buildBackupFile(config, extras = {}) {
     const envelope = { formatVersion: BACKUP_FORMAT_VERSION, savedAt: new Date().toISOString() };
     if (Array.isArray(extras.customThemes)) envelope.customThemes = extras.customThemes;
     if (typeof extras.drawerWidth === "string" && extras.drawerWidth) envelope.drawerWidth = extras.drawerWidth;
     const cards = dashboardCards(extras.dashboardData);
     if (Object.keys(cards).length) envelope.dashboardData = cards;
+    const all = spaces(extras.spaces);
+    if (all) envelope.spaces = all;
     return Object.assign({}, config, { [BACKUP_EXTRAS_KEY]: envelope });
   }
 
@@ -309,6 +330,8 @@
       if (typeof envelope.drawerWidth === "string" && envelope.drawerWidth) extras.drawerWidth = envelope.drawerWidth;
       const cards = dashboardCards(envelope.dashboardData);
       if (Object.keys(cards).length) extras.dashboardData = cards;
+      const all = spaces(envelope.spaces);
+      if (all) extras.spaces = all;
     }
     return { config, extras };
   }

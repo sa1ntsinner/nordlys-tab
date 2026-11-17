@@ -21,7 +21,7 @@ test('a Speed Dial 2 export comes over as folders after the ones here', async ({
   expect(groups.length).toBe(before + 2);
   expect(groups.slice(-2)).toEqual(['Home', 'Work']);
   await expect(page.locator('#board .card', { hasText: 'Work' }).locator('.tile')).toHaveCount(1);
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('nordlys_restore_point')).config.groups.length)).toBe(before);
+  expect(await page.evaluate(async () => (await window.NordlysAutosave.list()).find(copy => copy.cause === 'import').file.groups.length), 'the setup as it was is kept').toBe(before);
   expect(runtimeErrors).toEqual([]);
 });
 

@@ -132,36 +132,21 @@ function adoptLegacyLocalStorage() {
     }
   } catch (error) { /* storage unavailable: nothing to move, nothing to lose */ }
 }
-/* Two recovery slots, two questions, one level deep.
-
-   RESTORE_POINT_KEY answers "what was here before Nordlys changed it" — a
-   migration on load, or an import. UNDO_POINT_KEY answers "what was here before
-   I replaced everything" — a reset, or a restore. They are separate because
-   neither may quietly spend the other: reset used to clear the restore point,
-   which is how the most destructive action in the product came to delete its
-   own safety net.
-
-   Taking a step back consumes the undo slot and writes nothing new, so there is
-   no chain of snapshots growing behind a person who keeps pressing undo, and
-   never more than two copies of a config in storage. */
-const RESTORE_POINT_KEY = "nordlys_restore_point";
-const UNDO_POINT_KEY = "nordlys_undo_point";
-/* A third, wider net: the whole setup as a backup file, made on the first
-   new tab after the extension updated, before anything is migrated. Kept in
-   chrome.storage.local, which has no 5 MB ceiling, so a board heavy with
-   icons is kept too; the last three updates are kept, and a reset keeps
-   them. SEEN_VERSION_KEY is the version the last new tab ran. */
-const UPDATE_COPIES_KEY = "nordlys_update_copies";
+/* One way back, kept in one place: Earlier versions (autosave.js), copies of
+   the whole setup in an IndexedDB of their own. A copy is made a little after
+   every change, and before each thing that replaces the setup: an update of
+   the extension, an import, a reset, an older copy put back. Until 2.6.4
+   there were four stores for this (a restore point and an undo point in
+   localStorage, copies before updates and a reset's half in
+   chrome.storage.local); what they held is moved over once (adoptOldCopies).
+   SEEN_VERSION_KEY is the version the last new tab ran. */
+const OLD_RESTORE_POINT_KEY = "nordlys_restore_point";
+const OLD_UNDO_POINT_KEY = "nordlys_undo_point";
+const OLD_UPDATE_COPIES_KEY = "nordlys_update_copies";
+const OLD_RESET_COPY_KEY = "nordlys_reset_copy";
 const SEEN_VERSION_KEY = "nordlys_seen_version";
-const UPDATE_COPIES_KEPT = 3;
 // Earlier versions (autosave.js): a copy is kept this long after the last change.
 const AUTOSAVE_AFTER = 15000;
-/* What a reset clears from browser storage (the other profiles, what the
-   cards held, sync's own state), kept for its undo beside the update copies,
-   which a reset keeps (settings.js keepBrowserStore). */
-const RESET_COPY_KEY = "nordlys_reset_copy";
-// The profile list and the profile this device opens on: localStorage a reset clears, kept in its way back.
-const RESET_LISTS = [["profiles", "nordlys_profiles"], ["deviceStart", "nordlys_device_start"]];
 // Which skies this device found too heavy, and which the person keeps moving anyway (judgeSkyLoad).
 const SKY_LOAD_KEY = "nordlys_sky_load";
 // When the config was last saved, beside it in each store (saveConfig).
@@ -320,9 +305,10 @@ class NordlysApp {
     adoptLegacyLocalStorage();
     this.defaultConfig = DEFAULT_CONFIG;
     this.config = this.loadConfig();
-    this.keepCopyBeforeUpdate();
+    // With browser storage the copy waits for it to answer: the newer board may be there (restoreFromChromeStorage).
+    if (typeof chrome === "undefined" || !chrome.storage?.local) this.keepCopyBeforeUpdate(this.storedConfig());
     // A change the last tab was closed on is kept by this one.
-    if (this.storedBeforeLoad) setTimeout(() => this.keepAutosave(), 3000);
+    if (this.storedBeforeLoad) setTimeout(() => (this.migratedFrom && !this.storedKept ? this.keepStored(this.migratedFrom) : this.keepCopy()), 3000);
     this.mediaObjectUrl = null;
     this.init();
     window.NordlysReviewAsk?.run();
@@ -821,149 +807,144 @@ class NordlysApp {
      user into an uninstall in one event is losing their setup — and the most
      common cause is not a crash but an upgrade that migrated something wrongly.
      Nothing here can promise a migration is correct. It can promise the
-     previous state still exists afterwards. */
-  snapshotBeforeMigration(previous, cause = "migration") {
-    /* A snapshot that cannot be written must never stop the app loading, so the
-       answer is reported rather than thrown. The callers that are about to
-       destroy something on purpose check it; the load path does not. */
-    return this.writeSnapshot(RESTORE_POINT_KEY, {
-      savedAt: new Date().toISOString(),
-      cause,
-      version: previous.version || "unknown",
-      config: previous
-    });
+     previous state still exists afterwards: the stored config, as it was
+     before this load touched it, is kept as a copy. Once a load: a new
+     version and a migration are usually the same moment, and then the copy
+     is the one that names the versions (keepCopyBeforeUpdate, which is where
+     a migration made by loadConfig is kept too). */
+  keepStored(raw, note = {}) {
+    if (!raw || this.storedKept) return this.storedKept || Promise.resolve(false);
+    this.storedKept = this.keepCopy("update", { config: raw, note });
+    return this.storedKept;
+  }
+
+  // What localStorage held when this page opened, parsed; null when it held nothing.
+  storedConfig() {
+    try { return this.storedBeforeLoad ? JSON.parse(this.storedBeforeLoad) : null; } catch (error) { return null; }
   }
 
   /* The first new tab of a new version keeps the setup as it was under the
-     last one: the stored config before this load touched it, the stores
-     beside it and what the dashboard cards hold, as a backup file. The
-     version is marked seen only once the copy is written, so a copy that
-     could not be written is tried again on the next new tab. */
-  keepCopyBeforeUpdate() {
-    const store = typeof chrome !== "undefined" ? chrome.storage?.local : null;
+     last one: the stored config before this load touched it (raw), the
+     stores beside it, what the cards hold and the other spaces. The version
+     is marked seen only once the copy is written, so a copy that could not
+     be written is tried again on the next new tab. */
+  keepCopyBeforeUpdate(raw) {
     let current = DEFAULT_CONFIG.version;
     try { current = chrome.runtime.getManifest().version || current; } catch (error) { /* a plain page: the build's own version */ }
-    let seen = null;
+    let seen;
     try { seen = localStorage.getItem(SEEN_VERSION_KEY); } catch (error) { return; }
-    if (seen === current) return;
+    // The same version, and this load rewrote the stored config: that is kept all the same.
+    if (seen === current) { if (this.migratedFrom) this.keepStored(this.migratedFrom); return; }
     const markSeen = () => { try { localStorage.setItem(SEEN_VERSION_KEY, current); } catch (error) { /* tried again next time */ } };
     // A first install has nothing to keep.
-    if (!this.storedBeforeLoad || !store || !window.NordlysConfigSchema?.buildBackupFile) { markSeen(); return; }
-    let config;
-    try { config = JSON.parse(this.storedBeforeLoad); } catch (error) { markSeen(); return; }
+    if (!raw || !window.NordlysConfigSchema?.buildBackupFile || !window.NordlysAutosave) { markSeen(); return; }
+    this.keepStored(raw, { from: seen || raw.version || "", to: current }).then((kept) => { if (kept) markSeen(); });
+  }
+
+  /* The whole setup as a backup file: the config (the one in use, unless
+     another is given), the themes and the drawer's width, what every card
+     of every space holds, and the other spaces. */
+  async captureFile(config = this.config) {
     const side = (key, json) => { try { const raw = localStorage.getItem(key); return raw === null ? undefined : json ? JSON.parse(raw) : raw; } catch (error) { return undefined; } };
-    store.get(null, (items) => {
-      const all = items || {};
-      const dashboardData = {};
+    const dashboardData = {};
+    const store = typeof chrome !== "undefined" ? chrome.storage?.local : null;
+    if (store) {
+      const all = await new Promise((resolve) => { try { store.get(null, (items) => resolve(items || {})); } catch (error) { resolve({}); } });
       for (const [key, value] of Object.entries(all)) if (key.startsWith("nordlys_dash.")) dashboardData[key.slice("nordlys_dash.".length)] = value;
-      const file = window.NordlysConfigSchema.buildBackupFile(config, { customThemes: side("nordlys_custom_themes", true) || [], drawerWidth: side("nordlys_drawer_width", false) || "", dashboardData });
-      const copy = { savedAt: new Date().toISOString(), from: seen || config.version || "", to: current, file };
-      const copies = [copy, ...(Array.isArray(all[UPDATE_COPIES_KEY]) ? all[UPDATE_COPIES_KEY] : [])].slice(0, UPDATE_COPIES_KEPT);
-      store.set({ [UPDATE_COPIES_KEY]: copies }, () => {
-        let failed = false;
-        try { failed = Boolean(chrome.runtime?.lastError); } catch (error) { /* no error to read */ }
-        if (!failed) markSeen();
-        this.builtSettings?.renderUpdateCopies?.();
-      });
+    }
+    // What the cards on the page hold now: a note just typed may not be in storage yet.
+    try { Object.assign(dashboardData, this.dashboard?.backupData?.() || {}); } catch (error) { /* storage's answer stands */ }
+    let spaces;
+    try {
+      const profiles = this.sync?.profiles;
+      if (profiles && profiles.list().length > 1) {
+        const active = profiles.active().id;
+        const all = await profiles.snapshot(config);
+        spaces = { active, list: all.profiles.map(({ id, name, color, config: board }) => (id === active ? { id, name, color } : { id, name, color, config: board })) };
+      }
+    } catch (error) { /* the space in use is kept; the others could not be read */ }
+    return window.NordlysConfigSchema.buildBackupFile(JSON.parse(JSON.stringify(config)), {
+      customThemes: side("nordlys_custom_themes", true) || [], drawerWidth: side("nordlys_drawer_width", false) || "", dashboardData, spaces
     });
+  }
+
+  /* Keeps a copy of the whole setup in Earlier versions, and answers whether
+     there is one to go back to: true when it was written, or when the newest
+     copy already holds this very setup. cause says what is about to replace
+     the setup ("update", "import", "reset", "restore"); with none it is the
+     copy made after a change. Whoever is about to replace the setup waits
+     for the answer and does not go on without it. */
+  async keepCopy(cause = "", { config = this.config, note = {} } = {}) {
+    if (!cause) clearTimeout(this.autosaveTimer);
+    try {
+      if (!config) return false;
+      const copy = await window.NordlysAutosave.keep(await this.captureFile(config), { cause, note });
+      if (copy) this.builtSettings?.renderCopies?.();
+      return true;
+    } catch (error) { return false; }
   }
 
   /* Earlier versions: the setup is kept, with the time, a little after it
      last changed, so a burst of edits makes one copy and not twenty. */
   scheduleAutosave() {
     clearTimeout(this.autosaveTimer);
-    this.autosaveTimer = setTimeout(() => this.keepAutosave(), AUTOSAVE_AFTER);
+    this.autosaveTimer = setTimeout(() => this.keepCopy(), AUTOSAVE_AFTER);
   }
 
-  async keepAutosave() {
-    clearTimeout(this.autosaveTimer);
+  /* What the four older stores held, moved into Earlier versions, each
+     with its cause and the time it was made. An old store is removed only
+     once its copies are written; one that could not be moved waits for the
+     next new tab. */
+  async adoptOldCopies() {
     const schema = window.NordlysConfigSchema;
     const autosave = window.NordlysAutosave;
-    if (!schema?.buildBackupFile || !autosave || !this.config) return null;
-    const side = (key, json) => { try { const raw = localStorage.getItem(key); return raw === null ? undefined : json ? JSON.parse(raw) : raw; } catch (error) { return undefined; } };
-    let file;
-    try {
-      file = schema.buildBackupFile(JSON.parse(JSON.stringify(this.config)), { customThemes: side("nordlys_custom_themes", true) || [], drawerWidth: side("nordlys_drawer_width", false) || "" });
-    } catch (error) { return null; }
-    const copy = await autosave.keep(file);
-    if (copy) this.builtSettings?.renderAutosaves?.();
-    return copy;
-  }
-
-  updateCopies() {
+    if (!schema?.buildBackupFile || !autosave) return;
+    const at = (value) => { const time = Date.parse(value?.savedAt || ""); return Number.isFinite(time) ? time : undefined; };
+    const read = (key) => { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch (error) { return null; } };
+    const drop = (key) => { try { localStorage.removeItem(key); } catch (error) { /* tried again next time */ } };
     const store = typeof chrome !== "undefined" ? chrome.storage?.local : null;
-    if (!store) return Promise.resolve([]);
-    return new Promise((resolve) => store.get(UPDATE_COPIES_KEY, (items) => resolve(Array.isArray(items?.[UPDATE_COPIES_KEY]) ? items[UPDATE_COPIES_KEY] : [])));
-  }
-
-  /* Everything a reset removes, in one object: the config, and the stores that
-     live beside it. Deep-copied, because the caller is about to change the
-     originals. */
-  captureRecoveryBundle(cause) {
-    const bundle = {
-      savedAt: new Date().toISOString(),
-      cause,
-      version: this.config?.version || "unknown",
-      config: JSON.parse(JSON.stringify(this.config || {}))
-    };
-    for (const [field, entry] of Object.entries(SIDE_STORAGE)) {
-      try {
-        const raw = localStorage.getItem(entry.key);
-        if (raw === null) continue;
-        bundle[field] = entry.json ? JSON.parse(raw) : raw;
-      } catch (error) { /* an unreadable store is one this snapshot cannot promise */ }
-    }
-    return bundle;
-  }
-
-  writeSnapshot(key, bundle) {
+    const local = (method, argument) => new Promise((resolve) => { try { store[method](argument, (value) => resolve(chrome.runtime?.lastError ? null : value || {})); } catch (error) { resolve(null); } });
+    let moved = false;
     try {
-      localStorage.setItem(key, JSON.stringify(bundle));
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  readSnapshot(key) {
+      const point = read(OLD_RESTORE_POINT_KEY);
+      if (point?.config) {
+        await autosave.keep(schema.buildBackupFile(point.config), { cause: point.cause === "import" ? "import" : "update", at: at(point) });
+        moved = true;
+      }
+      drop(OLD_RESTORE_POINT_KEY);
+    } catch (error) { /* stays where it is */ }
     try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : null;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  clearSnapshot(key) {
-    try { localStorage.removeItem(key); } catch (error) { /* nothing to clear */ }
-  }
-
-  restorePoint() { return this.readSnapshot(RESTORE_POINT_KEY); }
-  undoPoint() { return this.readSnapshot(UNDO_POINT_KEY); }
-
-  /* Puts a bundle back: the config, then every store it carries. A field the
-     bundle does not carry is removed rather than left behind, because "put it
-     back the way it was" is a whole answer or it is a misleading one. */
-  applyRecoveryBundle(bundle) {
-    if (!bundle || !bundle.config) return false;
-    const previous = this.config;
-    this.config = Object.assign({}, DEFAULT_CONFIG, bundle.config);
-    window.NordlysConfigSchema?.repairConfig(this.config, DEFAULT_CONFIG);
-    /* If it will not persist, nothing has happened: the page keeps the config
-       it had rather than showing one that the next reload will contradict. */
-    if (!this.saveConfig({ strict: true })) { this.config = previous; return false; }
-    this.loadedFromStore = true;
-    for (const [field, entry] of Object.entries(SIDE_STORAGE)) {
-      try {
-        if (bundle[field] === undefined) { localStorage.removeItem(entry.key); continue; }
-        localStorage.setItem(entry.key, entry.json ? JSON.stringify(bundle[field]) : String(bundle[field]));
-      } catch (error) { /* the config landed; a side store that will not take is not worth failing for */ }
-    }
-    const language = this.config.language || bundle.language;
-    if (language && window.I18N && window.I18N.currentLang !== language) window.I18N.setLanguage(language);
-    this.applyLoadedConfig();
-    this.settings?.adoptRestoredStores?.();
-    return true;
+      const undo = read(OLD_UNDO_POINT_KEY);
+      const held = store ? await local("get", OLD_RESET_COPY_KEY) : {};
+      if (undo?.config && held) {
+        const items = held[OLD_RESET_COPY_KEY]?.savedAt === undo.savedAt ? held[OLD_RESET_COPY_KEY].items || {} : {};
+        const dashboardData = {};
+        for (const [key, value] of Object.entries(items)) if (key.startsWith("nordlys_dash.")) dashboardData[key.slice("nordlys_dash.".length)] = value;
+        let spaces;
+        try {
+          const meta = JSON.parse(undo.profiles || "null");
+          if (meta?.active && Array.isArray(meta.list)) spaces = { active: meta.active, list: meta.list.map(({ id, name, color }) => (id === meta.active ? { id, name, color } : { id, name, color, config: items[`nordlys_profile.${id}`] })) };
+        } catch (error) { /* the space in use is kept */ }
+        const file = schema.buildBackupFile(undo.config, { customThemes: Array.isArray(undo.customThemes) ? undo.customThemes : [], drawerWidth: undo.drawerWidth || "", dashboardData, spaces });
+        await autosave.keep(file, { cause: undo.cause === "restore" ? "restore" : "reset", at: at(undo), note: undo.media ? { media: true } : {} });
+        moved = true;
+      }
+      if (held) {
+        drop(OLD_UNDO_POINT_KEY);
+        if (store && held[OLD_RESET_COPY_KEY]) await local("remove", OLD_RESET_COPY_KEY);
+      }
+    } catch (error) { /* stays where it is */ }
+    try {
+      const held = store ? await local("get", OLD_UPDATE_COPIES_KEY) : null;
+      const copies = Array.isArray(held?.[OLD_UPDATE_COPIES_KEY]) ? held[OLD_UPDATE_COPIES_KEY] : [];
+      for (const copy of [...copies].reverse()) {
+        if (!copy?.file) continue;
+        await autosave.keep(copy.file, { cause: "update", at: at(copy), note: { from: copy.from || "", to: copy.to || "" } });
+        moved = true;
+      }
+      if (held?.[OLD_UPDATE_COPIES_KEY]) await local("remove", OLD_UPDATE_COPIES_KEY);
+    } catch (error) { /* stays where it is */ }
+    if (moved) this.builtSettings?.renderCopies?.();
   }
 
   /* Everything on the page that reads the config, repainted where it stands.
@@ -1006,7 +987,7 @@ class NordlysApp {
         const repaired = Boolean(window.NordlysConfigSchema?.repairConfig(cfg, DEFAULT_CONFIG));
         if (this.normalizeStoredConfig(cfg) || repaired || aged) {
           // Keep what the user had, exactly as it was, before writing over it.
-          this.snapshotBeforeMigration(JSON.parse(stored));
+          this.migratedFrom = JSON.parse(stored);
           /* Its own try, and this is the whole reason for it. A board carrying
              embedded icons runs to megabytes; with a snapshot of the same size
              beside it, the rewrite is what meets the quota. When that throw
@@ -1045,6 +1026,7 @@ class NordlysApp {
      written anywhere and the caller puts everything back. */
   saveConfig({ strict = false } = {}) {
     const at = Date.now();
+    this.lastSavedAt = at;
     this.scheduleAutosave();
     const mirror = typeof chrome !== "undefined" && chrome.storage && chrome.storage.local;
     let fast = true;
@@ -1120,14 +1102,25 @@ class NordlysApp {
     if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) return;
     try {
       chrome.storage.local.get([STORAGE_KEY, SAVED_AT_KEY, ...LEGACY_STORAGE_KEYS], (data) => {
-        if (!data) return;
+        if (!data) { this.keepCopyBeforeUpdate(this.storedConfig()); return; }
         const legacyPresent = LEGACY_STORAGE_KEYS.some((key) => data[key] !== undefined);
         let migrated = false;
         /* The mirror was saved after the fast copy: a save that localStorage
            refused for room. The newer board is the one to show. */
         let fastAt = 0;
         try { fastAt = Number(localStorage.getItem(SAVED_AT_KEY)) || 0; } catch (e) {}
-        if (this.loadedFromStore && data[STORAGE_KEY]?.groups && Number(data[SAVED_AT_KEY]) > fastAt) {
+        const mirrorNewer = Boolean(this.loadedFromStore && data[STORAGE_KEY]?.groups && Number(data[SAVED_AT_KEY]) > fastAt);
+        /* The setup as the last version left it, for the copy kept before an
+           update: the newer of the two stores, and the mirror's when the fast
+           copy holds nothing (a board too big for it, or site data cleared).
+           Taken here, before anything below changes it. */
+        let before = mirrorNewer ? null : this.storedConfig();
+        if (!before) {
+          const held = data[STORAGE_KEY] || LEGACY_STORAGE_KEYS.map((key) => data[key]).find(Boolean);
+          if (held?.groups) before = JSON.parse(JSON.stringify(held));
+        }
+        this.keepCopyBeforeUpdate(before);
+        if (mirrorNewer) {
           const newer = data[STORAGE_KEY];
           window.NordlysConfigSchema?.migrateRaw(newer);
           this.config = Object.assign({}, DEFAULT_CONFIG, newer);
@@ -1155,7 +1148,7 @@ class NordlysApp {
             const repaired = Boolean(window.NordlysConfigSchema?.repairConfig(this.config, DEFAULT_CONFIG));
             migrated = this.normalizeStoredConfig(this.config) || repaired || aged;
             source = original;
-            if (migrated) this.snapshotBeforeMigration(source);
+            if (migrated) this.keepStored(source);
             this.loadedFromStore = true;
             /* Same reason as loadConfig: a write that will not fit must not
                take the repaint down with it and leave a blank board in front
@@ -1255,6 +1248,7 @@ class NordlysApp {
     this.initColorModeListener();
     this.watchOtherTabs();
     this.restoreFromChromeStorage();
+    this.afterFirstFrame(() => this.adoptOldCopies());
     this.watchInbox();
   }
 
@@ -1421,10 +1415,7 @@ class NordlysApp {
      was changed here. When another tab saves, this one takes what it saved —
      through the same repairs a load makes — and redraws. */
   watchOtherTabs() {
-    window.addEventListener("storage", (event) => {
-      if (event.key !== STORAGE_KEY || !event.newValue) return;
-      let parsed;
-      try { parsed = JSON.parse(event.newValue); } catch { return; }
+    const take = (parsed) => {
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return;
       window.NordlysConfigSchema?.migrateRaw(parsed);
       const next = Object.assign({}, DEFAULT_CONFIG, parsed);
@@ -1438,7 +1429,25 @@ class NordlysApp {
       // saves (a slider drag saves on every step), and none while hidden.
       this.adoptConfig(next);
       this.redrawAdopted();
+    };
+    window.addEventListener("storage", (event) => {
+      if (event.key !== STORAGE_KEY || !event.newValue) return;
+      try { take(JSON.parse(event.newValue)); } catch { /* not a config */ }
     });
+    /* A board too big for localStorage is saved to browser storage alone
+       (saveConfig), and no storage event tells the other tabs. They hear of
+       it here: a save that is not this tab's own, and newer than the fast
+       copy, which a save that fitted would have updated too. */
+    try {
+      chrome.storage.onChanged.addListener((changes, area) => {
+        const at = Number(changes?.[SAVED_AT_KEY]?.newValue);
+        const board = changes?.[STORAGE_KEY]?.newValue;
+        if (area !== "local" || !board || !at || at === this.lastSavedAt) return;
+        let fastAt = 0;
+        try { fastAt = Number(localStorage.getItem(SAVED_AT_KEY)) || 0; } catch (error) { /* nothing newer is known */ }
+        if (at > fastAt) take(JSON.parse(JSON.stringify(board)));
+      });
+    } catch (error) { /* a plain page: the storage event is all there is */ }
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden && this.adoptedPending) this.redrawAdopted();
     });

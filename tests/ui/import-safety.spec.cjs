@@ -1,4 +1,7 @@
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
+
+// The setup a copy in Earlier versions holds, by what it was made before.
+const kept = (page, cause) => page.evaluate(async why => (await window.NordlysAutosave.list()).find(copy => copy.cause === why)?.file ?? null, cause);
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 
@@ -48,10 +51,9 @@ test('a file that is not even an object is refused', async ({ nordlysPage }) => 
   expect(await page.evaluate(() => Array.isArray(window.Nordlys.config.groups))).toBe(true);
 });
 
-test('a sound import keeps what it replaced in the restore point', async ({ nordlysPage }) => {
+test('a sound import keeps what it replaced as an earlier version', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.evaluate(() => {
-    localStorage.removeItem('nordlys_restore_point');
     window.Nordlys.config.groups[0].label = 'BEFORE IMPORT';
     window.Nordlys.saveConfig();
   });
@@ -60,8 +62,8 @@ test('a sound import keeps what it replaced in the restore point', async ({ nord
   await loaded;
   await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   expect(await page.evaluate(() => window.Nordlys.config.groups[0].label)).toBe('AFTER IMPORT');
-  const point = await page.evaluate(() => JSON.parse(localStorage.getItem('nordlys_restore_point') || 'null'));
-  expect(point?.config?.groups?.[0]?.label, 'the previous setup can be brought back').toBe('BEFORE IMPORT');
+  const point = await kept(page, 'import');
+  expect(point?.groups?.[0]?.label, 'the previous setup can be brought back').toBe('BEFORE IMPORT');
 });
 
 test('a 2.0 backup with numeric range values stored as text still imports', async ({ nordlysPage }) => {
@@ -85,7 +87,6 @@ test('a 2.0 backup with numeric range values stored as text still imports', asyn
 test('a stored config with groups that is not a list still starts the page', async ({ nordlysPage }) => {
   const { page, runtimeErrors } = nordlysPage;
   await page.evaluate(() => {
-    localStorage.removeItem('nordlys_restore_point');
     const broken = { ...window.Nordlys.config, groups: {} };
     localStorage.setItem('nordlys_config', JSON.stringify(broken));
     window.chrome.storage.local.set({ nordlys_config: broken }, () => {});
@@ -95,11 +96,10 @@ test('a stored config with groups that is not a list still starts the page', asy
   await page.waitForFunction(() => Boolean(window.Nordlys?.grid), null, { timeout: 5000 });
   expect(runtimeErrors.filter(text => text.startsWith('pageerror')), 'no uncaught error on start').toEqual([]);
   expect(await page.evaluate(() => Array.isArray(window.Nordlys.config.groups))).toBe(true);
-  const point = await page.evaluate(() => JSON.parse(localStorage.getItem('nordlys_restore_point') || 'null'));
-  expect(point, 'what was stored is kept for inspection').toBeTruthy();
+  await expect.poll(async () => (await kept(page, 'update'))?.groups, 'what was stored is kept for inspection').toEqual({});
 });
 
-/* There is one restore-point slot. An import took a snapshot of the setup being
+/* There was one restore-point slot. An import took a snapshot of the setup being
    replaced — and then, if the imported file needed a migration, the reload took
    a second snapshot of the imported file over it. Every export from 2.1.0 to
    2.2.1 needs a migration, so the files people actually import were exactly the
@@ -107,7 +107,6 @@ test('a stored config with groups that is not a list still starts the page', asy
 test('importing a file that needs migrating still keeps the setup it replaced', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await page.evaluate(() => {
-    localStorage.removeItem('nordlys_restore_point');
     window.Nordlys.config.groups[0].label = 'MY REAL SETUP';
     window.Nordlys.saveConfig();
   });
@@ -121,8 +120,8 @@ test('importing a file that needs migrating still keeps the setup it replaced', 
   await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   expect(await page.evaluate(() => window.Nordlys.config.groups[0].label)).toBe('FROM FILE');
   expect(await page.evaluate(() => window.Nordlys.config.theme), 'the import arrived migrated').toBe('frosted-glass');
-  const point = await page.evaluate(() => JSON.parse(localStorage.getItem('nordlys_restore_point') || 'null'));
-  expect(point?.config?.groups?.[0]?.label, 'the setup being replaced is the one kept').toBe('MY REAL SETUP');
+  const point = await kept(page, 'import');
+  expect(point?.groups?.[0]?.label, 'the setup being replaced is the one kept').toBe('MY REAL SETUP');
 });
 
 /* A real backup a user sent in, rebuilt field for field with invented content —
@@ -244,14 +243,6 @@ const PREVIOUS_THEME = [{ name: 'Mine', bg: '#101317' }];
 
 async function seedSetupWorthKeeping(page) {
   return page.evaluate(theme => {
-    localStorage.setItem('nordlys_restore_point', JSON.stringify({
-      savedAt: '2026-01-01T00:00:00.000Z', cause: 'migration', version: '2.1.0',
-      config: { groups: [{ label: 'FROM BEFORE', cols: 2, hidden: false, links: [] }] }
-    }));
-    localStorage.setItem('nordlys_undo_point', JSON.stringify({
-      savedAt: '2026-01-02T00:00:00.000Z', cause: 'reset', version: '2.2.3',
-      config: { groups: [{ label: 'ONE RESET AGO', cols: 2, hidden: false, links: [] }] }
-    }));
     localStorage.setItem('nordlys_custom_themes', JSON.stringify(theme));
     localStorage.setItem('nordlys_drawer_width', '712px');
     window.Nordlys.config.groups[0].label = 'MY REAL SETUP';
@@ -260,8 +251,7 @@ async function seedSetupWorthKeeping(page) {
     window.__neverReloaded = true;
     return {
       labels: window.Nordlys.config.groups.map(group => group.label),
-      config: localStorage.getItem('nordlys_config'),
-      restorePoint: localStorage.getItem('nordlys_restore_point')
+      config: localStorage.getItem('nordlys_config')
     };
   }, PREVIOUS_THEME);
 }
@@ -292,15 +282,11 @@ async function expectNothingMoved(nordlysPage, before) {
   const now = await page.evaluate(() => ({
     live: window.Nordlys.config.groups.map(group => group.label),
     config: localStorage.getItem('nordlys_config'),
-    restorePoint: localStorage.getItem('nordlys_restore_point'),
-    undoPoint: JSON.parse(localStorage.getItem('nordlys_undo_point') || 'null'),
     themes: JSON.parse(localStorage.getItem('nordlys_custom_themes') || 'null'),
     width: localStorage.getItem('nordlys_drawer_width')
   }));
   expect(now.live, 'the board on screen is the one that was there').toEqual(before.labels);
   expect(now.config, 'and so is the config in storage, byte for byte').toBe(before.config);
-  expect(now.restorePoint, 'the restore point was not spent on an import that did not happen').toBe(before.restorePoint);
-  expect(now.undoPoint?.config?.groups?.[0]?.label, 'nor was the undo point').toBe('ONE RESET AGO');
   expect(now.themes, 'the themes someone authored are their own').toEqual(PREVIOUS_THEME);
   expect(now.width, 'and the drawer is the width they dragged it to').toBe('712px');
   expect(nordlysPage.storageState.nordlys_config?.groups?.[0]?.label, 'the mirror never saw the imported config')
@@ -319,7 +305,7 @@ test('an import whose config will not fit leaves every part of the setup where i
 /* The themes travel beside the config, and used to be written after it with
    their failure swallowed: the import "succeeded", reloaded, and came back on
    an imported board wearing the themes of the setup it replaced. */
-test('an import whose themes will not fit rolls the restore point back too', async ({ nordlysPage }) => {
+test('an import whose themes will not fit leaves the config where it was too', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   const before = await seedSetupWorthKeeping(page);
   await openBackupTab(page);
@@ -332,7 +318,7 @@ test('an import that cannot keep what it replaces does not replace it', async ({
   const { page } = nordlysPage;
   const before = await seedSetupWorthKeeping(page);
   await openBackupTab(page);
-  await denyWritesTo(page, 'nordlys_restore_point');
+  await page.evaluate(() => { window.NordlysAutosave.keep = () => Promise.reject(new Error('no room')); });
   await dropFile(page, 'no-room-for-a-way-back.json', INCOMING);
   await expectNothingMoved(nordlysPage, before);
 });
@@ -362,9 +348,9 @@ test('an import that fits writes the config, the themes, the width and the way b
   await dropFile(page, 'fits.json', INCOMING);
   await loaded;
   await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
-  expect(await page.evaluate(() => ({
+  expect(await page.evaluate(async () => ({
     live: window.Nordlys.config.groups.map(group => group.label),
-    restorePoint: JSON.parse(localStorage.getItem('nordlys_restore_point')).config.groups[0].label,
+    restorePoint: (await window.NordlysAutosave.list()).find(copy => copy.cause === 'import').file.groups[0].label,
     themes: JSON.parse(localStorage.getItem('nordlys_custom_themes'))[0].name,
     width: localStorage.getItem('nordlys_drawer_width')
   }))).toEqual({ live: ['FROM FILE'], restorePoint: 'MY REAL SETUP', themes: 'Imported', width: '999px' });

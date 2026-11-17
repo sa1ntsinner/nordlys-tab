@@ -74,10 +74,7 @@ test('reset clears current, legacy, and auxiliary persisted settings before relo
   await page.locator('#gear').click(); await page.getByRole('tab', { name: 'Backup' }).click(); await page.locator('#cfg-reset').click();
   const resetDialog = page.getByRole('alertdialog', { name: /Reset everything/i }); await expect(resetDialog).toBeVisible();
   const navigation = page.waitForEvent('load'); await resetDialog.getByRole('button', { name: 'Reset' }).click(); await navigation; await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
-  // A reset keeps the copies made before updates (update-copies.spec.cjs), and what its undo puts back (reset-recovery.spec.cjs).
-  delete storageState.nordlys_update_copies;
-  expect(Object.keys(storageState.nordlys_reset_copy.items).sort()).toEqual(['aurora_tab_config', 'nordlys_legacy_config']);
-  delete storageState.nordlys_reset_copy;
+  // What a reset takes is kept in Earlier versions, outside browser storage (earlier-versions.spec.cjs).
   expect(storageState).toEqual({}); expect(await page.evaluate(() => localStorage.getItem('nordlys_custom_themes'))).toBeNull();
 });
 
