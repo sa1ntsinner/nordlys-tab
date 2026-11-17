@@ -52,12 +52,16 @@ async function edge() {
   const up = await fetch(`${base}/draft/package`, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/zip' }, body: fs.readFileSync(zip('edge')) });
   if (up.status !== 202) return fail('edge', `upload ${up.status} ${await up.text()}`);
   const upOp = up.headers.get('location');
-  for (let i = 0; i < 40; i++) {
+  // Ten minutes for Edge to take the package in. Not answered by then, nothing is sent for review:
+  // publishing a draft whose package is still being read sent the package before it.
+  let taken = false;
+  for (let i = 0; i < 40 && !taken; i++) {
     const st = await (await fetch(`${base}/draft/package/operations/${upOp}`, { headers })).json();
-    if (st.status === 'Succeeded') break;
     if (st.status === 'Failed') return fail('edge', `package ${JSON.stringify(st)}`);
-    await wait(15000);
+    taken = st.status === 'Succeeded';
+    if (!taken) await wait(15000);
   }
+  if (!taken) return fail('edge', 'the package was still being read after ten minutes; nothing was sent for review');
   console.log(`edge: uploaded ${VERSION}`);
   const pub = await fetch(base, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ notes: `Nordlys ${VERSION}. See CHANGELOG.md in https://github.com/sa1ntsinner/nordlys-tab` }) });
   if (pub.status !== 202) return fail('edge', `publish ${pub.status} ${await pub.text()}`);

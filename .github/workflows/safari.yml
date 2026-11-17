@@ -44,6 +44,8 @@ jobs:
           retention-days: 7
 
   app:
+    # Nothing goes to App Store Connect that Safari's own engine has not passed.
+    needs: webkit
     runs-on: macos-15
     timeout-minutes: 45
     env:

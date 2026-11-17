@@ -6,9 +6,35 @@ Chrome Web Store's rule that they only ever go up.
 
 ## [Unreleased]
 
+## [2.6.4] — 2026-11-18
+
+A release about not losing things. There is one place to go back to now, and it holds everything; the ways a page, a note or a setup could be lost are closed. Your folders, bookmarks and settings stay as they are.
+
 ### Added
 
-- Earlier versions, under Settings → Backup. Whenever your setup changes, a copy is kept on this device with the time it was made and how many bookmarks and folders it holds. Any of them can be put back or saved as a file. The newest ten are kept, then the last one of each day for thirty days; Forget them all deletes them.
+- Earlier versions, under Settings → Backup. Whenever your setup changes, a copy is kept on this device with the time it was made. A copy is also made before every update of Nordlys, every import, every reset and every time an earlier version is put back, and says which. Any of them can be put back or saved as a file. The newest ten are kept, then the last of each day for thirty days, and the newest three made before an update, an import, a reset or a restore; Forget them all deletes them.
+
+### Changed
+
+- Earlier versions is now the only way back, and replaces three: "Settings from before the last update", "Undo that" after a reset, and "Copies kept before updates". What those held is moved over the first time a new tab opens, each with its date.
+- A backup file, and every earlier version, now holds all your spaces and what the dashboard cards hold (notes, tasks, habits), not only the space in use. Putting one back brings them all back; a space you made since is moved to the deleted ones, where it can be restored for thirty days.
+- Taking back a reset no longer brings sync back by itself: turn it on again with your code.
+- Fitted, the board layout, is called Fill rows in English, so it is not taken for One page fit.
+- The dots that move a folder are a shade darker on light themes.
+
+### Fixed
+
+- Saved pages could be lost. Two pages saved at almost the same moment kept only one, and a page saved while the board could not be written was gone from the list and not on the board. A saved page now waits until it is on a saved board, and the toolbar button says so when it could not save.
+- Putting back the settings from before an import could delete the themes you made and your recent searches, and did not bring back a note the import had written over.
+- The copy kept before an update was missing, or was of an older board, for a board too big for the browser's quick storage (one with many icon pictures).
+- With such a board, a change made in one new tab did not reach the others that were open, and the next change in one of them wrote the older board back.
+- The last words typed in a note could be lost when a bookmark was opened in the same tab straight after.
+- The tab stash dropped the oldest saved window, with all its tabs, when a fifty-first was put away. Full, it now takes no more and says so.
+- A copied space shared its notes, tasks and habits with the space it was copied from, and removing a card in one emptied it in the other. A copy made from now on has cards of its own; spaces copied earlier keep what they share until you remove the card from both.
+- "Bring my browser's bookmarks" looked only in the bookmarks bar and Other bookmarks, and only in the first 24 folders, empty ones counted. It now finds the bookmarks wherever the browser keeps them, and says where they came from.
+- With Appearance on Auto, the first new tab after the system went light or dark opened in the old theme.
+- In Settings, the sections that open (Typography, Check the bookmarks, Settings as text) can be reached and opened with the keyboard.
+- Opening Backup no longer moves its buttons a moment after it appears.
 
 ## [2.6.3] — 2026-11-15
 
