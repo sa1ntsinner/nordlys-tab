@@ -142,6 +142,34 @@ test('the last words of a note are written when the page is left', async ({ nord
   await expect(card(page, 'notes').locator('textarea')).toHaveValue('Keys are in the blue bowl');
 });
 
+/* Spaces copied before 2.6.4 share the ids of their cards, and what a card
+   holds is kept under its id: removing the card here deleted the note of the
+   other space with it. */
+test('what a removed card held is deleted only when no other space has that card', async ({ nordlysPage }) => {
+  const { page, storageState } = nordlysPage;
+  await turnOn(page);
+  for (let i = 0; i < 2; i += 1) {
+    await page.locator('#dash .dash-add').click();
+    await page.locator('.dash-menu').getByRole('menuitem', { name: /Note/ }).click();
+    await expect(page.locator('#dash .dash-card[data-type="notes"]')).toHaveCount(i + 1);
+  }
+  const [shared, own] = await page.evaluate(() => window.Nordlys.config.dashboard.widgets.filter(w => w.type === 'notes').map(w => w.id));
+  await page.evaluate(([one, two]) => new Promise(resolve => chrome.storage.local.set({ [`nordlys_dash.${one}`]: { text: 'in both spaces' }, [`nordlys_dash.${two}`]: { text: 'only here' } }, resolve)), [shared, own]);
+  // Another space, copied the old way: the first note's id is on its board too.
+  await page.evaluate(([id]) => new Promise(resolve => {
+    const profiles = window.Nordlys.sync.profiles;
+    const active = profiles.active();
+    localStorage.setItem('nordlys_profiles', JSON.stringify({ version: 1, active: active.id, list: [active, { id: 'p2', name: 'Copy', color: 'amber' }], deleted: [] }));
+    profiles.reload();
+    chrome.storage.local.set({ 'nordlys_profile.p2': { groups: [], dashboard: { on: true, widgets: [{ id, type: 'notes' }] } } }, resolve);
+  }), [shared]);
+  await page.clock.install();
+  await page.evaluate(([one, two]) => { window.Nordlys.dashboard.remove(one); window.Nordlys.dashboard.remove(two); }, [shared, own]);
+  await page.clock.fastForward(13000);
+  await expect.poll(() => `nordlys_dash.${own}` in storageState, 'a card of this space alone takes what it held with it').toBe(false);
+  expect(storageState[`nordlys_dash.${shared}`], 'the other space still has its note').toEqual({ text: 'in both spaces' });
+});
+
 test('the menu moves a card and makes it wider', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   await turnOn(page);

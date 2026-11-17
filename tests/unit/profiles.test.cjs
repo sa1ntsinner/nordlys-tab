@@ -64,6 +64,40 @@ test('a copied profile gets its own folder and bookmark ids', async () => {
   assert.ok(copy.groups.every(g => !ids.has(g.id) && g.links.every(l => !ids.has(l.id))), 'no id is shared between profiles');
 });
 
+/* What a card holds is kept under the card's id. A copy that kept the ids
+   shared every note and task list with the space it was made from. */
+test('a copied profile gets its own cards, with what they held copied once; the focus timer stays one', async () => {
+  const s = stores();
+  const profiles = new NordlysProfiles(s);
+  profiles.init('Work');
+  const work = config('aurora-void', ['Daily'], { dashboard: { on: true, widgets: [{ id: 'n1', type: 'notes' }, { id: 't1', type: 'tasks' }, { id: 'c1', type: 'timer' }] } });
+  await s.local.set({ 'nordlys_dash.n1': { text: 'mine' }, 'nordlys_dash.focus-timer': { running: false } });
+  const copyId = await profiles.create({ name: 'Copy', from: 'copy', live: work });
+  const copy = await profiles.configOf(copyId, work);
+  assert.deepStrictEqual(copy.dashboard.widgets.map(w => w.type), ['notes', 'tasks', 'timer']);
+  assert.ok(copy.dashboard.widgets.every(w => !['n1', 't1', 'c1'].includes(w.id)), 'no card id is shared');
+  assert.deepStrictEqual(work.dashboard.widgets.map(w => w.id), ['n1', 't1', 'c1'], 'the space copied from keeps its own');
+  const note = copy.dashboard.widgets[0].id;
+  assert.deepStrictEqual(JSON.parse(s.raw.get(`nordlys_dash.${note}`)), { text: 'mine' });
+  // A change in one is not a change in the other.
+  await s.local.set({ [`nordlys_dash.${note}`]: { text: 'the copy' } });
+  assert.deepStrictEqual(JSON.parse(s.raw.get('nordlys_dash.n1')), { text: 'mine' });
+  // A card that held nothing has nothing copied, and the one timer is not copied under a card's id.
+  assert.strictEqual([...s.raw.keys()].filter(key => key.startsWith('nordlys_dash.')).length, 3);
+});
+
+test('a card that another space still has is known, so that what it holds is not deleted with it', async () => {
+  const s = stores();
+  const profiles = new NordlysProfiles(s);
+  profiles.init('Work');
+  const work = config('aurora-void', ['Daily']);
+  // A space copied before 2.6.4: the same card id in both.
+  const oldCopy = await profiles.create({ name: 'Old copy', from: 'empty', live: work, defaults: { groups: [] } });
+  await s.local.set({ [`nordlys_profile.${oldCopy}`]: { groups: [], dashboard: { on: true, widgets: [{ id: 'shared', type: 'notes' }] } } });
+  assert.strictEqual(await profiles.cardElsewhere('shared'), true);
+  assert.strictEqual(await profiles.cardElsewhere('only-here'), false);
+});
+
 test('the last profile and the one in use cannot be deleted; a deleted one can come back', async () => {
   const profiles = new NordlysProfiles(stores());
   profiles.init('Work');

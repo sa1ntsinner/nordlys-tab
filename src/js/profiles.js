@@ -51,6 +51,25 @@
     return config;
   };
 
+  /* The cards of a copy are its own as well. What a card holds is kept under
+     the card's id (dashboard.js), so a copy that kept the ids shared every
+     note and task list with the space it was made from, and removing the
+     card in one emptied it in the other. Each card gets an id of its own;
+     answers [old id, new id] for each, so that what they hold can be copied.
+     The focus timer is one timer for every card of it, and stays so: it is
+     kept under a name of its own, not under a card's id. */
+  const CARD_DATA = "nordlys_dash.";
+  const freshCards = (config) => {
+    const moved = [];
+    for (const widget of Array.isArray(config?.dashboard?.widgets) ? config.dashboard.widgets : []) {
+      if (!widget || typeof widget.id !== "string") continue;
+      const id = newId();
+      moved.push([widget.id, id]);
+      widget.id = id;
+    }
+    return moved;
+  };
+
   class NordlysProfiles {
     constructor({ meta, local }) {
       this.meta = meta;
@@ -125,7 +144,15 @@
     async create({ name, color, from = "empty", live, defaults }) {
       const id = newId();
       const base = from === "copy" ? freshIds(clone(live)) : { ...clone(defaults || {}), groups: [] };
-      await this.local.set({ [SLOT + id]: withoutPerson(base) });
+      const items = { [SLOT + id]: withoutPerson(base) };
+      if (from === "copy") {
+        // What the cards hold now is copied once; from here on each space keeps its own.
+        for (const [old, fresh] of freshCards(items[SLOT + id])) {
+          const held = (await this.local.get(CARD_DATA + old))[CARD_DATA + old];
+          if (held !== undefined && held !== null) items[CARD_DATA + fresh] = clone(held);
+        }
+      }
+      await this.local.set(items);
       this.state.list.push({ id, name: cleanName(name), color: COLORS.includes(color) ? color : COLORS[this.state.list.length % COLORS.length] });
       this.write();
       return id;
@@ -186,6 +213,18 @@
       this.state.list.splice(Math.min(index ?? this.state.list.length, this.state.list.length), 0, { id: restoredId, name, color });
       this.write();
       return true;
+    }
+
+    /* Whether a card of this id is on the board of a space other than the
+       one in use. Spaces copied before 2.6.4 share the ids of their cards,
+       and what a shared card holds must outlive its removal from one of them. */
+    async cardElsewhere(cardId) {
+      for (const profile of [...this.state.list, ...this.state.deleted]) {
+        if (profile.id === this.state.active) continue;
+        const stored = await this.stored(profile.id);
+        if ((stored?.dashboard?.widgets || []).some((widget) => widget?.id === cardId)) return true;
+      }
+      return false;
     }
 
     /* Every profile, for the sync engine: the person once, the boards each. */

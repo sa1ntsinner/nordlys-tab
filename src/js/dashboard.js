@@ -1250,9 +1250,12 @@
       });
       /* The card's contents stay in storage until the undo is gone, so Undo
          brings back the tasks too. */
-      setTimeout(() => {
+      setTimeout(async () => {
         // A shared key (the focus timer) outlives any one card of it.
-        if (widget && this.dataKey(widget) === id && !this.widgets().some((w) => w.id === id)) storage()?.remove?.(DATA + id);
+        if (!widget || this.dataKey(widget) !== id || this.widgets().some((w) => w.id === id)) return;
+        // And so does what a card holds while another space still has that card (profiles.js, cardElsewhere).
+        try { if (await this.app.sync?.profiles?.cardElsewhere?.(id)) return; } catch (error) { return; }
+        storage()?.remove?.(DATA + id);
       }, 12000);
     }
     // One place along in reading order: the two cards trade places.
