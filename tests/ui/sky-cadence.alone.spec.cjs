@@ -54,8 +54,12 @@ test('a moving sky sleeps between paints and keeps its cadence; a paused one doe
      lead then grows to cover it; a sky that sleeps past most of them has lost
      its cadence. */
   expect(moving.late, `${moving.late} of ${moving.paints - 1} paints let a due frame go by`).toBeLessThanOrEqual((moving.paints - 1) / 4);
-  // One frame on its way at a time: no second chain of callbacks or timers.
-  expect(moving.callbacks, `${moving.callbacks} callbacks for ${moving.paints} paints`).toBeLessThanOrEqual(moving.paints * 2 + 2);
+  /* One frame on its way at a time: no second chain of callbacks or timers.
+     A paint costs its own callback and, when the timer woke a little early,
+     one empty one before it; on a 120 Hz panel now and then a second. A
+     second chain would double the count, which half a callback of give per
+     paint still shows. */
+  expect(moving.callbacks, `${moving.callbacks} callbacks for ${moving.paints} paints`).toBeLessThanOrEqual(moving.paints * 2.5 + 2);
   expect(moving.wakes).toBeLessThanOrEqual(moving.paints + 1);
 
   await page.evaluate(() => window.Nordlys.bgEngine.pause());
