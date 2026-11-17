@@ -1,7 +1,7 @@
 const { test, expect } = require('../helpers/nordlys-fixture.cjs');
 
 // The setup a copy in Earlier versions holds, by what it was made before.
-const kept = (page, cause) => page.evaluate(async why => (await window.NordlysAutosave.list()).find(copy => copy.cause === why)?.file ?? null, cause);
+const kept = (page, cause) => page.evaluate(async why => (await window.NordlysAutosave.list(true)).find(copy => copy.cause === why)?.file ?? null, cause);
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 
@@ -350,7 +350,7 @@ test('an import that fits writes the config, the themes, the width and the way b
   await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
   expect(await page.evaluate(async () => ({
     live: window.Nordlys.config.groups.map(group => group.label),
-    restorePoint: (await window.NordlysAutosave.list()).find(copy => copy.cause === 'import').file.groups[0].label,
+    restorePoint: (await window.NordlysAutosave.list(true)).find(copy => copy.cause === 'import').file.groups[0].label,
     themes: JSON.parse(localStorage.getItem('nordlys_custom_themes'))[0].name,
     width: localStorage.getItem('nordlys_drawer_width')
   }))).toEqual({ live: ['FROM FILE'], restorePoint: 'MY REAL SETUP', themes: 'Imported', width: '999px' });

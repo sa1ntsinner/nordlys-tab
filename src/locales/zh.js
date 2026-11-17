@@ -531,6 +531,7 @@
   "backup.confirmRestore": "你的文件夹、书签和外观将被 {when} 保存的版本替换。当前设置会被保留，因此可以撤销。",
   "toast.resetDone": "已重置全部内容",
   "toast.recoveryFailed": "没有足够空间保存回退记录，因此未做任何改动。",
+  "toast.copyGone": "该副本已不存在。",
   "toast.saveFailed": "存储空间不足，无法保存。",
   "ctx.bookmark": "书签",
   "ctx.folder": "文件夹",

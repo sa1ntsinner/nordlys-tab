@@ -22,7 +22,7 @@ test('every settings section contains forward and backward keyboard focus', asyn
   for (const id of ['appearance', 'background', 'bookmarks', 'general', 'support', 'backup']) {
     await page.locator(`#settings-tab-${id}`).click();
     // Backup's list of earlier versions is read once the tab is shown; the stops are counted after it has arrived.
-    if (id === 'backup') await page.evaluate(async () => { await window.NordlysAutosave.list(); await new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done))); });
+    if (id === 'backup') await page.evaluate(async () => { await window.NordlysAutosave.list(true); await new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done))); });
     await expectCycles(page, drawer);
     for (let index = 0; index < 35; index++) await page.keyboard.press('Tab');
     expect(await page.evaluate(() => document.activeElement.closest('#cfg') !== null), `${id} leaked focus`).toBe(true);

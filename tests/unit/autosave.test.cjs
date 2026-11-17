@@ -77,3 +77,34 @@ test('spaces that are no use are not carried: one alone, none in use, another wi
   assert.strictEqual(carried({ active: 'a', list: [{ id: 'a' }, { id: 'b' }] }), undefined);
   assert.strictEqual(carried({ active: 'a', list: [{ id: 'a' }, { id: '../b', config: {} }, { id: 'c', config: {} }] }).list.length, 2);
 });
+
+test('the copies are held to the room there is: the oldest made as the setup changed go first', () => {
+  const lines = [
+    { id: 1, size: 40 }, { id: 2, size: 40 }, { id: 3, size: 40 }, { id: 4, size: 40 }, { id: 5, size: 40 },
+    { id: 6, size: 40, cause: 'update' }
+  ];
+  const stay = new Set(lines.map(line => line.id));
+  assert.deepStrictEqual([...autosave.roomFor(lines, stay, 1000)].sort(), [1, 2, 3, 4, 5, 6], 'with room for all, all stay');
+  // 240 held, room for 170: the two oldest changes go, and that is enough.
+  assert.deepStrictEqual([...autosave.roomFor(lines, stay, 170)].sort(), [3, 4, 5, 6]);
+  // However little room: the newest three changes and every copy with a cause stay.
+  assert.deepStrictEqual([...autosave.roomFor(lines, stay, 1)].sort(), [3, 4, 5, 6]);
+  // A copy the rules already let go is not brought back.
+  assert.ok(!autosave.roomFor(lines, new Set([4, 5, 6]), 1000).has(1));
+});
+
+test('the mark of a setup in a few characters: the same for the same setup, another for another', () => {
+  const a = autosave.mark({ groups: [{ links: [{ url: 'https://a.example' }] }] });
+  const b = autosave.mark({ groups: [{ links: [{ url: 'https://b.example' }] }] });
+  assert.strictEqual(autosave.sum(a), autosave.sum(a));
+  assert.notStrictEqual(autosave.sum(a), autosave.sum(b));
+  assert.ok(autosave.sum(a).length < 40);
+});
+
+test('what a card fetched, and the running timer, are not a change of the setup', () => {
+  const file = (cards) => ({ groups: [], nordlysBackup: { dashboardData: cards } });
+  const base = autosave.mark(file({ n1: { text: 'mine' }, w1: { at: 1, value: 3 }, 'focus-timer': { running: false } }));
+  assert.strictEqual(autosave.mark(file({ n1: { text: 'mine' }, w1: { at: 2, value: 9 }, 'focus-timer': { running: true } })), base);
+  assert.notStrictEqual(autosave.mark(file({ n1: { text: 'changed' }, w1: { at: 1, value: 3 } })), base);
+  assert.ok(autosave.fetched('w1', { at: 5 }) && autosave.fetched('focus-timer', {}) && !autosave.fetched('n1', { text: '' }));
+});

@@ -2292,7 +2292,11 @@ class SettingsController {
       save.type = "button";
       save.className = "glass-btn";
       save.textContent = this.text("backup.updateCopySave", "Save as file");
-      save.addEventListener("click", () => this.download(JSON.stringify(copy.file, null, 2), `nordlys-${String(copy.savedAt).slice(0, 16).replace(/[:T]/g, "-")}.json`, "application/json"));
+      save.addEventListener("click", async () => {
+        const file = await window.NordlysAutosave.file(copy.id);
+        if (!file) { this.sayGone(); return; }
+        this.download(JSON.stringify(file, null, 2), `nordlys-${String(copy.savedAt).slice(0, 16).replace(/[:T]/g, "-")}.json`, "application/json");
+      });
       const actions = document.createElement("span");
       actions.className = "update-copy-actions";
       actions.append(put, save);
@@ -2325,7 +2329,9 @@ class SettingsController {
       cancelText: this.text("confirm.cancel", "Cancel")
     });
     if (!ok) return false;
-    return this.applyBackupObject(copy.file, { own: true, cause: "restore", before: wallpaper ? () => this.restoreWallpaperAside() : null });
+    const file = await window.NordlysAutosave.file(copy.id);
+    if (!file) { this.sayGone(); await this.renderCopies({ now: true }); return false; }
+    return this.applyBackupObject(file, { own: true, cause: "restore", before: wallpaper ? () => this.restoreWallpaperAside() : null });
   }
 
   download(text, name, type) {
@@ -2341,6 +2347,12 @@ class SettingsController {
     const saved = new Date(point?.savedAt || NaN);
     if (Number.isNaN(saved.getTime())) return "";
     return `(${saved.toLocaleDateString()} ${saved.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`;
+  }
+
+  sayGone() {
+    const message = this.text("toast.copyGone", "That copy is no longer there.");
+    if (typeof toast === "function") toast(message, "danger", 5000);
+    NordlysUI.announce(message);
   }
 
   sayNoRoom(key) {

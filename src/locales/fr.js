@@ -531,6 +531,7 @@
   "backup.confirmRestore": "Vos dossiers, vos favoris et l'apparence sont remplacés par ceux enregistrés {when}. La configuration actuelle est conservée, vous pouvez donc l'annuler.",
   "toast.resetDone": "Tout a été réinitialisé",
   "toast.recoveryFailed": "Il n'y a pas assez de place pour enregistrer un retour en arrière, donc rien n'a été modifié.",
+  "toast.copyGone": "Cette copie n'existe plus.",
   "toast.saveFailed": "Il n'y a pas assez de place dans le stockage pour enregistrer cela.",
   "ctx.bookmark": "Favori",
   "ctx.folder": "Dossier",

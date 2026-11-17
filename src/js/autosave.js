@@ -16,7 +16,13 @@
 
    Kept: of the copies made as the setup changed, the newest ten, then the
    last of each day for thirty days; of each cause, the newest three,
-   whatever their age. */
+   whatever their age. And never more than ROOM in all: a board heavy with
+   icon pictures is megabytes a copy, and the older copies made as it
+   changed give way first.
+
+   Two stores: the copies themselves (copies), and a line about each
+   (about: when, why, how much it holds, how large it is). Everything but
+   putting a copy back or saving it as a file reads the lines only. */
 (function (root) {
   "use strict";
 
@@ -26,6 +32,9 @@
   const DAYS = 30;
   const DAY = 86400000;
   const OF_A_CAUSE = 3;
+  const ABOUT = "about";
+  // Characters of JSON, which is near enough to bytes: about 200 MB.
+  const ROOM = 200e6;
   const CAUSES = ["update", "import", "reset", "restore"];
   const EXTRAS = "nordlysBackup";
 
@@ -53,10 +62,12 @@
     return keep;
   }
 
-  /* A backup file without the moment it was written: two of these alike are
-     the same setup. What a card fetched (it says when: at) and the running
-     focus timer are not the setup either: a feed read again, or a minute
-     gone by, is no change to keep a copy of. */
+  /* What a card fetched (it says when: at) and the running focus timer are
+     not the setup: a feed read again, or a minute gone by, is no change to
+     keep a copy of. */
+  const fetched = (id, data) => id === "focus-timer" || typeof data?.at === "number";
+
+  // A backup file without the moment it was written: two of these alike are the same setup.
   function mark(file) {
     const copy = Object.assign({}, file);
     if (copy[EXTRAS]) {
@@ -64,10 +75,41 @@
       delete copy[EXTRAS].savedAt;
       const cards = copy[EXTRAS].dashboardData;
       if (cards && typeof cards === "object") {
-        copy[EXTRAS].dashboardData = Object.fromEntries(Object.entries(cards).filter(([id, data]) => id !== "focus-timer" && typeof data?.at !== "number"));
+        copy[EXTRAS].dashboardData = Object.fromEntries(Object.entries(cards).filter(([id, data]) => !fetched(id, data)));
       }
     }
     return JSON.stringify(copy);
+  }
+
+  /* A mark in a few characters, kept in the line about a copy, so that "is
+     this the setup the newest copy holds" is answered without reading that
+     copy. Two 32-bit sums and the length: alike by chance is not a thing
+     that happens to one person's board. */
+  function sum(text) {
+    let a = 0x811c9dc5, b = 0x01000193;
+    for (let i = 0; i < text.length; i++) {
+      const code = text.charCodeAt(i);
+      a = Math.imul(a ^ code, 0x01000193);
+      b = Math.imul(b + code, 0x85ebca6b) ^ (b >>> 13);
+    }
+    return `${(a >>> 0).toString(36)}-${(b >>> 0).toString(36)}-${text.length}`;
+  }
+
+  /* The ids that stay once the copies are held to ROOM: from the ones the
+     rules keep (stay), the oldest made as the setup changed go first, never
+     the newest three of them and never one with a cause. lines: what is
+     known about each copy ({ id, cause, size }). */
+  function roomFor(lines, stay, room = ROOM) {
+    const held = lines.filter((line) => stay.has(line.id));
+    let total = held.reduce((all, line) => all + (line.size || 0), 0);
+    const plain = held.filter((line) => !line.cause).sort((x, y) => x.id - y.id);
+    const out = new Set(stay);
+    for (const line of plain.slice(0, Math.max(0, plain.length - 3))) {
+      if (total <= room) break;
+      out.delete(line.id);
+      total -= line.size || 0;
+    }
+    return out;
   }
 
   // How much a file holds: the folders and bookmarks of the space in use, and how many spaces.
@@ -77,15 +119,28 @@
     return { folders: groups.length, links: groups.reduce((sum, group) => sum + (Array.isArray(group?.links) ? group.links.length : 0), 0), spaces };
   }
 
+  // The line about a copy: everything but the file.
+  const line = (copy) => { const about = Object.assign({}, copy); delete about.file; return about; };
+
   function open() {
     return new Promise((resolve, reject) => {
       if (!root.indexedDB) { reject(new Error("no IndexedDB")); return; }
-      const request = root.indexedDB.open(DATABASE, 2);
-      // Version 1 had the copies alone; 2 can ask for those of one cause without reading any.
+      const request = root.indexedDB.open(DATABASE, 3);
+      /* Version 1 and 2 had the copies alone, each with its line inside it;
+         3 keeps the lines apart, and writes one for every copy there is. */
       request.onupgradeneeded = () => {
         const database = request.result;
-        const store = database.objectStoreNames.contains(STORE) ? request.transaction.objectStore(STORE) : database.createObjectStore(STORE, { keyPath: "id" });
-        if (!store.indexNames.contains("cause")) store.createIndex("cause", "cause");
+        const copies = database.objectStoreNames.contains(STORE) ? request.transaction.objectStore(STORE) : database.createObjectStore(STORE, { keyPath: "id" });
+        if (database.objectStoreNames.contains(ABOUT)) return;
+        const about = database.createObjectStore(ABOUT, { keyPath: "id" });
+        const walk = copies.openCursor();
+        walk.onsuccess = () => {
+          const at = walk.result;
+          if (!at) return;
+          const text = mark(at.value.file);
+          about.put(Object.assign(line(at.value), count(at.value.file), { sum: sum(text), size: text.length }));
+          at.continue();
+        };
       };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
@@ -96,62 +151,75 @@
     const database = await open();
     try {
       return await new Promise((resolve, reject) => {
-        const transaction = database.transaction(STORE, mode);
+        const transaction = database.transaction([STORE, ABOUT], mode);
         let result;
         transaction.oncomplete = () => resolve(result);
         transaction.onerror = transaction.onabort = () => reject(transaction.error);
-        work(transaction.objectStore(STORE), (value) => { result = value; });
+        work({ copies: transaction.objectStore(STORE), about: transaction.objectStore(ABOUT) }, (value) => { result = value; });
       });
     } finally { database.close(); }
   }
 
-  // Newest first. The whole of every copy: asked only when the list is shown.
-  const list = () => run("readonly", (store, give) => {
-    const request = store.getAll();
-    request.onsuccess = () => give((request.result || []).sort((a, b) => b.id - a.id));
+  /* The lines about the copies, newest first. files: each with its file as
+     well, which is every copy read whole; nothing in the product asks for
+     that (the tests do). */
+  const list = (files = false) => run("readonly", ({ copies, about }, give) => {
+    const lines = about.getAll();
+    lines.onsuccess = () => {
+      const found = (lines.result || []).sort((a, b) => b.id - a.id);
+      if (!files) { give(found); return; }
+      const all = copies.getAll();
+      all.onsuccess = () => {
+        const held = new Map((all.result || []).map((copy) => [copy.id, copy.file]));
+        give(found.map((each) => Object.assign({}, each, { file: held.get(each.id) })));
+      };
+    };
   }).catch(() => []);
+
+  // The file of one copy, to put back or to save; null when it is not there.
+  const file = (id) => run("readonly", ({ copies }, give) => {
+    const one = copies.get(id);
+    one.onsuccess = () => give(one.result ? one.result.file : null);
+  }).catch(() => null);
 
   /* Keeps the file. A copy with no cause is not kept when it is the setup
      the newest copy already holds; one with a cause always is. Answers the
-     copy that was kept, or null for a setup already held. Fails (rejects)
-     when the copy could not be written: whoever is about to replace the
-     setup must know that it has no way back.
+     line about the copy that was kept, or null for a setup already held.
+     Fails (rejects) when the copy could not be written: whoever is about to
+     replace the setup must know that it has no way back.
 
-     Only the newest copy is read, and the ids of the rest: a new tab does
-     this, and the copies can be megabytes each. */
-  function keep(file, { cause = "", now = Date.now(), at, note = {} } = {}) {
-    const fresh = cause ? "" : mark(file);
-    return run("readwrite", (store, give) => {
-      const newest = store.openCursor(null, "prev");
-      newest.onsuccess = () => {
-        const last = newest.result ? newest.result.value : null;
-        if (!cause && last && mark(last.file) === fresh) { give(null); return; }
+     No copy is read to do this, only the lines about them: a new tab does
+     it, and the copies can be megabytes each. */
+  function keep(given, { cause = "", now = Date.now(), at, note = {} } = {}) {
+    const text = mark(given);
+    const fresh = sum(text);
+    return run("readwrite", ({ copies, about }, give) => {
+      const all = about.getAll();
+      all.onsuccess = () => {
+        const lines = (all.result || []).sort((a, b) => b.id - a.id);
+        const last = lines[0];
+        if (!cause && last && last.sum === fresh) { give(null); return; }
         // at: the time of a copy made earlier, moved here from an older store.
         const id = at || (last && last.id >= now ? last.id + 1 : now);
-        const copy = Object.assign({}, note, { id, savedAt: new Date(id).toISOString(), file }, count(file));
-        if (CAUSES.includes(cause)) copy.cause = cause;
-        store.put(copy);
-        give(copy);
-        const keys = store.getAllKeys();
-        keys.onsuccess = () => {
-          const caused = {};
-          const walk = store.index("cause").openKeyCursor();
-          walk.onsuccess = () => {
-            const at = walk.result;
-            if (at) { (caused[at.key] ||= []).push(at.primaryKey); at.continue(); return; }
-            const stay = kept(keys.result || [], now, caused);
-            for (const each of keys.result || []) if (!stay.has(each)) store.delete(each);
-          };
-        };
+        const about_ = Object.assign({}, note, { id, savedAt: new Date(id).toISOString(), sum: fresh, size: text.length }, count(given));
+        if (CAUSES.includes(cause)) about_.cause = cause;
+        copies.put({ id, file: given });
+        about.put(about_);
+        give(about_);
+        const known = [about_, ...lines.filter((each) => each.id !== id)];
+        const caused = {};
+        for (const each of known) if (each.cause) (caused[each.cause] ||= []).push(each.id);
+        const stay = roomFor(known, kept(known.map((each) => each.id), now, caused));
+        for (const each of known) if (!stay.has(each.id)) { copies.delete(each.id); about.delete(each.id); }
       };
     });
   }
 
-  const remove = (id) => run("readwrite", (store) => { store.delete(id); }).catch(() => null);
+  const remove = (id) => run("readwrite", ({ copies, about }) => { copies.delete(id); about.delete(id); }).catch(() => null);
 
-  const clear = () => run("readwrite", (store) => { store.clear(); }).catch(() => null);
+  const clear = () => run("readwrite", ({ copies, about }) => { copies.clear(); about.clear(); }).catch(() => null);
 
-  const api = { kept, mark, count, list, keep, remove, clear, RECENT, DAYS, OF_A_CAUSE, CAUSES };
+  const api = { kept, roomFor, mark, sum, fetched, count, list, file, keep, remove, clear, RECENT, DAYS, OF_A_CAUSE, CAUSES, ROOM };
   root.NordlysAutosave = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

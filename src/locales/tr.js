@@ -531,6 +531,7 @@
   "backup.confirmRestore": "Klasörlerin, yer işaretlerin ve görünüm, {when} tarihinde kaydedilenlerle değiştirilir. Şu anki kurulum saklanır, yani geri alabilirsin.",
   "toast.resetDone": "Her şey sıfırlandı",
   "toast.recoveryFailed": "Geri dönüş noktası için yeterli alan yok, bu yüzden hiçbir şey değişmedi.",
+  "toast.copyGone": "Bu kopya artık yok.",
   "toast.saveFailed": "Depolamada bunu kaydetmeye yetecek alan yok.",
   "ctx.bookmark": "Yer İşareti",
   "ctx.folder": "Klasör",

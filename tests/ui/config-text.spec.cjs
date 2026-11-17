@@ -25,7 +25,7 @@ test('the settings are shown as text, and the changed text applies with the old 
   const after = await stored(page);
   expect(after.userName).toBe('Ada');
   expect(after.customCss, 'its own CSS is not new code to read first').toBe('#clock { letter-spacing: 1px; }');
-  const point = await page.evaluate(async () => (await window.NordlysAutosave.list()).find(copy => copy.cause === 'import').file);
+  const point = await page.evaluate(async () => (await window.NordlysAutosave.list(true)).find(copy => copy.cause === 'import').file);
   expect(point.groups.length, 'the setup it replaced is kept').toBe(shown.groups.length);
   expect(point.userName).not.toBe('Ada');
   expect(nordlysPage.runtimeErrors).toEqual([]);

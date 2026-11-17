@@ -10,7 +10,7 @@ const { test, expect } = require('../helpers/nordlys-fixture.cjs');
    Until 2.6.4 there were four stores for this, each with its own rules; what
    they held is moved over on the first new tab. */
 
-const list = page => page.evaluate(() => window.NordlysAutosave.list());
+const list = page => page.evaluate(() => window.NordlysAutosave.list(true));
 const setFolders = (page, labels) => page.evaluate((names) => {
   window.Nordlys.config.groups = names.map((label) => ({ label, cols: 2, links: [{ name: label, url: `https://${label.toLowerCase()}.test/` }] }));
   window.Nordlys.saveConfig();
@@ -104,6 +104,58 @@ test('the list is read when Backup is opened, not on the way to the board', asyn
   // Once it is open, a copy kept meanwhile shows up.
   await setFolders(page, ['One', 'Two', 'Three']);
   await expect(page.locator('.autosave-copy')).toHaveCount(3);
+});
+
+/* Every new tab used to build the whole setup as a file, three seconds in,
+   only to find the newest copy already held it. */
+test('a new tab after which nothing changed does not read the setup to find that out', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await setFolders(page, ['One']);
+  await page.reload();
+  await ready(page);
+  await page.evaluate(() => { window.__captured = 0; const real = window.Nordlys.captureFile.bind(window.Nordlys); window.Nordlys.captureFile = (...args) => { window.__captured += 1; return real(...args); }; });
+  await page.waitForTimeout(3600);
+  expect(await page.evaluate(() => window.__captured)).toBe(0);
+  expect((await list(page)).length).toBe(1);
+});
+
+test('a change the last tab was closed on is kept by the next one', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await setFolders(page, ['One']);
+  // Saved, and the tab gone before its fifteen seconds were up.
+  await page.evaluate(() => { window.Nordlys.config.groups[0].label = 'Renamed'; window.Nordlys.saveConfig(); });
+  await page.reload();
+  await ready(page);
+  await expect.poll(async () => (await list(page)).map(copy => copy.file.groups[0].label), { timeout: 8000 }).toEqual(['Renamed', 'One']);
+});
+
+/* Until 2.6.4 a copy was one record, the file and the line about it together. */
+test('copies kept by an earlier build are still there, each with its line', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await page.evaluate(() => new Promise((resolve, reject) => {
+    const gone = indexedDB.deleteDatabase('nordlys_autosaves');
+    gone.onerror = () => reject(gone.error);
+    gone.onsuccess = () => {
+      const open = indexedDB.open('nordlys_autosaves', 1);
+      open.onupgradeneeded = () => open.result.createObjectStore('copies', { keyPath: 'id' });
+      open.onsuccess = () => {
+        const database = open.result;
+        const write = database.transaction('copies', 'readwrite');
+        const file = label => ({ groups: [{ label, cols: 2, links: [{ name: label, url: 'https://kept.test/' }] }], nordlysBackup: { formatVersion: 1, savedAt: '2026-11-16T10:00:00.000Z' } });
+        write.objectStore('copies').put({ id: 1794700000000, savedAt: '2026-11-16T10:00:00.000Z', file: file('Older'), folders: 1, links: 1 });
+        write.objectStore('copies').put({ id: 1794800000000, savedAt: '2026-11-17T10:00:00.000Z', file: file('Newer'), folders: 1, links: 1 });
+        write.oncomplete = () => { database.close(); resolve(); };
+      };
+    };
+  }));
+  const copies = await list(page);
+  expect(copies.map(copy => [copy.file.groups[0].label, copy.folders, copy.links, copy.spaces])).toEqual([['Newer', 1, 1, 1], ['Older', 1, 1, 1]]);
+  expect(copies.every(copy => copy.size > 0 && typeof copy.sum === 'string')).toBe(true);
+  // And the newest of them is known for the setup it holds: the same setup is not kept again.
+  await page.evaluate(() => window.NordlysAutosave.keep({ groups: [{ label: 'Newer', cols: 2, links: [{ name: 'Newer', url: 'https://kept.test/' }] }], nordlysBackup: { formatVersion: 1, savedAt: '2026-11-18T10:00:00.000Z' } }));
+  expect((await list(page)).length).toBe(2);
+  await openBackup(page);
+  await expect(page.locator('.autosave-copy')).toHaveCount(2);
 });
 
 test('Forget them all deletes the copies and leaves the setup', async ({ nordlysPage }) => {

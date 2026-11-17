@@ -147,6 +147,9 @@ const OLD_RESET_COPY_KEY = "nordlys_reset_copy";
 const SEEN_VERSION_KEY = "nordlys_seen_version";
 // Earlier versions (autosave.js): a copy is kept this long after the last change.
 const AUTOSAVE_AFTER = 15000;
+// When the setup last changed, and which change the newest copy holds: alike, a new tab has nothing to keep.
+const CHANGED_AT_KEY = "nordlys_changed_at";
+const COPIED_AT_KEY = "nordlys_copied_at";
 // Which skies this device found too heavy, and which the person keeps moving anyway (judgeSkyLoad).
 const SKY_LOAD_KEY = "nordlys_sky_load";
 // When the config was last saved, beside it in each store (saveConfig).
@@ -183,7 +186,8 @@ const OWNED_LOCAL_KEYS = [
   // What the skies learned on this device: the weather, the K index, the horizon, the day's pictures, and their cost here.
   "nordlys_sky_data", "nordlys_world_picture", SKY_LOAD_KEY,
   // Whether watched sites answered (grid.js), when each followed list was read (lists.js), what is opened at which hour (widgets.js).
-  "nordlys_site_status", "nordlys_lists_read", "nordlys_rhythm"
+  "nordlys_site_status", "nordlys_lists_read", "nordlys_rhythm",
+  CHANGED_AT_KEY, COPIED_AT_KEY
 ];
 const LIGHT_THEMES = [
   "porcelain-light", "warm-ivory", "sage-light", "sakura-daylight",
@@ -308,7 +312,13 @@ class NordlysApp {
     // With browser storage the copy waits for it to answer: the newer board may be there (restoreFromChromeStorage).
     if (typeof chrome === "undefined" || !chrome.storage?.local) this.keepCopyBeforeUpdate(this.storedConfig());
     // A change the last tab was closed on is kept by this one.
-    if (this.storedBeforeLoad) setTimeout(() => (this.migratedFrom && !this.storedKept ? this.keepStored(this.migratedFrom) : this.keepCopy()), 3000);
+    if (this.storedBeforeLoad) setTimeout(() => {
+      if (this.migratedFrom && !this.storedKept) { this.keepStored(this.migratedFrom); return; }
+      // Only when something changed since the last copy: otherwise every new tab would read the whole setup to find that out.
+      let changed = null, copied = null;
+      try { changed = localStorage.getItem(CHANGED_AT_KEY); copied = localStorage.getItem(COPIED_AT_KEY); } catch (error) { /* then it is looked at */ }
+      if (changed !== copied) this.keepCopy();
+    }, 3000);
     this.mediaObjectUrl = null;
     this.init();
     window.NordlysReviewAsk?.run();
@@ -878,7 +888,11 @@ class NordlysApp {
     if (!cause) clearTimeout(this.autosaveTimer);
     try {
       if (!config) return false;
+      let changed = null;
+      try { changed = localStorage.getItem(CHANGED_AT_KEY); } catch (error) { /* not marked */ }
       const copy = await window.NordlysAutosave.keep(await this.captureFile(config), { cause, note });
+      // The setup in use is in a copy now, as it was when this began.
+      if (config === this.config && changed !== null) { try { localStorage.setItem(COPIED_AT_KEY, changed); } catch (error) { /* looked at again next time */ } }
       if (copy) this.builtSettings?.renderCopies?.();
       return true;
     } catch (error) { return false; }
@@ -887,6 +901,7 @@ class NordlysApp {
   /* Earlier versions: the setup is kept, with the time, a little after it
      last changed, so a burst of edits makes one copy and not twenty. */
   scheduleAutosave() {
+    try { localStorage.setItem(CHANGED_AT_KEY, String(Date.now())); } catch (error) { /* the next tab looks, to be sure */ }
     clearTimeout(this.autosaveTimer);
     this.autosaveTimer = setTimeout(() => this.keepCopy(), AUTOSAVE_AFTER);
   }

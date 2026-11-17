@@ -1415,7 +1415,8 @@
       this.data.set(id, value);
       clearTimeout(this.saveTimers.get(id));
       // What a card holds is part of the setup: an earlier version is kept of it too (autosave.js).
-      this.app?.scheduleAutosave?.();
+      // Not what it fetched, or the timer as it runs: those change by themselves.
+      if (!window.NordlysAutosave?.fetched(id, value)) this.app?.scheduleAutosave?.();
       return new Promise((resolve) => {
         const write = () => {
           this.waiting.delete(id);

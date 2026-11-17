@@ -531,6 +531,7 @@
   "backup.confirmRestore": "Your folders, bookmarks and appearance are replaced by the ones saved {when}. The current setup is kept, so you can undo this.",
   "toast.resetDone": "Everything was reset",
   "toast.recoveryFailed": "There is not enough room to save a way back, so nothing was changed.",
+  "toast.copyGone": "That copy is no longer there.",
   "toast.saveFailed": "There is not enough room in storage to save that.",
   "ctx.bookmark": "Bookmark",
   "ctx.folder": "Folder",

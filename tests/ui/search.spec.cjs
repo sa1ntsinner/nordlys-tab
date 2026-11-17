@@ -97,10 +97,10 @@ test('an old engine choice is dropped on upgrade and the copy kept before it hol
   });
   await page.reload();
   await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
-  await expect.poll(() => page.evaluate(async () => (await window.NordlysAutosave.list()).some(copy => copy.cause === 'update' && copy.file.defaultEngine))).toBe(true);
+  await expect.poll(() => page.evaluate(async () => (await window.NordlysAutosave.list(true)).some(copy => copy.cause === 'update' && copy.file.defaultEngine))).toBe(true);
   const after = await page.evaluate(async () => ({
     keys: ['defaultEngine', 'customEngineUrl', 'showSuggestions'].filter(key => key in window.Nordlys.config),
-    restored: (await window.NordlysAutosave.list()).find(copy => copy.cause === 'update' && copy.file.defaultEngine)?.file.defaultEngine
+    restored: (await window.NordlysAutosave.list(true)).find(copy => copy.cause === 'update' && copy.file.defaultEngine)?.file.defaultEngine
   }));
   expect(after.keys, 'nothing about engines survives in the live config').toEqual([]);
   expect(after.restored, 'but the state before the migration is kept').toBe('duckduckgo');
