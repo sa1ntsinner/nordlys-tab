@@ -464,6 +464,7 @@
   "save.savedFolder": "Gespeichert",
   "save.already": "Schon in {folder}.",
   "save.done": "In {folder} gespeichert.",
+  "save.failed": "Die Seite konnte nicht gespeichert werden. Versuch es noch einmal.",
   "save.taken": "Gespeicherte Seiten zu {folder} hinzugefügt",
   "save.takenMany": "Gespeicherte Seiten aufs Board gelegt",
   "save.menuPage": "In Nordlys speichern",

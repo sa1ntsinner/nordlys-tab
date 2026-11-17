@@ -13,8 +13,8 @@
    page names these menu items in the person's language. This worker reads
    the saved config when asked and writes nothing but the inbox. */
 /* global NordlysSearchSources, importScripts */
-// A worker in Chrome and Edge; Firefox loads the two scripts beside this one.
-if (typeof importScripts === "function") importScripts("commands.js", "search-sources.js");
+// A worker in Chrome and Edge; Firefox loads the same scripts beside this one.
+if (typeof importScripts === "function") importScripts("commands.js", "search-sources.js", "inbox.js");
 
 (function () {
   "use strict";
@@ -52,14 +52,16 @@ if (typeof importScripts === "function") importScripts("commands.js", "search-so
     chrome.contextMenus?.create({ id: "nordlys-save-page", title: "Save to Nordlys", contexts: ["page"] }, () => void chrome.runtime.lastError);
     chrome.contextMenus?.create({ id: "nordlys-save-link", title: "Save link to Nordlys", contexts: ["link"] }, () => void chrome.runtime.lastError);
   });
-  chrome.contextMenus?.onClicked.addListener((info, tab) => {
+  chrome.contextMenus?.onClicked.addListener(async (info, tab) => {
     const url = info.menuItemId === "nordlys-save-link" ? info.linkUrl : info.pageUrl;
     if (!/^https?:\/\//i.test(url || "")) return;
     const name = info.menuItemId === "nordlys-save-link" ? info.selectionText || "" : tab?.title || "";
-    chrome.storage.local.get("nordlys_inbox", (items) => {
-      const waiting = Array.isArray(items?.nordlys_inbox) ? items.nordlys_inbox : [];
-      chrome.storage.local.set({ nordlys_inbox: [...waiting, { url, name: name.slice(0, 120), folder: null, at: Date.now() }] });
-    });
+    try {
+      await globalThis.NordlysInbox.add({ url, name: name.slice(0, 120), folder: null });
+    } catch (error) {
+      // The right-click item has nowhere to say that the page was not saved, so the toolbar button says it.
+      if (tab?.id != null) chrome.action?.setBadgeText({ tabId: tab.id, text: "!" }, () => void chrome.runtime.lastError);
+    }
   });
 
   /* ── Sites kept shut while a focus runs ───────────────────────

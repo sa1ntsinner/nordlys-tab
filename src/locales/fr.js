@@ -464,6 +464,7 @@
   "save.savedFolder": "Enregistré",
   "save.already": "Déjà dans {folder}.",
   "save.done": "Enregistré dans {folder}.",
+  "save.failed": "Cette page n'a pas pu être enregistrée. Réessayez.",
   "save.taken": "Pages enregistrées ajoutées à {folder}",
   "save.takenMany": "Pages enregistrées ajoutées au tableau",
   "save.menuPage": "Enregistrer dans Nordlys",

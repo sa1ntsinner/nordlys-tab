@@ -464,6 +464,7 @@
   "save.savedFolder": "Guardado",
   "save.already": "Ya está en {folder}.",
   "save.done": "Guardado en {folder}.",
+  "save.failed": "No se pudo guardar esta página. Inténtalo de nuevo.",
   "save.taken": "Páginas guardadas añadidas a {folder}",
   "save.takenMany": "Páginas guardadas añadidas al tablero",
   "save.menuPage": "Guardar en Nordlys",

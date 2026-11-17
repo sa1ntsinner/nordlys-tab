@@ -464,6 +464,7 @@
   "save.savedFolder": "Saved",
   "save.already": "Already in {folder}.",
   "save.done": "Saved to {folder}.",
+  "save.failed": "This page could not be saved. Try again.",
   "save.taken": "Saved pages added to {folder}",
   "save.takenMany": "Saved pages added to the board",
   "save.menuPage": "Save to Nordlys",

@@ -464,6 +464,7 @@
   "save.savedFolder": "Сохранённое",
   "save.already": "Уже в «{folder}».",
   "save.done": "Сохранено в «{folder}».",
+  "save.failed": "Не удалось сохранить страницу. Попробуйте ещё раз.",
   "save.taken": "Сохранённые страницы добавлены в «{folder}»",
   "save.takenMany": "Сохранённые страницы добавлены на доску",
   "save.menuPage": "Сохранить в Nordlys",

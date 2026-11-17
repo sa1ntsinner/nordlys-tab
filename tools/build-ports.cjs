@@ -40,7 +40,7 @@ const PORTS = {
     // Firefox has no /_favicon/ service; icons come from the site instead.
     permissions: without(manifest.permissions, 'favicon'),
     // Firefox runs the address bar's keyword in an event page, not a worker.
-    background: { scripts: ['src/js/commands.js', 'src/js/search-sources.js', 'src/js/worker.js'] },
+    background: { scripts: ['src/js/commands.js', 'src/js/search-sources.js', 'src/js/inbox.js', 'src/js/worker.js'] },
     browser_specific_settings: {
       gecko: {
         id: GECKO_ID,

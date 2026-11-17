@@ -67,3 +67,62 @@ test('what the right-click item saved goes to the first folder, once, with the a
   await expect.poll(() => page.evaluate((label) => window.Nordlys.config.groups.find((group) => group.label === label).links.filter((link) => link.url.includes('cited.example')).map((link) => link.name), first)).toEqual(['cited.example']);
   expect(await page.evaluate(() => JSON.stringify(window.Nordlys.config.groups).includes('javascript:'))).toBe(false);
 });
+
+/* A new tab emptied the queue before it saved the board that should hold the
+   pages. When that save was refused, the pages were on no board and in no
+   queue: "Saved" had meant nothing. They now leave the queue only once the
+   board that holds them is saved. */
+test('a saved page stays in the queue when the board cannot be saved, and is taken once it can', async ({ nordlysPage }) => {
+  const { page, storageState } = nordlysPage;
+  const first = await page.evaluate(() => window.Nordlys.config.groups.find((group) => !group.source?.folderId).label);
+  // Neither store takes the board.
+  await page.evaluate(() => {
+    const real = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (window.__refuse && key === 'nordlys_config') { const error = new Error('quota'); error.name = 'QuotaExceededError'; throw error; }
+      return real.call(this, key, value);
+    };
+    const local = chrome.storage.local;
+    const set = local.set.bind(local);
+    local.set = (values, callback) => {
+      if (!window.__refuse || !('nordlys_config' in values)) { set(values, callback); return; }
+      chrome.runtime.lastError = { message: 'QUOTA_BYTES quota exceeded' };
+      callback?.();
+      delete chrome.runtime.lastError;
+    };
+    window.__refuse = true;
+  });
+  await page.evaluate(() => new Promise((done) => chrome.storage.local.set({ nordlys_inbox: [{ id: 'a1', url: 'https://kept.example/', name: 'Kept', folder: null, at: 1 }] }, done)));
+  await page.evaluate(() => window.Nordlys.takeInbox());
+  expect(storageState.nordlys_inbox.map((item) => item.id), 'still waiting').toEqual(['a1']);
+
+  await page.evaluate(() => { window.__refuse = false; });
+  await page.evaluate(() => window.Nordlys.takeInbox());
+  expect(storageState.nordlys_inbox, 'taken once the board is saved').toBeUndefined();
+  expect(await page.evaluate((label) => window.Nordlys.config.groups.find((group) => group.label === label).links.filter((link) => link.url === 'https://kept.example/').length, first), 'and on the board once, not twice').toBe(1);
+  expect(JSON.parse(await page.evaluate(() => localStorage.getItem('nordlys_config'))).groups.find((group) => group.label === first).links.some((link) => link.url === 'https://kept.example/')).toBe(true);
+});
+
+test('the popup says so when the page could not be saved, and can be tried again', async ({ nordlysPage }) => {
+  const { page, origin, storageState } = nordlysPage;
+  await openPopup(page, origin, { id: 3, active: true, title: 'A page', url: 'https://keep.example/again' });
+  await page.evaluate(() => {
+    const local = chrome.storage.local;
+    const set = local.set.bind(local);
+    local.set = (values, callback) => {
+      if (!window.__refuse) { set(values, callback); return; }
+      chrome.runtime.lastError = { message: 'QUOTA_BYTES quota exceeded' };
+      callback?.();
+      delete chrome.runtime.lastError;
+    };
+    window.__refuse = true;
+  });
+  await page.locator('#save-go').click();
+  await expect(page.locator('#save-said')).toHaveText('This page could not be saved. Try again.');
+  await expect(page.locator('#save-go')).toBeEnabled();
+  expect(storageState.nordlys_inbox).toBeUndefined();
+  await page.evaluate(() => { window.__refuse = false; });
+  await page.locator('#save-go').click();
+  await expect(page.locator('#save-said')).toContainText('Saved to');
+  expect(storageState.nordlys_inbox.map((item) => item.url)).toEqual(['https://keep.example/again']);
+});

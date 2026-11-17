@@ -464,6 +464,7 @@
   "save.savedFolder": "保存済み",
   "save.already": "すでに {folder} にあります。",
   "save.done": "{folder} に保存しました。",
+  "save.failed": "このページを保存できませんでした。もう一度お試しください。",
   "save.taken": "保存したページを {folder} に追加しました",
   "save.takenMany": "保存したページをボードに追加しました",
   "save.menuPage": "Nordlys に保存",

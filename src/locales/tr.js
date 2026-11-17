@@ -464,6 +464,7 @@
   "save.savedFolder": "Kaydedilenler",
   "save.already": "Zaten {folder} içinde.",
   "save.done": "{folder} klasörüne kaydedildi.",
+  "save.failed": "Bu sayfa kaydedilemedi. Yeniden dene.",
   "save.taken": "Kaydedilen sayfalar {folder} klasörüne eklendi",
   "save.takenMany": "Kaydedilen sayfalar panoya eklendi",
   "save.menuPage": "Nordlys'e kaydet",

@@ -464,6 +464,7 @@
   "save.savedFolder": "已保存",
   "save.already": "已在 {folder} 中。",
   "save.done": "已保存到 {folder}。",
+  "save.failed": "无法保存此页面。请重试。",
   "save.taken": "已将保存的网页添加到 {folder}",
   "save.takenMany": "已将保存的网页添加到面板",
   "save.menuPage": "保存到 Nordlys",

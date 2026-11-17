@@ -1024,7 +1024,7 @@ class NordlysApp {
      import, a restore): the mirror's write may not have landed by the reload,
      so there only the fast copy counts, and when it refuses nothing is
      written anywhere and the caller puts everything back. */
-  saveConfig({ strict = false } = {}) {
+  saveConfig({ strict = false, confirmed } = {}) {
     const at = Date.now();
     this.lastSavedAt = at;
     this.scheduleAutosave();
@@ -1038,14 +1038,18 @@ class NordlysApp {
     }
     if (!mirror || (strict && !fast)) {
       if (!fast) this.reportSaveFailure();
+      confirmed?.(fast);
       return fast;
     }
     try {
       chrome.storage.local.set({ [STORAGE_KEY]: this.config, [SAVED_AT_KEY]: at }, () => {
-        if (chrome.runtime?.lastError) this.reportSaveFailure();
+        const failed = Boolean(chrome.runtime?.lastError);
+        confirmed?.(fast || !failed);
+        if (failed) this.reportSaveFailure();
         else if (!fast) this.reportSlowStore();
       });
     } catch (e) {
+      confirmed?.(fast);
       this.reportSaveFailure();
       return false;
     }
@@ -1262,7 +1266,7 @@ class NordlysApp {
   watchInbox() {
     const area = typeof chrome !== "undefined" ? chrome.storage?.local : null;
     if (!area) return;
-    const take = () => { if (!document.hidden) this.takeInbox(area); };
+    const take = () => { if (!document.hidden) this.takeInbox(); };
     chrome.storage.onChanged?.addListener((changes, where) => { if (where === "local" && changes.nordlys_inbox?.newValue?.length) take(); });
     document.addEventListener("visibilitychange", take);
     take();
@@ -1275,38 +1279,41 @@ class NordlysApp {
     if (window.I18N) { name(); window.addEventListener("nordlys:languagechange", name); }
   }
 
-  takeInbox(area) {
-    if (this.takingInbox || document.body.classList.contains("arranging")) return;
-    this.takingInbox = true;
-    area.get("nordlys_inbox", (data) => {
-      const items = Array.isArray(data?.nordlys_inbox) ? data.nordlys_inbox : [];
-      if (!items.length) { this.takingInbox = false; return; }
-      area.remove("nordlys_inbox", () => {
-        this.takingInbox = false;
-        const say = (key, fallback, params) => (window.I18N ? window.I18N.t(key, params) : fallback);
-        const groups = this.config.groups;
-        const open = (group) => Boolean(group) && !group.source;
-        const into = new Set();
-        for (const item of items) {
-          if (typeof item?.url !== "string" || !/^https?:\/\/\S+$/i.test(item.url)) continue;
-          const wanted = item.folder || {};
-          let group = groups.find((each) => wanted.id && each.id === wanted.id) || groups.find((each) => wanted.label && each.label === wanted.label) || groups[wanted.index];
-          if (!open(group)) group = groups.find(open);
-          if (!group) groups.push(group = { id: `g_${Date.now()}`, label: say("save.savedFolder", "Saved"), cols: 4, links: [] });
-          if (group.links.some((link) => link.url === item.url)) continue;
-          let host = item.url;
-          try { host = new URL(item.url).hostname.replace(/^www\./, ""); } catch (error) { /* the address, then */ }
-          group.links.push({ name: String(item.name || "").trim().slice(0, 120) || host, url: item.url, color: "#38bdf8" });
-          into.add(group.label || "");
-        }
-        if (!into.size) return;
-        this.saveConfig();
-        this.grid?.render();
-        this.builtSettings?.renderBookmarksManager?.();
+  takeInbox() {
+    return window.NordlysInbox.take(async (items) => {
+      if (document.hidden || document.body.classList.contains("arranging")) return;
+      const say = (key, fallback, params) => (window.I18N ? window.I18N.t(key, params) : fallback);
+      const groups = this.config.groups;
+      const open = (group) => Boolean(group) && !group.source;
+      const taken = new Set();
+      const into = new Set();
+      for (const item of items) {
+        // What is not a web page can never go on the board, and does not wait for ever.
+        if (typeof item?.url !== "string" || !/^https?:\/\/\S+$/i.test(item.url)) { taken.add(item.id); continue; }
+        const wanted = item.folder || {};
+        let group = groups.find((each) => wanted.id && each.id === wanted.id) || groups.find((each) => wanted.label && each.label === wanted.label) || groups[wanted.index];
+        if (!open(group)) group = groups.find(open);
+        if (!group) groups.push(group = { id: `g_${Date.now()}`, label: say("save.savedFolder", "Saved"), cols: 4, links: [] });
+        taken.add(item.id);
+        if (group.links.some((link) => link.url === item.url)) continue;
+        let host = item.url;
+        try { host = new URL(item.url).hostname.replace(/^www\./, ""); } catch (error) { /* the address, then */ }
+        group.links.push({ name: String(item.name || "").trim().slice(0, 120) || host, url: item.url, color: "#38bdf8" });
+        into.add(group.label || "");
+      }
+      // A duplicate may be the in-memory result of a refused write. Save
+      // even then: its place on the board must be durable before it goes.
+      if (!taken.size) return;
+      const saved = await new Promise((confirmed) => this.saveConfig({ confirmed }));
+      this.grid?.render();
+      this.builtSettings?.renderBookmarksManager?.();
+      if (!saved) return;
+      if (into.size) {
         const message = into.size === 1 ? say("save.taken", `Saved pages added to ${[...into][0]}`, { folder: [...into][0] }) : say("save.takenMany", "Saved pages added to the board");
         if (typeof toast === "function") toast(message, "success", 3500);
-      });
-    });
+      }
+      return taken;
+    }).catch(() => this.reportSaveFailure());
   }
 
   /* Night mode: the whole page under a warm red and the sky held still, kind

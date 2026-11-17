@@ -44,15 +44,21 @@
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const group = config.groups?.[Number(folder.value)];
+    const group = folder.value === "" ? null : config.groups?.[Number(folder.value)];
     const label = group?.label || say("save.savedFolder", "Saved");
     if (group?.links?.some((link) => link.url === url.href)) {
       said.textContent = say("save.already", "Already in {folder}.", { folder: label });
       return;
     }
     $("save-go").disabled = true;
-    const { nordlys_inbox: waiting = [] } = await local("get", "nordlys_inbox");
-    await local("set", { nordlys_inbox: [...waiting, { url: url.href, name: name.value.trim() || url.hostname, folder: group ? { id: group.id || "", label: group.label || "", index: Number(folder.value) } : null, at: Date.now() }] });
+    try {
+      await window.NordlysInbox.add({ url: url.href, name: name.value.trim() || url.hostname,
+        folder: group ? { id: group.id || "", label: group.label || "", index: Number(folder.value) } : null });
+    } catch (error) {
+      said.textContent = say("save.failed", "This page could not be saved. Try again.");
+      $("save-go").disabled = false;
+      return;
+    }
     try { if (group?.id) localStorage.setItem("nordlys_save_folder", group.id); } catch (error) { /* only a convenience */ }
     said.textContent = say("save.done", "Saved to {folder}.", { folder: label });
     said.classList.add("done");
