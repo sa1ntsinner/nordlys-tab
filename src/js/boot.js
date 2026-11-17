@@ -101,6 +101,25 @@
        below is a perfectly good first frame. */
   }
 
+  /* Auto follows the system's light or dark. What is stored is the theme of
+     the last new tab, so the first one after the system changed over (the
+     first of the morning, mostly) opened in yesterday's: dark in a bright
+     room, then right a moment later. The family is settled here, with the
+     theme last used in it, as app.js settles it (resolveAutoTheme). A theme
+     someone made is left to app.js, which knows whether it is light. */
+  try {
+    if (config && config.colorMode === "auto" && theme !== "custom" && window.matchMedia) {
+      const wantsLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+      if (wantsLight !== (LIGHT.indexOf(theme) !== -1)) {
+        let other = wantsLight ? config.lastLightTheme : config.lastDarkTheme;
+        if (RENAMED[other]) other = RENAMED[other];
+        if (!BASE[other] || (LIGHT.indexOf(other) !== -1) !== wantsLight) other = wantsLight ? "porcelain-light" : "aurora-void";
+        theme = other;
+        background = null;
+      }
+    }
+  } catch (error) { /* the stored theme is a fine first frame */ }
+
   if (!background) background = BASE[theme] || BASE["aurora-void"];
   try {
     let mode = (config && config.bgMode) || "aurora";

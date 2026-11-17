@@ -1201,6 +1201,14 @@ class NordlysApp {
     // Typography left the theme; carry any font a custom theme still stores.
     if (window.NordlysType?.migrate(this.config)) this.saveConfig();
 
+    /* Auto: the system may have gone light or dark while no new tab was open.
+       The theme is settled before anything is drawn (boot.js did the same
+       for the first frame), and kept, so the next tab starts from it. */
+    if (this.config.colorMode === "auto" && this.loadedFromStore) {
+      const due = this.resolveAutoTheme();
+      if (due !== this.config.theme) { this.config.theme = due; this.saveConfig(); }
+    }
+
     // 1. Apply Active Theme, Geometry & Custom CSS
     this.applyThemeTokens();
     this.applyGeometryTokens();
