@@ -79,7 +79,7 @@ test('a copy holds what the cards hold and the other spaces, never a service\'s 
   const { page } = nordlysPage;
   await page.evaluate(() => new Promise(resolve => {
     localStorage.setItem('nordlys_profiles', JSON.stringify({ version: 1, active: 'p1', list: [{ id: 'p1', name: 'Home', color: 'teal' }, { id: 'p2', name: 'Work', color: 'amber' }], deleted: [] }));
-    chrome.storage.local.set({ 'nordlys_profile.p2': { groups: [{ label: 'WORK', cols: 2, hidden: false, links: [] }] }, 'nordlys_dash.n1': { text: 'mine' }, nordlys_connections: { todoist: { token: 'secret' } } }, resolve);
+    chrome.storage.local.set({ 'nordlys_profile.p2': { groups: [{ label: 'WORK', cols: 2, hidden: false, links: [] }], dashboard: { widgets: [{ id: 'n1', type: 'note' }] } }, 'nordlys_dash.n1': { text: 'mine' }, 'nordlys_dash.gone': { text: 'of a card no board has' }, nordlys_connections: { todoist: { token: 'secret' } } }, resolve);
   }));
   await page.reload();
   await ready(page);
@@ -89,6 +89,7 @@ test('a copy holds what the cards hold and the other spaces, never a service\'s 
   expect(copy.file.nordlysBackup.dashboardData.n1).toEqual({ text: 'mine' });
   expect(copy.file.nordlysBackup.spaces.list.find(space => space.id === 'p2').config.groups[0].label).toBe('WORK');
   expect(JSON.stringify(copy.file)).not.toContain('secret');
+  expect(copy.file.nordlysBackup.dashboardData.gone, 'a note of no card on any board is not part of the setup').toBeUndefined();
   await openBackup(page);
   await expect(page.locator('.autosave-copy').first()).toContainText('spaces: 2');
 });
@@ -336,7 +337,7 @@ test('the copy kept before a reset brings back the other spaces and what the car
   const { page, storageState } = nordlysPage;
   await page.evaluate(() => new Promise(resolve => {
     localStorage.setItem('nordlys_profiles', JSON.stringify({ version: 1, active: 'p1', list: [{ id: 'p1', name: 'Home', color: 'teal' }, { id: 'p2', name: 'Work', color: 'amber' }], deleted: [] }));
-    chrome.storage.local.set({ 'nordlys_profile.p2': { groups: [{ label: 'WORK', cols: 2, hidden: false, links: [] }] }, 'nordlys_dash.n1': { text: 'mine' }, nordlys_connections: { todoist: { token: 'secret' } } }, resolve);
+    chrome.storage.local.set({ 'nordlys_profile.p2': { groups: [{ label: 'WORK', cols: 2, hidden: false, links: [] }], dashboard: { widgets: [{ id: 'n1', type: 'note' }] } }, 'nordlys_dash.n1': { text: 'mine' }, 'nordlys_dash.gone': { text: 'of a card no board has' }, nordlys_connections: { todoist: { token: 'secret' } } }, resolve);
   }));
   await page.reload();
   await ready(page);
@@ -532,4 +533,18 @@ test('a save that localStorage took as well is left to the storage event, and th
   await page.evaluate(([config]) => { window.Nordlys.saveConfig(); window.__storageChanged({ nordlys_config: { newValue: config }, nordlys_config_saved_at: { newValue: Number(localStorage.getItem('nordlys_config_saved_at')) - 5 } }, 'local'); }, [board]);
   await page.waitForTimeout(200);
   expect(await labels(page)).toEqual(before);
+});
+
+/* "Forget them all" with a store that would not open: the copies are still
+   on the device, and an emptied list said they were gone. */
+test('copies that could not be forgotten stay in the list, and that is said', async ({ nordlysPage }) => {
+  const { page } = nordlysPage;
+  await setFolders(page, ['One']);
+  await openBackup(page);
+  await expect(page.locator('.autosave-copy')).toHaveCount(1);
+  await page.evaluate(() => { window.NordlysAutosave.clear = () => Promise.reject(new Error('blocked')); });
+  await page.locator('#autosaves-forget').click();
+  await page.locator('#confirm-modal .confirm-ok').click();
+  await expect(page.locator('#toast-dock')).toContainText('could not be deleted');
+  await expect(page.locator('.autosave-copy')).toHaveCount(1);
 });

@@ -531,6 +531,8 @@
   "backup.confirmRestore": "Tus carpetas, marcadores y apariencia se sustituyen por los guardados {when}. La configuración actual se conserva, así que puedes deshacerlo.",
   "toast.resetDone": "Todo restablecido",
   "toast.recoveryFailed": "No hay espacio para guardar una forma de volver atrás, así que no se cambió nada.",
+  "toast.forgetFailed": "No se pudieron borrar las versiones anteriores. Siguen en este dispositivo.",
+  "toast.backupFailed": "El navegador no entregó toda la configuración, así que no se guardó ningún archivo. Inténtalo de nuevo.",
   "toast.copyGone": "Esa copia ya no existe.",
   "toast.saveFailed": "No hay espacio suficiente en el almacenamiento para guardar eso.",
   "ctx.bookmark": "Marcador",

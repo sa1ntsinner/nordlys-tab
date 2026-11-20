@@ -32,10 +32,16 @@
   if (tab.favIconUrl && /^(https?|data):/.test(tab.favIconUrl)) Object.assign($("save-icon"), { src: tab.favIconUrl, hidden: false });
   name.value = (tab.title || url.hostname).slice(0, 120);
 
-  // The folders of the board in use, as the page last saved it; never one that follows the browser's bookmarks.
+  /* The folders of the board in use, as the page last saved it; never one
+     that follows the browser's bookmarks. The newer of the two stores: a
+     board too big for the fast one is saved to the browser's alone, and the
+     fast one then still shows a bookmark deleted since. */
   let config = null;
   try { config = JSON.parse(read("nordlys_config")); } catch (error) { /* the browser's copy, then */ }
-  config ||= (await local("get", "nordlys_config")).nordlys_config || {};
+  let held = {};
+  try { held = await local("get", ["nordlys_config", "nordlys_config_saved_at"]); } catch (error) { /* the fast copy, then */ }
+  if (held.nordlys_config?.groups && (!config || Number(held.nordlys_config_saved_at) > (Number(read("nordlys_config_saved_at")) || 0))) config = held.nordlys_config;
+  config ||= {};
   const folders = (config.groups || []).map((group, index) => ({ group, index })).filter(({ group }) => !group.source);
   for (const { group, index } of folders) folder.append(new Option(group.label || say("bookmarks.newFolder", "New folder"), String(index)));
   const last = folders.find(({ group }) => group.id && group.id === read("nordlys_save_folder"));

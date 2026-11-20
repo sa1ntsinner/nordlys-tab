@@ -1255,6 +1255,8 @@
         if (!widget || this.dataKey(widget) !== id || this.widgets().some((w) => w.id === id)) return;
         // And so does what a card holds while another space still has that card (profiles.js, cardElsewhere).
         try { if (await this.app.sync?.profiles?.cardElsewhere?.(id)) return; } catch (error) { return; }
+        // Asked again: the card may have come back (an undo, another tab) while the spaces were read.
+        if (this.widgets().some((w) => w.id === id)) return;
         storage()?.remove?.(DATA + id);
       }, 12000);
     }
@@ -1421,7 +1423,7 @@
         const write = () => {
           this.waiting.delete(id);
           const store = storage();
-          if (!store?.set) { resolve(false); return; }
+          if (!store?.set || this.gone) { resolve(false); return; }
           store.set({ [DATA + id]: value }, () => {
             let failed = false;
             try { failed = Boolean(chrome.runtime?.lastError); } catch (error) {}
@@ -1438,6 +1440,15 @@
        tab or the tab closed, and the last words went with it. */
     flush() {
       for (const [id, write] of [...this.waiting]) { clearTimeout(this.saveTimers.get(id)); write(); }
+    }
+    /* The setup is being replaced (an import, an earlier version, a reset)
+       and the page reloads: nothing more is written from it. A note that
+       waited its 400 ms was written on the way out, over the one just put
+       in its place. */
+    letGo() {
+      for (const id of this.waiting.keys()) clearTimeout(this.saveTimers.get(id));
+      this.waiting.clear();
+      this.gone = true;
     }
 
     /* The files the cards on the page need beyond this one, read the first

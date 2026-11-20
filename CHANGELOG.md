@@ -6,13 +6,13 @@ Chrome Web Store's rule that they only ever go up.
 
 ## [Unreleased]
 
-## [2.6.4] — 2026-11-18
+## [2.6.4] — 2026-11-20
 
 A release about not losing things. There is one place to go back to now, and it holds everything; the ways a page, a note or a setup could be lost are closed. Your folders, bookmarks and settings stay as they are.
 
 ### Added
 
-- Earlier versions, under Settings → Backup. Whenever your setup changes, a copy is kept on this device with the time it was made. A copy is also made before every update of Nordlys, every import, every reset and every time an earlier version is put back, and says which. Any of them can be put back or saved as a file. The newest ten are kept, then the last of each day for thirty days, and the newest three made before an update, an import, a reset or a restore, in about 200 MB at most; Forget them all deletes them.
+- Earlier versions, under Settings → Backup. Whenever your setup changes, a copy is kept on this device with the time it was made. A copy is also made before every update of Nordlys, every import, every reset and every time an earlier version is put back, and says which. Any of them can be put back or saved as a file. The newest ten are kept, then the last of each day for thirty days, and the newest three made before an update, an import, a reset or a restore, held to about 200 MB, down to the newest few of each kind; Forget them all deletes them, and says so when it could not.
 
 ### Changed
 
@@ -32,9 +32,22 @@ A release about not losing things. There is one place to go back to now, and it 
 - The tab stash dropped the oldest saved window, with all its tabs, when a fifty-first was put away. Full, it now takes no more and says so.
 - A copied space shared its notes, tasks and habits with the space it was copied from, and removing a card in one emptied it in the other. A copy made from now on has cards of its own; spaces copied earlier keep what they share until you remove the card from both.
 - "Bring my browser's bookmarks" looked only in the bookmarks bar and Other bookmarks, and only in the first 24 folders, empty ones counted. It now finds the bookmarks wherever the browser keeps them, and says where they came from.
-- With Appearance on Auto, the first new tab after the system went light or dark opened in the old theme.
+- With Appearance on Auto, the first new tab after the system went light or dark opened in the old theme, for a theme you made as well.
 - In Settings, the sections that open (Typography, Check the bookmarks, Settings as text) can be reached and opened with the keyboard.
 - Opening Backup no longer moves its buttons a moment after it appears.
+- With a board too big for the browser's quick storage, an import, or an earlier version put back, was refused. It now lands, and the page comes back on it.
+- With Appearance on Auto, the first new tab of the morning could write an older board over the newest one.
+- A reset, an import or following a browser folder could go ahead when the copy kept before it was missing your other spaces or your notes, or was not kept at all. Saving a backup file now says so when the browser would not give all of it, instead of saving the space in use alone.
+- A copy made with one space, put back while another space is in use, went into the wrong space.
+- A note being typed when an import, a restore or a reset happened could be written back over it.
+- Putting back a reset deleted a wallpaper chosen since. The two now trade places.
+- A backup file could carry the note of a card that is on no board any more.
+- A folder brought from another app said it was added before it was saved.
+- The toolbar button could say a page was already on the board after it had been removed, with a board too big for quick storage.
+- Copying a space while a note was being typed copied the note as it was before.
+- CSS in the other spaces of an imported file took effect without being shown first. It is now left out (the space in use still shows its CSS to be read first), and a damaged space in a file stops the import before anything is written.
+- Renaming, recolouring or moving a space now makes an earlier version, as other changes do.
+- Two new tabs opened by an update no longer make two copies of it.
 
 ## [2.6.3] — 2026-11-15
 

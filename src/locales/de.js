@@ -531,6 +531,8 @@
   "backup.confirmRestore": "Deine Ordner, Lesezeichen und das Aussehen werden durch den Stand von {when} ersetzt. Der jetzige Stand bleibt erhalten, du kannst es also rückgängig machen.",
   "toast.resetDone": "Alles zurückgesetzt",
   "toast.recoveryFailed": "Es ist kein Platz, um einen Weg zurück zu speichern — deshalb wurde nichts geändert.",
+  "toast.forgetFailed": "Die früheren Versionen konnten nicht gelöscht werden. Sie sind noch auf diesem Gerät.",
+  "toast.backupFailed": "Der Browser hat nicht die ganze Einrichtung herausgegeben, deshalb wurde keine Datei gespeichert. Versuche es noch einmal.",
   "toast.copyGone": "Diese Kopie gibt es nicht mehr.",
   "toast.saveFailed": "Im Speicher ist nicht genug Platz, um das zu sichern.",
   "ctx.bookmark": "Lesezeichen",

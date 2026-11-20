@@ -447,14 +447,17 @@
 
     async create({ name, from = "empty" }) {
       const defaults = { ...JSON.parse(JSON.stringify(this.app.defaultConfig)), groups: [] };
+      // A note still being typed is written first: a copy takes what the cards hold from storage.
+      if (from === "copy") this.app.dashboard?.flush?.();
       const id = await this.profiles.create({ name, from, live: this.app.config, defaults });
       await this.switchTo(id, { undo: false });
       return id;
     }
 
-    rename(id, name) { this.profiles.rename(id, name); this.schedulePush(); this.emit(); }
-    recolor(id, color) { this.profiles.recolor(id, color); this.schedulePush(); this.emit(); }
-    move(id, index) { this.profiles.move(id, index); this.schedulePush(); this.emit(); }
+    // A name, a colour and the order are part of the setup: an earlier version is kept of them too.
+    rename(id, name) { this.profiles.rename(id, name); this.app.scheduleAutosave?.(); this.schedulePush(); this.emit(); }
+    recolor(id, color) { this.profiles.recolor(id, color); this.app.scheduleAutosave?.(); this.schedulePush(); this.emit(); }
+    move(id, index) { this.profiles.move(id, index); this.app.scheduleAutosave?.(); this.schedulePush(); this.emit(); }
 
     async remove(id) {
       const profile = await this.profiles.remove(id, this.app.config);

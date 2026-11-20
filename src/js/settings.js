@@ -2313,7 +2313,9 @@ class SettingsController {
       cancelText: this.text("confirm.cancel", "Cancel")
     });
     if (!ok) return;
-    await window.NordlysAutosave.clear();
+    // Not deleted is said, and the list stays: an empty list would read as done.
+    try { await window.NordlysAutosave.clear(); }
+    catch (error) { this.sayNoRoom("toast.forgetFailed"); return; }
     await this.renderCopies({ now: true });
   }
 
@@ -2395,8 +2397,12 @@ class SettingsController {
     try {
       const kept = await MediaVault.getMedia(UNDO_MEDIA_ID);
       if (!kept) return;
+      // A wallpaper chosen since the reset trades places with the one coming back: neither is deleted.
+      let live = null;
+      try { live = await MediaVault.getMedia("custom_bg"); } catch (error) { /* none to keep */ }
       await MediaVault.saveMedia("custom_bg", kept, kept.type);
-      await MediaVault.deleteMedia(UNDO_MEDIA_ID);
+      if (live) await MediaVault.saveMedia(UNDO_MEDIA_ID, live, live.type);
+      else await MediaVault.deleteMedia(UNDO_MEDIA_ID);
       await this.app.updateBackgroundMode();
     } catch (error) { /* the settings came back; the wallpaper is best effort */ }
   }
@@ -2424,10 +2430,10 @@ class SettingsController {
 
   /* The file Save a backup file writes: the whole setup, every space and
      what every card holds (app.captureFile), the same thing an earlier
-     version is. */
-  async buildBackupFile() {
-    try { return await this.app.captureFile(); } catch (error) { return this.buildBackupPayload(); }
-  }
+     version is. It fails when the browser would not give all of it: a file
+     of the space in use alone, saved as the backup, is found out only when
+     it is needed. */
+  buildBackupFile() { return this.app.captureFile(); }
 
   /* A backup file put in place of the whole setup: from an imported file,
      or from an earlier version (own: made here, from this setup). The setup
@@ -2457,6 +2463,23 @@ class SettingsController {
     const incoming = Object.assign({}, DEFAULT_CONFIG, imported);
     window.NordlysConfigSchema.repairConfig(incoming, this.app.defaultConfig);
     this.app.normalizeStoredConfig(incoming);
+    /* The boards of the other spaces get the same look before the first
+       write: one that would fail on opening is found here and not on the
+       day its space is switched to. CSS in them, from a file made
+       elsewhere, is not kept: it would run unread on that day. */
+    for (const space of file.extras?.spaces?.list || []) {
+      if (!space.config) continue;
+      const board = window.NordlysConfigSchema.normalizeImportConfig(space.config);
+      window.NordlysConfigSchema.migrateRaw(board);
+      const sound = window.NordlysConfigSchema.validateConfig(board);
+      if (!sound.ok) {
+        const label = window.I18N ? window.I18N.t("toast.importInvalid") : "Invalid JSON configuration structure";
+        if (typeof toast === "function") toast(`${label}: ${space.name ? `${space.name}: ` : ""}${sound.errors.slice(0, 3).join("; ")}`, "danger", 7000);
+        return false;
+      }
+      if (!own && board.customCss) board.customCss = "";
+      space.config = board;
+    }
     /* One commit for the whole file. A file of embedded icons can be
        megabytes, and it is written to four keys: when the write failed,
        this reloaded anyway — and the page came back on the old config,
@@ -2477,6 +2500,8 @@ class SettingsController {
     const css = own ? "" : incoming.customCss || "";
     if (!own) incoming.customCss = "";
     const previous = this.app.config;
+    // A note still being typed is written now, so that it is in the copy and does not land after the file's.
+    this.app.dashboard?.flush?.();
     /* The way back, before the first key is written: the setup as it is
        now, cards and spaces with it. Not kept, nothing is replaced. */
     if (!(await this.app.keepCopy(cause))) { this.sayNoRoom("toast.recoveryFailed"); return false; }
@@ -2487,7 +2512,8 @@ class SettingsController {
     if (!cardsBack
       || !spacesBack
       || !this.adoptImportedExtras(file.extras, css)
-      || !this.app.saveConfig({ strict: true })) {
+      // Waited for: a board too big for the fast copy is held by browser storage alone, and the reload must find it there.
+      || !(await this.app.saveConfirmed())) {
       this.app.config = previous;
       putBack();
       await spacesBack?.();
@@ -2496,6 +2522,8 @@ class SettingsController {
       return false;
     }
     try { await before?.(); } catch (error) { /* the setup landed; what came before the reload was best effort */ }
+    // The cards of the page being left write nothing more: what they held is replaced.
+    this.app.dashboard?.letGo?.();
     location.reload();
     return true;
   }
@@ -2504,10 +2532,18 @@ class SettingsController {
      the others to browser storage, the list to localStorage (held and put
      back by the caller). A space here that the file does not have goes to
      the deleted ones, where it can be restored for thirty days. Answers the
-     way back for the boards, or null when the write was refused. A file with
-     one space leaves the other spaces here as they are. */
+     way back for the boards, or null when the write was refused. A file
+     that names no spaces (one made before 2.6.4, with one space) leaves the
+     spaces here as they are, and so does a file of one space that is not a
+     space of this setup: its board goes to the space in use. */
   async adoptImportedSpaces(spaces) {
     if (!spaces) return () => Promise.resolve();
+    if (spaces.list.length === 1) {
+      let here = null;
+      try { here = JSON.parse(localStorage.getItem("nordlys_profiles") || "null"); } catch (error) { /* no list: not of this setup */ }
+      const known = [...(Array.isArray(here?.list) ? here.list : []), ...(Array.isArray(here?.deleted) ? here.deleted : [])];
+      if (!known.some((space) => space?.id === spaces.active)) return () => Promise.resolve();
+    }
     const slot = (id) => `nordlys_profile.${id}`;
     const items = Object.fromEntries(spaces.list.filter((space) => space.config).map((space) => [slot(space.id), space.config]));
     const keys = Object.keys(items);
@@ -2590,7 +2626,8 @@ class SettingsController {
     }));
     this.app.config.groups = [...(this.app.config.groups || []), ...added];
     window.NordlysSyncModel?.normalize?.(this.app.config);
-    if (!this.app.saveConfig()) { this.app.config = previous; this.sayNoRoom("toast.saveFailed"); return false; }
+    // Said only once a store holds it: a folder that shows and is gone at the next tab was never brought.
+    if (!(await this.app.saveConfirmed())) { this.app.config = previous; this.sayNoRoom("toast.saveFailed"); return false; }
     this.app.grid?.render();
     this.renderBookmarksManager?.();
     const links = added.reduce((sum, group) => sum + group.links.length, 0);
@@ -2704,7 +2741,10 @@ class SettingsController {
     this.initBackupText();
     // Export JSON Backup
     document.getElementById("cfg-export")?.addEventListener("click", async () => {
-      const blob = new Blob([JSON.stringify(await this.buildBackupFile(), null, 2)], { type: "application/json" });
+      let file;
+      try { file = await this.buildBackupFile(); }
+      catch (error) { this.sayNoRoom("toast.backupFailed"); return; }
+      const blob = new Blob([JSON.stringify(file, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -2812,6 +2852,8 @@ class SettingsController {
           try { localStorage.removeItem(key); } catch (error) { /* already gone */ }
         }
         try { await MediaVault.deleteMedia("custom_bg"); } catch (e) {}
+        // A note still waiting to be written would be written into the emptied storage.
+        this.app.dashboard?.letGo?.();
         NordlysUI.announce(this.text("toast.resetDone", "Everything was reset"));
         if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
           chrome.storage.local.clear(() => location.reload());

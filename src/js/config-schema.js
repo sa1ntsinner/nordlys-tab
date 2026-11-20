@@ -286,10 +286,11 @@
     return out;
   }
 
-  /* The other spaces, when there is more than one: { active, list }, each
-     entry of the list a space's id, name, colour and board. The space in use
-     has no board here: it is the file itself. A list that names no space in
-     use, or only one space, is nothing to carry. */
+  /* The spaces: { active, list }, each entry of the list a space's id, name,
+     colour and board. The space in use has no board here: it is the file
+     itself. With one space it is that space by name, so that the file goes
+     back to it and not to whichever is in use then. A list that names no
+     space in use is nothing to carry. */
   function spaces(value) {
     if (!isObject(value) || typeof value.active !== "string" || !Array.isArray(value.list)) return null;
     const list = [];
@@ -302,7 +303,7 @@
       }
       list.push(space);
     }
-    return list.length > 1 && list.some((space) => space.id === value.active) ? { active: value.active, list } : null;
+    return list.some((space) => space.id === value.active) ? { active: value.active, list } : null;
   }
 
   function buildBackupFile(config, extras = {}) {

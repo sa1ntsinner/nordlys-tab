@@ -166,7 +166,8 @@
               danger: true
             });
             if (!ok) return;
-            await this.app.keepCopy?.("import");
+            // No copy, no replacing: the bookmarks here are the only ones there are.
+            if (!(await this.app.keepCopy("import"))) { this.app.builtSettings?.sayNoRoom?.("toast.recoveryFailed"); return; }
           }
           // Read first: a folder that cannot be read is not linked, and nothing
           // that was on screen is touched.

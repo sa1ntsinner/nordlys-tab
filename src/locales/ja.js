@@ -531,6 +531,8 @@
   "backup.confirmRestore": "フォルダー、ブックマーク、外観が {when} に保存されたものに置き換わります。今の設定は保管されるので、元に戻せます。",
   "toast.resetDone": "すべてリセットしました",
   "toast.recoveryFailed": "戻る方法を保存する空き容量がないため、何も変更しませんでした。",
+  "toast.forgetFailed": "以前のバージョンを削除できませんでした。このデバイスにまだ残っています。",
+  "toast.backupFailed": "ブラウザーが設定全体を返さなかったため、ファイルは保存されませんでした。もう一度お試しください。",
   "toast.copyGone": "そのコピーはもうありません。",
   "toast.saveFailed": "保存するための空き容量が足りません。",
   "ctx.bookmark": "ブックマーク",

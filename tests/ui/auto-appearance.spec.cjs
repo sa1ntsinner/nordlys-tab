@@ -51,3 +51,29 @@ test('Auto that already agrees with the system changes nothing', async ({ nordly
   const seen = await openWith(nordlysPage.page, { colorMode: 'auto', theme: 'tokyo-night', lastLightTheme: 'warm-ivory' }, 'dark');
   expect(seen.worn).toEqual(['tokyo-night']);
 });
+
+/* The theme was saved as the page started, on the board it started on: the
+   fast copy. A board too big for that copy is newer in browser storage, and
+   the save wrote yesterday's board over it before it was read. */
+test('settling Auto never writes an older board over a newer one in browser storage', async ({ nordlysPage }) => {
+  const { page, storageState } = nordlysPage;
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.evaluate(() => new Promise(resolve => {
+    const config = { ...window.Nordlys.config, colorMode: 'auto', theme: 'aurora-void', lastLightTheme: 'warm-ivory', lastDarkTheme: 'aurora-void' };
+    localStorage.setItem('nordlys_config', JSON.stringify({ ...config, groups: [{ label: 'YESTERDAY', cols: 2, hidden: false, links: [] }] }));
+    localStorage.setItem('nordlys_config_saved_at', '1000');
+    chrome.storage.local.set({ nordlys_config: { ...config, groups: [{ label: 'TODAY', cols: 2, hidden: false, links: [] }] }, nordlys_config_saved_at: 2000 }, resolve);
+  }));
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0].label)).toBe('TODAY');
+  await expect.poll(() => storageState.nordlys_config.theme).toBe('warm-ivory');
+  expect(storageState.nordlys_config.groups[0].label).toBe('TODAY');
+  expect(await page.evaluate(() => window.Nordlys.config.theme)).toBe('warm-ivory');
+});
+
+test('a dark theme someone made, on Auto, is not worn for a frame once the system is light', async ({ nordlysPage }) => {
+  const seen = await openWith(nordlysPage.page, { colorMode: 'auto', theme: 'custom', customTheme: { bg: '#050505', card: '#151515', text: '#f5f5f5', accent: '#79bd03' }, lastLightTheme: 'warm-ivory' }, 'light');
+  expect(seen.worn).toEqual(['warm-ivory']);
+  expect(seen).toMatchObject({ light: true, live: 'warm-ivory' });
+});

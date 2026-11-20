@@ -272,6 +272,20 @@ async function denyWritesTo(page, key) {
   }, key);
 }
 
+// Browser storage refuses the board too: the setup then fits in neither store.
+async function denyTheMirror(page) {
+  await page.evaluate(() => {
+    const local = window.chrome.storage.local;
+    const set = local.set.bind(local);
+    local.set = (values, callback) => {
+      if (!('nordlys_config' in values)) { set(values, callback); return; }
+      window.chrome.runtime.lastError = { message: 'QUOTA_BYTES quota exceeded' };
+      callback?.();
+      delete window.chrome.runtime.lastError;
+    };
+  });
+}
+
 async function expectNothingMoved(nordlysPage, before) {
   const { page } = nordlysPage;
   // The no-room message, in the reader's language, and no reload behind it.
@@ -293,13 +307,30 @@ async function expectNothingMoved(nordlysPage, before) {
     .not.toBe('FROM FILE');
 }
 
-test('an import whose config will not fit leaves every part of the setup where it was', async ({ nordlysPage }) => {
+test('an import whose config fits in neither store leaves every part of the setup where it was', async ({ nordlysPage }) => {
   const { page } = nordlysPage;
   const before = await seedSetupWorthKeeping(page);
   await openBackupTab(page);
   await denyWritesTo(page, 'nordlys_config');
+  await denyTheMirror(page);
   await dropFile(page, 'too-big.json', INCOMING);
   await expectNothingMoved(nordlysPage, before);
+});
+
+/* A board too big for the fast copy is saved to browser storage alone. Its
+   import, and putting back an earlier version of it, used to be refused
+   there: the fast copy was all that counted. */
+test('an import too big for the fast copy lands in browser storage, and the page comes back on it', async ({ nordlysPage }) => {
+  const { page, storageState } = nordlysPage;
+  await seedSetupWorthKeeping(page);
+  await openBackupTab(page);
+  await denyWritesTo(page, 'nordlys_config');
+  const loaded = page.waitForEvent('load');
+  await dropFile(page, 'big.json', INCOMING);
+  await loaded;
+  expect(storageState.nordlys_config.groups[0].label).toBe('FROM FILE');
+  await page.waitForFunction(() => Boolean(window.Nordlys?.grid));
+  await expect.poll(() => page.evaluate(() => window.Nordlys.config.groups[0].label)).toBe('FROM FILE');
 });
 
 /* The themes travel beside the config, and used to be written after it with
@@ -331,6 +362,7 @@ test('an import refused at the config puts back what the cards held', async ({ n
   await page.evaluate(() => new Promise(resolve => chrome.storage.local.set({ 'nordlys_dash.n1': { text: 'mine' } }, resolve)));
   await openBackupTab(page);
   await denyWritesTo(page, 'nordlys_config');
+  await denyTheMirror(page);
   const file = JSON.parse(INCOMING);
   file.nordlysBackup.dashboardData = { n1: { text: 'from the file' }, n2: { text: 'new' } };
   await dropFile(page, 'cards.json', JSON.stringify(file));

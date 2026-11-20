@@ -16,9 +16,9 @@
 
    Kept: of the copies made as the setup changed, the newest ten, then the
    last of each day for thirty days; of each cause, the newest three,
-   whatever their age. And never more than ROOM in all: a board heavy with
-   icon pictures is megabytes a copy, and the older copies made as it
-   changed give way first.
+   whatever their age. And held to ROOM in all: a board heavy with icon
+   pictures is megabytes a copy, and the older copies give way, down to
+   the newest three made as it changed and the newest of each cause.
 
    Two stores: the copies themselves (copies), and a line about each
    (about: when, why, how much it holds, how large it is). Everything but
@@ -97,8 +97,10 @@
 
   /* The ids that stay once the copies are held to ROOM: from the ones the
      rules keep (stay), the oldest made as the setup changed go first, never
-     the newest three of them and never one with a cause. lines: what is
-     known about each copy ({ id, cause, size }). */
+     the newest three of them. Still too much, and the copies with a cause
+     follow, oldest first, never the newest of each cause. What stays then
+     stays, whatever its size: the last ways back are worth more than the
+     room. lines: what is known about each copy ({ id, cause, size }). */
   function roomFor(lines, stay, room = ROOM) {
     const held = lines.filter((line) => stay.has(line.id));
     let total = held.reduce((all, line) => all + (line.size || 0), 0);
@@ -106,6 +108,14 @@
     const out = new Set(stay);
     for (const line of plain.slice(0, Math.max(0, plain.length - 3))) {
       if (total <= room) break;
+      out.delete(line.id);
+      total -= line.size || 0;
+    }
+    const newest = {};
+    for (const line of held) if (line.cause && !(newest[line.cause] > line.id)) newest[line.cause] = line.id;
+    for (const line of held.filter((each) => each.cause).sort((x, y) => x.id - y.id)) {
+      if (total <= room) break;
+      if (newest[line.cause] === line.id) continue;
       out.delete(line.id);
       total -= line.size || 0;
     }
@@ -224,7 +234,8 @@
 
   const remove = (id) => run("readwrite", ({ copies, about }) => { copies.delete(id); about.delete(id); }).catch(() => null);
 
-  const clear = () => run("readwrite", ({ copies, about }) => { copies.clear(); about.clear(); }).catch(() => null);
+  // Fails (rejects) when the copies could not be deleted: they are then still there, and that is said.
+  const clear = () => run("readwrite", ({ copies, about }) => { copies.clear(); about.clear(); });
 
   const api = { kept, roomFor, mark, sum, fetched, count, list, file, keep, remove, clear, RECENT, DAYS, OF_A_CAUSE, CAUSES, ROOM };
   root.NordlysAutosave = api;

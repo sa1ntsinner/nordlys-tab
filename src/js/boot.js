@@ -106,11 +106,19 @@
      first of the morning, mostly) opened in yesterday's: dark in a bright
      room, then right a moment later. The family is settled here, with the
      theme last used in it, as app.js settles it (resolveAutoTheme). A theme
-     someone made is left to app.js, which knows whether it is light. */
+     someone made is light when its background is (isLightTheme). */
+  const lightBackground = (hex) => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
+    if (!m) return false;
+    const n = parseInt(m[1], 16);
+    const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    return 0.2126 * lin(n >> 16) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255) > 0.6;
+  };
   try {
-    if (config && config.colorMode === "auto" && theme !== "custom" && window.matchMedia) {
+    if (config && config.colorMode === "auto" && window.matchMedia) {
       const wantsLight = window.matchMedia("(prefers-color-scheme: light)").matches;
-      if (wantsLight !== (LIGHT.indexOf(theme) !== -1)) {
+      const isLight = theme === "custom" ? lightBackground(background) : LIGHT.indexOf(theme) !== -1;
+      if (wantsLight !== isLight) {
         let other = wantsLight ? config.lastLightTheme : config.lastDarkTheme;
         if (RENAMED[other]) other = RENAMED[other];
         if (!BASE[other] || (LIGHT.indexOf(other) !== -1) !== wantsLight) other = wantsLight ? "porcelain-light" : "aurora-void";

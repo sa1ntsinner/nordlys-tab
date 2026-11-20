@@ -70,11 +70,11 @@ test('a backup file carries the other spaces, and a file without them reads as b
   assert.strictEqual(schema.readBackupFile(schema.buildBackupFile({ groups: [] })).extras.spaces, undefined);
 });
 
-test('spaces that are no use are not carried: one alone, none in use, another without its board', () => {
+test('one space is carried by name; spaces that are no use are not: none in use, another without its board', () => {
   const carried = (spaces) => schema.readBackupFile(schema.buildBackupFile({ groups: [] }, { spaces })).extras.spaces;
-  assert.strictEqual(carried({ active: 'a', list: [{ id: 'a', name: 'Home' }] }), undefined);
+  assert.deepStrictEqual(carried({ active: 'a', list: [{ id: 'a', name: 'Home' }] }), { active: 'a', list: [{ id: 'a', name: 'Home', color: '' }] });
   assert.strictEqual(carried({ active: 'x', list: [{ id: 'a', config: {} }, { id: 'b', config: {} }] }), undefined);
-  assert.strictEqual(carried({ active: 'a', list: [{ id: 'a' }, { id: 'b' }] }), undefined);
+  assert.deepStrictEqual(carried({ active: 'a', list: [{ id: 'a' }, { id: 'b' }] }).list.map(space => space.id), ['a']);
   assert.strictEqual(carried({ active: 'a', list: [{ id: 'a' }, { id: '../b', config: {} }, { id: 'c', config: {} }] }).list.length, 2);
 });
 
@@ -87,8 +87,11 @@ test('the copies are held to the room there is: the oldest made as the setup cha
   assert.deepStrictEqual([...autosave.roomFor(lines, stay, 1000)].sort(), [1, 2, 3, 4, 5, 6], 'with room for all, all stay');
   // 240 held, room for 170: the two oldest changes go, and that is enough.
   assert.deepStrictEqual([...autosave.roomFor(lines, stay, 170)].sort(), [3, 4, 5, 6]);
-  // However little room: the newest three changes and every copy with a cause stay.
+  // However little room: the newest three changes and the newest copy of each cause stay.
   assert.deepStrictEqual([...autosave.roomFor(lines, stay, 1)].sort(), [3, 4, 5, 6]);
+  // Copies with a cause give way too, oldest first, once the plain ones are down to three.
+  const caused = [...lines, { id: 7, size: 40, cause: 'update' }, { id: 8, size: 40, cause: 'reset' }];
+  assert.deepStrictEqual([...autosave.roomFor(caused, new Set(caused.map(line => line.id)), 200)].sort(), [3, 4, 5, 7, 8]);
   // A copy the rules already let go is not brought back.
   assert.ok(!autosave.roomFor(lines, new Set([4, 5, 6]), 1000).has(1));
 });
